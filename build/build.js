@@ -2,6 +2,10 @@
 // by compressing the JS via requireJS's optimizer, then
 // interpolating the resulting content into the HTML.
 //
+// This comes in two flavors: template.html, a normal HTML
+// file, and template.js, a JS file that returns the HTML
+// source code via an AMD.
+//
 // Using a function for an out attribute doesn't seem to
 // work when optimizing CSS, so for now we'll just insert
 // the CSS as-is. The savings don't look all that impressive
@@ -45,7 +49,7 @@ requirejs.optimize(jsConfig);
 
 function assemble()
 {
-	console.log('Assembling final HTML...');
+	console.log('Assembling final HTML and AMD...');
 
 	// we can't do a replace here --
 	// source characters will act like backreferences, etc.
@@ -58,6 +62,11 @@ function assemble()
 
 	html = html.replace(CSS_PLACEHOLDER, '<style>' + css + '</style>');
 	fs.writeFileSync('template.html', html, 'utf8');
-
 	console.log('Wrote template.html.');
+
+	// write out AMD
+
+	var amd = "define(function() { return " + JSON.stringify(html) + " });"
+	fs.writeFileSync('template.js', amd, 'utf8');
+	console.log('Wrote template.js.');
 };
