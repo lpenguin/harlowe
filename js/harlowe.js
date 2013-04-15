@@ -9,8 +9,9 @@ require.config({
 define(['jquery', 'underscore', 'showdown'], function ($, _, Showdown)
 {
 	var markdown = new Showdown.converter();
+	console.log('harlowe starting');
 
-	$(function()
+	$(document).ready(function()
 	{
 		$('body').on('click', 'a[data-twinelink]', function (e)
 		{

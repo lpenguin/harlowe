@@ -29,13 +29,11 @@ var compressedJS;
 var jsConfig = 
 {
 	baseUrl: '../js',
-	paths:
-	{
-		requirelib: '../js/require'
-	},
 	mainConfigFile: '../js/harlowe.js',
-	include: ['requirelib'],
+	include: ['../build/almond', 'harlowe'],
+	insertRequire: ['harlowe'],
 	name: 'harlowe',
+	wrap: true,
 
 	out: function (source)
 	{
