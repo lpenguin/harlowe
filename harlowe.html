@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>Moby Dick</title>
+<title>{{STORY_NAME}}</title>
 <link rel="stylesheet" href="style.css">
 </head>
 
@@ -10,42 +10,9 @@
 
 <article id="story"></article>
 
-<div data-role="twinestory" data-name="Moby Dick" data-startnode="1" data-creator="twine" data-creator-version="2.0">
-
-<div data-id="1" data-name="Start Passage" data-type="text/markdown" data-twine-position="200,300">
-Call me _Ishmael_. Some years ago -- never mind how long precisely -- having little or no money in my purse, and nothing particular to interest me on shore, I thought I would sail about a little and see the watery part of the world. It is a way I have of driving off the spleen, and regulating the circulation.
-
-Whenever I find myself growing grim about the mouth; whenever it is a damp, drizzly November in my soul; whenever I find myself involuntarily pausing before coffin warehouses, and bringing up the rear of every funeral I meet; and especially whenever my hypos get such an upper hand of me, that it requires a strong moral principle to prevent me from deliberately stepping into the street, and methodically knocking people's hats off -- then, I account it high time to get to sea as soon as I can.
-
-Freedom is the freedom to say that two plus two equals <%- 2 + 2 %>.
-
-<% color = 'red' %>
-
-<% print(color) %>
-
-Let's try [[another example]].
-
-</div>
-
-<div data-id="2" data-name="another example" data-type="text/markdown" data-twine-position="200,450">
-Color is set to <%- color %>.
-</div>
-
-<style type="text/css">
-/*
-p
-{
-font-size: 120%;
-}
-*/
-</style>
-
-</div>
+{{STORY_DATA}}
 
 <script data-main="js/harlowe.js" src="js/require.js"></script>
-<script>
-console.log('script tag was run');
-</script>
 
 </body>
 </html>
