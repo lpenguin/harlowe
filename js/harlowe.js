@@ -52,6 +52,9 @@ define(['jquery', 'underscore', 'showdown'], function ($, _, Showdown)
 	{
 		var passage = $('div[data-role="twinestory"] div[data-id="' + id + '"]');
 
+		if (passage.size() == 0)
+			throw new Error("No passage exists with id " + id);
+
 		el = el || $('#story');	
 		el.append('<section><a class="permalink" href="#' + passage.attr('data-name') + '"' +
 				  ' title="Permanent link to this passage">&para;</a>' +
@@ -61,6 +64,9 @@ define(['jquery', 'underscore', 'showdown'], function ($, _, Showdown)
 	function showName (name, el)
 	{
 		var passage = $('div[data-role="twinestory"] div[data-name="' + name + '"]');
+
+		if (passage.size() == 0)
+			throw new Error("No passage exists with name " + name);
 
 		el = el || $('#story');	
 		el.append('<section><a class="permalink" href="#' + passage.attr('data-name') + '"' +
