@@ -81,17 +81,62 @@ define(['jquery', 'showdown', 'macros'], function ($, Showdown)
 
 			if (window.story.macros[macros[i][0]])
 			{
+				var macro = window.story.macros[macros[i][0]];
+
+				// rawCall is the entire macro invocation, rawArgs are all arguments
+
+				var rawCall = macros[i][1].replace(/&lt;/g, '<').replace(/&gt;/g, '>');
+				var rawArgs = rawCall.replace(/^.*?\s/, '').replace(/>>.*/, '');
+
 				// tokenize arguments
 				// e.g. 1 "two three" 'four five' "six \" seven" 'eight \' nine'
 				// becomes [1, "two three", "four five", 'six " seven', "eight ' nine"]
 
-				var rawCall = macros[i][1].replace(/&lt;/g, '<').replace(/&gt;/g, '>');
+				var args = [''];
+				var argIdx = 0;
+				var quoteChar;
 
-				console.log('rawCall', rawCall);
+				for (var i = 0; i < rawArgs.length; i++)
+					switch (rawArgs[i])
+					{
+						case '"':
+						case "'":
+						if (quoteChar == rawArgs[i])
+							quoteChar = null;
+						else
+							if (! quoteChar)
+								quoteChar = rawArgs[i];
+							else
+								args[argIdx] += rawArgs[i];
+						break;
 
-				var rawArgs = rawCall.replace(/^.*?\s/, '').replace(/>>.*/, '');
+						case ' ':
+						if (quoteChar)
+							args[argIdx] += rawArgs[i];
+						else
+							args[++argIdx] = '';
+						break;
 
-				console.log('rawArgs', rawArgs);
+						case '\\':
+						if (i < rawArgs.length - 1 && rawArgs[i + 1] == quoteChar)
+						{
+							args[argIdx] += quoteChar;
+							i++;
+						}
+						else
+							args[argIdx] += rawArgs[i];
+						break;
+
+						default:
+						args[argIdx] += rawArgs[i];
+					};
+
+				var result = macro.apply({ rawCall: rawCall, rawArgs: rawArgs, el: span }, args);
+
+				// Markdown adds a <p> tag around content which we need to remove
+
+				if (result !== null)
+					span.html(render(result).html().replace(/^<p>/i, '').replace(/<\/p>$/i, ''));
 			}
 			else
 				span.html('No macro named ' + macros[i][0]);
