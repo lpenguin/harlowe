@@ -32,7 +32,7 @@ define(['jquery', 'showdown', 'macros'], function ($, Showdown)
 
 		html = html.replace(/\[\[(.*?)\|(.*)?\]\]/g, function (match, p1, p2)
 		{
-			return '<a href="#' + _.escape(p1.replace(/\s/g, '')) + '" data-twinelink="' + p1 + '">' +
+			return '<a href="#' + escape(p1.replace(/\s/g, '')) + '" data-twinelink="' + p1 + '">' +
 				   p2 + '</a>';	
 		});
 
@@ -40,7 +40,7 @@ define(['jquery', 'showdown', 'macros'], function ($, Showdown)
 
 		html = html.replace(/\[\[(.*?)\]\]/g, function (match, p1)
 		{
-			return '<a href="#' + _.escape(p1.replace(/\s/g, '')) + '" data-twinelink="' + p1 + '">' + p1 + '</a>';
+			return '<a href="#' + escape(p1.replace(/\s/g, '')) + '" data-twinelink="' + p1 + '">' + p1 + '</a>';
 		});
 
 		// convert macro invocations to spans
