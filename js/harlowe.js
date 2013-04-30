@@ -77,16 +77,20 @@ define(['jquery', 'showdown', 'macros'], function ($, Showdown)
 
 		for (var i = 0; i < macros.length; i++)
 		{
-			var span = html.find('span[data-macro="' + i + '"]');
+			var span = html.find('span[data-macro="' + (i + 1) + '"]');
 
 			if (window.story.macros[macros[i][0]])
 			{
 				var macro = window.story.macros[macros[i][0]];
 
-				// rawCall is the entire macro invocation, rawArgs are all arguments
+				// rawCall is the entire macro invocation, rawArgs are all arguments,
+				// rawContents is what's between an <<macro>> and <</macro>> call
 
 				var rawCall = macros[i][1].replace(/&lt;/g, '<').replace(/&gt;/g, '>');
 				var rawArgs = rawCall.replace(/^.*?\s/, '').replace(/>>.*/, '');
+				var contentStart = new RegExp('^<<' + macros[i][0] + '.*?>>', 'i');
+				var contentEnd = new RegExp('<<((end)|\/)' + macros[i][0] + '.*?>>$', 'i');
+				var rawContents = rawCall.replace(contentStart, '').replace(contentEnd, '');
 
 				// tokenize arguments
 				// e.g. 1 "two three" 'four five' "six \" seven" 'eight \' nine'
@@ -131,12 +135,17 @@ define(['jquery', 'showdown', 'macros'], function ($, Showdown)
 						args[argIdx] += rawArgs[i];
 					};
 
-				var result = macro.apply({ rawCall: rawCall, rawArgs: rawArgs, el: span }, args);
+				var result = macro.apply({
+					rawCall: rawCall,
+					rawArgs: rawArgs,
+					rawContents: rawContents,
+					el: span }, args);
 
 				// Markdown adds a <p> tag around content which we need to remove
-
+				// we also have to coerce the result to a string
+				
 				if (result !== null)
-					span.html(render(result).html().replace(/^<p>/i, '').replace(/<\/p>$/i, ''));
+					span.html(render(result + '').html().replace(/^<p>/i, '').replace(/<\/p>$/i, ''));
 			}
 			else
 				span.html('No macro named ' + macros[i][0]);
@@ -156,7 +165,7 @@ define(['jquery', 'showdown', 'macros'], function ($, Showdown)
 		var container = $('<section><a class="permalink" href="#' + passage.attr('data-name') + '"' +
 				  ' title="Permanent link to this passage">&para;</a></section>');
 		container.append(render(passage.html()));
-		el.append(container);
+		el.empty().append(container);
 	};
 
 	function showName (name, el)
@@ -170,6 +179,6 @@ define(['jquery', 'showdown', 'macros'], function ($, Showdown)
 		var container = $('<section><a class="permalink" href="#' + passage.attr('data-name') + '"' +
 				  ' title="Permanent link to this passage">&para;</a></section>');
 		container.append(render(passage.html()));
-		el.append(container);
+		el.empty().append(container);
 	};
 });

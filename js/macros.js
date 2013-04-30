@@ -1,16 +1,51 @@
 window.story = window.story || {};
 window.story.macros = window.story.macros || {};
 
-window.story.macros.test = function()
+window.story.macros.set = function()
 {
-	this.el.css('color', 'blue');
-	
-	var args = '';
+	try
+	{
+		eval(this.rawArgs);
+	}
+	catch (e)
+	{
+		return e.message;
+	}
+};
 
-	for (var i = 0; i < arguments.length; i++)
-		args += arguments[i] + ', ';
+window.story.macros.print = function()
+{
+	try
+	{
+		return eval(this.rawArgs);
+	}
+	catch (e)
+	{
+		return e.message;
+	}
+};
 
-	return 'This is the test macro.<br><br>Raw args: ' + this.rawArgs +
-	       '<br><br>Raw call: ' + this.rawCall.replace(/\</g, '&lt;') +
-		   '<br><br>Parsed args: [' + args.substr(0, args.length - 2) + ']';
+window.story.macros.script = function()
+{
+	try
+	{
+		eval(this.rawContents);
+	}
+	catch (e)
+	{
+		return e.message;
+	}
+};
+
+window.story.macros.if = function()
+{
+	try
+	{
+		if (eval(this.rawArgs))
+			return this.rawContents;
+	}
+	catch (e)
+	{
+		return e.message;
+	}
 };
