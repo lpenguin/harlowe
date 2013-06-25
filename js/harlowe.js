@@ -28,19 +28,27 @@ define(['jquery', 'showdown', 'macros'], function ($, Showdown)
 
 		// replace [[ ]] with twine links
 
-		// [[link|display text]] format
+		// [[display text|link]] format
 
-		html = html.replace(/\[\[(.*?)\|(.*)?\]\]/g, function (match, p1, p2)
+		html = html.replace(/\[\[([^\|\]]*?)\|([^\|\]]*)?\]\]/g, function (match, p1, p2)
 		{
-			return '<a href="#' + escape(p1.replace(/\s/g, '')) + '" data-twinelink="' + p1 + '">' +
-				   p2 + '</a>';	
+			if (!passageName(p2))
+			{
+				return '<span class="broken-link">' + p1 + '</span>';
+			}
+			return '<a class="internal-link" href="#' + escape(p2.replace(/\s/g, '')) + '" data-twinelink="' + p2 + '">' +
+				   p1 + '</a>';	
 		});
 
 		// [[link]] format
 
-		html = html.replace(/\[\[(.*?)\]\]/g, function (match, p1)
+		html = html.replace(/\[\[([^\|\]]*?)\]\]/g, function (match, p1)
 		{
-			return '<a href="#' + escape(p1.replace(/\s/g, '')) + '" data-twinelink="' + p1 + '">' + p1 + '</a>';
+			if (!passageName(p1))
+			{
+				return '<span class="brokenlink">' + p1 + '</span>';
+			}
+			return '<a class="internal-link" href="#' + escape(p1.replace(/\s/g, '')) + '" data-twinelink="' + p1 + '">' + p1 + '</a>';
 		});
 
 		// convert macro invocations to spans
@@ -153,12 +161,24 @@ define(['jquery', 'showdown', 'macros'], function ($, Showdown)
 
 		return html;
 	};
-
-	function showId (id, el)
+	
+	function passageName (name)
+	{
+		var passage = $('div[data-role="twinestory"] div[data-name="' + name + '"]');
+		return (passage.size() == 0 ? null : passage);
+	}
+	
+	function passageId (id)
 	{
 		var passage = $('div[data-role="twinestory"] div[data-id="' + id + '"]');
+		return (passage.size() == 0 ? null : passage);
+	}
+	
+	function showId (id, el)
+	{
+		var passage = passageId(id);
 
-		if (passage.size() == 0)
+		if (!passage)
 			throw new Error("No passage exists with id " + id);
 
 		el = el || $('#story');	
@@ -170,9 +190,9 @@ define(['jquery', 'showdown', 'macros'], function ($, Showdown)
 
 	function showName (name, el)
 	{
-		var passage = $('div[data-role="twinestory"] div[data-name="' + name + '"]');
+		var passage = passageName(name);
 
-		if (passage.size() == 0)
+		if (!passage)
 			throw new Error("No passage exists with name " + name);
 
 		el = el || $('#story');	

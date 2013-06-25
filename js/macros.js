@@ -37,7 +37,7 @@ window.story.macros.script = function()
 	}
 };
 
-window.story.macros.if = function()
+window.story.macros['if'] = function()
 {
 	try
 	{
