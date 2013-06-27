@@ -167,7 +167,7 @@ this.makeHtml = function(text) {
 	text = text.replace(/\r/g,"\n"); // Mac to Unix
 
 	// Make sure text begins and ends with a couple of newlines:
-	text = "\n\n" + text + "\n\n";
+	text = "\n" + text + "\n";
 
 	// Convert all tabs to spaces.
 	text = _Detab(text);
@@ -433,7 +433,7 @@ var _HashHTMLBlocks = function(text) {
 		)
 		/g,hashElement);
 	*/
-	text = text.replace(/(?:\n\n)([ ]{0,3}(?:<([?%])[^\r]*?\2>)[ \t]*(?=\n{2,}))/g,hashElement);
+	text = text.replace(/(?:\n\n)([ ]{0,3}(?:<([\?%])[^\r]*?\2>)[ \t]*(?=\n{2,}))/g,hashElement);
 
 	// attacklab: Undo double lines (see comment at top of this function)
 	text = text.replace(/\n\n/g,"\n");
@@ -1130,11 +1130,12 @@ var _EncodeCode = function(text) {
 
 var _DoItalicsAndBold = function(text) {
 
+	// Leon edit: removed underscores because too unexpected.
 	// <strong> must go first:
-	text = text.replace(/(\*\*|__)(?=\S)([^\r]*?\S[*_]*)\1/g,
+	text = text.replace(/(\*\*)(?=\S)([^\r]*?\S\**)\1/g,
 		"<strong>$2</strong>");
 
-	text = text.replace(/(\*|_)(?=\S)([^\r]*?\S)\1/g,
+	text = text.replace(/(\*)(?=\S)([^\r]*?\S)\1/g,
 		"<em>$2</em>");
 
 	return text;

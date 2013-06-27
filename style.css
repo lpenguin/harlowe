@@ -1,3 +1,9 @@
+/* HTML5 compatibility */
+
+*[hidden]  {
+  display: none;
+}
+
 /* Transitions */
 
 @keyframes appear
@@ -17,35 +23,26 @@ body
 {
 	font: 62.5% Georgia, serif;	
 	background: #fafafa;
-	background-repeat: no-repeat;
-
-	background-image: -webkit-gradient(
-		linear,
-		left top,
-		left 4%,
-		color-stop(0, rgb(215, 215, 215)),
-		color-stop(1, rgba(215, 215, 215, 0))
-	);
-
 	color: #222;
 }
 
 p, li, td, th
 {
-	font-size: 1.8em;
+	font-size: 1.6rem;
 	line-height: 175%;
 }
 
-.internal-link, .external-link
+.link
 {
 	color: #222;
 	text-decoration: none;
 	border-bottom: 2px solid #006699;
 	transition: color 0.2s ease-in-out;
 	-webkit-transition: color 0.2s ease-in-out;
+	cursor: pointer;
 }
 
-a:hover
+.link:hover
 {
 	color: #006699;
 }
@@ -54,9 +51,18 @@ a:hover
 {
 	color: #993333;
 	border-bottom: 2px solid #993333;
+	cursor:not-allowed;
 }
 
-div[data-role="twinestory"]
+[data-macro="unknown"]
+{
+	border-radius: 0.2em;
+	background-color: #9DE;
+	padding: 0.2em;
+	font-size: 0.9em;
+}
+
+[data-role="twinestory"]
 {
 	display: none;
 }
@@ -69,6 +75,8 @@ div[data-role="twinestory"]
 
 #story section
 {
+	position: absolute;
+	width: 55%;
 	animation: appear 1s ease;	
 	-webkit-animation: appear 1s ease;	
 }
@@ -79,10 +87,81 @@ div[data-role="twinestory"]
 	font-size: 3.25em;
 	border-bottom: none;
 	margin-left: -1em;
+	text-decoration:none;
 	float: left;
 }
 
 #story section .permalink:hover
 {
 	color: #222;
+}
+
+/* Secondary text styles, for general use by Twine authors */
+
+.outline
+{
+	color: white;
+	text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
+}
+
+.shadow
+{
+	text-shadow: 0.05em 0.05em 0.05em #000;
+}
+
+.condense
+{
+	letter-spacing: -0.08em;
+}
+
+.expand
+{
+	letter-spacing: 0.1em;
+}
+
+.blur
+{
+	color:transparent;
+	text-shadow: 0em 0em 0.08em #000;
+}
+
+.blurrier
+{
+	color:transparent;
+	text-shadow: 0em 0em 0.2em #000;
+}
+
+.blurrier::selection {
+	background-color:transparent;
+	color:transparent;
+}
+
+.blurrier::-moz-selection {
+	background-color:transparent;
+	color:transparent;
+}
+
+.smear
+{
+	color:transparent;
+	text-shadow: 0em 0em 0.02em rgba(0,0,0,0.75), -0.2em 0em 0.5em rgba(0,0,0,0.5), 0.2em 0em 0.5em rgba(0,0,0,0.5);
+}
+
+.mirror
+{
+	display:inline-block;
+	transform: scaleX(-1);
+	-webkit-transform: scaleX(-1);
+}
+
+.upside-down
+{
+	display:inline-block;
+	transform: scaleY(-1);
+	-webkit-transform: scaleY(-1);
+}
+
+.highlight
+{
+	background-color: #ff9;
 }

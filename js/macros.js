@@ -1,51 +1,112 @@
-window.story = window.story || {};
-window.story.macros = window.story.macros || {};
-
-window.story.macros.set = function()
+define(['jquery'], function($)
 {
-	try
-	{
-		eval(this.rawArgs);
-	}
-	catch (e)
-	{
-		return e.message;
-	}
-};
+	"use strict";
 
-window.story.macros.print = function()
-{
-	try
-	{
-		return eval(this.rawArgs);
-	}
-	catch (e)
-	{
-		return e.message;
-	}
-};
+	/*
+	
+	MACRO API:
+	
+	isVoid: determines if the macro tag has contents. If true, then all subsequent code
+		up until a closing tag ("<<endmacro>>" or <</macro>>") or until the end of the passage,
+		will be captured by this.contents.
+	
+	function arguments: the string arguments in the macro tag, one by one.
+	
+	this.call: string containing the unescaped macro call, eg. "<<set escaped = false>>"
+	this.rawArgs: string containing the unescaped untrimmed arguments, eg. " escaped = false".
+	this.contents: string containing the HTML between the open tag and close tag, or "".
+	this.el: the destination DOM <span> element.
+	this.name: string name of the macro, eg. "set".
+	
+	return value: string of Twine code to be rendered, whose resultant HTML will
+		replace the contents of this.el.
+		
+	*/
+	
+	var story = window.story = window.story || {};
+	story.macros = window.story.macros || {};
 
-window.story.macros.script = function()
-{
-	try
-	{
-		eval(this.rawContents);
+	// Register a macro function, set isVoid,
+	// and specify version numbers.
+	story.addMacro = function(name, isVoid, fn, version) {
+		fn.isVoid = isVoid;
+		fn.version = version;
+		window.story.macros[name] = fn;
 	}
-	catch (e)
+	
+	// This replaces unknown or incorrect macros.
+	story.addMacro("unknown",true,function()
 	{
-		return e.message;
-	}
-};
+		$(this.el).text("Unknown macro: "+this.call);
+	});
+	
+	// Standard library
+	story.addMacro("set",true,function()
+	{
+		try
+		{
+			eval(this.rawArgs);
+			return '';
+		}
+		catch (e)
+		{
+			return e.message;
+		}
+	}, {
+		major: 0,
+		minor: 0,
+		revision: 0
+	});
 
-window.story.macros['if'] = function()
-{
-	try
+	story.addMacro("print",true,function()
 	{
-		if (eval(this.rawArgs))
-			return this.rawContents;
-	}
-	catch (e)
+		try
+		{
+			return (eval(this.rawArgs) + '');
+		}
+		catch (e)
+		{
+			return e.message;
+		}
+	}, {
+		major: 0,
+		minor: 0,
+		revision: 0
+	});
+	
+	story.addMacro("script",false,function()
 	{
-		return e.message;
-	}
-};
+		try
+		{
+			eval(this.contents);
+		}
+		catch (e)
+		{
+			return e.message;
+		}
+	}, {
+		major: 0,
+		minor: 0,
+		revision: 0
+	});
+
+	story.addMacro("if",false,function()
+	{
+		try
+		{
+			if (eval(this.rawArgs)) {
+				//console.log(this.rawArgs+" = TRUE!");
+				return this.contents;
+			}
+			//console.log(this.rawArgs+" = FALSE!");
+		}
+		catch (e)
+		{
+			return e.message;
+		}
+	}, {
+		major: 0,
+		minor: 0,
+		revision: 0
+	});
+});
