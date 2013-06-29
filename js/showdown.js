@@ -773,11 +773,12 @@ var _DoHeaders = function(text) {
 	//	Header 2
 	//	--------
 	//
-	text = text.replace(/^(.+)[ \t]*\n=+[ \t]*\n+/gm,
+	/* Leon edit: these are too confusing too. */
+	/*text = text.replace(/^(.+)[ \t]*\n=+[ \t]*\n+/gm,
 		function(wholeMatch,m1){return hashBlock('<h1 id="' + headerId(m1) + '">' + _RunSpanGamut(m1) + "</h1>");});
 
 	text = text.replace(/^(.+)[ \t]*\n-+[ \t]*\n+/gm,
-		function(matchFound,m1){return hashBlock('<h2 id="' + headerId(m1) + '">' + _RunSpanGamut(m1) + "</h2>");});
+		function(matchFound,m1){return hashBlock('<h2 id="' + headerId(m1) + '">' + _RunSpanGamut(m1) + "</h2>");});*/
 
 	// atx-style headers:
 	//  # Header 1

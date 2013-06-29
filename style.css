@@ -18,12 +18,48 @@
 	100% { opacity: 1 }
 }
 
+@keyframes fade-in-out
+{
+	0%,100% { opacity: 0 }
+	50% { opacity: 1 }
+}
+
+@-webkit-keyframes fade-in-out
+{
+	0%,100% { opacity: 0 }
+	50% { opacity: 1 }
+}
+
+@keyframes rumble 
+{
+	0%, 100% {}
+	50% { transform: translateY(-0.2em) }
+}
+
+@-webkit-keyframes rumble 
+{
+	0%, 100% {}
+	50% { -webkit-transform: translateY(-0.2em) }
+}
+
+@keyframes shudder 
+{
+	0%, 100% {}
+	50% { transform: translateX(0.2em) }
+}
+@-webkit-keyframes shudder 
+{
+	0%, 100% {}
+	50% { -webkit-transform: translateX(0.2em) }
+}
+
+/* Main elements */
 
 body
 {
 	font: 62.5% Georgia, serif;	
 	background: #fafafa;
-	color: #222;
+	color: #000;
 }
 
 p, li, td, th
@@ -96,6 +132,45 @@ p, li, td, th
 	color: #222;
 }
 
+/* Styling elements, for general use by Twine authors */
+
+mark
+{
+	color:rgba(0,0,0,0.6);
+	background-color: #ff9;
+}
+
+ins
+{
+	color:rgba(0,0,0,0.6);
+	background-color: hsla(45,100%,90%,0.5); /* Yellowed correction fluid */
+	border-radius:0.5em;
+	box-shadow: 0em 0em 0.2em hsl(45,100%,80%);
+	text-decoration:none;
+}
+
+del
+{
+	background-color: #000; /* Censored text */
+	text-decoration:none;
+}
+
+/* Who am I to tell authors not to use non-standard tags? */
+
+center
+{
+	text-align:center;
+	margin: 0 auto;
+	width: 60%;
+}
+
+blink
+{
+	text-decoration: none;
+	animation: fade-in-out 1s steps(1,end) infinite alternate;
+	-webkit-animation: fade-in-out 1s steps(1,end) infinite alternate;
+}
+
 /* Secondary text styles, for general use by Twine authors */
 
 .outline
@@ -106,7 +181,7 @@ p, li, td, th
 
 .shadow
 {
-	text-shadow: 0.05em 0.05em 0.05em #000;
+	text-shadow: 0.08em 0.08em 0.08em #000;
 }
 
 .condense
@@ -161,7 +236,25 @@ p, li, td, th
 	-webkit-transform: scaleY(-1);
 }
 
-.highlight
+/* Animated effects follow */
+
+.fade-in-out
 {
-	background-color: #ff9;
+	text-decoration: none;
+	animation: fade-in-out 2s ease-in-out infinite alternate;
+	-webkit-animation: fade-in-out 2s ease-in-out infinite alternate;
+}
+
+.rumble 
+{
+	-webkit-animation: rumble linear 0.1s 0s infinite;
+	animation: rumble linear 0.1s 0s infinite;
+      display:inline-block;
+}
+
+.shudder 
+{
+	-webkit-animation: shudder linear 0.1s 0s infinite;
+	animation: shudder linear 0.1s 0s infinite;
+      display:inline-block;
 }
