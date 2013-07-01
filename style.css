@@ -68,7 +68,7 @@ p, li, td, th
 	line-height: 175%;
 }
 
-.link
+.passage-link
 {
 	color: #222;
 	text-decoration: none;
@@ -78,7 +78,7 @@ p, li, td, th
 	cursor: pointer;
 }
 
-.link:hover
+.passage-link:hover
 {
 	color: #006699;
 }
@@ -95,7 +95,15 @@ p, li, td, th
 	border-radius: 0.2em;
 	background-color: #9DE;
 	padding: 0.2em;
-	font-size: 0.9em;
+	font-size: 0.6em;
+}
+
+.error[data-macro]
+{
+	border-radius: 0.2em;
+	background-color: #E9D;
+	padding: 0.2em;
+	font-size: 0.6em;
 }
 
 [data-role="twinestory"]

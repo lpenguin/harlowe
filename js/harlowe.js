@@ -5,7 +5,7 @@ require.config({
 	}
 });
 
-define(['jquery', 'showdown', 'macros'], function ($, Showdown)
+define(['jquery', 'showdown', 'story', 'macros'], function ($, Showdown, story)
 {
 	"use strict";
 	var markdown = new Showdown.converter(),
@@ -26,31 +26,19 @@ define(['jquery', 'showdown', 'macros'], function ($, Showdown)
 		showId($('div[data-role="twinestory"]').attr('data-startnode'));
 	});
 	
-	function renderMacro(macroName, rawCall, span)
+	function renderMacro(macro, span)
 	{
-		if (window.story.macros[macroName])
+		if (macro.data)
 		{
-			// rawCall is the entire macro invocation, rawArgs are all arguments,
-			// rawContents is what's between a <<macro>> and <</macro>> call
-			var macro = window.story.macros[macroName],
-				contentStart = new RegExp('^(?:[^&]|&(?!gt;&gt;))*&gt;&gt;', 'i'), //First tag
-				contentEnd = new RegExp('&lt;&lt;(?:[^&]|&(?!gt;&gt;))*&gt;&gt;$', 'i'), //Final tag before end of input
-				rawContents = rawCall.replace(contentStart, '').replace(contentEnd, ''),
-				p = $("<p>"),
+			var p = $("<p>"),
 				args = [''],
 				argIdx = 0,
-				rawArgs, quoteChar, result, j;
+				rawArgs = macro.rawArgs,
+				quoteChar, result, j;
 
-			// unescape rawArgs HTML entities (like "&amp;")
-			// Note: must unescape rawCall after rawContents
-			
-			rawCall = p.html(rawCall).text();
-			rawArgs = rawCall.replace(/^<<\s*\w*/, '').replace(/>>[^]*/, '');
-				
 			// tokenize arguments
 			// e.g. 1 "two three" 'four five' "six \" seven" 'eight \' nine'
 			// becomes [1, "two three", "four five", 'six " seven', "eight ' nine"]
-
 
 			for (j = 0; j < rawArgs.length; j++)
 				switch (rawArgs[j])
@@ -87,13 +75,8 @@ define(['jquery', 'showdown', 'macros'], function ($, Showdown)
 					args[argIdx] += rawArgs[j];
 				};
 
-			//console.log("Executing "+macroName+"... rawArgs : (" +rawArgs+"), rawCall : ("+rawCall+") rawContents : ("+rawContents+")");
-			result = macro.apply({
-				call: rawCall,
-				rawArgs: rawArgs,
-				contents: rawContents || "",
-				name: macroName,
-				el: span }, args);
+			macro.el = span;
+			result = macro.data.apply(macro, args);
 
 			// Markdown adds a <p> tag around content which we need to remove
 			// we also have to coerce the result to a string
@@ -105,69 +88,35 @@ define(['jquery', 'showdown', 'macros'], function ($, Showdown)
 			}
 		}
 		else
-			span.html('No macro named ' + macroName);
+			span.addClass('error').html('No macro named ' + macro.name);
 	}
 	
 	function matchMacros(html)
 	{
-		var macroRE = /&lt;&lt;\s*(\w+)(?:[^&]|&(?!gt;&gt;))*&gt;&gt;/g,
-			macroCalls = [],
+		var macroInstances = [],
 			macroCount = 0,
-			endMacroRE, foundMacro, macroName, macroCall, macroData, startIndex, endIndex,
-			foundEndMacro, nesting;
-		do {
-			// Search through html for macro tags
-			foundMacro = macroRE.exec(html);
-			if (foundMacro !== null) {
-				macroName = foundMacro[1];
-				macroData = window.story.macros[macroName];
-				startIndex = foundMacro.index;
-				endIndex = macroRE.lastIndex;
+			newhtml = "",
+			index = 0;
 
-				if (macroData) {
-					// If macro is not void, search for endtag
-					if (!macroData.isVoid) {
-						endMacroRE = new RegExp(macroRE.source + "|&lt;&lt;((?:\\/|end)"
-							+ macroName + ")(?:[^&]|&(?!gt;&gt;))*&gt;&gt;","g");
-						endMacroRE.lastIndex = endIndex;
-						nesting = 0;
-						do {
-							foundEndMacro = endMacroRE.exec(html);
-							if (foundEndMacro !== null) {
-								if (foundEndMacro[2]) { // Found <</macro>>
-									if (nesting) {
-										nesting -= 1;
-									} else {
-										endIndex = endMacroRE.lastIndex;
-										break;
-									}
-								} else if (foundEndMacro[1]) { // Found nested <<macro>>
-									nesting += 1;
-								}
-							}
-							else {
-								endIndex = html.length; // No end found, assume rest of passage.
-							}
-						} while (foundEndMacro);
-					}
-					macroCall = html.slice(startIndex,endIndex);
-				} else {
-					// A macro by that name doesn't exist
-					macroName = "unknown";
-				}
-				macroCall = html.slice(startIndex,endIndex);
-				// Contain the macro in a hidden span.
-				html = html.slice(0, startIndex) + '<span data-count="' + macroCount + '" data-macro="' + macroName + '" hidden></span>' + html.slice(endIndex);
-				macroCalls.push(macroCall);
-				macroCount += 1;
+		story.matchMacroTag(html, null, function (m) {
+			if (!m.data) {
+				// A macro by that name doesn't exist
+				m.name = "unknown";
+				m.data = story.macros["unknown"];
 			}
-		} while (foundMacro);
-		return [html, macroCalls];
+			// Contain the macro in a hidden span.
+			newhtml += html.slice(index, m.startIndex) + '<span data-count="' + macroCount + '" data-macro="' + m.name + '" hidden></span>';
+			macroInstances.push(m);
+			macroCount += 1;
+			index = m.endIndex;
+		});
+		newhtml += html.slice(index);
+		return [newhtml, macroInstances];
 	}
 
 	function render (source)
 	{
-		var html, temp, macroCalls;
+		var html, temp, macroInstances;
 		// basic Markdown
 
 		html = markdown.makeHtml(source);
@@ -178,11 +127,11 @@ define(['jquery', 'showdown', 'macros'], function ($, Showdown)
 
 		html = html.replace(/\[\[([^\|\]]*?)\|([^\|\]]*)?\]\]/g, function (match, p1, p2)
 		{
-			if (!passageName(p2))
+			if (!story.passageNamed(p2))
 			{
 				return '<span class="broken-link">' + p1 + '</span>';
 			}
-			return '<a class="link internal-link" ' + (!options.opaquelinks ? 'href="#' + escape(p2.replace(/\s/g, '')) : '') + '" data-twinelink="' + p2 + '">' +
+			return '<a class="passage-link" ' + (!options.opaquelinks ? 'href="#' + escape(p2.replace(/\s/g, '')) + '"' : '') + ' data-twinelink="' + p2 + '">' +
 				   p1 + '</a>';	
 		});
 
@@ -190,46 +139,33 @@ define(['jquery', 'showdown', 'macros'], function ($, Showdown)
 
 		html = html.replace(/\[\[([^\|\]]*?)\]\]/g, function (match, p1)
 		{
-			if (!passageName(p1))
+			if (!story.passageNamed(p1))
 			{
 				return '<span class="broken-link">' + p1 + '</span>';
 			}
-			return '<a class="link internal-link" ' + (!options.opaquelinks ? 'href="#' + escape(p2.replace(/\s/g, '')) : '') + '" data-twinelink="' + p1 + '">' + p1 + '</a>';
+			return '<a class="passage-link" ' + (!options.opaquelinks ? 'href="#' + escape(p2.replace(/\s/g, '')) + '"' : '') + ' data-twinelink="' + p1 + '">' + p1 + '</a>';
 		});
 		
 		temp = matchMacros(html);
 		html = temp[0];
-		macroCalls = temp[1];
+		macroInstances = temp[1];
 
-		// Render the HTML, then render macros into their spans
+		// Render the HTML, then render macro instances into their spans
 
 		html = $(html);
 		
 		html.children('[data-macro]').each(function(){
 			this.removeAttribute("hidden");
-			var macroName = this.getAttribute("data-macro"),
-				count = this.getAttribute("data-count");
-			renderMacro(macroName, macroCalls[count], $(this));
+			var count = this.getAttribute("data-count");
+			renderMacro(macroInstances[count], $(this));
 		});
 
 		return html;
 	};
 	
-	function passageName (name)
-	{
-		var passage = $('div[data-role="twinestory"] div[data-name="' + name + '"]');
-		return (passage.size() == 0 ? null : passage);
-	}
-	
-	function passageId (id)
-	{
-		var passage = $('div[data-role="twinestory"] div[data-id="' + id + '"]');
-		return (passage.size() == 0 ? null : passage);
-	}
-	
 	function showName (name, el)
 	{
-		var passage = passageName(name);
+		var passage = story.passageNamed(name);
 
 		if (!passage)
 			throw new Error("No passage exists with name " + name);
@@ -239,7 +175,7 @@ define(['jquery', 'showdown', 'macros'], function ($, Showdown)
 	
 	function showId (id, el)
 	{
-		var passage = passageId(id);
+		var passage = story.passageWithId(id);
 
 		if (!passage)
 			throw new Error("No passage exists with id " + id);
