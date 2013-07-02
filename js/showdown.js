@@ -507,8 +507,8 @@ var _RunSpanGamut = function(text) {
 	text = _DoItalicsAndBold(text);
 
 	// Do hard breaks:
-	// Leon edit: hard breaks are now guaranteed.
-	text = text.replace(/\n/g," <br />\n");
+	// Leon edit: hard breaks are now guaranteed, unless a \ ends the line
+	text = text.replace(/\\\n/g,"").replace(/\n/g," <br>\n");
 
 	return text;
 }

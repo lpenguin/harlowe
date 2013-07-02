@@ -5,85 +5,66 @@ require.config({
 	}
 });
 
+/*
+ * Story options:
+ *   opaquelinks : prevent players 'link sniffing' by eliminating the HREF of internal passage links.
+ *   debug : debug mode is ready. Click the bug icon to reveal all macro spans.
+ */
 define(['jquery', 'showdown', 'story', 'macros'], function ($, Showdown, story)
 {
 	"use strict";
-	var markdown = new Showdown.converter(),
-		options = {
-			opaquelinks: true /* If true, prevent players 'link sniffing' by eliminating the HREF of internal links.
-							   * (<a> elements with no HREF can still have the finger cursor through CSS.)
-							   */
-		};
+	var markdown = new Showdown.converter();
 
 	$(document).ready(function()
 	{
+		var header = $('div[data-role="twinestory"]'),
+			options;
+		
+		if (header.length == 0)
+		{
+			return;
+		}
+		// Load options
+		options = header.attr('data-options');
+		options.replace(/\b(\w+)\b/, function(a, b) {
+			story.options[b] = true;
+		});
+		
+		// If debug, add button
+		if (story.options.debug)
+		{
+			$('body').append($('<div class="debug-button">').click(function(e) {
+				$('html').toggleClass('debug-mode');
+			}));
+		}
+		
+		// Install handler for links
 		$('body').on('click', 'a[data-twinelink]', function (e)
 		{
 			showName($(this).attr('data-twinelink'));
 			e.preventDefault();
 		});
 		
-		showId($('div[data-role="twinestory"]').attr('data-startnode'));
+		// Show first passage!
+		showId(header.attr('data-startnode'));
 	});
 	
-	function renderMacro(macro, span)
+	function renderMacro(macro, span, context)
 	{
+		var result;
 		if (macro.data)
 		{
-			var p = $("<p>"),
-				args = [''],
-				argIdx = 0,
-				rawArgs = macro.rawArgs,
-				quoteChar, result, j;
-
-			// tokenize arguments
-			// e.g. 1 "two three" 'four five' "six \" seven" 'eight \' nine'
-			// becomes [1, "two three", "four five", 'six " seven', "eight ' nine"]
-
-			for (j = 0; j < rawArgs.length; j++)
-				switch (rawArgs[j])
-				{
-					case '"':
-					case "'":
-					if (quoteChar == rawArgs[j])
-						quoteChar = null;
-					else
-						if (! quoteChar)
-							quoteChar = rawArgs[j];
-						else
-							args[argIdx] += rawArgs[j];
-					break;
-
-					case ' ':
-					if (quoteChar)
-						args[argIdx] += rawArgs[j];
-					else
-						args[++argIdx] = '';
-					break;
-
-					case '\\':
-					if (j < rawArgs.length - 1 && rawArgs[j + 1] == quoteChar)
-					{
-						args[argIdx] += quoteChar;
-						j++;
-					}
-					else
-						args[argIdx] += rawArgs[j];
-					break;
-
-					default:
-					args[argIdx] += rawArgs[j];
-				};
-
 			macro.el = span;
-			result = macro.data.apply(macro, args);
+			macro.context = context;
+			macro.init && (macro.init());
+			result = macro.data.apply(macro, macro.args);
 
-			// Markdown adds a <p> tag around content which we need to remove
-			// we also have to coerce the result to a string
 			if (result) {
-				result = render(result + '');
+				result = render(result + '', macro);
 				if (result) {
-					span.html(result.html().replace(/^<p>/i, '').replace(/<\/p>$/i, ''));
+					span.append(result);
+				} else if (result === null) {
+					result.remove();
 				}
 			}
 		}
@@ -101,7 +82,6 @@ define(['jquery', 'showdown', 'story', 'macros'], function ($, Showdown, story)
 		story.matchMacroTag(html, null, function (m) {
 			if (!m.data) {
 				// A macro by that name doesn't exist
-				m.name = "unknown";
 				m.data = story.macros["unknown"];
 			}
 			// Contain the macro in a hidden span.
@@ -114,11 +94,21 @@ define(['jquery', 'showdown', 'story', 'macros'], function ($, Showdown, story)
 		return [newhtml, macroInstances];
 	}
 
-	function render (source)
+	function render (source, context)
 	{
 		var html, temp, macroInstances;
 		// basic Markdown
-
+		/*
+			Current list of MD deviations:
+			- All line breaks are hard
+				+ Line breaks preceded with '\' are deleted
+			- No Setext-style headers
+			- No numbered lists
+			- No _enclosing underscores_ for emphasis
+			+ HTML comments are deleted
+			+ TiddlyWiki links
+			+ TiddlyWiki macros
+		*/
 		html = markdown.makeHtml(source);
 
 		// replace [[ ]] with twine links
@@ -131,7 +121,7 @@ define(['jquery', 'showdown', 'story', 'macros'], function ($, Showdown, story)
 			{
 				return '<span class="broken-link">' + p1 + '</span>';
 			}
-			return '<a class="passage-link" ' + (!options.opaquelinks ? 'href="#' + escape(p2.replace(/\s/g, '')) + '"' : '') + ' data-twinelink="' + p2 + '">' +
+			return '<a class="passage-link" ' + (!story.options.opaquelinks ? 'href="#' + escape(p2.replace(/\s/g, '')) + '"' : '') + ' data-twinelink="' + p2 + '">' +
 				   p1 + '</a>';	
 		});
 
@@ -143,22 +133,30 @@ define(['jquery', 'showdown', 'story', 'macros'], function ($, Showdown, story)
 			{
 				return '<span class="broken-link">' + p1 + '</span>';
 			}
-			return '<a class="passage-link" ' + (!options.opaquelinks ? 'href="#' + escape(p2.replace(/\s/g, '')) + '"' : '') + ' data-twinelink="' + p1 + '">' + p1 + '</a>';
+			return '<a class="passage-link" ' + (!story.options.opaquelinks ? 'href="#' + escape(p2.replace(/\s/g, '')) + '"' : '') + ' data-twinelink="' + p1 + '">' + p1 + '</a>';
 		});
+		
+		// macros
 		
 		temp = matchMacros(html);
 		html = temp[0];
 		macroInstances = temp[1];
 
 		// Render the HTML, then render macro instances into their spans
-
 		html = $(html);
 		
-		html.children('[data-macro]').each(function(){
+		$('[data-macro]', html).each(function(){
 			this.removeAttribute("hidden");
 			var count = this.getAttribute("data-count");
-			renderMacro(macroInstances[count], $(this));
+			renderMacro(macroInstances[count], $(this), context);
 		});
+		
+		// If one <p> tag encloses all the HTML, unwrap it.
+		// Note: this must occur at the end
+		if (html.length == 1 && html.get(0).tagName == 'P')
+		{
+			html = html.contents();
+		}
 
 		return html;
 	};

@@ -1,10 +1,10 @@
-/* HTML5 compatibility */
+/*** HTML5 compatibility ***/
 
 *[hidden]  {
   display: none;
 }
 
-/* Transitions */
+/*** Transitions ***/
 
 @keyframes appear
 {
@@ -53,7 +53,7 @@
 	50% { -webkit-transform: translateX(0.2em) }
 }
 
-/* Main elements */
+/*** Main formatting ***/
 
 body
 {
@@ -66,44 +66,6 @@ p, li, td, th
 {
 	font-size: 1.6rem;
 	line-height: 175%;
-}
-
-.passage-link
-{
-	color: #222;
-	text-decoration: none;
-	border-bottom: 2px solid #006699;
-	transition: color 0.2s ease-in-out;
-	-webkit-transition: color 0.2s ease-in-out;
-	cursor: pointer;
-}
-
-.passage-link:hover
-{
-	color: #006699;
-}
-
-.broken-link
-{
-	color: #993333;
-	border-bottom: 2px solid #993333;
-	cursor:not-allowed;
-}
-
-[data-macro="unknown"]
-{
-	border-radius: 0.2em;
-	background-color: #9DE;
-	padding: 0.2em;
-	font-size: 0.6em;
-}
-
-.error[data-macro]
-{
-	border-radius: 0.2em;
-	background-color: #E9D;
-	padding: 0.2em;
-	font-size: 0.6em;
 }
 
 [data-role="twinestory"]
@@ -125,6 +87,8 @@ p, li, td, th
 	-webkit-animation: appear 1s ease;	
 }
 
+/* Bookmark link */
+
 #story section .permalink
 {
 	color: #d0d0d0;
@@ -140,7 +104,97 @@ p, li, td, th
 	color: #222;
 }
 
-/* Styling elements, for general use by Twine authors */
+/*** Inner passage formatting ***/
+
+.passage-link
+{
+	color: #222;
+	text-decoration: none;
+	border-bottom: 2px solid #006699;
+	transition: color 0.2s ease-in-out;
+	-webkit-transition: color 0.2s ease-in-out;
+	cursor: pointer;
+}
+
+.passage-link:hover
+{
+	color: #006699;
+}
+
+.broken-link
+{
+	color: #993333;
+	border-bottom: 2px solid #993333;
+	cursor: not-allowed;
+}
+
+.error
+{
+	background-color: #E9D;
+	border-radius: 0.2em;
+	padding: 0.2em;
+	font-size: 1rem;
+	cursor: help;
+}
+
+/*** Debug mode ***/
+
+[data-macro][title] {
+	cursor: help;
+}
+/* Colours for generic macros */
+.debug-mode [data-macro]:nth-of-type(4n+0) { background-color: hsla(80,20%,50%,0.15); }
+.debug-mode [data-macro]:nth-of-type(2n+1) { background-color: hsla(120,20%,50%,0.15); }
+.debug-mode [data-macro]:nth-of-type(4n+2) { background-color: hsla(160,20%,50%,0.15); }
+
+/* Colours for specific macros */
+.debug-mode [data-macro="display"] { background-color: hsla(200,100%,50%,0.1) !important; }
+.debug-mode [data-macro="if"],
+.debug-mode [data-macro="elseif"],
+.debug-mode [data-macro="else"] { background-color: hsla(120,100%,50%,0.1) !important; } 
+.debug-mode [data-macro="if"].false-if { background-color: hsla(0,100%,50%,0.2) !important; } 
+.debug-mode [data-macro="print"] { background-color: hsla(60,100%,50%,0.2) !important; } 
+.debug-mode [data-macro="set"] { background-color: hsla(30,100%,50%,0.2) !important; }
+.debug-mode [data-macro="script"] { background-color: hsla(45,100%,50%,0.2) !important; }
+
+/* Show the macro name */
+.debug-mode [data-macro]::before {
+	content: attr(data-macro);
+	padding: 0 0.5rem;
+	font-size: 1rem;
+	background-color:  inherit;
+	border: 1px solid rgba(255,255,255,0.5);
+}
+
+.debug-button
+{
+	position:fixed;
+	bottom:0;
+	right:0;
+	width:66px;
+	height:66px;
+	border-top-left-radius: 1em;
+	border: solid #fff 2em;
+	box-shadow: -0.1em -0.1em 1em 1em #888;
+	background: #fff;
+	transition: opacity 0.2s; -webkit-transition: opacity 0.2s;
+	opacity: 0.5;
+}
+
+.debug-mode .debug-button
+{
+	opacity: 0.8;
+}
+.debug-mode .debug-button:hover
+{
+	opacity: 1;
+}
+.debug-button:hover
+{
+	opacity: 0.6;
+}
+
+/*** Styling elements, for general use by Twine authors ***/
 
 mark
 {
@@ -179,7 +233,7 @@ blink
 	-webkit-animation: fade-in-out 1s steps(1,end) infinite alternate;
 }
 
-/* Secondary text styles, for general use by Twine authors */
+/*** Secondary text styles, for general use by Twine authors ***/
 
 .outline
 {
@@ -265,4 +319,11 @@ blink
 	-webkit-animation: shudder linear 0.1s 0s infinite;
 	animation: shudder linear 0.1s 0s infinite;
       display:inline-block;
+}
+
+/*** Base64 encoded images ***/
+
+.debug-button
+{
+	background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEIAAABBCAMAAABSHoJ0AAAABGdBTUEAALGPC/xhBQAAAV9QTFRFAAAAAAAAAQEBAwMDBAQECAgICQkJCwsLKCgoAgICGhoaEhISQUFBIiIiJiYmLi4uNDQ0DAwMRkZGYWFhKioqFhYWHR0dDQ0NIyMjQkJCJycnMDAwBgYGLS0tExMTNTU1Pz8/QEBAFRUVR0dHUVFRVVVVFxcXZWVlZ2dnaGhobm5uenp6fn5+GRkZcnJyZmZmHh4eeHh4X19fHx8fU1NTOTk5Ojo6Pj4+EBAQCgoKYmJiFBQUc3NzKysrREREampqbGxsBQUFWVlZWlpaNzc3KSkpS0tLXl5edHR0dXV1d3d3VlZWTU1NT09PICAgODg4MTExDg4OY2NjUlJSGBgYMjIyXFxcXV1dZGRkDw8PSUlJSkpKHBwcaWlpOzs7a2trTk5ObW1tPDw8b29vcXFxPT09SEhIdnZ2NjY2YGBgLCwsV1dXeXl5MzMze3t7fHx8fX19BwcHW1tbERERJSUlRf2RbAAAAAF0Uk5TAEDm2GYAAAMDSURBVHhezdZFs+Q4EIXR+7kYHjMzMzQzM/cwM/P8/5hQhh22/MqOqvZmzi69uFYp0yopn06grmIADotHMKeefDqlJMyf6sEtaClpMwDGe13410r6A6DHiIZ8Az3+EmBLIy2A+c9kNoG2utYiqS5tTOAsq0v34aMywF1JZRIChSrlB8rxkuChHkO/DMB3knSzArM7csr2LNMLbkmqgEwTUOibCoxGsdeU5Y5LuA1wOLJ6twKQWPN16NOTIL/BIE2RNNRxp79UJ0eMtUsM6BRPahjmcIbVEeavBTwnZzeLf5SBTso6YwaU4Tmsv0+KPF9tu2I8O2P4c12FY9WJ8MjvN9CylleVqURLipeyoYSfMVckwWBuT9UmdFm6ACzI+Z3QtrQKyjBlETUMW9IszkVJ+gLiZcwzpM5GLQLDkdTA4HfMCj5UR7+BtEb0VU54fWkkq/6sHf0Eqos4NUnbhC7JeeMFwkNFXiu2S2hGUtzcqF0YwqKiUBnWUxMaPZjEcBx97MmD5xqMyaS+/ZXkTN/BrCpyL5F4ihkan1lPjfE0pbioABwoNgncltnB86+kI5mX3kz3c09ZSJqWzZCd9kFDXSI26erzwJ5l19UlaOittXxHzhCApEF+VJegpqSfcM6pSaAuwRV5liA1BRoBfzfPJ8/BXeiTb4VQ1NQfMHuKnMO8kLkBS0rZqWJ4KkNkzWtBNJTtaL2+fkwqgracZ0SarhwDZTiEuVQEcp76NTkbD6Qjrrr6VyI8kURO+09hVv61QIbk7jwCZRsID8sg9a/6hsiBNAfK0QzvM4N+lzVNSBJUlSOI33zj79eKLWJu2jRPKdvHOI2sBXJZUgOU6dtJQu/lXutRlmGcwF5XPlBntdyL0gWcfVkGlX2d8eASjrIB5cR6Jh4raW0Zw3XlWNmKZ92Uni8sDS8O1i8SYVRdG6ODvn31ZA/PxH29A5xXperywC96R98DbKsQgHkV0gegQnaLR+h/EfEMeKUCmjibkgpNBQ0VsIHzQeF21FTIJpTUhf8AnMY7oMTf7fEAAAAASUVORK5CYII%3D);
 }
