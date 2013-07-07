@@ -10,7 +10,7 @@ require.config({
  *   opaquelinks : prevent players 'link sniffing' by eliminating the HREF of internal passage links.
  *   debug : debug mode is ready. Click the bug icon to reveal all macro spans.
  */
-define(['jquery', 'showdown', 'story', 'macros'], function ($, Showdown, story)
+define(['jquery', 'showdown', 'story', 'macros'], function ($, Showdown, story, macros)
 {
 	"use strict";
 	var markdown = new Showdown.converter();
@@ -79,10 +79,10 @@ define(['jquery', 'showdown', 'story', 'macros'], function ($, Showdown, story)
 			newhtml = "",
 			index = 0;
 
-		story.matchMacroTag(html, null, function (m) {
+		macros.matchMacroTag(html, null, function (m) {
 			if (!m.data) {
 				// A macro by that name doesn't exist
-				m.data = story.macros["unknown"];
+				m.data = macros.get("unknown");
 			}
 			// Contain the macro in a hidden span.
 			newhtml += html.slice(index, m.startIndex) + '<span data-count="' + macroCount + '" data-macro="' + m.name + '" hidden></span>';
@@ -96,6 +96,15 @@ define(['jquery', 'showdown', 'story', 'macros'], function ($, Showdown, story)
 
 	function render (source, context)
 	{
+		function makeLink(text, passage)
+		{
+			if (!story.passageNamed(passage))
+			{
+				return '<span class="broken-link">' + text + '</span>';
+			}
+			return '<a class="passage-link" ' + (!story.options.opaquelinks ? 'href="#' + escape(passage.replace(/\s/g, '')) + '"' : '') + ' data-twinelink="' + passage + '">' +
+				   text + '</a>';
+		}
 		var html, temp, macroInstances;
 		// basic Markdown
 		/*
@@ -112,28 +121,37 @@ define(['jquery', 'showdown', 'story', 'macros'], function ($, Showdown, story)
 		html = markdown.makeHtml(source);
 
 		// replace [[ ]] with twine links
-
-		// [[display text|link]] format
-
-		html = html.replace(/\[\[([^\|\]]*?)\|([^\|\]]*)?\]\]/g, function (match, p1, p2)
+		/* 
+			Format 1:
+			[[display text|link]] format
+			Twine 1 / TiddlyWiki / reverse MediaWiki link syntax.
+		*/
+		html = html.replace(/\[\[([^\|\]]*?)\|([^\|\]]*)?\]\]/g, function (match, text, passage)
 		{
-			if (!story.passageNamed(p2))
-			{
-				return '<span class="broken-link">' + p1 + '</span>';
-			}
-			return '<a class="passage-link" ' + (!story.options.opaquelinks ? 'href="#' + escape(p2.replace(/\s/g, '')) + '"' : '') + ' data-twinelink="' + p2 + '">' +
-				   p1 + '</a>';	
+			return makeLink(text,passage);
+		});
+		/*
+			Format 2:
+			[[display text->link]] format
+			[[link<-display text]] format
+			
+			Leon note: This, in my mind, looks more intuitive w/r/t remembering the type of the arguments.
+			The arrow always points to the passage name.
+			Passage names, of course, can't contain < or > signs.
+			This regex will interpret the rightmost '->' and the leftmost '<-' as the divider.
+		*/
+		html = html.replace(/\[\[(?:([^\]]*)\-&gt;|([^\]]*?)&lt;\-)([^\]]*)\]\]/g, function (match, p1, p2, p3)
+		{
+			// if right-arrow ->, then p1 is text, p2 is "", p3 is link.
+			// If left-arrow <-, then p1 is "", p2 is link, p3 is text.
+			return makeLink(p2 ? p3 : p1, p1 ? p3 : p2);
 		});
 
 		// [[link]] format
 
 		html = html.replace(/\[\[([^\|\]]*?)\]\]/g, function (match, p1)
 		{
-			if (!story.passageNamed(p1))
-			{
-				return '<span class="broken-link">' + p1 + '</span>';
-			}
-			return '<a class="passage-link" ' + (!story.options.opaquelinks ? 'href="#' + escape(p2.replace(/\s/g, '')) + '"' : '') + ' data-twinelink="' + p1 + '">' + p1 + '</a>';
+			return makeLink(p1, p1);
 		});
 		
 		// macros
@@ -142,9 +160,10 @@ define(['jquery', 'showdown', 'story', 'macros'], function ($, Showdown, story)
 		html = temp[0];
 		macroInstances = temp[1];
 
-		// Render the HTML, then render macro instances into their spans
+		// Render the HTML
 		html = $(html);
 		
+		// Render macro instances
 		$('[data-macro]', html).each(function(){
 			this.removeAttribute("hidden");
 			var count = this.getAttribute("data-count");
