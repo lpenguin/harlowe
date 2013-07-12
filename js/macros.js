@@ -1,4 +1,4 @@
-define(['jquery', 'story'], function($, story)
+define(['jquery', 'story', 'script'], function($, story, script)
 {
 	"use strict";
 	/*
@@ -33,6 +33,7 @@ define(['jquery', 'story'], function($, story)
 	this.HTMLcontents: string containing this.contents as escaped HTML.
 	this.el: jQuery-wrapped destination <span>.
 	this.context: the macro instance which caused this macro to be rendered, or null if it's the top passage.
+	this.top: jQuery object for the entire passage in which this is located.
 	this.data: the macro's function.
 	
 	this.error(text): adds the 'error' class to the element, and attaches the message.
@@ -131,30 +132,6 @@ define(['jquery', 'story'], function($, story)
 			  }
 			}
 			return 0;
-		},
-		
-		// A random integer function
-		// 1 argument: random int from 0 to a inclusive
-		// 2 arguments: random int from a to b inclusive (order irrelevant)
-		random: function(a, b) {
-			var from, to;
-			if (!b)
-			{
-				from = 0;
-				to = a;
-			}
-			else
-			{
-				from = Math.min(a,b);
-				to = Math.max(a,b);
-			}
-			to += 1;
-			return ~~((Math.random()*(to-from)))+from;
-		},
-		
-		// Choose one argument, up to 16. Can be used as such: <<display either( "pantry", "larder", "cupboard" )>>
-		either: function() {
-			return arguments[~~(Math.random()*arguments.length)];
 		}
 	};
 	
@@ -337,7 +314,7 @@ define(['jquery', 'story'], function($, story)
 	{
 		try
 		{
-			eval(this.convertOperators(this.rawArgs));
+			script.eval(this.convertOperators(this.rawArgs));
 			return this.clear();
 		}
 		catch (e)
@@ -357,12 +334,27 @@ define(['jquery', 'story'], function($, story)
 		try
 		{
 			var args = this.convertOperators(this.rawArgs);
-			return (eval(args) + '');
+			return (script.eval(args) + '');
 		}
 		catch (e)
 		{
 			return this.error('<<print>> error: '+e.message);
 		}
+	}, {
+		major: 0,
+		minor: 0,
+		revision: 0
+	});
+	
+	// <<nobr>>
+	// Remove line breaks from contained passage text.
+	// Suggested by @mcclure111, for use with complex macro sets.
+	// Manual line breaks can be inserted with <br>.
+	macros.add("nobr",false,function()
+	{
+		// To prevent keywords from being created by concatenating lines,
+		// replace the line breaks with a zero-width non-joining space.
+		return this.HTMLcontents.replace(/\\n/,"&zwnj;");
 	}, {
 		major: 0,
 		minor: 0,
@@ -377,7 +369,9 @@ define(['jquery', 'story'], function($, story)
 	{
 		try
 		{
-			eval("(function(){" + this.contents + "}());");
+			// Eval this in the context of the script object,
+			// where the Twinescript API is.
+			script.eval("(function(){" + this.contents + "}());", this.top);
 			return this.clear();
 		}
 		catch (e)
@@ -435,7 +429,7 @@ define(['jquery', 'story'], function($, story)
 		{
 			try
 			{
-				var result = eval(this.convertOperators(args[i]));
+				var result = script.eval(this.convertOperators(args[i]));
 				if (result) {
 					return contents[i];
 				}

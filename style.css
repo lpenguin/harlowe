@@ -57,15 +57,24 @@
 
 body
 {
-	font: 62.5% Georgia, serif;	
+	font: 100% Georgia, serif;	
+	line-height: 125%;
 	background: #fafafa;
 	color: #000;
+	margin: 0;
 }
 
-p, li, td, th
+h1
 {
-	font-size: 1.6rem;
-	line-height: 175%;
+	font-size: 2.5em;
+}
+h2
+{
+	font-size: 2em;
+}
+h3
+{
+	font-size: 1.5em;
 }
 
 [data-role="twinestory"]
@@ -195,6 +204,21 @@ p, li, td, th
 }
 
 /*** Styling elements, for general use by Twine authors ***/
+
+pre
+{
+	font-size:1rem;
+}
+
+small 
+{
+    font-size: 70%;
+}
+
+big 
+{
+    font-size: 120%;
+}
 
 mark
 {
