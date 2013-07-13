@@ -3,7 +3,7 @@
  *   opaquelinks : prevent players 'link sniffing' by eliminating the HREF of internal passage links.
  *   debug : debug mode is ready. Click the bug icon to reveal all macro spans.
  */
-define(['jquery', 'marked', 'story', 'macros'], function ($, Marked, story, macros)
+define(['jquery', 'marked', 'story', 'macros', 'utils'], function ($, Marked, story, macros, utils)
 {
 	"use strict";
 	window.marked = Marked;
@@ -60,16 +60,6 @@ define(['jquery', 'marked', 'story', 'macros'], function ($, Marked, story, macr
 		Marked.InlineLexer.setRule("escapedLine", /^\\\n/);
 		Marked.InlineLexer.setFunc("escapedLine", $.noop);
 		
-		// Chars
-		function charWrapper(text)
-		{
-			return text.replace(/&[#\w]+;|./g, function(c)
-			{
-				return "<span class='char' data-char='"
-					+ (c.length > 1 ? $('<p>'+c+'</p>').text() : c) + "'>"
-					+ c + "</span>";
-			});
-		};
 		// Chars, hyperlinks
 		Marked.InlineLexer.setFunc("autolink", function(cap)
 		{
@@ -83,19 +73,19 @@ define(['jquery', 'marked', 'story', 'macros'], function ($, Marked, story, macr
 				href = Marked.escape(cap[1]);
 				text = href;
 			}
-			return '<a href="' + href + '">' + charWrapper(text) + '</a>';
+			return '<a href="' + href + '">' + utils.charSpanify(text) + '</a>';
 		});
 		// Chars, links
 		Marked.InlineLexer.setFunc("url", function(cap, src)
 		{
 			var text = Marked.escape(cap[1]),
 				href = text;
-			return '<a href="' + href + '">' + charWrapper(text) + '</a>';
+			return '<a href="' + href + '">' + utils.charSpanify(text) + '</a>';
 		});
 		// Chars, text.
 		Marked.InlineLexer.setFunc("text", function(cap)
 		{
-			return charWrapper(Marked.escape(this.smartypants(cap[0])));
+			return utils.charSpanify(Marked.escape(this.smartypants(cap[0])));
 		});
 	};
 	
