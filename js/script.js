@@ -1,4 +1,4 @@
-define(['jquery', 'utils'], function script($, utils)
+define(['jquery', 'state', 'utils'], function ($, state, utils)
 {
 	"use strict";
 	// "Twinescript" - a bunch of functions that authors can invoke with <<script>>.
@@ -14,7 +14,8 @@ define(['jquery', 'utils'], function script($, utils)
 	// A random integer function
 	// 1 argument: random int from 0 to a inclusive
 	// 2 arguments: random int from a to b inclusive (order irrelevant)
-	function random(a, b) {
+	function random(a, b)
+	{
 		var from, to;
 		if (!b)
 		{
@@ -31,7 +32,8 @@ define(['jquery', 'utils'], function script($, utils)
 	};
 	
 	// Choose one argument, up to 16. Can be used as such: <<display either( "pantry", "larder", "cupboard" )>>
-	function either () {
+	function either ()
+	{
 		return arguments[~~(Math.random()*arguments.length)];
 	};
 	
@@ -42,7 +44,7 @@ define(['jquery', 'utils'], function script($, utils)
 	/* 
 	   WordArray object:
 	   Contains a sequential set of jQuery-wrapped charspans,
-	   that correspond to a word in the text.
+	   that correspond to a search term in the text.
 	   Most all of its methods are author-facing, through the Text()
 	   method.
 	   - They should be chainable.
@@ -50,13 +52,16 @@ define(['jquery', 'utils'], function script($, utils)
 	*/
 	var WordArray = {
 		contents: null,
-		get length() {
+		get length()
+		{
 			return this.contents.length;
 		},
-		_create: function(word) {
+		_create: function(word)
+		{
 			var ret = Object.create(WordArray);
 			ret.contents = [];
-			if (word && word.jquery) {
+			if (word && word.jquery)
+			{
 				ret.contents.push(word);
 			}
 			return ret;
@@ -65,7 +70,8 @@ define(['jquery', 'utils'], function script($, utils)
 		// replaces this word's chars with it.
 		replace: function(str) {
 			var word = utils.charSpanify(str);
-			this.contents = this.contents.map(function(e) {
+			this.contents = this.contents.map(function(e)
+			{
 				var w = $(word); 
 				e.first().before(w);
 				e.remove();
@@ -74,8 +80,10 @@ define(['jquery', 'utils'], function script($, utils)
 			return this;
 		},
 		// remove(): removes the chars from the DOM.
-		remove: function() {
-			this.contents.forEach(function(e) {
+		remove: function()
+		{
+			this.contents.forEach(function(e)
+			{
 				e.remove();
 			});
 			this.contents = [];
@@ -83,7 +91,8 @@ define(['jquery', 'utils'], function script($, utils)
 		},
 		// style: alters the style attribute of all chars
 		style: function(style) {
-			this.contents.forEach(function(e) {
+			this.contents.forEach(function(e)
+			{
 				e.attr("style",style);
 			});
 			return this;
@@ -93,10 +102,13 @@ define(['jquery', 'utils'], function script($, utils)
 		// The rule is as follows:
 		// For each char, find something .closest("a")
 		// and .unwrap() its first child.
-		unlink: function() {
-			this.contents.forEach(function(e) {
+		unlink: function()
+		{
+			this.contents.forEach(function(e)
+			{
 				var l = e.closest("a");
-				if (~l.length) {
+				if (~l.length)
+				{
 					l.children().unwrap();
 				}
 			});
@@ -104,25 +116,29 @@ define(['jquery', 'utils'], function script($, utils)
 		}
 		// passagelink(str): wraps 
 	};
+	
 	// Mirror a couple of other jQuery methods on WordArray
 	// Note to self: add jQueryUI's version of addClass, pronto.
-	(function(array) {
-		array.forEach(function(func) {
-			WordArray[func] = function() {
-				var a = arguments;
-				this.contents.forEach(function(e) {
-					e[func].apply(e,a);
-				});
-				return this;
-			};
-		});
-	}([ "addClass", "removeClass", "toggleClass", "show", "hide" ]));
+	[ "addClass", "removeClass", "toggleClass", "show", "hide" ].forEach(function(func)
+	{
+		WordArray[func] = function()
+		{
+			var a = arguments;
+			this.contents.forEach(function(e)
+			{
+				e[func].apply(e,a);
+			});
+			return this;
+		};
+	});
 	
 	// Text(selector)
 	// Creates a WordArray of jQuery objects containing the chars in the selector.
 	// The selector is a search string.
-	function Text(selector) {
-		return (function _Text(selector, chars, fullword) { 
+	function Text(selector)
+	{
+		return (function _Text(selector, chars, fullword)
+		{ 
 			//TODO:
 			// * filter-type selectors such as "first", "last"
 			var selector, temp,
@@ -135,30 +151,41 @@ define(['jquery', 'utils'], function script($, utils)
 			{
 				// Recursive case: see if each instance of search string's first character is followed
 				// by search string's next character.
-				chars.each(function(ind, el1) {
+				chars.each(function(ind, el1)
+				{
 					var query, el2 = chars.get(ind + 1);
-					if (el2) {
-						if (_elementGetChar(el1) === selector[0] && _elementGetChar(el2) === selector[1]) {
+					if (el2)
+					{
+						if (_elementGetChar(el1) === selector[0] && _elementGetChar(el2) === selector[1])
+						{
 							// See if a further search yields profit
 							query = _Text(selector.slice(1), chars.slice(ind+1, ind+selector.length), false);
 							// If so, add the element and the search's results to the return set.
-							if (query) {
-								if (fullword) {
+							if (query)
+							{
+								if (fullword)
+								{
 									ret.contents.push($(el1).add(query));
-								} else {
+								}
+								else
+								{
 									ret = ret.add(el1).add(query);
 								}
 							}
 						}
 					}
 				});
-			} else {
+			}
+			else
+			{
 				// Base case: return char if it matches the search string.
 				
 				temp = (chars.attr("data-char") === selector ? chars.first() : null);
-				if (fullword) {
+				if (fullword)
+				{
 					ret.contents.push(temp);
-				} else {
+				} else
+				{
 					ret = temp;
 				}
 			}
@@ -166,12 +193,14 @@ define(['jquery', 'utils'], function script($, utils)
 		}(selector, $("span.char, br", _top), true));
 	}
 
-	function _elementGetChar(elem) {
+	function _elementGetChar(elem)
+	{
 		return (elem.tagName === "br" ? "\n" : elem.getAttribute("data-char"));
 	}
 	
 	// eval() the script in the context of this module.
-	function _eval(text, top) {
+	function _eval(text, top)
+	{
 		_top = top;
 		return eval(text);
 	};

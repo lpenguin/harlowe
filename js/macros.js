@@ -1,4 +1,4 @@
-define(['jquery', 'story', 'script'], function($, story, script)
+define(['jquery', 'story', 'script', 'state'], function($, story, script, state)
 {
 	"use strict";
 	/*
@@ -363,11 +363,14 @@ define(['jquery', 'story', 'script'], function($, story, script)
 	
 	// <<script>> ... <</script>>
 	// contents: raw JS to execute as a closure.
-	// We can't use the <script> element because it would execute immediately
-	// on page load within the <div>...
-	macros.add("script",false,function()
+	// If it is named, then it is deferred until an event occurs that names it.
+	macros.add("script",false,function(name)
 	{
-		try
+		if (name)
+		{
+			// TODO: Store it as a variable.
+		}
+		else try
 		{
 			// Eval this in the context of the script object,
 			// where the Twinescript API is.

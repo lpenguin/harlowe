@@ -4,7 +4,8 @@
   display: none;
 }
 
-/*** Transitions ***/
+/*** Animations ***/
+
 
 @keyframes appear
 {
@@ -16,6 +17,18 @@
 {
 	0% { opacity: 0 }
 	100% { opacity: 1 }
+}
+
+@keyframes disappear
+{
+	0% { opacity: 1 }
+	100% { opacity: 0 }
+}
+
+@-webkit-keyframes disappear
+{
+	0% { opacity: 1 }
+	100% { opacity: 0 }
 }
 
 @keyframes fade-in-out
@@ -88,27 +101,52 @@ h3
 	margin: 4% auto;
 }
 
-#story section
+.passage
 {
 	position: absolute;
 	width: 55%;
-	animation: appear 1s ease;	
-	-webkit-animation: appear 1s ease;	
+}
+
+/* Transitions */
+
+/* Invalid/instant transition */
+.passage.transition-in
+{
+	animation: appear 1ms step-start;
+	-webkit-animation: appear 1ms step-start;
+}
+
+.passage.transition-out
+{
+	animation: appear 1ms step-end;
+	-webkit-animation: appear 1ms step-end;
+}
+
+/* Dissolve */
+.passage[data-t8n=dissolve].transition-in
+{
+	animation: appear 0.8s ease;	
+	-webkit-animation: appear 0.8s ease;	
+}
+
+.passage[data-t8n=dissolve].transition-out
+{
+	animation: disappear 0.8s ease;	
+	-webkit-animation: disappear 0.8s ease;	
 }
 
 /* Bookmark link */
 
-#story section .permalink
+.passage .permalink
 {
 	color: #d0d0d0;
 	font-size: 3.25em;
 	border-bottom: none;
 	margin-left: -1em;
 	text-decoration:none;
-	float: left;
 }
 
-#story section .permalink:hover
+.passage .permalink:hover
 {
 	color: #222;
 }
@@ -148,7 +186,7 @@ h3
 
 /*** Debug mode ***/
 
-[data-macro][title] {
+.debug-mode [data-macro][title] {
 	cursor: help;
 }
 /* Colours for generic macros */

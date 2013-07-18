@@ -3,11 +3,10 @@
  *   opaquelinks : prevent players 'link sniffing' by eliminating the HREF of internal passage links.
  *   debug : debug mode is ready. Click the bug icon to reveal all macro spans.
  */
-define(['jquery', 'marked', 'story', 'macros', 'utils'], function ($, Marked, story, macros, utils)
+define(['jquery', 'marked', 'story', 'macros', 'utils', 'state'], function ($, Marked, story, macros, utils, state)
 {
 	"use strict";
-	window.marked = Marked;
-	
+
 	function twineMarked() {
 		/*
 			Current list of MD deviations:
@@ -24,7 +23,7 @@ define(['jquery', 'marked', 'story', 'macros', 'utils'], function ($, Marked, st
 				+ Code spans are currently exempted.
 		*/
 		Marked.setOptions({
-		tables: false,
+			tables: false,
 			breaks: true,
 			smartLists: true
 		});
@@ -93,7 +92,8 @@ define(['jquery', 'marked', 'story', 'macros', 'utils'], function ($, Marked, st
 	$(document).ready(function()
 	{
 		var header = $('div[data-role="twinestory"]'),
-			options;
+			options,
+			start;
 		
 		if (header.length == 0)
 		{
@@ -120,12 +120,20 @@ define(['jquery', 'marked', 'story', 'macros', 'utils'], function ($, Marked, st
 		// Install handler for links
 		$('body').on('click', 'a[data-twinelink]', function (e)
 		{
-			showName($(this).attr('data-twinelink'));
+			var next = story.getPassageID($(this).attr('data-twinelink'));
+			if (next)
+			{
+				goToPassage(next);
+			}
 			e.preventDefault();
 		});
 		
 		// Show first passage!
-		showId(header.attr('data-startnode'));
+		start = header.attr('data-startnode');
+		if (start)
+		{
+			goToPassage(start);
+		}
 	});
 	
 	function renderMacro(macro, span, context, top)
@@ -232,6 +240,7 @@ define(['jquery', 'marked', 'story', 'macros', 'utils'], function ($, Marked, st
 		macroInstances = temp[1];
 
 		// Finally, do Markdown
+		// (This must come last due to the charspan generation inhibiting any further matches.)
 		source = Marked(source);
 		
 		// Render the HTML
@@ -254,33 +263,98 @@ define(['jquery', 'marked', 'story', 'macros', 'utils'], function ($, Marked, st
 		return html;
 	};
 	
-	function showName (name, el)
+	// Advance the game state back
+	function goBack()
 	{
-		var passage = story.passageNamed(name);
-
-		if (!passage)
-			throw new Error("No passage exists with name " + name);
-		
-		return showPassage(passage,el);
+		//TODO: get the stretch value from state
+		if (state.rewind())
+		{
+			showPassage(state.getPresentPassageID());
+		}
+	};
+	
+	// Undo advancing the game state back
+	function goForward()
+	{
+		//TODO: get the stretch value from state
+		if (state.fastForward())
+		{
+			showPassage(state.getPresentPassageID());
+		}
+	};
+	
+	// Go to a passage, thus advancing the game state forward
+	function goToPassage(id, stretch)
+	{
+		// Update the state.
+		state.pushPast();
+		state.setPresentPassageID(id);
+		showPassage(id, stretch)
 	}
 	
-	function showId (id, el)
+	// Show a passage.
+	// Transitions the old passage(s) out, and ads the new passages.
+	// stretch: is stretchtext.
+	function showPassage(id, stretch, el)
 	{
-		var passage = story.passageWithId(id);
-
-		if (!passage)
-			throw new Error("No passage exists with id " + id);
+		var newPassage,
+			transIndex,
+			el = el || $('#story'),
+			passageData = story.passageWithID(id),
+			oldPassages = el.children(".passage").not(".transition-out");
 		
-		return showPassage(passage,el);
-	}
-
-	function showPassage(passage, el) {
-		el = el || $('#story');	
-		var container = $('<section><a class="permalink" href="#' + passage.attr('data-name') + '"' +
-				  ' title="Permanent link to this passage">&para;</a></section>');
-		container.append(render(passage.html()));
+		if (passageData === null) 
+		{
+			return;
+		}
+		
+		// Do transition animation
 		$(window).scrollTop(0);
-		el.children().animate( { opacity: 0 }, 200, function(){ $(this).remove(); });
+		
+		// Load the default if none specified
+		transIndex = passageData.attr("data-t8n") || "dissolve";
+		
+		// Transition out
+		if (stretch)
+		{
+			oldPassages = oldPassages.last();
+		}
+		if (transIndex)
+		{
+			oldPassages.attr("data-t8n", transIndex).addClass("transition-out");
+			if (!stretch)
+			{
+				oldPassages.one("animationend webkitAnimationEnd MSAnimationEnd oAnimationEnd", function(){ oldPassages.remove(); });
+			}
+		}
+		
+		// Create new passage
+		newPassage = insertPassage(passageData, el);
+		
+		// Transition in
+		if (transIndex)
+		{
+			newPassage.attr("data-t8n", transIndex).addClass("transition-in")
+				.one("animationend webkitAnimationEnd MSAnimationEnd oAnimationEnd", function(){ newPassage.removeClass("transition-in") });
+		}
+		// TODO: HTML5 history
+	};
+	
+	// Creates a passage element, and appends it to the given element.
+	function insertPassage(passage, el) {
+		el = el || $('#story');	
+		var container = $('<section class="passage"><a class="permalink" href="#' + passage.attr('data-name') + '"' +
+			' title="Permanent link to this passage">&para;</a></section>');
+				  
+		// For testing purposes only.
+		var back = $('<br><a class="permalink">&larr;</a>').click(goBack);
+		var fwd = $('<br><a class="permalink">&rarr;</a>').click(goForward);
+		container.append(back);
+		container.append(fwd);
+		//End testing
+		
+		container.append(render(passage.html()));
 		el.append(container);
+		return container;
 	};
 });
