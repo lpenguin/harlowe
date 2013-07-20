@@ -1,8 +1,19 @@
 define(['jquery', 'utils'], function($, utils)
 {
 	"use strict";
+	/*
+		story: Module governing data concerning the stort and its structure.
+		
+		Story options:
+			opaquelinks : prevent players 'link sniffing' by eliminating the HREF of internal passage links.
+			debug : debug mode is ready. Click the bug icon to reveal all macro spans.
+			undo : enable the undo button.
+			redo : enable the redo button.
+	*/
+	var options = {};
+		
+	return Object.seal({
 
-	var story = {
 		// Set of options, loaded at startup.
 		options: {},
 		
@@ -44,6 +55,5 @@ define(['jquery', 'utils'], function($, utils)
 			}
 			return "";
 		}
-	};
-	return utils.lockProperties(story);
+	});
 });

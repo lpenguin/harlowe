@@ -1,77 +1,95 @@
 define(['story', 'utils'], function(story, utils)
 {
-	// Values remembered by the game.
-	var stateProto = {
+	"use strict";
+	// Prototype object for states remembered by the game.
+	var stateProto = Object.seal({
 		// Variables
 		variables: {},
 		
 		// Current passage ID
 		passage: "",
-	};
+		
+		// Make a new state
+		create: function(v, p)
+		{
+			var ret = Object.create(stateProto);
+			ret.variables = (v ? utils.clone(v) : {});
+			ret.passage = p || "";
+			return ret;
+		}
+	}),
 	
-	// The current game's state.
-	return {
+	// The present, after or while the current passage is executing.
+	// This is pushed into recent when going forward.
+	present = stateProto.create(),
+
+	// The game state at the point the current passage began execution.
+	// This is pushed into the past when going forward,
+	// pushed into the future when going backward,
+	// or used to serialise the game state.
+	// (Revisiting the passage should thus cause it to behave identically to
+	// the original visit.)
+	recent = stateProto.create(),
 	
-		// The present.
-		present: Object.create(stateProto),
+	// Stack of previous states.
+	past = [],
 	
-		// Stack of previous states.
-		past: [],
+	// Stack of states wound back from.
+	future = [],
+	
+	/*
+		Values specific to the current passage, which
+		are reset by changePassage();
+	*/
+	
+	// Passage-specific scripts.
+	scripts = {},
 		
-		// Stack of states wound back from.
-		future: [],
-		
-		/*
-			Values specific to the current passage, which
-			are reset by changePassage();
-		*/
-		
-		// Passage-specific scripts.
-		scripts: {},
-		
+	/*
+		The current game's state.
+	*/
+	state = Object.freeze({
 		/*
 			Getters/setters
 		*/
 		
-		// Get/set the current passage.
-		getPresentPassageID: function() {
-			return this.present.passage;
+		// Get the current passage.
+		get passage() {
+			return present.passage;
 		},
 		
-		setPresentPassageID: function(val) {
-			this.present.passage = val;
+		get variables() {
+			return present.variables;
+		},
+		
+		// Is there an undo cache?
+		hasPast: function() {
+			return past.length > 1;
+		},
+		
+		// Is there a redo cache?
+		hasFuture: function() {
+			return future.length > 0;
 		},
 		
 		// Query a variable's present value
 		getVar: function(name) {
-			if (this.variables[name])
+			if (present.variables[name])
 			{
-				return this.variables[name];
+				return present.variables[name];
 			}
 			// No value found...
 			return null;
 		},
 		
-		// Does a variable have this value?
-		variableIs: function(name, val)
-		{
-			return this.getVar(name) === val;
+		setVar: function(name, value) {
+			present.variables[name] = value;
 		},
 		
-		// Did a variable ever have this value?
-		// Return the number of times it did.
-		// (Return value may not be that useful.)
-		variableWas: function(name, val)
+		// Does a variable have this value?
+		varIs: function(name, val)
 		{
-			var ret = +(this.variableIs(name, val));
-			
-			this.past.forEach(function(state)
-			{
-				ret += +(this.variableIs.call(state, name, val));
-			}
-			.bind(this));
-			
-			return ret;
+			return this.getVar(name) === val;
 		},
 		
 		// Did we ever visit this passage, given its name?
@@ -80,23 +98,23 @@ define(['story', 'utils'], function(story, utils)
 		{
 			var id = story.getPassageID(name);
 			
-			return this.passageIdVisited(id);
+			return this.passageIDVisited(id);
 		},
 		
 		// Did we ever visit this passage, given its id?
 		// Return the number of times visited.
-		passageIdVisited: function(id)
+		passageIDVisited: function(id)
 		{
 			var ret;
 			
-			if (story.passageWithId(id) === null)
+			if (story.passageWithID(id) === null)
 			{
 				return 0;
 			}
 			
-			ret = +(id === this.passage);
+			ret = +(id === present.passage);
 			
-			this.past.forEach(function(state)
+			past.forEach(function(state)
 			{
 				ret += +(id === state.passage);
 			});
@@ -109,27 +127,27 @@ define(['story', 'utils'], function(story, utils)
 		{
 			var id = story.getPassageID(name);
 			
-			return this.passageIdLastVisited(id);
+			return this.passageIDLastVisited(id);
 		},
 
 		// Return how long ago this passage has been visited.
-		passageIdLastVisited: function(id)
+		passageIDLastVisited: function(id)
 		{
 			var ret, i;
 			
-			if (story.passageWithId(id) === null)
+			if (story.passageWithID(id) === null)
 			{
 				return Infinity;
 			}
 			
-			if (id === this.passage)
+			if (id === present.passage)
 			{
 				return 0;
 			}
 			
-			for (i = 0; i < this.past.length; i--)
+			for (i = 0; i < past.length; i--)
 			{
-				if (this.past[i].passage === id)
+				if (past[i].passage === id)
 				{
 					return past.length-i;
 				}
@@ -141,9 +159,9 @@ define(['story', 'utils'], function(story, utils)
 		// Return an array of names of all previously visited passages
 		pastPassageNames: function()
 		{
-			var ret = [story.getPassageName(this.passage)];
+			var ret = [story.getPassageName(present.passage)];
 			
-			this.past.forEach(function(e)
+			past.forEach(function(e)
 			{
 				ret.unshift(story.getPassageName(e.passage));
 			});
@@ -151,17 +169,35 @@ define(['story', 'utils'], function(story, utils)
 			return ret;
 		},
 		
+		// Add a deferred <<script>> script.
+		addScript: function(name, contents)
+		{
+			scripts[name] = contents;
+		},
+		
+		// Fetch a deferred script
+		getScript: function(name)
+		{
+			return scripts[name] || "";
+		},
+		
 		/*
 			Movers/shakers
 		*/
 		
 		// Push the current state to the past, and create a new state.
-		pushPast: function()
+		play: function(newPassageID)
 		{
-			this.past.push(this.present);
-			this.present = Object.create(stateProto);
-			this.present.variables = this.present.variables;
-			this.future = [];
+			// Push recent into the past.
+			var pst = present;
+			past.push(recent);
+			// Create a new recent from present.
+			present.passage = newPassageID;
+			recent = stateProto.create(pst.variables, newPassageID);
+			// Clear the future
+			future = [];
+			// Clear all scripts
+			scripts = {};
 		},
 		
 		// Rewind the state
@@ -175,7 +211,7 @@ define(['story', 'utils'], function(story, utils)
 			{
 				if (typeof arg === "string")
 				{
-					steps = passageIdLastVisited(arg);
+					steps = passageIDLastVisited(arg);
 					if (steps === Infinity)
 					{
 						return;
@@ -186,11 +222,12 @@ define(['story', 'utils'], function(story, utils)
 					steps = arg;
 				}
 			}
-			for (; steps > 0 && this.past.length > 0; steps--)
+			for (; steps > 0 && past.length > 0; steps--)
 			{
 				moved = true;
-				this.future.push(this.present);
-				this.present = this.past.pop();
+				future.push(recent);
+				present = past.pop();
+				recent = utils.clone(present);
 			}
 			
 			return moved;
@@ -207,14 +244,16 @@ define(['story', 'utils'], function(story, utils)
 			{
 				steps = arg;
 			}
-			for (; steps > 0 && this.future.length > 0; steps--)
+			for (; steps > 0 && future.length > 0; steps--)
 			{
 				moved = true;
-				this.past.push(this.present);
-				this.present = this.future.pop();
+				past.push(recent);
+				present = future.pop();
+				recent = utils.clone(present);
 			}
 			
 			return moved;
 		}
-	};
+	});
+	return state;
 });

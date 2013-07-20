@@ -1,11 +1,14 @@
 define(['jquery'], function($)
 {
-	// Utility functions, constants, etc.
+	"use strict";
+	/*
+		utils: Utility functions, constants, etc.
+	*/
 	
 	var p = $('<p>');
 	
-	var utils = {
-		// Make all object's properties non-deletable.
+	var utils = Object.freeze({
+		// Make object properties non-deletable and non-writable.
 		lockProperties: function(obj)
 		{
 			var i,
@@ -19,10 +22,20 @@ define(['jquery'], function($)
 				propDesc[prop] = {
 					enumerable: true
 				};
-				// Non-functions are writable
-				propDesc[prop].writable = (typeof obj[prop] !== "function");
 			}
 			return Object.defineProperties(obj, propDesc);
+		},
+		
+		// Clone - faster/better than $.extend({}, ...)
+		clone: function(obj) {
+			var i, ret = Object.create(Object.getPrototypeOf(obj)),
+				keys = Object.keys(obj),
+				prop;
+			for (i = 0; i<keys.length; i++) {
+				prop = obj[keys[i]];
+				ret[keys[i]] = $.isPlainObject(prop) ? utils.clone(prop) : prop;
+			}
+			return ret;
 		},
 
 		// For speed, convert common entities quickly, and convert others with jQuery.
@@ -51,6 +64,6 @@ define(['jquery'], function($)
 		charSpanify: function(text)	{
 			return text.replace(/&[#\w]+;|./g, utils.charToSpan);
 		}
-	};
+	});
 	return utils;
 });

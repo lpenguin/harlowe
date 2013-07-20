@@ -1,14 +1,16 @@
-define(['jquery', 'state', 'utils'], function ($, state, utils)
+define(['jquery', 'state', 'utils', 'engine'], function ($, state, utils, engine)
 {
 	"use strict";
-	// "Twinescript" - a bunch of functions that authors can invoke with <<script>>.
-	// Everything in here is exposed to authors.
-
+	/*
+		script: Scope in which script-based macros are evaluated.
+		
+		Everything in here is exposed to authors via <<script>>, etc.
+	*/
 	// The calling macro's top reference - set by every _eval() call.
 	var _top;
 	
 	/*
-	 *  Basic randomness
+		Basic randomness
 	 */
 
 	// A random integer function
@@ -32,13 +34,31 @@ define(['jquery', 'state', 'utils'], function ($, state, utils)
 	};
 	
 	// Choose one argument, up to 16. Can be used as such: <<display either( "pantry", "larder", "cupboard" )>>
-	function either ()
+	function either()
 	{
 		return arguments[~~(Math.random()*arguments.length)];
 	};
 	
 	/*
-	 *  Text selectors and manipulators
+		Wrappers for state
+	*/
+	
+	function visited(name)
+	{
+		return state.passageNameVisited(name);
+	};
+	
+	/*
+		Wrappers for engine
+	*/
+	
+	function goto(name)
+	{
+		return engine.goToPassage(name);
+	};
+	
+	/*
+		Text selectors and manipulators
 	 */
 	 
 	/* 
@@ -116,7 +136,6 @@ define(['jquery', 'state', 'utils'], function ($, state, utils)
 		}
 		// passagelink(str): wraps 
 	};
-	
 	// Mirror a couple of other jQuery methods on WordArray
 	// Note to self: add jQueryUI's version of addClass, pronto.
 	[ "addClass", "removeClass", "toggleClass", "show", "hide" ].forEach(function(func)
@@ -131,6 +150,7 @@ define(['jquery', 'state', 'utils'], function ($, state, utils)
 			return this;
 		};
 	});
+	Object.seal(WordArray);
 	
 	// Text(selector)
 	// Creates a WordArray of jQuery objects containing the chars in the selector.
@@ -199,13 +219,13 @@ define(['jquery', 'state', 'utils'], function ($, state, utils)
 	}
 	
 	// eval() the script in the context of this module.
-	function _eval(text, top)
+	function _eval(me, text, top)
 	{
 		_top = top;
-		return eval(text);
+		return eval.call(me, text);
 	};
 	
-	return {
+	return Object.freeze({
 		eval: _eval
-	};
+	});
 });

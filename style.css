@@ -1,6 +1,6 @@
 /*** HTML5 compatibility ***/
 
-*[hidden]  {
+[hidden]  {
   display: none;
 }
 
@@ -70,9 +70,8 @@
 
 body
 {
-	font: 100% Georgia, serif;	
-	line-height: 125%;
-	background: #fafafa;
+	font: 100% Georgia, serif;
+	background: #fcfcfc;
 	color: #000;
 	margin: 0;
 }
@@ -89,6 +88,15 @@ h3
 {
 	font-size: 1.5em;
 }
+h1, h2, h3, h4, h5, h6
+{
+	line-height: 1em;
+	margin: 0.6em 0;
+}
+a
+{
+	cursor: pointer;
+}
 
 [data-role="twinestory"]
 {
@@ -97,14 +105,40 @@ h3
 
 #story
 {
-	width: 55%;
+	width: 60%;
 	margin: 4% auto;
+	font-size: 1.5em;
+	line-height: 1.5em;
+}
+
+@media screen and (max-width: 1280px)
+{
+	#story
+	{
+		font-size: 1.25em;
+	}
+}
+
+@media screen and (max-width: 960px)
+{
+	#story
+	{
+		font-size: 1em;
+	}
+}
+
+@media screen and (max-width: 640px)
+{
+	#story
+	{
+		font-size: 0.8em;
+	}
 }
 
 .passage
 {
 	position: absolute;
-	width: 55%;
+	width: 60%;
 }
 
 /* Transitions */
@@ -126,7 +160,7 @@ h3
 .passage[data-t8n=dissolve].transition-in
 {
 	animation: appear 0.8s ease;	
-	-webkit-animation: appear 0.8s ease;	
+	-webkit-animation: appear 0.8s ease;
 }
 
 .passage[data-t8n=dissolve].transition-out
@@ -135,37 +169,55 @@ h3
 	-webkit-animation: disappear 0.8s ease;	
 }
 
-/* Bookmark link */
+/* Sidebar */
 
-.passage .permalink
+.passage .sidebar
 {
-	color: #d0d0d0;
-	font-size: 3.25em;
+	left: -5em;
+	width: 3em;
+	position:absolute;
+	text-align:center;
+}
+
+.passage .sidebar .icon
+{
+	display:block;
+	margin: 0.33em 0 1em 0;
+	opacity: 0.1;
+	font-size: 2.75em;
 	border-bottom: none;
-	margin-left: -1em;
 	text-decoration:none;
 }
 
-.passage .permalink:hover
+.passage .sidebar .icon:hover
 {
-	color: #222;
+	opacity: 0.3;
 }
 
 /*** Inner passage formatting ***/
 
 .passage-link
 {
-	color: #222;
+	color: #4169E1;
+	font-weight: bold;
 	text-decoration: none;
-	border-bottom: 2px solid #006699;
 	transition: color 0.2s ease-in-out;
 	-webkit-transition: color 0.2s ease-in-out;
-	cursor: pointer;
+}
+
+.passage-link.visited
+{
+	color: MediumPurple;
 }
 
 .passage-link:hover
 {
-	color: #006699;
+	color: DeepSkyBlue;
+}
+
+.passage-link.visited:hover
+{
+	color: #E3E;
 }
 
 .broken-link
