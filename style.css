@@ -93,10 +93,6 @@ h1, h2, h3, h4, h5, h6
 	line-height: 1em;
 	margin: 0.6em 0;
 }
-a
-{
-	cursor: pointer;
-}
 
 [data-role="twinestory"]
 {
@@ -171,7 +167,7 @@ a
 
 /* Sidebar */
 
-.passage .sidebar
+.sidebar
 {
 	left: -5em;
 	width: 3em;
@@ -179,7 +175,7 @@ a
 	text-align:center;
 }
 
-.passage .sidebar .icon
+.sidebar .icon
 {
 	display:block;
 	margin: 0.33em 0 1em 0;
@@ -189,33 +185,44 @@ a
 	text-decoration:none;
 }
 
-.passage .sidebar .icon:hover
+.sidebar .icon:hover
 {
 	opacity: 0.3;
 }
 
 /*** Inner passage formatting ***/
 
-.passage-link
+.hook-hover
+{
+	border-bottom: 1px dotted #666;
+}
+
+.passage-link, .hook-link
 {
 	color: #4169E1;
 	font-weight: bold;
 	text-decoration: none;
 	transition: color 0.2s ease-in-out;
 	-webkit-transition: color 0.2s ease-in-out;
+	cursor: pointer;
 }
 
-.passage-link.visited
+.visited 
 {
-	color: MediumPurple;
+	color: #6941e1;
 }
 
-.passage-link:hover
+.passage-link:hover, .hook-link:hover
 {
 	color: DeepSkyBlue;
 }
 
-.passage-link.visited:hover
+.passage-link:active, .hook-link:active
+{
+	color: #DD4B39;
+}
+
+.visited:hover
 {
 	color: #E3E;
 }
@@ -255,6 +262,13 @@ a
 .debug-mode [data-macro="print"] { background-color: hsla(60,100%,50%,0.2) !important; } 
 .debug-mode [data-macro="set"] { background-color: hsla(30,100%,50%,0.2) !important; }
 .debug-mode [data-macro="script"] { background-color: hsla(45,100%,50%,0.2) !important; }
+.debug-mode [data-macro="style"] { background-color: hsla(180,10%,75%,0.2) !important; }
+.debug-mode [data-macro="with"],
+.debug-mode [data-macro="onclick"] { background-color: hsla(90,75%,50%,0.2) !important; }
+.debug-mode [data-macro="replace"] { background-color: hsla(20,75%,50%,0.2) !important; }
+
+/* Colours for other things */
+.debug-mode .hook { background-color: hsla(220,100%,50%,0.1) !important;}
 
 /* Show the macro name */
 .debug-mode [data-macro]::before {

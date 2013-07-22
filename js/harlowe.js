@@ -26,25 +26,10 @@ define(['jquery', 'story', 'engine', 'macrolib'], function ($, story, engine)
 		options.replace(/\b(\w+)\b/, function(a, b) {
 			story.options[b] = true;
 		});
-		
-		// If debug, add button
-		if (story.options.debug)
-		{
-			$('body').append($('<div class="debug-button">').click(function(e) {
-				$('html').toggleClass('debug-mode');
-			}));
-		}
-		
-		// Install handler for links
-		$('body').on('click', 'a[data-twinelink]', function (e)
-		{
-			var next = story.getPassageID($(this).attr('data-twinelink'));
-			if (next)
-			{
-				engine.goToPassage(next);
-			}
-			e.preventDefault();
-		});
+		Object.freeze(story);
+
+		// Init game engine
+		engine.init();
 		
 		// Show first passage!
 		start = header.attr('data-startnode');

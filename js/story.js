@@ -10,8 +10,7 @@ define(['jquery', 'utils'], function($, utils)
 			undo : enable the undo button.
 			redo : enable the redo button.
 	*/
-	var options = {};
-		
+
 	return Object.seal({
 
 		// Set of options, loaded at startup.

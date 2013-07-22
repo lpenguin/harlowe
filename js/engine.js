@@ -5,8 +5,8 @@ define(['jquery', 'marked', 'story', 'utils', 'state', 'macros'], function ($, M
 		engine: Module that renders passages to the DOM.
 	*/
 	var engine;
-
-	(function twineMarked() {
+	
+	function twineMarked() {
 		/*
 			Current list of MD deviations:
 			. marked.options.gfm
@@ -62,12 +62,15 @@ define(['jquery', 'marked', 'story', 'utils', 'state', 'macros'], function ($, M
 		Marked.InlineLexer.setFunc("autolink", function(cap)
 		{
 			var text, href;
-			if (cap[2] === '@') {
+			if (cap[2] === '@')
+			{
 				text = cap[1][6] === ':'
 				? this.mangle(cap[1].slice(7))
 				: this.mangle(cap[1]);
 				href = this.mangle('mailto:') + text;
-			} else {
+			}
+			else
+			{
 				href = Marked.escape(cap[1]);
 				text = href;
 			}
@@ -85,27 +88,41 @@ define(['jquery', 'marked', 'story', 'utils', 'state', 'macros'], function ($, M
 		{
 			return utils.charSpanify(Marked.escape(this.smartypants(cap[0])));
 		});
-	}());
+		
+		// Hooks
+		function hook(cap, link)
+		{
+			// Hooks do NOT have a href
+		    return '<a class="hook" data-hook="' + link + '">'
+			  + this.output(cap[1]) + '</a>';
+		};
+		
+		function reflink(cap)
+		{
+			var link = (cap[2] || cap[1]).replace(/\s+/g, ' '),
+				link2 = this.links[link.toLowerCase()];
+			if (link2)
+			{
+				return this.outputLink(cap, link2);
+			}
+			else
+			{
+				return hook.call(this, cap, link);
+			}
+		};
+		Marked.InlineLexer.setFunc("nolink", reflink);
+		Marked.InlineLexer.setFunc("reflink", reflink);
+	};
 	
 	function renderMacro(macro, span, context, top)
 	{
-		var result;
 		if (macro.data)
 		{
 			macro.el = span;
 			macro.context = context;
 			macro.top = top;
 			macro.init && (macro.init());
-			result = macro.data.apply(macro, macro.args);
-
-			if (result) {
-				result = render(result + '', macro, top);
-				if (result) {
-					span.append(result);
-				} else if (result === null) {
-					result.remove();
-				}
-			}
+			engine.renderMacro(macro, top);
 		}
 		else
 			span.addClass('error').html('No macro named ' + macro.name);
@@ -160,6 +177,7 @@ define(['jquery', 'marked', 'story', 'utils', 'state', 'macros'], function ($, M
 			Twine 1 / TiddlyWiki / reverse MediaWiki link syntax.
 			Possible bug: doesn't check for '\' preceding the first '['
 		*/
+		source += "";
 		source = source.replace(/\[\[([^\|\]]*?)\|([^\|\]]*)?\]\]/g, function (match, text, passage)
 		{
 			return makeLink(text,passage);
@@ -218,6 +236,32 @@ define(['jquery', 'marked', 'story', 'utils', 'state', 'macros'], function ($, M
 		return html;
 	};
 	
+	function appendRender(src, dest, top)
+	{
+		// Convert hooks into links, or vice-versa.
+		function updateHooks()
+		{
+			$(".hook[data-hook]", top).each(function() {
+				var e = $(this);
+				var selector = "[data-hook='"+e.attr("data-hook")+"']";
+				e.removeClass("hook-link hook-hover");
+				
+				if ($("[data-macro=onclick]" + selector, top).length)
+				{
+					e.addClass("hook-link");
+				}
+				else if ($("[data-macro*=onmouse]" + selector, top).length)
+				{
+					e.addClass("hook-hover");
+				}
+			});
+		};
+		dest.append(src);
+		
+		updateHooks();
+		return src;
+	};
+	
 	// Show a passage.
 	// Transitions the old passage(s) out, and ads the new passages.
 	// stretch: is stretchtext.
@@ -254,7 +298,7 @@ define(['jquery', 'marked', 'story', 'utils', 'state', 'macros'], function ($, M
 		}
 		
 		// Create new passage
-		newPassage = insertPassage(passageData, el);
+		newPassage = appendPassage(passageData, el);
 		
 		// Transition in
 		if (transIndex)
@@ -265,23 +309,34 @@ define(['jquery', 'marked', 'story', 'utils', 'state', 'macros'], function ($, M
 		// TODO: HTML5 history
 	};
 	
-	// Creates a passage element, and appends it to the given element.
-	function insertPassage(passage, el) {
-		el = el || $('#story');	
-		var container, back, fwd,sidebar;
+	function createPassageElement()
+	{
+		var container, back, fwd, sidebar;
 		container = $('<section class="passage"><nav class="sidebar"><a class="icon permalink" title="Permanent link to this passage">&sect;</a></nav></section>'),
-			sidebar = container.children(".sidebar");
-				  
+		sidebar = container.children(".sidebar");
+		
 		back = $('<a class="icon undo" title="Undo">&#8630;</a>').click(engine.goBack);
 		fwd = $('<a class="icon redo" title="Redo">&#8631;</a>').click(engine.goForward);
+		
 		if (!state.hasPast())
 			back.css({visibility:"hidden"});
 		if (!state.hasFuture())
 			fwd.css({visibility:"hidden"});
+		
 		sidebar.append(back).append(fwd);
-
-		container.append(render(passage.html()));
-		el.append(container);
+		
+		return container;
+	};
+	
+	// Creates a passage element, and appends it to the given element.
+	function appendPassage(passage, el)
+	{
+		var container;
+		
+		el = el || $('#story');	
+		
+		container = createPassageElement().append(render(passage.html()));
+		appendRender(container, el);
 		return container;
 	};
 	
@@ -312,8 +367,70 @@ define(['jquery', 'marked', 'story', 'utils', 'state', 'macros'], function ($, M
 			// Update the state.
 			state.play(id);
 			showPassage(id, stretch);
+		},
+		
+		// Install handlers, etc.
+		init: function()
+		{
+			// Alter Marked
+			twineMarked();
+			
+			// Install handler for links
+			$('body').on('click', 'a[data-twinelink]', function (e)
+			{
+				var next = story.getPassageID($(this).attr('data-twinelink'));
+				if (next)
+				{
+					engine.goToPassage(next);
+				}
+				e.preventDefault();
+			});
+			
+			// Install handler for hooklinks
+			$('body').on('click', '.hook-link', function (e)
+			{
+				var elem = $(this),
+					index = elem.attr("data-hook");
+				
+				// Call <<onclick>>s
+				$("[data-macro][data-hook=" + index + "]").each(function() {
+					var action = $(this).data("action");
+					(typeof action === "function" && action(elem));
+				});
+				
+				// Call hooked <<scripts>>
+				state.callScript(index, elem);
+				e.preventDefault();
+			});
+			
+			// If debug, add button
+			if (story.options.debug)
+			{
+				$('body').append($('<div class="debug-button">').click(function(e) {
+					$('html').toggleClass('debug-mode');
+				}));
+			}
+		},
+		
+		render: render,
+		
+		renderMacro: function(macro)
+		{
+			var result = macro.data.apply(macro, macro.args);
+			
+			if (result)
+			{
+				result = render(result + '', macro, macro.top);
+				if (result)
+				{
+					appendRender(result, macro.el);
+				}
+				else if (result === null)
+				{
+					result.remove();
+				}
+			}
 		}
 	});
-	
 	return engine;
 });

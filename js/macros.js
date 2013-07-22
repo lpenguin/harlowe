@@ -7,12 +7,15 @@ define(['jquery', 'story', 'state'], function($, story, state)
 	
 	For end users:
 	* macros.get(name) : get a registered macro function.
-	* macros.add(name, selfClosing, fn, version): register a new macro.
+	* macros.add(descriptor): register a new macro.
 		name: a string, or an array of strings serving as 'alias' names.
-		selfClosing: determines if the macro tag has contents. If false, then all subsequent code
-			up until a closing tag ("<<endmacro>>" or <</macro>>") or until the end of the passage,
-			will be captured by this.contents.
-		version: a property set { major: Number, minor: Number, revision: number }.
+		descriptor is a map of the following:
+			selfClosing: determines if the macro tag has contents. If false, then all subsequent code
+				up until a closing tag ("<<endmacro>>" or <</macro>>") or until the end of the passage,
+				will be captured by this.contents.
+			scoping: targets a particular scope, which is to say, causes all macros within to apply
+				solely to the scope it sets.
+			version: a property set { major: Number, minor: Number, revision: number }.
 	* macros.supplement(name, selfClosing, main) : register a macro which has no code, but is used as a sub-tag in another macro.
 		main: name of the 'parent' macro.
 		
@@ -21,32 +24,6 @@ define(['jquery', 'story', 'state'], function($, story, state)
 		html: a string of escaped HTML.
 		e: a MacroInstance object matching a macro invocation in the HTML.
 	
-	MACRO FUNCTION API:
-	
-	function arguments: each of this.args.
-	this.call: string containing the unescaped macro call, eg. "<<set escaped = false>>"
-	this.HTMLcall: string containing this.call as escaped (as in "&amp;") HTML.
-	this.name: string name of the macro, eg. "set".
-	this.rawArgs: string containing the unescaped untrimmed arguments, eg. " escaped = false".
-	this.args: array of unescaped argument strings in the call. eg. [ "escaped", "=", "false" ]
-	this.contents: string containing the HTML between the open tag and close tag, if any.
-	this.HTMLcontents: string containing this.contents as escaped HTML.
-	this.el: jQuery-wrapped destination <span>.
-	this.context: the macro instance which caused this macro to be rendered, or null if it's the top passage.
-	this.top: jQuery object for the entire passage in which this is located.
-	this.data: the macro's function.
-	
-	this.error(text): adds the 'error' class to the element, and attaches the message.
-	this.clear(): removes the destination element, unless in debug mode.
-	this.convertOperators(args): used for 'code' macros like <<set>> and <<print>>.
-	this.contextQuery(name): searches back through the context chain to find macro instances of a specific name.
-	this.cssTimeUnit(str): converts a CSS time unit to a number of milliseconds.
-	
-	return value: 
-		- string of Twine code to be rendered, whose resultant HTML will
-		replace the contents of this.el.
-			OR
-		- null, whereupon this.el will be removed.
 	*/
 	var macroProto, macros,
 		// Private collection of registered macros.
@@ -60,7 +37,8 @@ define(['jquery', 'story', 'state'], function($, story, state)
 	macroProto = Object.freeze({
 	
 		// This is called by renderMacro() just before the macro is executed
-		init: function() {
+		init: function()
+		{
 			if (story.options.debug)
 			{
 				this.el.attr("title", this.call);
@@ -68,13 +46,15 @@ define(['jquery', 'story', 'state'], function($, story, state)
 		},
 	
 		// Adds the 'error' class to the element.
-		error: function (text) {
+		error: function (text)
+		{
 			this.el.addClass("error").attr("title", this.call).removeAttr("data-macro").text(text);
 			return '';
 		},
 		
 		// Removes the element, unless in debug mode
-		clear: function() {
+		clear: function()
+		{
 			if (story.options.debug)
 			{
 				return '';
@@ -82,18 +62,32 @@ define(['jquery', 'story', 'state'], function($, story, state)
 			return null;
 		},
 		
-		// Searches back through the context chain to find macro instances of a specific name.
-		// Returns an array of macro instances.
-		contextQuery: function(name) {
+		// Searches back through the context chain to find macro instances of a specific name, or an array of names.
+		// Returns an array of macro instances, sorted from nearest to farthest.
+		contextQuery: function(name)
+		{
 			var c = this.context,
 				set = [];
-			while (c) {
-				if (c.name == name) {
-					set.unshift(c);
+			while (c)
+			{
+				if (!name || ((Array.isArray(name)) ? ~~name.indexOf(c.name) : (c.name === name)))
+				{
+					set.push(c);
 				}
 				c = c.context;
 			}
 			return set;
+		},
+		
+		contextNearest: function(name)
+		{
+			var a = this.contextQuery(name);
+			
+			if (a.length)
+			{
+			console.log(a);
+				return a[0];
+			}
 		},
 		
 		// This implements a small handful of more authorly JS operators for <<set>> and <<print>>.
@@ -101,8 +95,10 @@ define(['jquery', 'story', 'state'], function($, story, state)
 		// <<if hp is 3>> --> <<if hp == 3>>
 		// <<if hp is not 3>> --> <<if hp != 3>>
 		// <<if not defeated>> --> <<if ! defeated>>
-		convertOperators: function (expr) {
-			function alter(from, to) {
+		convertOperators: function (expr)
+		{
+			function alter(from, to)
+			{
 				// This regexp causes its preceding expression to only match entities outside of quotes,
 				// taking into account escaped quotes.
 				var re = "(?=(?:[^\"'\\\\]*(?:\\\\.|'(?:[^'\\\\]*\\\\.)*[^'\\\\]*'|\"(?:[^\"\\\\]*\\\\.)*[^\"\\\\]*\"))*[^'\"]*$)";
@@ -122,12 +118,16 @@ define(['jquery', 'story', 'state'], function($, story, state)
 		
 		// Takes a string argument, expressed as a CSS time,
 		// and returns the time in milliseconds that it equals.
-		cssTimeUnit: function(s) {
-			if (typeof s == "string") {
-			  if (s.slice(-2).toLowerCase() == "ms") {
+		cssTimeUnit: function(s)
+		{
+			if (typeof s == "string")
+			{
+			  if (s.slice(-2).toLowerCase() == "ms")
+			  {
 				return Number(s.slice(0, -2)) || 0;
 			  }
-			  else if (s.slice(-1).toLowerCase() == "s") {
+			  else if (s.slice(-1).toLowerCase() == "s")
+			  {
 				return Number(s.slice(0, -1)) * 1000 || 0;
 			  }
 			}
@@ -135,7 +135,7 @@ define(['jquery', 'story', 'state'], function($, story, state)
 		}
 	});
 	
-	// Initialise a new MacroInstance
+	// Private factory method
 	function createMacroInstance(html, name, startIndex, endIndex)
 	{
 		var macro = Object.create(macroProto), selfClosing;
@@ -153,7 +153,7 @@ define(['jquery', 'story', 'state'], function($, story, state)
 		// unescape HTML entities (like "&amp;")
 		macro.call = $('<p>').html(macro.HTMLcall).text();
 		macro.contents = (selfClosing ? "" : macro.call.replace(/^(?:[^>]|>(?!>))*>>/i, '').replace(/<<(?:[^>]|>(?!>))*>>$/i, ''));
-		macro.rawArgs = macro.call.replace(/^<<\s*\w*/, '').replace(/>>[^]*/, '');
+		macro.rawArgs = macro.call.replace(/^<<\s*\w*\s*/, '').replace(/\s*>>[^]*/, '');
 		
 		// tokenize arguments
 		// e.g. 1 "two three" 'four five' "six \" seven" 'eight \' nine'
@@ -178,7 +178,7 @@ define(['jquery', 'story', 'state'], function($, story, state)
 	function stringOrArray(n)
 	{
 		return (typeof n === "string" || Array.isArray(n));
-	}
+	};
 	
 	/*
 		The object containing all the macros available to a story.
@@ -193,14 +193,20 @@ define(['jquery', 'story', 'state'], function($, story, state)
 		
 		// Register a new macro.
 		// name: a string, or an array holding multiple strings.
-		add: function (name, selfClosing, fn, version)
+		add: function (name, desc)
 		{
+			var fn;
 			if (!stringOrArray(name))
 			{
 				return loaderError("Argument 1 of macros.add isn't an array or a string.");
 			}
-			fn.selfClosing = selfClosing;
-			fn.version = version;
+			if (!(desc && typeof desc === "object" && desc.fn && typeof desc.fn === "function"))
+			{
+				return loaderError("Argument 2 of macros.add (\"" + name + "\") isn't a valid or complete descriptor.");
+			}
+			fn = desc.fn;
+			delete desc.fn;
+			$.extend(fn,desc);
 			if (Array.isArray(name))
 			{
 				name.forEach(function(n) {
@@ -216,9 +222,12 @@ define(['jquery', 'story', 'state'], function($, story, state)
 		// Register a macro that appears internally in another macro (i.e <<endif>> for <<if>>)
 		// name: a string, or an array holding multiple names.
 		// main: a string or an array.
-		supplement: function(name, selfClosing, main)
+		supplement: function(name, desc, main)
 		{
-			var errorMsg = " of macros.supplement isn't an array or a string.";
+			var mfunc,
+				errorMsg = " of macros.supplement isn't an array or a string.",
+				selfClosing = desc.selfClosing;
+			
 			if (!stringOrArray(name))
 			{
 				return loaderError("Argument " + 1 + errorMsg);
@@ -227,14 +236,20 @@ define(['jquery', 'story', 'state'], function($, story, state)
 			{
 				return loaderError("Argument " + 3 + errorMsg);
 			}
-			var mfunc = macros.get(main);
-			macros.add(name, selfClosing, function() {
-				if (!this.context || main.indexOf(this.context.name) == -1) {
+			mfunc = macros.get(main);
+			desc.fn = function() {
+				if (!this.context || ~~main.indexOf(this.context.name))
+				{
 					return this.error("<<" + this.name + ">> is outside a"
 						+ (Array.isArray(main) ? "n appropriate macro" : " <<" + main + ">>"));
 				}
 				return this.clear();
-			}, mfunc && mfunc.version);
+			};
+			if (mfunc && mfunc.version)
+			{
+				desc.version = mfunc.version;
+			}
+			macros.add(name, desc);
 		},
 
 		// Performs a function for each macro instance found in the HTML.
@@ -299,9 +314,12 @@ define(['jquery', 'story', 'state'], function($, story, state)
 	});
 	
 	// This replaces unknown or incorrect macros.
-	macros.add("unknown", true, function()
-	{
-		return this.error("Unknown macro: " + this.name);
+	macros.add("unknown", {
+		selfClosing: true,
+		fn: function()
+		{
+			return this.error("Unknown macro: " + this.name);
+		}
 	});
 	
 	return macros;

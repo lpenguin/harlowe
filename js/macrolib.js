@@ -1,4 +1,4 @@
-define(['jquery', 'story', 'script', 'state', 'macros'], function($, story, script, state, macros)
+define(['jquery', 'story', 'script', 'state', 'macros', 'engine'], function($, story, script, state, macros, engine)
 {
 	"use strict";
 	/*
@@ -6,182 +6,363 @@ define(['jquery', 'story', 'script', 'state', 'macros'], function($, story, scri
 		modifies the macros module only.
 	*/
 	
+	/*
+		MACRO FUNCTION API:
+		
+		function arguments: each of this.args.
+		this.call: string containing the unescaped macro call, eg. "<<set escaped = false>>"
+		this.HTMLcall: string containing this.call as escaped (as in "&amp;") HTML.
+		this.name: string name of the macro, eg. "set".
+		this.rawArgs: string containing the unescaped untrimmed arguments, eg. " escaped = false".
+		this.args: array of unescaped argument strings in the call. eg. [ "escaped", "=", "false" ]
+		this.contents: string containing the HTML between the open tag and close tag, if any.
+		this.HTMLcontents: string containing this.contents as escaped HTML.
+		this.el: jQuery-wrapped destination <span>.
+		this.context: the macro instance which caused this macro to be rendered, or null if it's the top passage.
+		this.top: jQuery object for the entire passage in which this is located.
+		this.data: the macro's function.
+		
+		this.error(text): adds the 'error' class to the element, and attaches the message.
+		this.clear(): removes the destination element, unless in debug mode.
+		this.convertOperators(args): used for 'code' macros like <<set>> and <<print>>.
+		this.contextQuery(name): searches back through the context chain to find macro instances of a specific name.
+		this.cssTimeUnit(str): converts a CSS time unit to a number of milliseconds.
+		
+		return value: 
+			- string of Twine code to be rendered, whose resultant HTML will
+			replace the contents of this.el.
+				OR
+			- null, whereupon this.el will be removed.
+	*/
+	
+	/*
+		Basic Macros
+	*/
+	
 	// <<set ... >>
 	// rawArgs: expression to execute, converting operators first.
-	macros.add("set",true,function()
-	{
-		try
+	macros.add("set", {
+		selfClosing: true,
+		fn: function()
 		{
-			script.eval(this.convertOperators(this.rawArgs));
-			return this.clear();
+			try
+			{
+				script.eval(this.convertOperators(this.rawArgs));
+				return this.clear();
+			}
+			catch (e)
+			{
+				return this.error('<<set>> error: '+e.message);
+			}
+		}, 
+		version: {
+			major: 0,
+			minor: 0,
+			revision: 0
 		}
-		catch (e)
-		{
-			return this.error('<<set>> error: '+e.message);
-		}
-	}, {
-		major: 0,
-		minor: 0,
-		revision: 0
 	});
 
 	// <<print ... >>
 	// rawArgs: expression to execute and print, converting operators first.
-	macros.add("print",true,function()
-	{
-		try
+	macros.add("print", {
+		selfClosing: true,
+		fn: function()
 		{
-			var args = this.convertOperators(this.rawArgs);
-			return (script.eval(args) + '');
+			try
+			{
+				var args = this.convertOperators(this.rawArgs);
+				return (script.eval(args) + '');
+			}
+			catch (e)
+			{
+				return this.error('<<print>> error: '+e.message);
+			}
+		}, 
+		version: {
+			major: 0,
+			minor: 0,
+			revision: 0
 		}
-		catch (e)
-		{
-			return this.error('<<print>> error: '+e.message);
-		}
-	}, {
-		major: 0,
-		minor: 0,
-		revision: 0
 	});
 	
-	// <<nobr>>
+	// <<nobr>> ... <</nobr>>
 	// Remove line breaks from contained passage text.
 	// Suggested by @mcclure111, for use with complex macro sets.
 	// Manual line breaks can be inserted with <br>.
-	macros.add("nobr",false,function()
-	{
-		// To prevent keywords from being created by concatenating lines,
-		// replace the line breaks with a zero-width non-joining space.
-		return this.HTMLcontents.replace(/\\n/,"&zwnj;");
-	}, {
-		major: 0,
-		minor: 0,
-		revision: 0
+	macros.add("nobr",{
+		fn: function()
+		{
+			// To prevent keywords from being created by concatenating lines,
+			// replace the line breaks with a zero-width non-joining space.
+			return this.HTMLcontents.replace(/\\n/,"&zwnj;");
+		},
+		version: {
+			major: 0,
+			minor: 0,
+			revision: 0
+		}
 	});
 	
 	// <<script>> ... <</script>>
-	// contents: raw JS to execute as a closure.
+	// contents: JS to execute.
 	// If it is named, then it is deferred until an event occurs that names it.
-	macros.add("script",false,function(name)
-	{
-		if (name)
+	macros.add("script", {
+		fn: function(name)
 		{
-			state.addScript(name, this.contents);
+			if (name)
+			{
+				state.addScript(name, script.eval, [this.contents]);
+			}
+			else try
+			{
+				// Eval this in the context of the script object,
+				// where the Twinescript API is.
+				script.eval.call(this.el, this.contents, this.top);
+				return this.clear();
+			}
+			catch (e)
+			{
+				return this.error('<<script>> error: '+e.message);
+			}
+		},
+		version: {
+			major: 0,
+			minor: 0,
+			revision: 0
 		}
-		else try
-		{
-			// Eval this in the context of the script object,
-			// where the Twinescript API is.
-			script.eval(this.el, this.contents, this.top);
-			return this.clear();
-		}
-		catch (e)
-		{
-			return this.error('<<script>> error: '+e.message);
-		}
-	}, {
-		major: 0,
-		minor: 0,
-		revision: 0
 	});
 	
 	// <<style>> ... <</style>>
 	// Insert the enclosed raw CSS into a <script> tag that exists for the
 	// duration of the current passage only.
 	// contents: raw CSS.
-	// We can't use the <style> element because it would execute immediately
-	// on page load within the <div>... (and is non-valid HTML, I guess.)
-	macros.add("style",false,function()
-	{
-		var selector = 'style#macro';
-		if ($(selector).length == 0)
+	macros.add("style", {
+		fn: function()
 		{
-			$('head').append($('<style id="macro"></style>'));
+			var selector = 'style#macro';
+			if ($(selector).length == 0)
+			{
+				$('head').append($('<style id="macro"></style>'));
+			}
+			$(selector).text(this.contents);
+			return this.clear();
+		},
+		version: {
+			major: 0,
+			minor: 0,
+			revision: 0
 		}
-		$(selector).text(this.contents);
-		return this.clear();
-	}, {
-		major: 0,
-		minor: 0,
-		revision: 0
 	});
 
-	// <<if ... >>
+	// <<if ... >> ... <</if>>
 	// rawArgs: expression to determine whether to display.
-	macros.add("if",false,function()
-	{
-		var html = this.HTMLcontents,
-			args = [this.rawArgs],
-			contents = [],
-			lastIndex = 0, i;
-		// Search for <<else>>s, collect sets of contents
-		macros.matchMacroTag(html, "else|elseif", function(m) {
-			contents.push(html.slice(lastIndex, m.startIndex));
-			// Strip "if" from <<else if>>
-			var expr = m.rawArgs.replace(/^\s*if\b/,'');
-			expr = expr || "true";
-			args.push(expr);
-			lastIndex = m.startIndex;
-		});
-		contents.push(html.slice(lastIndex));
-		
-		// Now, run through them all until you find a true arg.
-		for(i = 0; i < args.length; i += 1)
+	macros.add("if",{
+		fn: function()
 		{
-			try
+			var html = this.HTMLcontents,
+				args = [this.rawArgs],
+				contents = [],
+				lastIndex = 0, i;
+			
+			// Search for <<else>>s, collect sets of contents
+			macros.matchMacroTag(html, "else|elseif", function(m) {
+				contents.push(html.slice(lastIndex, m.startIndex));
+				// Strip "if" from <<else if>>
+				var expr = m.rawArgs.replace(/^\s*if\b/,'');
+				expr = expr || "true";
+				args.push(expr);
+				lastIndex = m.startIndex;
+			});
+			contents.push(html.slice(lastIndex));
+			
+			// Now, run through them all until you find a true arg.
+			for(i = 0; i < args.length; i += 1)
 			{
-				var result = script.eval(this.convertOperators(args[i]));
-				if (result) {
-					return contents[i];
+				try
+				{
+					var result = script.eval(this.convertOperators(args[i]));
+					if (result) {
+						return contents[i];
+					}
+				}
+				catch (e)
+				{
+					return this.error('<<' + (i==0 ? 'if' : 'else if') +'>> error: '+e.message.message);
 				}
 			}
-			catch (e)
-			{
-				return this.error('<<' + (i==0 ? 'if' : 'else if') +'>> error: '+e.message.message);
-			}
+			this.el.addClass("false-if");
+			return this.clear();
+		}, 
+		version: {
+			major: 0,
+			minor: 0,
+			revision: 0
 		}
-		this.el.addClass("false-if");
-		return this.clear();
-	}, {
-		major: 0,
-		minor: 0,
-		revision: 0
 	});
 	// <<else>>, <<else if ...>>, <<elseif ...>>
 	// Used inside <<if>>
-	macros.supplement(["else","elseif"], true, "if");
+	macros.supplement(["else","elseif"], { selfClosing: true }, "if");
 	
 	// <<display ... >>
 	// rawArgs: expression to evaluate to determine the passage name.
-	macros.add("display",true,function()
+	macros.add("display", {
+		selfClosing: true,
+		fn: function()
+		{
+			try
+			{
+				var args = this.convertOperators(this.rawArgs),
+					name = eval(args) + '';
+				// Test for existence
+				if (!story.passageNamed(name))
+				{
+					return this.error('Can\'t <<display>> passage "' + name + '"');
+				}
+				// Test for recursion
+				if (this.contextQuery("display").filter(function(e) {
+						return e.el.filter("[data-display='"+name+"']").length > 0;
+					}).length >= 5)
+				{
+					return this.error('<<display>> loop: "' + name + '" is displaying itself 5+ times.');
+				}
+				this.el.attr("data-display",name);
+				var ret  = story.passageNamed(name).html();
+				return ret;
+			}
+			catch (e)
+			{
+				return this.error(e.message);
+			}
+		},
+		version: {
+			major: 0,
+			minor: 0,
+			revision: 0
+		}
+	});
+	
+	/*
+		Scoped Macros
+	*/
+	
+	function setScope(name)
 	{
-		try
+		var r;
+		
+		if (name.wordarray)
 		{
-			var args = this.convertOperators(this.rawArgs),
-				name = eval(args) + '';
-			// Test for existence
-			if (!story.passageNamed(name))
-			{
-				return this.error('Can\'t <<display>> passage "' + name + '"');
-			}
-			// Test for recursion
-			if (this.contextQuery("display").filter(function(e) {
-					return e.el.filter("[data-display='"+name+"']").length > 0;
-				}).length >= 5)
-			{
-				return this.error('<<display>> loop: "' + name + '" is displaying itself 5+ times.');
-			}
-			this.el.attr("data-display",name);
-			var ret  = story.passageNamed(name).html();
-			return ret;
+			return name;
 		}
-		catch (e)
+		if (name.jquery)
 		{
-			return this.error(e.message);
+			return script.createWordArray(name);
 		}
-	}, {
-		major: 0,
-		minor: 0,
-		revision: 0
+		if (typeof name === "string")
+		{
+			r = /\$\("([^"]*)"\)|"((?:[^"\\]|\\.)*)"|(\w*)/.exec(name);
+			if (r.length)
+			{
+				// jQuery selector
+				if (r[1])
+				{
+					return script.createWordArray($(r[1]));
+				}
+				// Word selector
+				else if (r[2])
+				{
+					return script.Text(name, this.top);
+				}
+				else if (r[3])
+				{
+					return script.createWordArray($(".hook[data-hook=" + r[3] + "]", this.top));
+				}
+			}
+		}
+		return script.createWordArray(this.top);
+	};
+	
+	function getScope()
+	{
+		var c; c = this.contextNearest(["with", "onclick"]);
+		if (c && c.scope)
+		{
+			return c.scope;
+		}
+		else return this.top;
+	};
+	
+	// <<with ... >> ... <</with>>
+	// Select a WordArray or jQuery on which "scoped macros" can be performed.
+	macros.add("with", {
+		scoping: true,
+		fn: function(a)
+		{
+			this.el.attr("data-hook", a);
+			this.scope = setScope.call(this, a);
+			return this.HTMLcontents;
+		},
+		version: {
+			major: 0,
+			minor: 0,
+			revision: 0
+		}
+	});
+	
+	// <<onclick ... >> ... <</onclick>>
+	// Perform the enclosed macros when the scope is clicked.
+	macros.add("onclick", {
+		scoping: true,
+		fn: function(a)
+		{
+			if (!this.ready)
+			{
+				this.el.attr("data-hook", a);
+				this.ready = true;
+				this.el.data("action", function() {
+					this.el.attr("data-hook-disabled", this.el.attr("data-hook"));
+					this.el.removeAttr("data-hook");
+					engine.renderMacro(this);
+				}.bind(this));
+				// Keep it around
+				return "&zwnj;";
+			}
+			else 
+			{
+				this.scope = setScope.call(this, a);
+				return this.HTMLcontents;
+			}
+		},
+		version: {
+			major: 0,
+			minor: 0,
+			revision: 0
+		}
+	});
+	
+	/*
+		Scope-affecting macros
+	*/
+	
+	// <<replace ... >> ... <</replace>>
+	// A scoped macro that replaces the scope element(s) with its contents.
+	macros.add("replace", {
+		scoped: true, 
+		fn: function()
+		{
+			var scope = getScope.call(this);
+			console.log(this.contextQuery());
+			if (scope && scope.wordarray)
+			{
+				scope.replace(this.HTMLcontents);
+				return this.clear();
+			}
+			else
+			return this.error("<<" + this.name + ">> error: no scope was found.");
+		},
+		version: {
+			major: 0,
+			minor: 0,
+			revision: 0
+		}
 	});
 });

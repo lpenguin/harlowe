@@ -44,6 +44,9 @@ define(['story', 'utils'], function(story, utils)
 	
 	// Passage-specific scripts.
 	scripts = {},
+	
+	// Passage-specific hook macros.
+	hookMacros = {},
 		
 	/*
 		The current game's state.
@@ -111,7 +114,7 @@ define(['story', 'utils'], function(story, utils)
 			{
 				return 0;
 			}
-			
+
 			ret = +(id === present.passage);
 			
 			past.forEach(function(state)
@@ -169,16 +172,20 @@ define(['story', 'utils'], function(story, utils)
 			return ret;
 		},
 		
-		// Add a deferred <<script>> script.
-		addScript: function(name, contents)
+		// Add a hook function, one whose 'this' value is currently unknown.
+		// callback: function to add.
+		addScript: function(name, callback, args)
 		{
-			scripts[name] = contents;
+			scripts[name] = [callback, args];
 		},
 		
-		// Fetch a deferred script
-		getScript: function(name)
+		// Run a hook script in the context of a given object (usually an element).
+		callScript: function(name, element)
 		{
-			return scripts[name] || "";
+			if (scripts[name] && typeof scripts[name][0] === "function")
+			{
+				return (scripts[name][0]).apply(element, scripts[name][1]);
+			}
 		},
 		
 		/*

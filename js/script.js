@@ -7,7 +7,9 @@ define(['jquery', 'state', 'utils', 'engine'], function ($, state, utils, engine
 		Everything in here is exposed to authors via <<script>>, etc.
 	*/
 	// The calling macro's top reference - set by every _eval() call.
-	var _top;
+	var _top,
+	// Constant - the selector for charspans
+		_selector = "span.char, br";
 	
 	/*
 		Basic randomness
@@ -71,34 +73,66 @@ define(['jquery', 'state', 'utils', 'engine'], function ($, state, utils, engine
 	   - Currently they are just setters and not getters.
 	*/
 	var WordArray = {
+	
+		// Used for duck-typing
+		wordarray: true,
+		
 		contents: null,
+		
 		get length()
 		{
 			return this.contents.length;
 		},
-		_create: function(word)
+		
+		text: function()
+		{
+			if (this.contents.length)
+			{
+				return this.contents[0].text();
+			}
+			return "";
+		},
+		
+		create: function(word)
 		{
 			var ret = Object.create(WordArray);
 			ret.contents = [];
 			if (word && word.jquery)
 			{
-				ret.contents.push(word);
+				ret.contents.push(word.find(_selector));
 			}
 			return ret;
 		},
+		
 		// replace(str): Takes a string, charSpans it, then
 		// replaces this word's chars with it.
 		replace: function(str) {
-			var word = utils.charSpanify(str);
-			this.contents = this.contents.map(function(e)
+			var word = engine.render(str);
+			if (word.length)
 			{
-				var w = $(word); 
-				e.first().before(w);
-				e.remove();
-				return w;
-			});
+				this.contents = this.contents.map(function(e)
+				{
+					var w; 
+					
+					if (e && e.jquery)
+					{
+						// Waste not...
+						if (e.text() === str)
+						{
+							return e;
+						}
+						w = word.clone();
+						e.first().before(w);
+						console.log(e.parent());
+						e.remove();
+						return w;
+					}
+					return e;
+				});
+			}
 			return this;
 		},
+		
 		// remove(): removes the chars from the DOM.
 		remove: function()
 		{
@@ -109,6 +143,7 @@ define(['jquery', 'state', 'utils', 'engine'], function ($, state, utils, engine
 			this.contents = [];
 			return this;
 		},
+		
 		// style: alters the style attribute of all chars
 		style: function(style) {
 			this.contents.forEach(function(e)
@@ -117,6 +152,7 @@ define(['jquery', 'state', 'utils', 'engine'], function ($, state, utils, engine
 			});
 			return this;
 		},
+		
 		// unlink(): removes whatever link(s) the spans are contained in.
 		//
 		// The rule is as follows:
@@ -136,9 +172,10 @@ define(['jquery', 'state', 'utils', 'engine'], function ($, state, utils, engine
 		}
 		// passagelink(str): wraps 
 	};
+	
 	// Mirror a couple of other jQuery methods on WordArray
 	// Note to self: add jQueryUI's version of addClass, pronto.
-	[ "addClass", "removeClass", "toggleClass", "show", "hide" ].forEach(function(func)
+	[ "addClass", "removeClass", "toggleClass", "show", "hide", "remove", "fadeIn", "fadeOut" ].forEach(function(func)
 	{
 		WordArray[func] = function()
 		{
@@ -150,19 +187,20 @@ define(['jquery', 'state', 'utils', 'engine'], function ($, state, utils, engine
 			return this;
 		};
 	});
+	
 	Object.seal(WordArray);
 	
 	// Text(selector)
 	// Creates a WordArray of jQuery objects containing the chars in the selector.
 	// The selector is a search string.
-	function Text(selector)
+	function Text(selector, top)
 	{
 		return (function _Text(selector, chars, fullword)
 		{ 
 			//TODO:
 			// * filter-type selectors such as "first", "last"
 			var selector, temp,
-				ret = (fullword ? WordArray._create() : $());
+				ret = (fullword ? WordArray.create() : $());
 			
 			// Crudely coerce to string
 			selector += "";
@@ -210,7 +248,7 @@ define(['jquery', 'state', 'utils', 'engine'], function ($, state, utils, engine
 				}
 			}
 			return (ret.length > 0 || fullword ? ret : null);
-		}(selector, $("span.char, br", _top), true));
+		}(selector, $(_selector, top || _top), true));
 	}
 
 	function _elementGetChar(elem)
@@ -219,13 +257,29 @@ define(['jquery', 'state', 'utils', 'engine'], function ($, state, utils, engine
 	}
 	
 	// eval() the script in the context of this module.
-	function _eval(me, text, top)
+	function _eval(text, top)
 	{
 		_top = top;
-		return eval.call(me, text);
+		return eval(text);
 	};
 	
 	return Object.freeze({
-		eval: _eval
+		// Create WordArray
+		createWordArray: WordArray.create,
+		
+		Text: Text,
+		
+		// Filter for _eval()
+		eval: function()
+		{
+			var self = this;
+			
+			// Convert jQuery into WordArray
+			if (self && self.jquery)
+			{
+				self = WordArray.create(self.find(_selector));
+			}
+			return _eval.apply(self, arguments);
+		}
 	});
 });
