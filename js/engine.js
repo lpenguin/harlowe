@@ -4,7 +4,9 @@ define(['jquery', 'marked', 'story', 'utils', 'state', 'macros'], function ($, M
 	/*
 		engine: Module that renders passages to the DOM.
 	*/
-	var engine;
+	var engine,
+		// Handlers for hooks, installed by macrolib
+		hookHandlers = [];
 	
 	function twineMarked() {
 		/*
@@ -74,14 +76,14 @@ define(['jquery', 'marked', 'story', 'utils', 'state', 'macros'], function ($, M
 				href = Marked.escape(cap[1]);
 				text = href;
 			}
-			return '<a href="' + href + '">' + utils.charSpanify(text) + '</a>';
+			return '<a class="link" href="' + href + '">' + utils.charSpanify(text) + '</a>';
 		});
 		// Chars, links
 		Marked.InlineLexer.setFunc("url", function(cap, src)
 		{
 			var text = Marked.escape(cap[1]),
 				href = text;
-			return '<a href="' + href + '">' + utils.charSpanify(text) + '</a>';
+			return '<a class="link" href="' + href + '">' + utils.charSpanify(text) + '</a>';
 		});
 		// Chars, text.
 		Marked.InlineLexer.setFunc("text", function(cap)
@@ -93,8 +95,8 @@ define(['jquery', 'marked', 'story', 'utils', 'state', 'macros'], function ($, M
 		function hook(cap, link)
 		{
 			// Hooks do NOT have a href
-		    return '<a class="hook" data-hook="' + link + '">'
-			  + this.output(cap[1]) + '</a>';
+		    return '<span class="hook" data-hook="' + link + '">'
+			  + this.output(cap[1]) + '</span>';
 		};
 		
 		function reflink(cap)
@@ -165,11 +167,14 @@ define(['jquery', 'marked', 'story', 'utils', 'state', 'macros'], function ($, M
 			}
 			visited = (state.passageNameVisited(passage));
 			
-			return '<a class="passage-link ' + (visited ? 'visited" ' : '" ') + (!story.options.opaquelinks ? 'href="#' + escape(passage.replace(/\s/g, '')) + '"' : '')
-				+ ' data-twinelink="' + passage + '">' + text + '</a>';
+			return '<span class="link passage-link ' + (visited ? 'visited" ' : '" ') + (!story.options.opaquelinks ? 'href="#' + escape(passage.replace(/\s/g, '')) + '"' : '')
+				+ ' data-passage-link="' + passage + '">' + text + '</span>';
 		}
 		var html, temp, macroInstances;
 		
+		/*
+			The following syntax depends on access to the story data to perform, so it must occur outside of Marked.
+		*/
 		// replace [[ ]] with twine links
 		/* 
 			Format 1:
@@ -235,30 +240,30 @@ define(['jquery', 'marked', 'story', 'utils', 'state', 'macros'], function ($, M
 
 		return html;
 	};
-	
+
 	function appendRender(src, dest, top)
 	{
-		// Convert hooks into links, or vice-versa.
-		function updateHooks()
-		{
-			$(".hook[data-hook]", top).each(function() {
-				var e = $(this);
-				var selector = "[data-hook='"+e.attr("data-hook")+"']";
-				e.removeClass("hook-link hook-hover");
-				
-				if ($("[data-macro=onclick]" + selector, top).length)
-				{
-					e.addClass("hook-link");
-				}
-				else if ($("[data-macro*=onmouse]" + selector, top).length)
-				{
-					e.addClass("hook-hover");
-				}
-			});
-		};
 		dest.append(src);
 		
-		updateHooks();
+		// Perform actions for each scoped macro's scope.
+		$(".hook[data-hook]", top).each(function() {
+			var e = $(this);
+			
+			hookHandlers.forEach(function(a) {
+			
+				if (Array.isArray(a) && a.length === 2)
+				{
+					if ($("[data-macro=" + a[1] +"][data-hook='" + e.attr("data-hook") + "']", top).length)
+					{
+						e.addClass(a[0]);
+					}
+					else
+					{
+						e.removeClass(a[0]);
+					}
+				}
+			});
+		});
 		return src;
 	};
 	
@@ -312,11 +317,11 @@ define(['jquery', 'marked', 'story', 'utils', 'state', 'macros'], function ($, M
 	function createPassageElement()
 	{
 		var container, back, fwd, sidebar;
-		container = $('<section class="passage"><nav class="sidebar"><a class="icon permalink" title="Permanent link to this passage">&sect;</a></nav></section>'),
+		container = $('<section class="passage"><nav class="sidebar"><span class="link icon permalink" title="Permanent link to this passage">&sect;</span></nav></section>'),
 		sidebar = container.children(".sidebar");
 		
-		back = $('<a class="icon undo" title="Undo">&#8630;</a>').click(engine.goBack);
-		fwd = $('<a class="icon redo" title="Redo">&#8631;</a>').click(engine.goForward);
+		back = $('<span class="link icon undo" title="Undo">&#8630;</span>').click(engine.goBack);
+		fwd = $('<span class="link icon redo" title="Redo">&#8631;</span>').click(engine.goForward);
 		
 		if (!state.hasPast())
 			back.css({visibility:"hidden"});
@@ -338,6 +343,16 @@ define(['jquery', 'marked', 'story', 'utils', 'state', 'macros'], function ($, M
 		container = createPassageElement().append(render(passage.html()));
 		appendRender(container, el);
 		return container;
+	};
+	
+	// Used by addHookHandler, called when the hook's event is triggered.
+	function hookHandlerEventFn() {
+		var elem = $(this);
+		// Trigger the scoped macros that refer to this hook.
+		$("[data-macro][data-hook=" + elem.attr("data-hook") + "]").each(function() {
+			var action = $(this).data("action");
+			(typeof action === "function" && action(elem));
+		});
 	};
 	
 	engine = Object.freeze({
@@ -369,6 +384,22 @@ define(['jquery', 'marked', 'story', 'utils', 'state', 'macros'], function ($, M
 			showPassage(id, stretch);
 		},
 		
+		/*
+			Register the behaviour that a scoped macro performs
+			This involves:
+			- A function to alter any matching hooks ("hookHandlers"),
+			  so that, for instance, they are styled differently.
+			- The event on which the macro's scope will execute.
+		*/
+		addHookHandler: function(desc)
+		{
+			if ($.isPlainObject(desc) && desc.event && desc.name && desc.hookClass)
+			{
+				hookHandlers.push([desc.hookClass, desc.name]);
+				$('html').on(desc.event + "." + desc.name + "-macro", "." + desc.hookClass.replace(" ", "."), hookHandlerEventFn);
+			}
+		},
+		
 		// Install handlers, etc.
 		init: function()
 		{
@@ -376,30 +407,13 @@ define(['jquery', 'marked', 'story', 'utils', 'state', 'macros'], function ($, M
 			twineMarked();
 			
 			// Install handler for links
-			$('body').on('click', 'a[data-twinelink]', function (e)
+			$('html').on('click.passage-link', '.passage-link[data-passage-link]', function (e)
 			{
-				var next = story.getPassageID($(this).attr('data-twinelink'));
+				var next = story.getPassageID($(this).attr('data-passage-link'));
 				if (next)
 				{
 					engine.goToPassage(next);
 				}
-				e.preventDefault();
-			});
-			
-			// Install handler for hooklinks
-			$('body').on('click', '.hook-link', function (e)
-			{
-				var elem = $(this),
-					index = elem.attr("data-hook");
-				
-				// Call <<onclick>>s
-				$("[data-macro][data-hook=" + index + "]").each(function() {
-					var action = $(this).data("action");
-					(typeof action === "function" && action(elem));
-				});
-				
-				// Call hooked <<scripts>>
-				state.callScript(index, elem);
 				e.preventDefault();
 			});
 			

@@ -84,6 +84,7 @@ define(['jquery', 'state', 'utils', 'engine'], function ($, state, utils, engine
 			return this.contents.length;
 		},
 		
+		// Get the text of the first element.
 		text: function()
 		{
 			if (this.contents.length)
@@ -99,21 +100,27 @@ define(['jquery', 'state', 'utils', 'engine'], function ($, state, utils, engine
 			ret.contents = [];
 			if (word && word.jquery)
 			{
-				ret.contents.push(word.find(_selector));
+				// Turn each matched element in the argument
+				// into a separate word
+				word.each(function() {
+					ret.contents.push($(this).find(_selector));
+				});
 			}
 			return ret;
 		},
 		
 		// replace(str): Takes a string, charSpans it, then
-		// replaces this word's chars with it.
+		// replaces this WordArray's words with it.
 		replace: function(str) {
 			var word = engine.render(str);
 			if (word.length)
 			{
+				// Replace the words
 				this.contents = this.contents.map(function(e)
 				{
-					var w; 
+					var w;
 					
+					// Check that the word is a jQuery
 					if (e && e.jquery)
 					{
 						// Waste not...
@@ -121,11 +128,34 @@ define(['jquery', 'state', 'utils', 'engine'], function ($, state, utils, engine
 						{
 							return e;
 						}
+						// Insert a copy of the replacement word
 						w = word.clone();
 						e.first().before(w);
-						console.log(e.parent());
 						e.remove();
 						return w;
+					}
+					return e;
+				});
+			}
+			return this;
+		},
+		
+		// append(str): appends instead of replaces.
+		append: function(str) {
+			var word = engine.render(str);
+			if (word.length)
+			{
+				// Append the words
+				this.contents = this.contents.map(function(e)
+				{
+					var w;
+					
+					// Check that the word is a jQuery
+					if (e && e.jquery)
+					{
+						// Insert a copy of the replacement word
+						w = word.clone();
+						return e.last().after(w);
 					}
 					return e;
 				});
@@ -153,16 +183,16 @@ define(['jquery', 'state', 'utils', 'engine'], function ($, state, utils, engine
 			return this;
 		},
 		
-		// unlink(): removes whatever link(s) the spans are contained in.
+		// unlink(): removes whatever hook(s) the spans are contained in.
 		//
 		// The rule is as follows:
-		// For each char, find something .closest("a")
-		// and .unwrap() its first child.
-		unlink: function()
+		// For each char, find something .closest(".hook")
+		// and .unwrap() its children.
+		unhook: function()
 		{
 			this.contents.forEach(function(e)
 			{
-				var l = e.closest("a");
+				var l = e.closest(".hook");
 				if (~l.length)
 				{
 					l.children().unwrap();
@@ -170,7 +200,6 @@ define(['jquery', 'state', 'utils', 'engine'], function ($, state, utils, engine
 			});
 			return this;
 		}
-		// passagelink(str): wraps 
 	};
 	
 	// Mirror a couple of other jQuery methods on WordArray

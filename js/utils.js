@@ -8,6 +8,7 @@ define(['jquery'], function($)
 	var p = $('<p>');
 	
 	var utils = Object.freeze({
+
 		// Make object properties non-deletable and non-writable.
 		lockProperties: function(obj)
 		{
@@ -20,13 +21,14 @@ define(['jquery'], function($)
 				var prop = keys[i];
 				
 				propDesc[prop] = {
-					enumerable: true
+					enumerable: true,
+					writable: false
 				};
 			}
 			return Object.defineProperties(obj, propDesc);
 		},
-		
-		// Clone - faster/better than $.extend({}, ...)
+
+		// Clone - faster than $.extend()
 		clone: function(obj) {
 			var i, ret = Object.create(Object.getPrototypeOf(obj)),
 				keys = Object.keys(obj),
@@ -41,6 +43,10 @@ define(['jquery'], function($)
 		// For speed, convert common entities quickly, and convert others with jQuery.
 		HTMLEntityConvert: function(text)
 		{
+			if (text.length <= 1)
+			{
+				return text;
+			}
 			switch(text)
 			{
 				case "&lt;": return '<';
@@ -56,7 +62,7 @@ define(['jquery'], function($)
 		charToSpan: function(c)
 		{
 			return "<span class='char' data-char='"
-				+ (c.length > 1 ? utils.HTMLEntityConvert(c) : c) + "'>"
+				+ utils.HTMLEntityConvert(c) + "'>"
 				+ c + "</span>";
 		},
 		

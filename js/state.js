@@ -41,10 +41,7 @@ define(['story', 'utils'], function(story, utils)
 		Values specific to the current passage, which
 		are reset by changePassage();
 	*/
-	
-	// Passage-specific scripts.
-	scripts = {},
-	
+
 	// Passage-specific hook macros.
 	hookMacros = {},
 		
@@ -172,22 +169,6 @@ define(['story', 'utils'], function(story, utils)
 			return ret;
 		},
 		
-		// Add a hook function, one whose 'this' value is currently unknown.
-		// callback: function to add.
-		addScript: function(name, callback, args)
-		{
-			scripts[name] = [callback, args];
-		},
-		
-		// Run a hook script in the context of a given object (usually an element).
-		callScript: function(name, element)
-		{
-			if (scripts[name] && typeof scripts[name][0] === "function")
-			{
-				return (scripts[name][0]).apply(element, scripts[name][1]);
-			}
-		},
-		
 		/*
 			Movers/shakers
 		*/
@@ -203,8 +184,6 @@ define(['story', 'utils'], function(story, utils)
 			recent = stateProto.create(pst.variables, newPassageID);
 			// Clear the future
 			future = [];
-			// Clear all scripts
-			scripts = {};
 		},
 		
 		// Rewind the state

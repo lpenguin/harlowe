@@ -1,4 +1,4 @@
-define(['jquery', 'story', 'state'], function($, story, state)
+define(['jquery', 'story', 'state', 'utils'], function($, story, state, utils)
 {
 	"use strict";
 	/*
@@ -34,7 +34,7 @@ define(['jquery', 'story', 'state'], function($, story, state)
 		and apply()ed to macro functions.
 		This contains utility functions that any macro function can call on.
 	*/
-	macroProto = Object.freeze({
+	macroProto = utils.lockProperties({
 	
 		// This is called by renderMacro() just before the macro is executed
 		init: function()
@@ -85,7 +85,6 @@ define(['jquery', 'story', 'state'], function($, story, state)
 			
 			if (a.length)
 			{
-			console.log(a);
 				return a[0];
 			}
 		},
@@ -132,13 +131,41 @@ define(['jquery', 'story', 'state'], function($, story, state)
 			  }
 			}
 			return 0;
+		},
+		
+		// Takes a string argument that may be a scope selector,
+		// and returns a pair containing the type and the selector text.
+		scopeType: function(name)
+		{
+			var r = /\$\("([^"]*)"\)|"((?:[^"\\]|\\.)*)"|(\w*)/.exec(name);
+			if (r.length)
+			{
+				// jQuery selector $("...")
+				if (r[1])
+				{
+					return ["jquery", r[1]];
+				}
+				// Word selector "..."
+				else if (r[2])
+				{
+					return ["wordarray",r[2]];
+				}
+				// Hook
+				else if (r[3])
+				{
+					return ["hook",r[3]];
+				}
+			}
+			return ["undefined",name];
 		}
 	});
 	
 	// Private factory method
 	function createMacroInstance(html, name, startIndex, endIndex)
 	{
-		var macro = Object.create(macroProto), selfClosing;
+		var selfClosing,
+			macro = Object.create(macroProto);
+		
 		macro.name = name;
 		macro.data = _handlers[name];
 		macro.startIndex = startIndex;
@@ -182,6 +209,7 @@ define(['jquery', 'story', 'state'], function($, story, state)
 	
 	/*
 		The object containing all the macros available to a story.
+		Should remain extensible.
 	*/
 	macros = Object.freeze({
 		
@@ -228,6 +256,7 @@ define(['jquery', 'story', 'state'], function($, story, state)
 				errorMsg = " of macros.supplement isn't an array or a string.",
 				selfClosing = desc.selfClosing;
 			
+			// Type checking
 			if (!stringOrArray(name))
 			{
 				return loaderError("Argument " + 1 + errorMsg);
@@ -236,7 +265,9 @@ define(['jquery', 'story', 'state'], function($, story, state)
 			{
 				return loaderError("Argument " + 3 + errorMsg);
 			}
+			// Get the main macro's data
 			mfunc = macros.get(main);
+			// Define a function for the supplement
 			desc.fn = function() {
 				if (!this.context || ~~main.indexOf(this.context.name))
 				{
@@ -295,7 +326,7 @@ define(['jquery', 'story', 'state'], function($, story, state)
 										break;
 									}
 								}
-								else if (foundEndMacro[1] && foundEndMacro[1] == foundMacro[1]) { // Found nested <<macro>>
+								else if (foundEndMacro[1] && foundEndMacro[1] === foundMacro[1]) { // Found nested <<macro>>
 									nesting += 1;
 								}
 							}
@@ -310,6 +341,20 @@ define(['jquery', 'story', 'state'], function($, story, state)
 					macroRE.lastIndex = endIndex;
 				}
 			} while (foundMacro);
+		},
+		
+		// Extend MacroProto without overwriting previous insertions.
+		extendMacroProto: function(name, value)
+		{
+			if (macroProto[name] === undefined)
+			{
+				Object.defineProperty(macroProto, name, {
+					value: value,
+					enumerable: true
+				});
+				return true;
+			}
+			return false;
 		}
 	});
 	
