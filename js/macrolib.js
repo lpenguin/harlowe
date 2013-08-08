@@ -1,4 +1,4 @@
-define(['jquery', 'story', 'script', 'state', 'macros', 'engine'], function($, story, script, state, macros, engine)
+define(['jquery', 'story', 'script', 'state', 'macros', 'engine', 'utils'], function($, story, script, state, macros, engine, utils)
 {
 	"use strict";
 	/*
@@ -17,10 +17,12 @@ define(['jquery', 'story', 'script', 'state', 'macros', 'engine'], function($, s
 		this.args: array of unescaped argument strings in the call. eg. [ "escaped", "=", "false" ]
 		this.contents: string containing the HTML between the open tag and close tag, if any.
 		this.HTMLcontents: string containing this.contents as escaped HTML.
+		
 		this.el: jQuery-wrapped destination <span>.
 		this.context: the macro instance which caused this macro to be rendered, or null if it's the top passage.
 		this.top: jQuery object for the entire passage in which this is located.
 		this.data: the macro's function.
+		this.scope: the scope WordArray, if this is a scoped macro.
 		
 		this.error(text): adds the 'error' class to the element, and attaches the message.
 		this.clear(): removes the destination element, unless in debug mode.
@@ -241,67 +243,17 @@ define(['jquery', 'story', 'script', 'state', 'macros', 'engine'], function($, s
 		}
 	});
 	
-	/*
-		Scoped Macros
-	*/
-	
-	macros.extendMacroProto("setScope", function(name, setAttr)
-	{
-		var r;
-		
-		if (name.wordarray)
-		{
-			this.scope = name;
-		}
-		else if (name.jquery)
-		{
-			this.scope = script.createWordArray(name);
-		}
-		else if (typeof name === "string")
-		{
-			r = this.scopeType(name);
-			if (r[0] === "jquery")
-			{
-				this.scope = script.createWordArray($(r[1]));
-			}
-			// Word selector "..."
-			else if (r[0] === "wordarray")
-			{
-				this.scope = script.Text(r[1], this.top);
-			}
-			// Hook
-			else if (r[0] === "hook")
-			{
-				if (setAttr)
-				{
-					this.el.attr("data-hook", name);
-				}
-				this.scope = script.createWordArray($(".hook[data-hook=" + r[1] + "]", this.top));
-			}
-		}
-		else
-		{
-			this.scope = script.createWordArray(this.top);
-		}
-	});
-	
-	macros.extendMacroProto("getScope", function()
-	{
-		var c; c = this.contextNearest(["with", "onclick"]);
-		if (c && c.scope)
-		{
-			return c.scope;
-		}
-		else return this.top;
-	});
-	
 	// <<with ... >> ... <</with>>
 	// Select a WordArray or jQuery on which "scoped macros" can be performed.
 	macros.add("with", {
 		scoping: true,
 		fn: function(a)
 		{
-			this.setScope(a, true);
+			this.setScope(a);
+			if (utils.type(a) === "hook string")
+			{
+				this.el.attr("data-hook", a);
+			}
 			return this.HTMLcontents;
 		},
 		version: {
@@ -331,7 +283,11 @@ define(['jquery', 'story', 'script', 'state', 'macros', 'engine'], function($, s
 			}
 			else
 			{
-				this.setScope(a, true);
+				this.setScope(a);
+				if (utils.type(a) === "hook string")
+				{
+					this.el.attr("data-hook", a);
+				}
 				return this.HTMLcontents;
 			}
 		},
@@ -352,7 +308,7 @@ define(['jquery', 'story', 'script', 'state', 'macros', 'engine'], function($, s
 		{
 			if (!this.ready)
 			{
-				if (this.scopeType(a)[0] === "hook")
+				if (utils.type(a) === "hook string")
 				{
 					this.el.attr("data-hook", a);
 				}
@@ -365,7 +321,7 @@ define(['jquery', 'story', 'script', 'state', 'macros', 'engine'], function($, s
 			}
 			else
 			{
-				this.setScope(a, false);
+				this.setScope(a);
 				// Consume the hook
 				this.scope.unhook();
 				return this.HTMLcontents;
@@ -376,10 +332,10 @@ define(['jquery', 'story', 'script', 'state', 'macros', 'engine'], function($, s
 	engine.addHookHandler({
 		name: "click",
 		event: "click",
-		hookClass: "link hook-link"
+		hookClass: "link macro-link"
 	});
 	
-	// <<click ... >> ... <</onclick>>
+	// <<click ... >> ... <</click>>
 	// Perform the enclosed macros when the scope is clicked.
 	macros.add("click", {
 		scoping: true,
@@ -394,10 +350,10 @@ define(['jquery', 'story', 'script', 'state', 'macros', 'engine'], function($, s
 	engine.addHookHandler({
 		name: "mouseover",
 		event: "mouseenter",
-		hookClass: "hook-hover"
+		hookClass: "macro-hover"
 	});
 	
-	// <<onmouseover ... >> ... <</onmouseover>>
+	// <<mouseover ... >> ... <</mouseover>>
 	// Perform the enclosed macros when the scope is moused over.
 	macros.add("mouseover", {
 		scoping: true,
@@ -412,10 +368,10 @@ define(['jquery', 'story', 'script', 'state', 'macros', 'engine'], function($, s
 	engine.addHookHandler({
 		name: "mouseout",
 		event: "mouseleave",
-		hookClass: "hook-mouseout"
+		hookClass: "macro-mouseout"
 	})
 	
-	// <<onmouseout ... >> ... <</onmouseout>>
+	// <<mouseout ... >> ... <</mouseout>>
 	// Perform the enclosed macros when the scope is moused away.
 	macros.add("mouseout", {
 		scoping: true,
@@ -430,40 +386,15 @@ define(['jquery', 'story', 'script', 'state', 'macros', 'engine'], function($, s
 	/*
 		Scope-affecting macros
 	*/
-
-	/*
-		Common function of scope macros, which wraps around an inner function (innerFn)
-		that should also be defined for the macro.
-		
-		Generate a unique function object for each macro.
-	*/
-	function scopeMacroFn()
-	{
-		return function(a)
-		{
-			this.scope = (a ? this.setScope(a, false) : this.getScope());
-			
-			if (this.scope && this.scope.wordarray)
-			{
-				if (this.data.innerFn && (typeof this.data.innerFn === "function"))
-				{
-					this.data.innerFn.apply(this, arguments);
-				}
-				return this.clear();
-			}
-			return this.error("<<" + this.name + ">> error: no scope was found.");
-		};
-	};
 	
 	// <<replace [...] >> ... <</replace>>
 	// A scoped macro that replaces the scope element(s) with its contents.
 	
 	macros.add("replace", {
 		scoped: true,
-		fn: scopeMacroFn(),
-		innerFn: function(scope)
+		fn: function()
 		{
-			this.scope.replace(this.HTMLcontents);
+			this.scope.replace(engine.render(this.HTMLcontents));
 		},
 		version: {
 			major: 0,
@@ -476,10 +407,24 @@ define(['jquery', 'story', 'script', 'state', 'macros', 'engine'], function($, s
 	// Similar to replace, but appends the contents to the scope(s).
 	macros.add("append", {
 		scoped: true, 
-		fn: scopeMacroFn(),
-		innerFn: function(scope)
+		fn: function()
 		{
-			this.scope.append(this.HTMLcontents);
+			this.scope.append(engine.render(this.HTMLcontents));
+		},
+		version: {
+			major: 0,
+			minor: 0,
+			revision: 0
+		}
+	});
+	
+	// <<prepend [...] >> ... <</prepend>>
+	// Similar to replace, but prepends the contents to the scope(s).
+	macros.add("prepend", {
+		scoped: true, 
+		fn: function()
+		{
+			this.scope.prepend(engine.render(this.HTMLcontents));
 		},
 		version: {
 			major: 0,
@@ -493,8 +438,7 @@ define(['jquery', 'story', 'script', 'state', 'macros', 'engine'], function($, s
 	macros.add("remove", {
 		scoped: true, 
 		selfClosing: true,
-		fn: scopeMacroFn(),
-		innerFn: function(scope)
+		fn: function()
 		{
 			this.scope.remove();
 		},

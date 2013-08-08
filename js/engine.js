@@ -39,11 +39,13 @@ define(['jquery', 'marked', 'story', 'utils', 'state', 'macros'], function ($, M
 				return cap[0];
 			}
 		});
+		
 		// No Sextext-style headers, part 1
-		Marked.Lexer.setRule("lheading", /[]/);
+		Marked.Lexer.setRule("lheading", /[]/);	
+		
 		// Multiple line breaks + no Sextext-style headers, part 2
 		Marked.Lexer.setRule("paragraph",
-			/^((?:[^\n]+\n?(?!hr|heading|lheading|blockquote|tag|def))+)\n/);
+			/^((?:[^\n]+\n?(?!hr|heading|lheading|blockquote|tag|def))+)\n?/);	
 		Marked.Lexer.setRule("br",/^\n/);
 		Marked.Lexer.setFunc("br", function(cap)
 		{ 
@@ -94,7 +96,6 @@ define(['jquery', 'marked', 'story', 'utils', 'state', 'macros'], function ($, M
 		// Hooks
 		function hook(cap, link)
 		{
-			// Hooks do NOT have a href
 		    return '<span class="hook" data-hook="' + link + '">'
 			  + this.output(cap[1]) + '</span>';
 		};

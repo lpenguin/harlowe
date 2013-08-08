@@ -39,6 +39,53 @@ define(['jquery'], function($)
 			}
 			return ret;
 		},
+		
+		/*
+			Get the type of a scope string or Twine-specific object.
+			Returns a string.
+			For strings, determines the type of scope selector used.
+		*/
+		type: function(val) {
+			var u;
+			if (!val)
+			{
+				return u+"";
+			}
+			if (typeof val === "object")
+			{
+				if (val.wordarray)
+				{
+					return "wordarray";
+				}
+				else if (val.jquery)
+				{
+					return "jquery";
+				}
+			}
+			else if (typeof val === "string")
+			{
+				var r = /\$\("([^"]*)"\)|"((?:[^"\\]|\\.)*)"|(\w*)/.exec(val);
+				if (r.length)
+				{
+					// jQuery selector $("...")
+					if (r[1])
+					{
+						return "jquery string";
+					}
+					// Word selector "..."
+					else if (r[2])
+					{
+						return "wordarray string";
+					}
+					// Hook
+					else if (r[3])
+					{
+						return "hook string";
+					}
+				}
+				return u+"";
+			}
+		},
 
 		// For speed, convert common entities quickly, and convert others with jQuery.
 		HTMLEntityConvert: function(text)
@@ -69,7 +116,10 @@ define(['jquery'], function($)
 		// Calls charToSpan() on the whole string.
 		charSpanify: function(text)	{
 			return text.replace(/&[#\w]+;|./g, utils.charToSpan);
-		}
+		},
+		
+		// Selector for CharSpans
+		charSpanSelector: "span.char, br"
 	});
 	return utils;
 });

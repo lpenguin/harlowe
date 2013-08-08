@@ -12,7 +12,6 @@
 	0% { opacity: 0 }
 	100% { opacity: 1 }
 }
-
 @-webkit-keyframes appear
 {
 	0% { opacity: 0 }
@@ -24,7 +23,6 @@
 	0% { opacity: 1 }
 	100% { opacity: 0 }
 }
-
 @-webkit-keyframes disappear
 {
 	0% { opacity: 1 }
@@ -36,7 +34,6 @@
 	0%,100% { opacity: 0 }
 	50% { opacity: 1 }
 }
-
 @-webkit-keyframes fade-in-out
 {
 	0%,100% { opacity: 0 }
@@ -48,7 +45,6 @@
 	0%, 100% {}
 	50% { transform: translateY(-0.2em) }
 }
-
 @-webkit-keyframes rumble 
 {
 	0%, 100% {}
@@ -64,6 +60,28 @@
 {
 	0%, 100% {}
 	50% { -webkit-transform: translateX(0.2em) }
+}
+
+/* Slightly eased-out shudders */
+@keyframes shudder-in
+{
+   0%, 100% { transform: translateX(0em); }
+   5%, 25%, 45% { transform: translateX(-1em); }
+   15%, 35%, 55% { transform: translateX(1em); }
+   65% { transform: translateX(-0.6em); }
+   75% { transform: translateX(0.6em); }
+   85% { transform: translateX(-0.2em); }
+   95% { transform: translateX(0.2em); }
+}
+@-webkit-keyframes shudder-in
+{
+   0%, 100% { -webkit-transform: translateX(0em); }
+   5%, 25%, 45% { -webkit-transform: translateX(-1em); }
+   15%, 35%, 55% { -webkit-transform: translateX(1em); }
+   65% { -webkit-transform: translateX(-0.6em); }
+   75% { -webkit-transform: translateX(0.6em); }
+   85% { -webkit-transform: translateX(-0.2em); }
+   95% { -webkit-transform: translateX(0.2em); }
 }
 
 /*** Main formatting ***/
@@ -199,24 +217,24 @@ h1, h2, h3, h4, h5, h6
 
 /*** Inner passage formatting ***/
 
-.hook-hover
+.macro-hover
 {
 	border-bottom: 1px dashed #666;
 }
 
-.hook-mouseout
+.macro-mouseout
 {
 	border: hsla(200,50%,50%,0.25) 1px solid;
 }
 
-.hook-mouseout:hover
+.macro-mouseout:hover
 {
 	background-color: hsla(200,50%,50%,0.25);
 	border: transparent 1px solid;
 	border-radius: 0.2em;
 }
 
-.passage-link, .hook-link
+.passage-link, .macro-link
 {
 	color: #4169E1;
 	font-weight: bold;
@@ -229,12 +247,12 @@ h1, h2, h3, h4, h5, h6
 	color: #6941e1;
 }
 
-.passage-link:hover, .hook-link:hover
+.passage-link:hover, .macro-link:hover
 {
 	color: DeepSkyBlue;
 }
 
-.passage-link:active, .hook-link:active
+.passage-link:active, .macro-link:active
 {
 	color: #DD4B39;
 }
@@ -464,6 +482,14 @@ blink
 	-webkit-animation: shudder linear 0.1s 0s infinite;
 	animation: shudder linear 0.1s 0s infinite;
       display:inline-block;
+}
+
+/* Insertion effects */
+
+.shudder-in
+{
+    animation: shudder-in 1s ease-out;
+    -webkit-animation: shudder-in 1s ease-out;
 }
 
 /*** Base64 encoded images ***/

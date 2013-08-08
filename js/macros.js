@@ -1,4 +1,4 @@
-define(['jquery', 'story', 'state', 'utils'], function($, story, state, utils)
+define(['jquery', 'story', 'state', 'utils', 'wordarray'], function($, story, state, utils, WordArray)
 {
 	"use strict";
 	/*
@@ -89,6 +89,26 @@ define(['jquery', 'story', 'state', 'utils'], function($, story, state, utils)
 			}
 		},
 		
+		// Get the scope, if it is a scoped macro.
+		getScope: function()
+		{
+			var i, c = this.contextQuery();
+			for (i = 0; i < c.length; i += 1)
+			{
+				if (c[i] && c[i].data && c[i].data.scoping && c[i].scope)
+				{
+					return c[i].scope;
+				}
+			}
+			return this.top;
+		},
+		
+		// Set the scope, if it is a scoped macro.
+		setScope: function(name)
+		{
+			this.scope = WordArray.create(name, this.top);
+		},
+		
 		// This implements a small handful of more authorly JS operators for <<set>> and <<print>>.
 		// <<set hp to 3>> --> <<set hp = 3>>
 		// <<if hp is 3>> --> <<if hp == 3>>
@@ -131,32 +151,6 @@ define(['jquery', 'story', 'state', 'utils'], function($, story, state, utils)
 			  }
 			}
 			return 0;
-		},
-		
-		// Takes a string argument that may be a scope selector,
-		// and returns a pair containing the type and the selector text.
-		scopeType: function(name)
-		{
-			var r = /\$\("([^"]*)"\)|"((?:[^"\\]|\\.)*)"|(\w*)/.exec(name);
-			if (r.length)
-			{
-				// jQuery selector $("...")
-				if (r[1])
-				{
-					return ["jquery", r[1]];
-				}
-				// Word selector "..."
-				else if (r[2])
-				{
-					return ["wordarray",r[2]];
-				}
-				// Hook
-				else if (r[3])
-				{
-					return ["hook",r[3]];
-				}
-			}
-			return ["undefined",name];
 		}
 	});
 	
@@ -208,6 +202,28 @@ define(['jquery', 'story', 'state', 'utils'], function($, story, state, utils)
 	};
 	
 	/*
+		Common function of scope macros, which wraps around an inner function (innerFn)
+		that should also be defined for the macro.
+	*/
+	function scopeMacroFn(innerFn)
+	{
+		return function(a)
+		{
+			this.scope = (a ? this.setScope(a) : this.getScope());
+			
+			if (this.scope && this.scope.wordarray)
+			{
+				if (innerFn && (typeof innerFn === "function"))
+				{
+					innerFn.apply(this, arguments);
+				}
+				return this.clear();
+			}
+			return this.error("<<" + this.name + ">> error: no scope was found.");
+		};
+	};
+	
+	/*
 		The object containing all the macros available to a story.
 		Should remain extensible.
 	*/
@@ -234,6 +250,13 @@ define(['jquery', 'story', 'state', 'utils'], function($, story, state, utils)
 			}
 			fn = desc.fn;
 			delete desc.fn;
+			
+			// Scoped macro? Wrap its function in a scope-checking wrapper.
+			if (desc.scoped)
+			{
+				fn = scopeMacroFn(fn);
+			}
+			
 			$.extend(fn,desc);
 			if (Array.isArray(name))
 			{
@@ -344,6 +367,7 @@ define(['jquery', 'story', 'state', 'utils'], function($, story, state, utils)
 		},
 		
 		// Extend MacroProto without overwriting previous insertions.
+		// Currently unused.
 		extendMacroProto: function(name, value)
 		{
 			if (macroProto[name] === undefined)
