@@ -5,9 +5,8 @@ define(['jquery'], function($)
 		utils: Utility functions, constants, etc.
 	*/
 	
-	var p = $('<p>');
-	
-	var utils = Object.freeze({
+	var p = $('<p>'),
+		utils = Object.freeze({
 
 		// Make object properties non-deletable and non-writable.
 		lockProperties: function(obj)
@@ -64,6 +63,7 @@ define(['jquery'], function($)
 			}
 			else if (typeof val === "string")
 			{
+				//TODO: permit either quote form in jQuery selector
 				var r = /\$\("([^"]*)"\)|"((?:[^"\\]|\\.)*)"|(\w*)/.exec(val);
 				if (r.length)
 				{
@@ -104,8 +104,33 @@ define(['jquery'], function($)
 			};
 		},
 		
+		// Convert a class selector chain (".magic.link") into a HTML classlist attribute.
+		classListToSelector: function(c)
+		{
+			if (typeof c === "string")
+			{
+				return "." + c.replace(/ /g, ".");
+			}
+		},
+		
+		// ...and, vice versa.
+		selectorToClassList: function(c)
+		{
+			if (typeof c === "string")
+			{
+				return c.replace(/\./g, " ").trim();
+			}
+		},
+		
+		// Convert a hook index string to a selector.
+		hookToSelector: function(c)
+		{
+			c = c.replace(/"/g, "&quot;");
+			return '.hook[data-hook="' + c + '"]';
+		},
+		
 		// Takes a string containing a character or HTML entity, and wraps it into a
-		// <span> tag (converting the entity if it is one)
+		// <span> tag (converting the entity if it is one).
 		charToSpan: function(c)
 		{
 			return "<span class='char' data-char='"
@@ -119,7 +144,11 @@ define(['jquery'], function($)
 		},
 		
 		// Selector for CharSpans
-		charSpanSelector: "span.char, br"
+		charSpanSelector: "span.char, br",
+		
+		// Regex suffix that, when applied, causes the preceding match to only apply when not inside a quoted
+		// string. This accounts for both quote styles and escaped quote characters.
+		unquotedCharRegexSuffix: "(?=(?:[^\"'\\\\]*(?:\\\\.|'(?:[^'\\\\]*\\\\.)*[^'\\\\]*'|\"(?:[^\"\\\\]*\\\\.)*[^\"\\\\]*\"))*[^'\"]*$)"
 	});
 	return utils;
 });

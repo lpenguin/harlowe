@@ -89,7 +89,7 @@ define(['jquery', 'story', 'script', 'state', 'macros', 'engine', 'utils'], func
 	
 	// <<nobr>> ... <</nobr>>
 	// Remove line breaks from contained passage text.
-	// Suggested by @mcclure111, for use with complex macro sets.
+	// Suggested by @mcclure111.
 	// Manual line breaks can be inserted with <br>.
 	macros.add("nobr",{
 		fn: function()
@@ -244,18 +244,9 @@ define(['jquery', 'story', 'script', 'state', 'macros', 'engine', 'utils'], func
 	});
 	
 	// <<with ... >> ... <</with>>
-	// Select a WordArray or jQuery on which "scoped macros" can be performed.
+	// The simplest kind of scoped macro.
 	macros.add("with", {
 		scoping: true,
-		fn: function(a)
-		{
-			this.setScope(a);
-			if (utils.type(a) === "hook string")
-			{
-				this.el.attr("data-hook", a);
-			}
-			return this.HTMLcontents;
-		},
 		version: {
 			major: 0,
 			minor: 0,
@@ -267,28 +258,22 @@ define(['jquery', 'story', 'script', 'state', 'macros', 'engine', 'utils'], func
 	// Perform the enclosed macros after the time has passed.
 	macros.add("time", {
 		scoping: true,
-		fn: function(a, time)
-		{
-			if (!this.ready)
+		deferred: true,
+		fn: function(scope, time) {
+			var ms = this.cssTimeUnit(time);
+			if (ms)
 			{
-				this.ready = true;
-				time = this.cssTimeUnit(time);
-				// TODO: Check for memory leak potential
+				// TODO: Check for memory leak potential?
 				setTimeout(function() {
-					if ($('html').find(this.el).length > 0)
+					if ($(document.documentElement).find(this.el).length > 0)
 					{
 						engine.renderMacro(this);
 					}
-				}.bind(this), time);
+				}.bind(this), ms);
 			}
 			else
 			{
-				this.setScope(a);
-				if (utils.type(a) === "hook string")
-				{
-					this.el.attr("data-hook", a);
-				}
-				return this.HTMLcontents;
+				return this.error("<<time>> error: " + time + " is not a valid time delay.");
 			}
 		},
 		version: {
@@ -298,90 +283,74 @@ define(['jquery', 'story', 'script', 'state', 'macros', 'engine', 'utils'], func
 		}
 	});
 	
-	/*
-		Common function of deferred scoping macros.
-	*/
-	// Generate a unique copy for each macro.
-	function deferredScopingMacroFn()
-	{
-		return function(a)
-		{
-			if (!this.ready)
-			{
-				if (utils.type(a) === "hook string")
-				{
-					this.el.attr("data-hook", a);
-				}
-				this.ready = true;
-				this.el.data("action", function() {
-					engine.renderMacro(this);
-				}.bind(this));
-				// Keep it around
-				return "&zwnj;";
-			}
-			else
-			{
-				this.setScope(a);
-				// Consume the hook
-				this.scope.unhook();
-				return this.HTMLcontents;
-			}
-		};
-	};
-	
-	engine.addHookHandler({
-		name: "click",
-		event: "click",
-		hookClass: "link macro-link"
-	});
-	
 	// <<click ... >> ... <</click>>
 	// Perform the enclosed macros when the scope is clicked.
 	macros.add("click", {
 		scoping: true,
-		fn: deferredScopingMacroFn(),
+		enchantment: {
+			event: "click",
+			once: true,
+			classList: "link enchantment-link",
+			render: engine.renderMacro
+		},
 		version: {
 			major: 0,
 			minor: 0,
 			revision: 0
 		}
 	});
-	
-	engine.addHookHandler({
-		name: "mouseover",
-		event: "mouseenter",
-		hookClass: "macro-hover"
-	});
-	
+
 	// <<mouseover ... >> ... <</mouseover>>
 	// Perform the enclosed macros when the scope is moused over.
 	macros.add("mouseover", {
 		scoping: true,
-		fn: deferredScopingMacroFn(),
+		enchantment: {
+			event: "mouseenter",
+			once: true,
+			classList: "enchantment-mouseover",
+			render: engine.renderMacro
+		},
 		version: {
 			major: 0,
 			minor: 0,
 			revision: 0
 		}
 	});
-	
-	engine.addHookHandler({
-		name: "mouseout",
-		event: "mouseleave",
-		hookClass: "macro-mouseout"
-	})
 	
 	// <<mouseout ... >> ... <</mouseout>>
 	// Perform the enclosed macros when the scope is moused away.
 	macros.add("mouseout", {
 		scoping: true,
-		fn: deferredScopingMacroFn(),
+		enchantment: {
+			event: "mouseleave",
+			once: true,
+			classList: "enchantment-mouseout",
+			render: engine.renderMacro
+		},
 		version: {
 			major: 0,
 			minor: 0,
 			revision: 0
 		}
 	});
+	
+	/*// <<hover ... >> ... <</hover>>
+	// Perform the enclosed macros when the scope is moused over.
+	macros.add("hover", {
+		scoping: true,
+		enchantment: {
+			event: "mouseenter",
+			once: false,
+			classList: "enchantment-hover",
+			render: engine.renderMacro
+		},
+		version: {
+			major: 0,
+			minor: 0,
+			revision: 0
+		}
+	});*/
+	
 	
 	/*
 		Scope-affecting macros

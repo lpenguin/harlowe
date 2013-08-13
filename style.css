@@ -217,24 +217,24 @@ h1, h2, h3, h4, h5, h6
 
 /*** Inner passage formatting ***/
 
-.macro-hover
+.enchantment-hover
 {
 	border-bottom: 1px dashed #666;
 }
 
-.macro-mouseout
+.enchantment-mouseout
 {
 	border: hsla(200,50%,50%,0.25) 1px solid;
 }
 
-.macro-mouseout:hover
+.enchantment-mouseout:hover
 {
 	background-color: hsla(200,50%,50%,0.25);
 	border: transparent 1px solid;
 	border-radius: 0.2em;
 }
 
-.passage-link, .macro-link
+.passage-link, .enchantment-link
 {
 	color: #4169E1;
 	font-weight: bold;
@@ -247,12 +247,12 @@ h1, h2, h3, h4, h5, h6
 	color: #6941e1;
 }
 
-.passage-link:hover, .macro-link:hover
+.passage-link:hover, .enchantment-link:hover
 {
 	color: DeepSkyBlue;
 }
 
-.passage-link:active, .macro-link:active
+.passage-link:active, .enchantment-link:active
 {
 	color: #DD4B39;
 }

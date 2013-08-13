@@ -4,10 +4,11 @@ define(['jquery', 'marked', 'story', 'utils', 'state', 'macros'], function ($, M
 	/*
 		engine: Module that renders passages to the DOM.
 	*/
-	var engine,
-		// Handlers for hooks, installed by macrolib
-		hookHandlers = [];
+	var engine;
 	
+	/*
+		Perform alterations to Marked's lexer/parser as used by Twine.
+	*/
 	function twineMarked() {
 		/*
 			Current list of MD deviations:
@@ -34,6 +35,7 @@ define(['jquery', 'marked', 'story', 'utils', 'state', 'macros'], function ($, M
 		// ignored during the render phase), but makes generated HTML nicer.)
 		Marked.Parser.setFunc("tag", function(cap)
 		{
+			// TODO: This doesn't work?
 			if (cap[0].slice(0,4) !== '<!--')
 			{
 				return cap[0];
@@ -117,7 +119,12 @@ define(['jquery', 'marked', 'story', 'utils', 'state', 'macros'], function ($, M
 		Marked.InlineLexer.setFunc("reflink", reflink);
 	};
 	
-	function renderMacro(macro, span, context, top)
+	/*
+		Passage rendering
+	*/
+	
+	// Render a macro naturally found in the passage. Sub-function of render().
+	function runMacro(macro, span, context, top)
 	{
 		if (macro.data)
 		{
@@ -131,7 +138,8 @@ define(['jquery', 'marked', 'story', 'utils', 'state', 'macros'], function ($, M
 			span.addClass('error').html('No macro named ' + macro.name);
 	}
 	
-	function matchMacros(source)
+	// Makes a macro span. Sub-function of render().
+	function makeMacros(source)
 	{
 		var macroInstances = [],
 			macroCount = 0,
@@ -139,7 +147,8 @@ define(['jquery', 'marked', 'story', 'utils', 'state', 'macros'], function ($, M
 			index = 0;
 
 		macros.matchMacroTag(source, null, function (m) {
-			if (!m.data) {
+			if (!m.data)
+			{
 				// A macro by that name doesn't exist
 				m.data = macros.get("unknown");
 			}
@@ -151,26 +160,30 @@ define(['jquery', 'marked', 'story', 'utils', 'state', 'macros'], function ($, M
 		});
 		newhtml += source.slice(index);
 		return [newhtml, macroInstances];
-	}
-
-	// source: the code to render.
-	// context: macro instance which triggered this rendering.
-	// top: the topmost HTML level in which this will be rendered.
+	};
+	
+	// Makes a passage link. Sub-function of render().
+	function makeLink(text, passage)
+	{
+		var visited;
+		
+		if (!story.passageNamed(passage))
+		{
+			return '<span class="broken-link">' + text + '</span>';
+		}
+		visited = (state.passageNameVisited(passage));
+		
+		return '<span class="link passage-link ' + (visited ? 'visited" ' : '" ') + (!story.options.opaquelinks ? 'href="#' + escape(passage.replace(/\s/g, '')) + '"' : '')
+			+ ' data-passage-link="' + passage + '">' + text + '</span>';
+	};
+	
+	/*
+		source: the code to render.
+		context: macro instance which triggered this rendering.
+		top: the topmost DOM level into which this will be rendered (usually ".passage"). Undefined if this is the top.
+	*/
 	function render(source, context, top)
 	{
-		function makeLink(text, passage)
-		{
-			var visited;
-			
-			if (!story.passageNamed(passage))
-			{
-				return '<span class="broken-link">' + text + '</span>';
-			}
-			visited = (state.passageNameVisited(passage));
-			
-			return '<span class="link passage-link ' + (visited ? 'visited" ' : '" ') + (!story.options.opaquelinks ? 'href="#' + escape(passage.replace(/\s/g, '')) + '"' : '')
-				+ ' data-passage-link="' + passage + '">' + text + '</span>';
-		}
 		var html, temp, macroInstances;
 		
 		/*
@@ -206,15 +219,13 @@ define(['jquery', 'marked', 'story', 'utils', 'state', 'macros'], function ($, M
 		});
 
 		// [[link]] format
-
 		source = source.replace(/\[\[([^\|\]]*?)\]\]/g, function (match, p1)
 		{
 			return makeLink(p1, p1);
 		});
 		
 		// macros
-		
-		temp = matchMacros(source);
+		temp = makeMacros(source);
 		source = temp[0];
 		macroInstances = temp[1];
 
@@ -226,10 +237,10 @@ define(['jquery', 'marked', 'story', 'utils', 'state', 'macros'], function ($, M
 		html = $(source);
 		
 		// Render macro instances
-		$('[data-macro]', html).each(function(){
+		$("[data-macro]", html).each(function(){
 			this.removeAttribute("hidden");
 			var count = this.getAttribute("data-count");
-			renderMacro(macroInstances[count], $(this), context, top || html);
+			runMacro(macroInstances[count], $(this), context, top || html);
 		});
 		
 		// If one <p> tag encloses all the HTML, unwrap it.
@@ -241,36 +252,63 @@ define(['jquery', 'marked', 'story', 'utils', 'state', 'macros'], function ($, M
 
 		return html;
 	};
+	
+	/*
+		Passage loading/transitioning functions
+	*/
 
+	/*
+		Alters the passage DOM by appending a new jQuery structure.
+		Requires updating all enchantments.
+		Sub-function of showPassage(), also used by engine.renderMacro().
+	*/
 	function appendRender(src, dest, top)
 	{
 		dest.append(src);
 		
-		// Perform actions for each scoped macro's scope.
-		$(".hook[data-hook]", top).each(function() {
-			var e = $(this);
+		// Remove the old enchantments
+		$(".pseudohook").children().unwrap();
+		$(".hook").attr("class", "hook");
+				
+		// Perform actions for each scoping macro's scope.
+		$(".scoping-macro", top).each(function() {
+			var instance = $(this).data("instance");
 			
-			hookHandlers.forEach(function(a) {
-			
-				if (Array.isArray(a) && a.length === 2)
-				{
-					if ($("[data-macro=" + a[1] +"][data-hook='" + e.attr("data-hook") + "']", top).length)
-					{
-						e.addClass(a[0]);
-					}
-					else
-					{
-						e.removeClass(a[0]);
-					}
-				}
-			});
+			if (instance)
+			{
+				// Refresh the scope, and enchant it.
+				instance.refreshScope();
+				instance.enchantScope();
+			}
 		});
 		return src;
 	};
 	
-	// Show a passage.
-	// Transitions the old passage(s) out, and ads the new passages.
-	// stretch: is stretchtext.
+	// Create the HTML structure of the passage <section>. Sub-function of showPassage().
+	function createPassageElement()
+	{
+		var container, back, fwd, sidebar;
+		container = $('<section class="passage"><nav class="sidebar"><span class="link icon permalink" title="Permanent link to this passage">&sect;</span></nav></section>'),
+		sidebar = container.children(".sidebar");
+		
+		back = $('<span class="link icon undo" title="Undo">&#8630;</span>').click(engine.goBack);
+		fwd = $('<span class="link icon redo" title="Redo">&#8631;</span>').click(engine.goForward);
+		
+		if (!state.hasPast())
+			back.css({visibility:"hidden"});
+		if (!state.hasFuture())
+			fwd.css({visibility:"hidden"});
+		
+		sidebar.append(back).append(fwd);
+		
+		return container;
+	};
+	
+	/*
+		Show a passage.
+		Transitions the old passage(s) out, and ads the new passages.
+		stretch: is stretchtext.
+	*/
 	function showPassage(id, stretch, el)
 	{
 		var newPassage,
@@ -304,7 +342,8 @@ define(['jquery', 'marked', 'story', 'utils', 'state', 'macros'], function ($, M
 		}
 		
 		// Create new passage
-		newPassage = appendPassage(passageData, el);
+		newPassage = createPassageElement().append(render(passageData.html()));
+		appendRender(newPassage, el);
 		
 		// Transition in
 		if (transIndex)
@@ -312,48 +351,8 @@ define(['jquery', 'marked', 'story', 'utils', 'state', 'macros'], function ($, M
 			newPassage.attr("data-t8n", transIndex).addClass("transition-in")
 				.one("animationend webkitAnimationEnd MSAnimationEnd oAnimationEnd", function(){ newPassage.removeClass("transition-in") });
 		}
+		
 		// TODO: HTML5 history
-	};
-	
-	function createPassageElement()
-	{
-		var container, back, fwd, sidebar;
-		container = $('<section class="passage"><nav class="sidebar"><span class="link icon permalink" title="Permanent link to this passage">&sect;</span></nav></section>'),
-		sidebar = container.children(".sidebar");
-		
-		back = $('<span class="link icon undo" title="Undo">&#8630;</span>').click(engine.goBack);
-		fwd = $('<span class="link icon redo" title="Redo">&#8631;</span>').click(engine.goForward);
-		
-		if (!state.hasPast())
-			back.css({visibility:"hidden"});
-		if (!state.hasFuture())
-			fwd.css({visibility:"hidden"});
-		
-		sidebar.append(back).append(fwd);
-		
-		return container;
-	};
-	
-	// Creates a passage element, and appends it to the given element.
-	function appendPassage(passage, el)
-	{
-		var container;
-		
-		el = el || $('#story');	
-		
-		container = createPassageElement().append(render(passage.html()));
-		appendRender(container, el);
-		return container;
-	};
-	
-	// Used by addHookHandler, called when the hook's event is triggered.
-	function hookHandlerEventFn() {
-		var elem = $(this);
-		// Trigger the scoped macros that refer to this hook.
-		$("[data-macro][data-hook=" + elem.attr("data-hook") + "]").each(function() {
-			var action = $(this).data("action");
-			(typeof action === "function" && action(elem));
-		});
 	};
 	
 	engine = Object.freeze({
@@ -384,31 +383,17 @@ define(['jquery', 'marked', 'story', 'utils', 'state', 'macros'], function ($, M
 			state.play(id);
 			showPassage(id, stretch);
 		},
-		
-		/*
-			Register the behaviour that a scoped macro performs
-			This involves:
-			- A function to alter any matching hooks ("hookHandlers"),
-			  so that, for instance, they are styled differently.
-			- The event on which the macro's scope will execute.
-		*/
-		addHookHandler: function(desc)
-		{
-			if ($.isPlainObject(desc) && desc.event && desc.name && desc.hookClass)
-			{
-				hookHandlers.push([desc.hookClass, desc.name]);
-				$('html').on(desc.event + "." + desc.name + "-macro", "." + desc.hookClass.replace(" ", "."), hookHandlerEventFn);
-			}
-		},
-		
+
 		// Install handlers, etc.
 		init: function()
 		{
+			var html = $(document.documentElement);
+			
 			// Alter Marked
 			twineMarked();
 			
 			// Install handler for links
-			$('html').on('click.passage-link', '.passage-link[data-passage-link]', function (e)
+			html.on('click.passage-link', '.passage-link[data-passage-link]', function (e)
 			{
 				var next = story.getPassageID($(this).attr('data-passage-link'));
 				if (next)
@@ -421,8 +406,8 @@ define(['jquery', 'marked', 'story', 'utils', 'state', 'macros'], function ($, M
 			// If debug, add button
 			if (story.options.debug)
 			{
-				$('body').append($('<div class="debug-button">').click(function(e) {
-					$('html').toggleClass('debug-mode');
+				$(document.body).append($('<div class="debug-button">').click(function(e) {
+					html.toggleClass('debug-mode');
 				}));
 			}
 		},
@@ -438,7 +423,7 @@ define(['jquery', 'marked', 'story', 'utils', 'state', 'macros'], function ($, M
 				result = render(result + '', macro, macro.top);
 				if (result)
 				{
-					appendRender(result, macro.el);
+					appendRender(result, macro.el, macro.top);
 				}
 				else if (result === null)
 				{

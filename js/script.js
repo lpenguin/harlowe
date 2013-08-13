@@ -59,6 +59,10 @@ define(['jquery', 'state', 'utils', 'engine', 'wordarray'], function ($, state, 
 		return engine.goToPassage(name);
 	};
 	
+	function Text(a) {
+		return WordArray.create.call(WordArray, '"' + a + '"', _top);
+	}
+	
 	/*
 		Text selectors and manipulators
 	 */
@@ -71,8 +75,6 @@ define(['jquery', 'state', 'utils', 'engine', 'wordarray'], function ($, state, 
 	};
 	
 	return Object.freeze({
-		
-		Text: Text,
 		
 		// Filter for _eval()
 		eval: function()

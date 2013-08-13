@@ -8,14 +8,26 @@ define(['jquery', 'story', 'state', 'utils', 'wordarray'], function($, story, st
 	For end users:
 	* macros.get(name) : get a registered macro function.
 	* macros.add(descriptor): register a new macro.
-		name: a string, or an array of strings serving as 'alias' names.
 		descriptor is a map of the following:
-			selfClosing: determines if the macro tag has contents. If false, then all subsequent code
+			- fn: the function to execute when the macro runs. It may be absent for scoping macros. See macrolib for the API.
+			- name: a string, or an array of strings serving as 'alias' names.
+			- selfClosing: boolean, determines if the macro tag has contents. If false, then all subsequent code
 				up until a closing tag ("<<endmacro>>" or <</macro>>") or until the end of the passage,
 				will be captured by this.contents.
-			scoping: targets a particular scope, which is to say, causes all macros within to apply
+			- version: a map { major: Number, minor: Number, revision: number }.
+			- scoping: targets a particular scope, which is to say, causes all macros within to apply
 				solely to the scope it sets.
-			version: a property set { major: Number, minor: Number, revision: number }.
+			- deferred: boolean, denotes that the scoping macro is "deferred" - its contents will not immediately be rendered.
+				Its presence causes fn to become a function that sets up the deferring condition (e.g for <<time>> it sets up a timeout).
+			- enchantment: a map whose presence denotes that the scoping macro is an "enchantment" - its contents will not immediately
+				be rendered until a denoted event is performed on its scope.
+				The map contains the following:
+				- event: the DOM event that triggers the rendering of this macro's contents.
+				- classList: the list of classes to 'enchant' the scope with, to denote that it is ready for the player to
+				trigger an event on it.
+				- once: whether or not the enchanted DOM elements can trigger this macro multiple times.
+				- render: which rendering engine function to use. A kludge :(
+			
 	* macros.supplement(name, selfClosing, main) : register a macro which has no code, but is used as a sub-tag in another macro.
 		main: name of the 'parent' macro.
 		
@@ -25,17 +37,51 @@ define(['jquery', 'story', 'state', 'utils', 'wordarray'], function($, story, st
 		e: a MacroInstance object matching a macro invocation in the HTML.
 	
 	*/
-	var macroProto, macros,
+	var MacroInstance, Scope, macros,
 		// Private collection of registered macros.
-		_handlers = {};
+		_handlers = {},
+		// Precompile some regexes
+		unquotedWhitespace = new RegExp(" "+utils.unquotedCharRegexSuffix);
 	
 	/*
 		The prototype object for MacroInstances, the object type used by matchMacroTag
 		and apply()ed to macro functions.
 		This contains utility functions that any macro function can call on.
 	*/
-	macroProto = utils.lockProperties({
+	MacroInstance = utils.lockProperties({
 	
+		create: function(html, name, startIndex, endIndex)
+		{
+			var selfClosing,
+				macro = Object.create(this);
+			
+			macro.name = name;
+			macro.data = _handlers[name];
+			macro.startIndex = startIndex;
+			macro.endIndex = endIndex;
+			selfClosing = macro.data && macro.data.selfClosing;
+			
+			// HTMLcall / call is the entire macro invocation, rawArgs is all arguments,
+			// HTMLcontents / contents is what's between a <<macro>> and <</macro>> call
+			macro.HTMLcall = html.slice(startIndex, endIndex);
+			macro.HTMLcontents = (selfClosing ? "" : macro.HTMLcall.replace(/^(?:[^&]|&(?!gt;&gt;))*&gt;&gt;/i, '').replace(/&lt;&lt;(?:[^&]|&(?!gt;&gt;))*&gt;&gt;$/i, ''));
+			
+			// unescape HTML entities (like "&amp;")
+			macro.call = $('<p>').html(macro.HTMLcall).text();
+			macro.contents = (selfClosing ? "" : macro.call.replace(/^(?:[^>]|>(?!>))*>>/i, '').replace(/<<(?:[^>]|>(?!>))*>>$/i, ''));
+			macro.rawArgs = macro.call.replace(/^<<\s*\w*\s*/, '').replace(/\s*>>[^]*/, '').trim();
+			
+			// tokenize arguments
+			// e.g. 1 "two three" 'four five' "six \" seven" 'eight \' nine'
+			// becomes [1, "two three", "four five", 'six " seven', "eight ' nine"]
+			macro.args = macro.rawArgs.split(unquotedWhitespace)
+				// remove opening and closing quotes from args
+				.map(function(e) {
+					return e.replace(/^(['"])([^]*)\1$/, function(a,b,c) { return c; });
+				});
+			return macro;
+		},
+		
 		// This is called by renderMacro() just before the macro is executed
 		init: function()
 		{
@@ -89,7 +135,7 @@ define(['jquery', 'story', 'state', 'utils', 'wordarray'], function($, story, st
 			}
 		},
 		
-		// Get the scope, if it is a scoped macro.
+		// Get the scope, if it is a SCOPED macro.
 		getScope: function()
 		{
 			var i, c = this.contextQuery();
@@ -102,11 +148,29 @@ define(['jquery', 'story', 'state', 'utils', 'wordarray'], function($, story, st
 			}
 			return this.top;
 		},
-		
-		// Set the scope, if it is a scoped macro.
+
+		// Set the scope, if it is a SCOPING macro.
 		setScope: function(name)
 		{
-			this.scope = WordArray.create(name, this.top);
+			this.scope = Scope.create(name, this.top);
+		},
+		
+		// Enchant the scope, if it is a SCOPING macro.
+		enchantScope: function()
+		{
+			if (this.scope && this.data && this.data.enchantment)
+			{
+				this.scope.enchant(this.data.enchantment.classList);
+			}
+		},
+		
+		// Refresh the scope to reflect the current passage DOM state.
+		refreshScope: function(name)
+		{
+			if (this.scope)
+			{
+				this.scope.refresh(this.scope.selector, this.top);
+			}
 		},
 		
 		// This implements a small handful of more authorly JS operators for <<set>> and <<print>>.
@@ -118,10 +182,7 @@ define(['jquery', 'story', 'state', 'utils', 'wordarray'], function($, story, st
 		{
 			function alter(from, to)
 			{
-				// This regexp causes its preceding expression to only match entities outside of quotes,
-				// taking into account escaped quotes.
-				var re = "(?=(?:[^\"'\\\\]*(?:\\\\.|'(?:[^'\\\\]*\\\\.)*[^'\\\\]*'|\"(?:[^\"\\\\]*\\\\.)*[^\"\\\\]*\"))*[^'\"]*$)";
-				return expr.replace(new RegExp(from + re,"gi"), to);
+				return expr.replace(new RegExp(from + utils.unquotedCharRegexSuffix, "gi"), to);
 			}
 			if (typeof expr === "string")
 			{
@@ -154,38 +215,49 @@ define(['jquery', 'story', 'state', 'utils', 'wordarray'], function($, story, st
 		}
 	});
 	
-	// Private factory method
-	function createMacroInstance(html, name, startIndex, endIndex)
-	{
-		var selfClosing,
-			macro = Object.create(macroProto);
+	/*
+		Scope: an extension to WordArray that stores the containing 
+		hooks/pseudo-hooks of its contents, as well as the selector string
+		used to select its contents.
+	*/
+	Scope = Object.freeze(Object.create(WordArray, {
+	
+		create: {
+			value: function(word, top) {
+				var pseudohookSelector, ret;
+				ret = Object.getPrototypeOf(this).create.call(this, word, top);
+				ret.selector = word;
+				return ret;
+			}
+		},
 		
-		macro.name = name;
-		macro.data = _handlers[name];
-		macro.startIndex = startIndex;
-		macro.endIndex = endIndex;
-		selfClosing = macro.data && macro.data.selfClosing;
-		
-		// HTMLcall / call is the entire macro invocation, rawArgs is all arguments,
-		// HTMLcontents / contents is what's between a <<macro>> and <</macro>> call
-		macro.HTMLcall = html.slice(startIndex, endIndex);
-		macro.HTMLcontents = (selfClosing ? "" : macro.HTMLcall.replace(/^(?:[^&]|&(?!gt;&gt;))*&gt;&gt;/i, '').replace(/&lt;&lt;(?:[^&]|&(?!gt;&gt;))*&gt;&gt;$/i, ''));
-		
-		// unescape HTML entities (like "&amp;")
-		macro.call = $('<p>').html(macro.HTMLcall).text();
-		macro.contents = (selfClosing ? "" : macro.call.replace(/^(?:[^>]|>(?!>))*>>/i, '').replace(/<<(?:[^>]|>(?!>))*>>$/i, ''));
-		macro.rawArgs = macro.call.replace(/^<<\s*\w*\s*/, '').replace(/\s*>>[^]*/, '');
-		
-		// tokenize arguments
-		// e.g. 1 "two three" 'four five' "six \" seven" 'eight \' nine'
-		// becomes [1, "two three", "four five", 'six " seven', "eight ' nine"]
-		macro.args = macro.rawArgs.trim().split(/\ (?=(?:[^"'\\]*(?:\\.|'(?:[^'\\]*\\.)*[^'\\]*'|"(?:[^"\\]*\\.)*[^"\\]*"))*[^'"]*$)/)
-			// remove opening and closing quotes from args
-			.map(function(e) {
-				return e.replace(/^(['"])([^]*)\1$/, function(a,b,c) { return c; });
-			});
-		return macro;
-	};
+		// enchant: select the matching hooks, or create pseudo-hooks around matching words,
+		// and apply a class to those hooks.
+		// Pseudo-hooks are cleaned up in appendRender() in engine.
+		enchant: {
+			value: function(className, scopestr, top) {
+				var i;
+				// Targeting actual hooks?
+				if (utils.type(this.selector) === "hook string")
+				{
+					this.hooks = $(utils.hookToSelector(this.selector), top);
+				}
+				else if (this.selector)
+				// Pseudohooks (WordArray selector etc)
+				{
+					this.hooks = $();
+					// Create pseudohooks around the Words
+					for(i = 0; i < this.contents.length; i++)
+					{
+						this.contents[i].wrapAll("<span class='pseudohook'/>");
+						this.hooks = this.hooks.add(this.contents[i].parent());
+					};
+				}
+				(this.hooks && this.hooks.addClass(className));
+				return this;
+			}
+		}
+	}));
 	
 	// Report an error when a user-loaded macro fails.
 	function loaderError(text)
@@ -202,30 +274,123 @@ define(['jquery', 'story', 'state', 'utils', 'wordarray'], function($, story, st
 	};
 	
 	/*
-		Common function of scope macros, which wraps around an inner function (innerFn)
-		that should also be defined for the macro.
+		Common function of scoping macros.
 	*/
-	function scopeMacroFn(innerFn)
+	function _scopingMacroFn(deferred, callback)
+	{
+		var c,
+		// Get the args, but with quotes retained.
+			quotedArgs = this.rawArgs.split(unquotedWhitespace);
+		// No argument given?
+		if (quotedArgs.length < 1)
+		{
+			return this.error('<<' + this.name +'>> error: no scope argument given');
+		}
+		if (!this.ready || !deferred)
+		{
+			this.ready = true;
+			// Designate this as a scoping macro.
+			this.el.addClass("scoping-macro");
+			// Keep the MacroInstance around
+			this.el.data("instance", this);
+			
+			// Set up the scope
+			this.setScope(quotedArgs[0]);
+			
+			if (deferred)
+			{
+				if (callback && typeof callback === "function")
+				{
+					c = callback.apply(this, this.args);
+					if (c)
+					{
+						return c;
+					}
+				}
+				// Enchantment will be performed by appendRender() in engine.
+				
+				// Return a single character to keep the element around
+				return "&zwnj;";
+			}
+			else
+			{
+				//Will run immediately - enchant now
+				this.enchantScope();
+			}
+		}
+		else
+		{
+			// Deferred macro was activated - refresh the scope.
+			this.refreshScope();
+		}
+		return this.HTMLcontents;
+	};
+	
+	// Generate a unique copy for each macro.
+	function scopingMacroFn(deferred, callback)
 	{
 		return function(a)
 		{
-			this.scope = (a ? this.setScope(a) : this.getScope());
-			
-			if (this.scope && this.scope.wordarray)
-			{
-				if (innerFn && (typeof innerFn === "function"))
-				{
-					innerFn.apply(this, arguments);
-				}
-				return this.clear();
-			}
-			return this.error("<<" + this.name + ">> error: no scope was found.");
+			return _scopingMacroFn.call(this, deferred, callback);
 		};
 	};
 	
 	/*
+		Common function of scoped macros, which wraps around an inner function (innerFn)
+		that should also be defined for the macro.
+	*/
+	function _scopedMacroFn(innerFn, args)
+	{
+		args = Array.prototype.slice.call(args);
+		//TODO: is this bugged?
+		this.scope = (/*args[0] ? this.setScope(args[0]) :*/ this.getScope());
+		
+		if (this.scope && this.scope.wordarray)
+		{
+			if (innerFn && (typeof innerFn === "function"))
+			{
+				innerFn.apply(this, args);
+			}
+			return this.clear();
+		}
+		return this.error("<<" + this.name + ">> error: no scope was found.");
+	};
+	
+	// Generate a unique function object for each macro
+	function scopedMacroFn(innerFn)
+	{
+		return function() {
+			return _scopedMacroFn.call(this, innerFn, arguments);
+		}
+	};
+	
+	// Called when an enchantment's event is triggered. Sub-function of engine.addEnchantment().
+	function enchantmentEventFn() {
+		var elem = $(this);
+		// Trigger the scoped macros that refer to this enchantment.
+		$(".scoping-macro").each(function() {
+			var instance = $(this).data("instance");
+			if (instance && instance.scope && instance.scope.hooks)
+			{
+				if (instance.scope.hooks.is(elem))
+				{
+					// TODO: make it so that the scope can sometimes only affect the clicked object
+					// TODO: figure out a better way to access the engine without having macrolib provide the reference.
+					instance.data.enchantment.render(instance);
+					
+					// Remove hook if it's a once-only enchantment.
+					if (instance.data.enchantment.once)
+					{
+						instance.scope.hooks.children().unwrap();
+					}
+				}
+			}
+			//TODO: error message
+		});
+	};
+	
+	/*
 		The object containing all the macros available to a story.
-		Should remain extensible.
 	*/
 	macros = Object.freeze({
 		
@@ -244,20 +409,38 @@ define(['jquery', 'story', 'state', 'utils', 'wordarray'], function($, story, st
 			{
 				return loaderError("Argument 1 of macros.add isn't an array or a string.");
 			}
-			if (!(desc && typeof desc === "object" && desc.fn && typeof desc.fn === "function"))
+			if (!(desc && typeof desc === "object" && ((desc.fn && typeof desc.fn === "function") || desc.scoping)))
 			{
 				return loaderError("Argument 2 of macros.add (\"" + name + "\") isn't a valid or complete descriptor.");
 			}
-			fn = desc.fn;
-			delete desc.fn;
-			
-			// Scoped macro? Wrap its function in a scope-checking wrapper.
-			if (desc.scoped)
+			if (desc.fn)
 			{
-				fn = scopeMacroFn(fn);
+				fn = desc.fn;
+				delete desc.fn;
 			}
-			
+			// Scoping macro? Use a scopingMacroFn for its function.
+			if (desc.scoping)
+			{
+				// Enchantment macro? Register the enchantment's event.
+				if (desc.enchantment && desc.enchantment.event && desc.enchantment.classList)
+				{
+					$(document.documentElement).on(desc.enchantment.event + "." + desc.name + "-macro", utils.classListToSelector(desc.enchantment.classList), enchantmentEventFn);
+					
+					fn = scopingMacroFn(true, fn);
+				}
+				else
+				{
+					fn = scopingMacroFn(!!desc.deferred, fn);
+				}
+			}
+			// Scoped macro? Wrap its function in a scope-checking wrapper.
+			else if (desc.scoped)
+			{
+				fn = scopedMacroFn(fn);
+			}
+			// Add all remaining properties of desc to fn.
 			$.extend(fn,desc);
+			// Add fn to the _handlers, plus aliases (if name is an array of aliases)
 			if (Array.isArray(name))
 			{
 				name.forEach(function(n) {
@@ -358,27 +541,12 @@ define(['jquery', 'story', 'state', 'utils', 'wordarray'], function($, story, st
 							}
 						} while (foundEndMacro);
 					}
-					macro = createMacroInstance(html, foundMacro[1], foundMacro.index, endIndex);
+					macro = MacroInstance.create(html, foundMacro[1], foundMacro.index, endIndex);
 					// Run the callback
 					callback(macro);
 					macroRE.lastIndex = endIndex;
 				}
 			} while (foundMacro);
-		},
-		
-		// Extend MacroProto without overwriting previous insertions.
-		// Currently unused.
-		extendMacroProto: function(name, value)
-		{
-			if (macroProto[name] === undefined)
-			{
-				Object.defineProperty(macroProto, name, {
-					value: value,
-					enumerable: true
-				});
-				return true;
-			}
-			return false;
 		}
 	});
 	
