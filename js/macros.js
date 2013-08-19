@@ -43,6 +43,12 @@ define(['jquery', 'story', 'state', 'utils', 'wordarray'], function($, story, st
 		// Precompile some regexes
 		unquotedWhitespace = new RegExp(" "+utils.unquotedCharRegexSuffix);
 	
+	// Sub-function of MacroInstance.convertOperators
+	function alter(expr, from, to)
+	{
+		return expr.replace(new RegExp(from + utils.unquotedCharRegexSuffix, "gi"), to);
+	}
+	
 	/*
 		The prototype object for MacroInstances, the object type used by matchMacroTag
 		and apply()ed to macro functions.
@@ -92,9 +98,9 @@ define(['jquery', 'story', 'state', 'utils', 'wordarray'], function($, story, st
 		},
 	
 		// Adds the 'error' class to the element.
-		error: function (text)
+		error: function (text, noprefix)
 		{
-			this.el.addClass("error").attr("title", this.call).removeAttr("data-macro").text(text);
+			this.el.addClass("error").attr("title", this.call).removeAttr("data-macro").text( (noprefix ? "" : "<<" + this.name + ">> error: ") + text);
 			return '';
 		},
 		
@@ -178,20 +184,28 @@ define(['jquery', 'story', 'state', 'utils', 'wordarray'], function($, story, st
 		// <<if hp is 3>> --> <<if hp == 3>>
 		// <<if hp is not 3>> --> <<if hp != 3>>
 		// <<if not defeated>> --> <<if ! defeated>>
-		convertOperators: function (expr)
+		convertOperators: function (expr, setter)
 		{
-			function alter(from, to)
-			{
-				return expr.replace(new RegExp(from + utils.unquotedCharRegexSuffix, "gi"), to);
-			}
 			if (typeof expr === "string")
 			{
-				expr = alter("\\bis\\s+not\\b", " !== ");
-				expr = alter("\\bis\\b", " === ");
-				expr = alter("\\bto\\b", " = ");
-				expr = alter("\\band\\b", " && ");
-				expr = alter("\\bor\\b", " || ");
-				expr = alter("\\bnot\\b", " ! ");
+				expr = alter(expr, "\\bis\\s+not\\b", " !== ");
+				expr = alter(expr, "\\bis\\b", " === ");
+				expr = alter(expr, "\\bto\\b", " = ");
+				expr = alter(expr, "\\band\\b", " && ");
+				expr = alter(expr, "\\bor\\b", " || ");
+				expr = alter(expr, "\\bnot\\b", " ! ");
+				// Phrase "set x to 2" as "state.variables['x'] = 2"
+				if (setter)
+				{
+					expr = alter(expr, "\\$(\\w+)\\b", " state.variables['$1'] ");
+				}
+				else
+				// Phrase "if x is 2" as "state.getVar('x') === 2"
+				{
+					expr = alter(expr, "\\$(\\w+)\\b", " state.getVar('$1') ");
+					// No unintended assignments allowed
+					expr = alter(expr, "\\b=\\b", " === ");
+				}
 			}
 			return expr;
 		},
@@ -259,20 +273,6 @@ define(['jquery', 'story', 'state', 'utils', 'wordarray'], function($, story, st
 		}
 	}));
 	
-	// Report an error when a user-loaded macro fails.
-	function loaderError(text)
-	{
-		// TODO: Instead of a basic alert, display a notification banner somewhere.
-		window.alert(text);
-		return true;
-	};
-	
-	// Used by macros.add() and macros.supplement()
-	function stringOrArray(n)
-	{
-		return (typeof n === "string" || Array.isArray(n));
-	};
-	
 	/*
 		Common function of scoping macros.
 	*/
@@ -284,7 +284,7 @@ define(['jquery', 'story', 'state', 'utils', 'wordarray'], function($, story, st
 		// No argument given?
 		if (quotedArgs.length < 1)
 		{
-			return this.error('<<' + this.name +'>> error: no scope argument given');
+			return this.error('no scope argument given');
 		}
 		if (!this.ready || !deferred)
 		{
@@ -353,7 +353,7 @@ define(['jquery', 'story', 'state', 'utils', 'wordarray'], function($, story, st
 			}
 			return this.clear();
 		}
-		return this.error("<<" + this.name + ">> error: no scope was found.");
+		return this.error("no scope was found.");
 	};
 	
 	// Generate a unique function object for each macro
@@ -364,8 +364,9 @@ define(['jquery', 'story', 'state', 'utils', 'wordarray'], function($, story, st
 		}
 	};
 	
-	// Called when an enchantment's event is triggered. Sub-function of engine.addEnchantment().
-	function enchantmentEventFn() {
+	// Called when an enchantment's event is triggered. Sub-function of macros.add()
+	function enchantmentEventFn()
+	{
 		var elem = $(this);
 		// Trigger the scoped macros that refer to this enchantment.
 		$(".scoping-macro").each(function() {
@@ -387,6 +388,20 @@ define(['jquery', 'story', 'state', 'utils', 'wordarray'], function($, story, st
 			}
 			//TODO: error message
 		});
+	};
+	
+	// Report an error when a user-loaded macro fails.
+	function loaderError(text)
+	{
+		// TODO: Instead of a basic alert, display a notification banner somewhere.
+		window.alert(text);
+		return true;
+	};
+	
+	// Sub-function of macros.add() and macros.supplement()
+	function stringOrArray(n)
+	{
+		return (typeof n === "string" || Array.isArray(n));
 	};
 	
 	/*
@@ -477,7 +492,7 @@ define(['jquery', 'story', 'state', 'utils', 'wordarray'], function($, story, st
 			desc.fn = function() {
 				if (!this.context || ~~main.indexOf(this.context.name))
 				{
-					return this.error("<<" + this.name + ">> is outside a"
+					return this.error("is outside a"
 						+ (Array.isArray(main) ? "n appropriate macro" : " <<" + main + ">>"));
 				}
 				return this.clear();
@@ -555,7 +570,7 @@ define(['jquery', 'story', 'state', 'utils', 'wordarray'], function($, story, st
 		selfClosing: true,
 		fn: function()
 		{
-			return this.error("Unknown macro: " + this.name);
+			return this.error("Unknown macro: " + this.name, true);
 		}
 	});
 	

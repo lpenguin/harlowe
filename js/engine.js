@@ -30,15 +30,16 @@ define(['jquery', 'marked', 'story', 'utils', 'state', 'macros'], function ($, M
 			smartLists: true
 		});
 		// Delete comments
-		// (Note: not actually required (while commented-out macro tags are
+		// (Note: not strictly required (while commented-out macro tags are
 		// noticed during the match phase, commented-out macro <span>s are 
 		// ignored during the render phase), but makes generated HTML nicer.)
-		Marked.Parser.setFunc("tag", function(cap)
+		Marked.InlineLexer.setFunc("tag", function(cap)
 		{
-			// TODO: This doesn't work?
 			if (cap[0].slice(0,4) !== '<!--')
 			{
-				return cap[0];
+				return this.options.sanitize
+					? escape(cap[0])
+					: cap[0];
 			}
 		});
 		
@@ -261,6 +262,7 @@ define(['jquery', 'marked', 'story', 'utils', 'state', 'macros'], function ($, M
 		Alters the passage DOM by appending a new jQuery structure.
 		Requires updating all enchantments.
 		Sub-function of showPassage(), also used by engine.renderMacro().
+		TODO: Make this not need to run multiple times during a "reflow".
 	*/
 	function appendRender(src, dest, top)
 	{

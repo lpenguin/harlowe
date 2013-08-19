@@ -53,7 +53,8 @@ define(['story', 'utils'], function(story, utils)
 			Getters/setters
 		*/
 		
-		// Get the current passage.
+		// Get the current passage ID.
+		// Used by <<set>> and other state-altering macros.
 		get passage() {
 			return present.passage;
 		},
@@ -73,13 +74,14 @@ define(['story', 'utils'], function(story, utils)
 		},
 		
 		// Query a variable's present value
+		// Used by <<if>> and other conditional macros.
 		getVar: function(name) {
 			if (present.variables[name])
 			{
 				return present.variables[name];
 			}
 			// No value found...
-			return null;
+			return utils.defaultValue;
 		},
 		
 		setVar: function(name, value) {

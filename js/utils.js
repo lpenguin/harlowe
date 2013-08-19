@@ -146,6 +146,9 @@ define(['jquery'], function($)
 		// Selector for CharSpans
 		charSpanSelector: "span.char, br",
 		
+		// Default value for variables affected with <<set>>
+		defaultValue: 0,
+		
 		// Regex suffix that, when applied, causes the preceding match to only apply when not inside a quoted
 		// string. This accounts for both quote styles and escaped quote characters.
 		unquotedCharRegexSuffix: "(?=(?:[^\"'\\\\]*(?:\\\\.|'(?:[^'\\\\]*\\\\.)*[^'\\\\]*'|\"(?:[^\"\\\\]*\\\\.)*[^\"\\\\]*\"))*[^'\"]*$)"

@@ -47,7 +47,7 @@ define(['jquery', 'state', 'utils', 'engine', 'wordarray'], function ($, state, 
 	
 	function visited(name)
 	{
-		return state.passageNameVisited(name);
+		return name ? state.passageNameVisited(name) : state.passageIDVisited(state.passage);
 	};
 	
 	/*
@@ -65,13 +65,13 @@ define(['jquery', 'state', 'utils', 'engine', 'wordarray'], function ($, state, 
 	
 	/*
 		Text selectors and manipulators
-	 */
+	*/
 	
 	// eval() the script in the context of this module.
 	function _eval(text, top)
 	{
 		_top = top;
-		return eval(text);
+		return eval(text + '');
 	};
 	
 	return Object.freeze({
@@ -80,7 +80,6 @@ define(['jquery', 'state', 'utils', 'engine', 'wordarray'], function ($, state, 
 		eval: function()
 		{
 			var self = this;
-			
 			// Convert jQuery into WordArray
 			if (self && self.jquery)
 			{

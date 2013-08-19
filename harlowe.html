@@ -10,7 +10,93 @@
 
 <article id="story"></article>
 
-{{STORY_DATA}}
+
+<div data-role="twinestory" data-name="Tester" data-startnode="styles" data-creator="Leon" data-creator-version="2.0a" data-options="debug">
+
+<div data-id="2" data-name="text" data-type="text/markdown" data-twine-position="0,0" >
+- Is MacroInstance too overwrought??
+- How to implement onclick "Word" ?
+- Macro block syntax
+- Should macros be extensible by macrolib? 
+
+[[Styles->styles]]
+[[Macros->macros]]
+</div>
+
+<div data-id="styles" data-name="styles" data-type="text/markdown" data-twine-position="0,0">
+*italic*
+**bold**
+<mark>marker</mark>
+<ins>correction fluid</ins>
+<del>deleted text</del>
+-----
+<span class="outline">outline</span>
+<span class="shadow">shadow</span>
+<span class="condense">condense</span>
+<span class="expand">expand</span>
+<span class="blur">blur</span>
+<span class="blurrier">blurrier</span>
+<span class="smear">smear</span>
+<span class="mirror">mirror</span>
+<span class="upside-down">upside-down</span>
+-----
+<blink>blink</blink>
+<span class="fade-in-out">fade in-out</span>
+<span class="rumble">rumble</span>
+<span class="shudder">shudder</span>
+-----
+#Header 1
+##Header 2
+###Header 3
+####Header 4
+#####Header 5
+
+[[Go back...->text]]
+</div>
+
+<div data-id="3" data-name="macros" data-type="text/markdown" data-twine-position="0,0">
+&lt;&lt;clowns vehicle = "Unicycle" &gt;&gt;\
+&lt;&lt;set window.disp = "one" &gt;&gt;\
+&lt;&lt;display window.disp &gt;&gt;\
+&lt;&lt;print 1; "two three"; 'four five'; "six \" seven"; 'eight \' nine'; 10 &gt;&gt;\
+&lt;&lt;set window.red = "Crimson" &gt;&gt;\
+&lt;&lt;set window.blue = "Indigo" &gt;&gt;\
+&lt;&lt;if false == true&gt;&gt;\
+false 'if'
+&lt;&lt;/if&gt;&gt;\
+&lt;&lt;if false == true&gt;&gt;\
+'if' is a functional!
+&lt;&lt;else if true&gt;&gt;\
+'else if' is functional!
+&lt;&lt;else&gt;&gt;\
+'else' is functional!
+&lt;&lt;/if&gt;&gt;\
+&lt;&lt;if window.red == "Crimson" && "nested if is a go" &gt;&gt;\
+&lt;&lt;if window.blue != "Cyan" && "this is nested"&gt;&gt;\
+Nested 'if' is functional!
+&lt;&lt;/if&gt;&gt;\
+&lt;&lt;if window.blue != "Indigo" && "nested error"&gt;&gt;\
+ERROR
+&lt;&lt;/if&gt;&gt;\
+&lt;&lt;/if&gt;&gt;
+&lt;&lt;elseif&gt;&gt;
+
+[[Go back...->text]]
+</div>
+
+<div data-id="11" data-name="displayed" data-type="text/markdown" data-twine-position="0,0">*Displayed text.*
+</div>
+
+<div data-id="12" data-name="one" data-type="text/markdown" data-twine-position="0,0">1 &lt;&lt;display "two" &gt;&gt;
+</div>
+<div data-id="12" data-name="two" data-type="text/markdown" data-twine-position="0,0">2 &lt;&lt;display "three" &gt;&gt;
+</div>
+<div data-id="12" data-name="three" data-type="text/markdown" data-twine-position="0,0">3&lt;&lt;display "one" &gt;&gt;
+</div>
+
+</div>
+
+
 
 <script data-main="js/harlowe.js" src="js/require.js"></script>
 

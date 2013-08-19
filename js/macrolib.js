@@ -24,7 +24,8 @@ define(['jquery', 'story', 'script', 'state', 'macros', 'engine', 'utils'], func
 		this.data: the macro's function.
 		this.scope: the scope WordArray, if this is a scoped macro.
 		
-		this.error(text): adds the 'error' class to the element, and attaches the message.
+		this.error(text, noprefix): adds the 'error' class to the element, and attaches the message. noprefix indicates whether to
+			not prepend "<<" + this.name + ">> error: " to the given text.
 		this.clear(): removes the destination element, unless in debug mode.
 		this.convertOperators(args): used for 'code' macros like <<set>> and <<print>>.
 		this.contextQuery(name): searches back through the context chain to find macro instances of a specific name.
@@ -45,16 +46,31 @@ define(['jquery', 'story', 'script', 'state', 'macros', 'engine', 'utils'], func
 	// rawArgs: expression to execute, converting operators first.
 	macros.add("set", {
 		selfClosing: true,
-		fn: function()
+		fn: function(variable, to)
 		{
+			var value;
+			
+			if (!(/to|(?:[+\-\%\&\|\^\/\*]|<<|>>)=/.test(to)))
+			{
+				return this.error("second argument is not 'to', '+=' or similar.");
+			}
+			
+			// Convert the variable (with 'set' true)
+			variable = this.convertOperators(variable, true);
+			// Convert the operator
+			to = this.convertOperators(to);
+			// Convert the value
+			value = this.convertOperators(this.args.slice(2).join(""));
+			
 			try
 			{
-				script.eval(this.convertOperators(this.rawArgs));
+				// Before setting it to the value, default it to 0.
+				script.eval(variable + "=" + variable + "||" + utils.defaultValue +";" + variable + to + value);
 				return this.clear();
 			}
 			catch (e)
 			{
-				return this.error('<<set>> error: '+e.message);
+				return this.error(e.message);
 			}
 		}, 
 		version: {
@@ -73,11 +89,11 @@ define(['jquery', 'story', 'script', 'state', 'macros', 'engine', 'utils'], func
 			try
 			{
 				var args = this.convertOperators(this.rawArgs);
-				return (script.eval(args) + '');
+				return (script.eval(args));
 			}
 			catch (e)
 			{
-				return this.error('<<print>> error: '+e.message);
+				return this.error(e.message);
 			}
 		}, 
 		version: {
@@ -124,7 +140,7 @@ define(['jquery', 'story', 'script', 'state', 'macros', 'engine', 'utils'], func
 			}
 			catch (e)
 			{
-				return this.error('<<script>> error: '+e.message);
+				return this.error(e.message);
 			}
 		},
 		version: {
@@ -189,7 +205,7 @@ define(['jquery', 'story', 'script', 'state', 'macros', 'engine', 'utils'], func
 				}
 				catch (e)
 				{
-					return this.error('<<' + (i==0 ? 'if' : 'else if') +'>> error: '+e.message.message);
+					return this.error('<<' + (i==0 ? 'if' : 'else if') +'>> error: '+e.message.message, true);
 				}
 			}
 			this.el.addClass("false-if");
@@ -218,14 +234,14 @@ define(['jquery', 'story', 'script', 'state', 'macros', 'engine', 'utils'], func
 				// Test for existence
 				if (!story.passageNamed(name))
 				{
-					return this.error('Can\'t <<display>> passage "' + name + '"');
+					return this.error('Can\'t <<display>> passage "' + name + '"', true);
 				}
 				// Test for recursion
 				if (this.contextQuery("display").filter(function(e) {
 						return e.el.filter("[data-display='"+name+"']").length > 0;
 					}).length >= 5)
 				{
-					return this.error('<<display>> loop: "' + name + '" is displaying itself 5+ times.');
+					return this.error('<<display>> loop: "' + name + '" is displaying itself 5+ times.', true);
 				}
 				this.el.attr("data-display",name);
 				var ret  = story.passageNamed(name).html();
@@ -273,7 +289,7 @@ define(['jquery', 'story', 'script', 'state', 'macros', 'engine', 'utils'], func
 			}
 			else
 			{
-				return this.error("<<time>> error: " + time + " is not a valid time delay.");
+				return this.error(time + " is not a valid time delay.");
 			}
 		},
 		version: {
