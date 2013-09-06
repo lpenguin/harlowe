@@ -26,7 +26,6 @@ define(['jquery', 'story', 'state', 'utils', 'wordarray'], function($, story, st
 				- classList: the list of classes to 'enchant' the scope with, to denote that it is ready for the player to
 				trigger an event on it.
 				- once: whether or not the enchanted DOM elements can trigger this macro multiple times.
-				- render: which rendering engine function to use. A kludge :(
 			
 	* macros.supplement(name, selfClosing, main) : register a macro which has no code, but is used as a sub-tag in another macro.
 		main: name of the 'parent' macro.
@@ -97,21 +96,19 @@ define(['jquery', 'story', 'state', 'utils', 'wordarray'], function($, story, st
 			}
 		},
 	
-		// Adds the 'error' class to the element.
+		// Outputs an error to the macro's element.
 		error: function (text, noprefix)
 		{
 			this.el.addClass("error").attr("title", this.call).removeAttr("data-macro").text( (noprefix ? "" : "<<" + this.name + ">> error: ") + text);
-			return '';
 		},
 		
-		// Removes the element, unless in debug mode
+		// Remove the macro's element, unless in debug mode
 		clear: function()
 		{
-			if (story.options.debug)
+			if (!story.options.debug)
 			{
-				return '';
+				this.el.remove();
 			}
-			return null;
 		},
 		
 		// Searches back through the context chain to find macro instances of a specific name, or an array of names.
@@ -141,8 +138,8 @@ define(['jquery', 'story', 'state', 'utils', 'wordarray'], function($, story, st
 			}
 		},
 		
-		// Get the scope, if it is a SCOPED macro.
-		getScope: function()
+		// Find the nearest scope in which this macro is contained.
+		findScope: function()
 		{
 			var i, c = this.contextQuery();
 			for (i = 0; i < c.length; i += 1)
@@ -171,6 +168,7 @@ define(['jquery', 'story', 'state', 'utils', 'wordarray'], function($, story, st
 		},
 		
 		// Refresh the scope to reflect the current passage DOM state.
+		// Necessary if the scope selector is a WordArray or jQuery selector.
 		refreshScope: function(name)
 		{
 			if (this.scope)
@@ -247,7 +245,7 @@ define(['jquery', 'story', 'state', 'utils', 'wordarray'], function($, story, st
 		
 		// enchant: select the matching hooks, or create pseudo-hooks around matching words,
 		// and apply a class to those hooks.
-		// Pseudo-hooks are cleaned up in appendRender() in engine.
+		// Pseudo-hooks are cleaned up in engine.updateEnchantments()
 		enchant: {
 			value: function(className, scopestr, top) {
 				var i;
@@ -284,7 +282,8 @@ define(['jquery', 'story', 'state', 'utils', 'wordarray'], function($, story, st
 		// No argument given?
 		if (quotedArgs.length < 1)
 		{
-			return this.error('no scope argument given');
+			this.error('no scope argument given');
+			return;
 		}
 		if (!this.ready || !deferred)
 		{
@@ -301,16 +300,9 @@ define(['jquery', 'story', 'state', 'utils', 'wordarray'], function($, story, st
 			{
 				if (callback && typeof callback === "function")
 				{
-					c = callback.apply(this, this.args);
-					if (c)
-					{
-						return c;
-					}
+					this.render(callback.apply(this, this.args));
 				}
-				// Enchantment will be performed by appendRender() in engine.
-				
-				// Return a single character to keep the element around
-				return "&zwnj;";
+				return;
 			}
 			else
 			{
@@ -323,7 +315,7 @@ define(['jquery', 'story', 'state', 'utils', 'wordarray'], function($, story, st
 			// Deferred macro was activated - refresh the scope.
 			this.refreshScope();
 		}
-		return this.HTMLcontents;
+		this.render(this.HTMLcontents);
 	};
 	
 	// Generate a unique copy for each macro.
@@ -343,7 +335,7 @@ define(['jquery', 'story', 'state', 'utils', 'wordarray'], function($, story, st
 	{
 		args = Array.prototype.slice.call(args);
 		//TODO: is this bugged?
-		this.scope = (/*args[0] ? this.setScope(args[0]) :*/ this.getScope());
+		this.scope = (/*args[0] ? this.setScope(args[0]) :*/ this.findScope());
 		
 		if (this.scope && this.scope.wordarray)
 		{
@@ -351,16 +343,19 @@ define(['jquery', 'story', 'state', 'utils', 'wordarray'], function($, story, st
 			{
 				innerFn.apply(this, args);
 			}
-			return this.clear();
+			this.clear();
 		}
-		return this.error("no scope was found.");
+		else
+		{
+			this.error("no scope was found.");
+		}
 	};
 	
 	// Generate a unique function object for each macro
 	function scopedMacroFn(innerFn)
 	{
 		return function() {
-			return _scopedMacroFn.call(this, innerFn, arguments);
+			_scopedMacroFn.call(this, innerFn, arguments);
 		}
 	};
 	
@@ -376,8 +371,7 @@ define(['jquery', 'story', 'state', 'utils', 'wordarray'], function($, story, st
 				if (instance.scope.hooks.is(elem))
 				{
 					// TODO: make it so that the scope can sometimes only affect the clicked object
-					// TODO: figure out a better way to access the engine without having macrolib provide the reference.
-					instance.data.enchantment.render(instance);
+					instance.data.apply(instance,instance.args);
 					
 					// Remove hook if it's a once-only enchantment.
 					if (instance.data.enchantment.once)
@@ -492,10 +486,13 @@ define(['jquery', 'story', 'state', 'utils', 'wordarray'], function($, story, st
 			desc.fn = function() {
 				if (!this.context || ~~main.indexOf(this.context.name))
 				{
-					return this.error("is outside a"
+					this.error("is outside a"
 						+ (Array.isArray(main) ? "n appropriate macro" : " <<" + main + ">>"));
 				}
-				return this.clear();
+				else
+				{
+					this.clear();
+				}
 			};
 			if (mfunc && mfunc.version)
 			{
@@ -505,7 +502,7 @@ define(['jquery', 'story', 'state', 'utils', 'wordarray'], function($, story, st
 		},
 
 		// Performs a function for each macro instance found in the HTML.
-		// macroname is a regex string specifying a particular name, otherwise all are found.
+		// macroname is a regex string specifying a particular name; if absent, all are found.
 		// Callback function's argument is a macro instance.
 		matchMacroTag: function(html, macroname, callback)
 		{
@@ -531,7 +528,8 @@ define(['jquery', 'story', 'state', 'utils', 'wordarray'], function($, story, st
 							+ foundMacro[1] + ")(?:[^&]|&(?!gt;&gt;))*&gt;&gt;","g");
 						endMacroRE.lastIndex = endIndex;
 						nesting = 0;
-						do {
+						do
+						{
 							foundEndMacro = endMacroRE.exec(html);
 							if (foundEndMacro !== null)
 							{
@@ -562,7 +560,9 @@ define(['jquery', 'story', 'state', 'utils', 'wordarray'], function($, story, st
 					macroRE.lastIndex = endIndex;
 				}
 			} while (foundMacro);
-		}
+		},
+		
+		MacroInstance: MacroInstance
 	});
 	
 	// This replaces unknown or incorrect macros.

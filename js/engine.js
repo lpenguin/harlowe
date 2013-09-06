@@ -133,7 +133,7 @@ define(['jquery', 'marked', 'story', 'utils', 'state', 'macros'], function ($, M
 			macro.context = context;
 			macro.top = top;
 			macro.init && (macro.init());
-			engine.renderMacro(macro, top);
+			macro.data.apply(macro, macro.args);
 		}
 		else
 			span.addClass('error').html('No macro named ' + macro.name);
@@ -264,10 +264,8 @@ define(['jquery', 'marked', 'story', 'utils', 'state', 'macros'], function ($, M
 		Sub-function of showPassage(), also used by engine.renderMacro().
 		TODO: Make this not need to run multiple times during a "reflow".
 	*/
-	function appendRender(src, dest, top)
+	function updateEnchantments(top)
 	{
-		dest.append(src);
-		
 		// Remove the old enchantments
 		$(".pseudohook").children().unwrap();
 		$(".hook").attr("class", "hook");
@@ -283,7 +281,6 @@ define(['jquery', 'marked', 'story', 'utils', 'state', 'macros'], function ($, M
 				instance.enchantScope();
 			}
 		});
-		return src;
 	};
 	
 	// Create the HTML structure of the passage <section>. Sub-function of showPassage().
@@ -345,7 +342,8 @@ define(['jquery', 'marked', 'story', 'utils', 'state', 'macros'], function ($, M
 		
 		// Create new passage
 		newPassage = createPassageElement().append(render(passageData.html()));
-		appendRender(newPassage, el);
+		el.append(newPassage);
+		updateEnchantments();
 		
 		// Transition in
 		if (transIndex)
@@ -416,23 +414,8 @@ define(['jquery', 'marked', 'story', 'utils', 'state', 'macros'], function ($, M
 		
 		render: render,
 		
-		renderMacro: function(macro)
-		{
-			var result = macro.data.apply(macro, macro.args);
-			
-			if (result)
-			{
-				result = render(result + '', macro, macro.top);
-				if (result)
-				{
-					appendRender(result, macro.el, macro.top);
-				}
-				else if (result === null)
-				{
-					result.remove();
-				}
-			}
-		}
+		updateEnchantments: updateEnchantments
 	});
+	
 	return engine;
 });

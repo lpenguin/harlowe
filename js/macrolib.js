@@ -1,9 +1,9 @@
-define(['jquery', 'story', 'script', 'state', 'macros', 'engine', 'utils'], function($, story, script, state, macros, engine, utils)
+define(['jquery', 'story', 'script', 'macros', 'engine', 'utils'], function($, story, script, macros, engine, utils)
 {
 	"use strict";
 	/*
 		macrolib: Twine macro standard library.
-		Modifies the 'macros' and 'engine' modules only.
+		Modifies the 'macros' module only.
 	*/
 	
 	/*
@@ -39,6 +39,27 @@ define(['jquery', 'story', 'script', 'state', 'macros', 'engine', 'utils'], func
 	*/
 	
 	/*
+		Extend MacroInstance
+	*/
+	
+	$.extend(macros.MacroInstance, {	
+		// Renders given HTML and inserts it into macro.el
+		render: function(html)
+		{
+			var result = engine.render(html + '', this, this.top);
+			if (result)
+			{
+				this.el.append(result);
+				engine.updateEnchantments();
+			}
+			else if (result === null)
+			{
+				result.remove();
+			}
+		}
+	});
+	
+	/*
 		Basic Macros
 	*/
 	
@@ -50,7 +71,7 @@ define(['jquery', 'story', 'script', 'state', 'macros', 'engine', 'utils'], func
 		{
 			var value;
 			
-			if (!(/to|(?:[+\-\%\&\|\^\/\*]|<<|>>)=/.test(to)))
+			if (!(/to|(?:[+\-\%\&\|\^\/\*]|<<|>>)?=/.test(to)))
 			{
 				return this.error("second argument is not 'to', '+=' or similar.");
 			}
@@ -66,11 +87,11 @@ define(['jquery', 'story', 'script', 'state', 'macros', 'engine', 'utils'], func
 			{
 				// Before setting it to the value, default it to 0.
 				script.eval(variable + "=" + variable + "||" + utils.defaultValue +";" + variable + to + value);
-				return this.clear();
+				this.clear();
 			}
 			catch (e)
 			{
-				return this.error(e.message);
+				this.error(e.message);
 			}
 		}, 
 		version: {
@@ -89,11 +110,11 @@ define(['jquery', 'story', 'script', 'state', 'macros', 'engine', 'utils'], func
 			try
 			{
 				var args = this.convertOperators(this.rawArgs);
-				return (script.eval(args));
+				this.render(script.eval(args));
 			}
 			catch (e)
 			{
-				return this.error(e.message);
+				this.error(e.message);
 			}
 		}, 
 		version: {
@@ -112,7 +133,7 @@ define(['jquery', 'story', 'script', 'state', 'macros', 'engine', 'utils'], func
 		{
 			// To prevent keywords from being created by concatenating lines,
 			// replace the line breaks with a zero-width non-joining space.
-			return this.HTMLcontents.replace(/\\n/,"&zwnj;");
+			this.render(this.HTMLcontents.replace(/\\n/,"&zwnj;"));
 		},
 		version: {
 			major: 0,
@@ -123,24 +144,19 @@ define(['jquery', 'story', 'script', 'state', 'macros', 'engine', 'utils'], func
 	
 	// <<script>> ... <</script>>
 	// contents: JS to execute.
-	// If it is named, then it is deferred until an event occurs that names it.
 	macros.add("script", {
-		fn: function(name)
+		fn: function()
 		{
-			if (name)
-			{
-				state.addScript(name, script.eval, [this.contents]);
-			}
-			else try
+			try
 			{
 				// Eval this in the context of the script object,
 				// where the Twinescript API is.
 				script.eval.call(this.el, this.contents, this.top);
-				return this.clear();
+				this.clear();
 			}
 			catch (e)
 			{
-				return this.error(e.message);
+				this.error(e.message);
 			}
 		},
 		version: {
@@ -163,7 +179,7 @@ define(['jquery', 'story', 'script', 'state', 'macros', 'engine', 'utils'], func
 				$('head').append($('<style id="macro"></style>'));
 			}
 			$(selector).text(this.contents);
-			return this.clear();
+			this.clear();
 		},
 		version: {
 			major: 0,
@@ -200,16 +216,18 @@ define(['jquery', 'story', 'script', 'state', 'macros', 'engine', 'utils'], func
 				{
 					var result = script.eval(this.convertOperators(args[i]));
 					if (result) {
-						return contents[i];
+						this.render(contents[i]);
+						return;
 					}
 				}
 				catch (e)
 				{
-					return this.error('<<' + (i==0 ? 'if' : 'else if') +'>> error: '+e.message.message, true);
+					this.error('<<' + (i==0 ? 'if' : 'else if') +'>> error: '+e.message.message, true);
+					return;
 				}
 			}
 			this.el.addClass("false-if");
-			return this.clear();
+			this.clear();
 		}, 
 		version: {
 			major: 0,
@@ -234,22 +252,52 @@ define(['jquery', 'story', 'script', 'state', 'macros', 'engine', 'utils'], func
 				// Test for existence
 				if (!story.passageNamed(name))
 				{
-					return this.error('Can\'t <<display>> passage "' + name + '"', true);
+					this.error('Can\'t <<display>> passage "' + name + '"', true);
+					return;
 				}
 				// Test for recursion
 				if (this.contextQuery("display").filter(function(e) {
 						return e.el.filter("[data-display='"+name+"']").length > 0;
 					}).length >= 5)
 				{
-					return this.error('<<display>> loop: "' + name + '" is displaying itself 5+ times.', true);
+					this.error('<<display>> loop: "' + name + '" is displaying itself 5+ times.', true);
+					return;
 				}
 				this.el.attr("data-display",name);
-				var ret  = story.passageNamed(name).html();
-				return ret;
+				this.render(story.passageNamed(name).html());
 			}
 			catch (e)
 			{
-				return this.error(e.message);
+				this.error(e.message);
+			}
+		},
+		version: {
+			major: 0,
+			minor: 0,
+			revision: 0
+		}
+	});
+	
+	
+	// <<time ... >> ... <</time>>
+	// Perform the enclosed macros after the time has passed.
+	macros.add("time", {
+		fn: function(time) {
+			var ms = this.cssTimeUnit(time);
+			if (ms)
+			{
+				// TODO: Check for memory leak potential?
+				setTimeout(function() {
+					if ($(document.documentElement).find(this.el).length > 0)
+					{
+						this.render(this.HTMLcontents);
+					}
+				}.bind(this), ms);
+			}
+			else
+			{
+				this.error(time + " is not a valid time delay.");
+				return;
 			}
 		},
 		version: {
@@ -270,26 +318,24 @@ define(['jquery', 'story', 'script', 'state', 'macros', 'engine', 'utils'], func
 		}
 	});
 	
-	// <<time ... >> ... <</time>>
-	// Perform the enclosed macros after the time has passed.
-	macros.add("time", {
+	// <<key ... >> ... <</key>>
+	// Perform the enclosed macros after the given keyboard letter is pushed
+	/*macros.add("key", {
 		scoping: true,
 		deferred: true,
-		fn: function(scope, time) {
-			var ms = this.cssTimeUnit(time);
-			if (ms)
+		fn: function(key) {
+			if (key)
 			{
-				// TODO: Check for memory leak potential?
-				setTimeout(function() {
+				
 					if ($(document.documentElement).find(this.el).length > 0)
 					{
 						engine.renderMacro(this);
 					}
-				}.bind(this), ms);
+				
 			}
 			else
 			{
-				return this.error(time + " is not a valid time delay.");
+				return this.error(key + " is not a valid key or keycode.");
 			}
 		},
 		version: {
@@ -297,7 +343,7 @@ define(['jquery', 'story', 'script', 'state', 'macros', 'engine', 'utils'], func
 			minor: 0,
 			revision: 0
 		}
-	});
+	});*/
 	
 	// <<click ... >> ... <</click>>
 	// Perform the enclosed macros when the scope is clicked.
@@ -306,8 +352,7 @@ define(['jquery', 'story', 'script', 'state', 'macros', 'engine', 'utils'], func
 		enchantment: {
 			event: "click",
 			once: true,
-			classList: "link enchantment-link",
-			render: engine.renderMacro
+			classList: "link enchantment-link"
 		},
 		version: {
 			major: 0,
@@ -323,8 +368,7 @@ define(['jquery', 'story', 'script', 'state', 'macros', 'engine', 'utils'], func
 		enchantment: {
 			event: "mouseenter",
 			once: true,
-			classList: "enchantment-mouseover",
-			render: engine.renderMacro
+			classList: "enchantment-mouseover"
 		},
 		version: {
 			major: 0,
@@ -340,8 +384,7 @@ define(['jquery', 'story', 'script', 'state', 'macros', 'engine', 'utils'], func
 		enchantment: {
 			event: "mouseleave",
 			once: true,
-			classList: "enchantment-mouseout",
-			render: engine.renderMacro
+			classList: "enchantment-mouseout"
 		},
 		version: {
 			major: 0,
@@ -358,7 +401,6 @@ define(['jquery', 'story', 'script', 'state', 'macros', 'engine', 'utils'], func
 			event: "mouseenter",
 			once: false,
 			classList: "enchantment-hover",
-			render: engine.renderMacro
 		},
 		version: {
 			major: 0,
@@ -380,6 +422,7 @@ define(['jquery', 'story', 'script', 'state', 'macros', 'engine', 'utils'], func
 		fn: function()
 		{
 			this.scope.replace(engine.render(this.HTMLcontents));
+			engine.updateEnchantments();
 		},
 		version: {
 			major: 0,
@@ -395,6 +438,7 @@ define(['jquery', 'story', 'script', 'state', 'macros', 'engine', 'utils'], func
 		fn: function()
 		{
 			this.scope.append(engine.render(this.HTMLcontents));
+			engine.updateEnchantments();
 		},
 		version: {
 			major: 0,
@@ -410,6 +454,7 @@ define(['jquery', 'story', 'script', 'state', 'macros', 'engine', 'utils'], func
 		fn: function()
 		{
 			this.scope.prepend(engine.render(this.HTMLcontents));
+			engine.updateEnchantments();
 		},
 		version: {
 			major: 0,
@@ -426,6 +471,7 @@ define(['jquery', 'story', 'script', 'state', 'macros', 'engine', 'utils'], func
 		fn: function()
 		{
 			this.scope.remove();
+			engine.updateEnchantments();
 		},
 		version: {
 			major: 0,
