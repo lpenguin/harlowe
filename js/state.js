@@ -1,8 +1,14 @@
 define(['story', 'utils'], function(story, utils)
 {
 	"use strict";
+	/*
+		state: manages the game state.
+		Object type: StateInstance
+		Exported singleton: state
+	*/
+	
 	// Prototype object for states remembered by the game.
-	var stateProto = Object.seal({
+	var StateInstance = Object.seal({
 		// Variables
 		variables: {},
 		
@@ -12,7 +18,7 @@ define(['story', 'utils'], function(story, utils)
 		// Make a new state
 		create: function(v, p)
 		{
-			var ret = Object.create(stateProto);
+			var ret = Object.create(StateInstance);
 			ret.variables = (v ? utils.clone(v) : {});
 			ret.passage = p || "";
 			return ret;
@@ -21,7 +27,7 @@ define(['story', 'utils'], function(story, utils)
 	
 	// The present, after or while the current passage is executing.
 	// This is pushed into recent when going forward.
-	present = stateProto.create(),
+	present = StateInstance.create(),
 
 	// The game state at the point the current passage began execution.
 	// This is pushed into the past when going forward,
@@ -29,7 +35,7 @@ define(['story', 'utils'], function(story, utils)
 	// or used to serialise the game state.
 	// (Revisiting the passage should thus cause it to behave identically to
 	// the original visit.)
-	recent = stateProto.create(),
+	recent = StateInstance.create(),
 	
 	// Stack of previous states.
 	past = [],
@@ -73,25 +79,16 @@ define(['story', 'utils'], function(story, utils)
 			return future.length > 0;
 		},
 		
-		// Query a variable's present value
+		// Query a variable's present value, but filtering
+		// out undefined.
 		// Used by <<if>> and other conditional macros.
 		getVar: function(name) {
-			if (present.variables[name])
+			if (present.variables[name] !== undefined)
 			{
 				return present.variables[name];
 			}
 			// No value found...
 			return utils.defaultValue;
-		},
-		
-		setVar: function(name, value) {
-			present.variables[name] = value;
-		},
-		
-		// Does a variable have this value?
-		varIs: function(name, val)
-		{
-			return this.getVar(name) === val;
 		},
 		
 		// Did we ever visit this passage, given its name?
@@ -183,7 +180,7 @@ define(['story', 'utils'], function(story, utils)
 			past.push(recent);
 			// Create a new recent from present.
 			present.passage = newPassageID;
-			recent = stateProto.create(pst.variables, newPassageID);
+			recent = StateInstance.create(pst.variables, newPassageID);
 			// Clear the future
 			future = [];
 		},

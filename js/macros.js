@@ -2,6 +2,12 @@ define(['jquery', 'story', 'state', 'utils', 'wordarray'], function($, story, st
 {
 	"use strict";
 	/*
+		macros: Macro engine
+		Object types: MacroInstance, Hook
+		Exported singleton: macros
+	*/
+	
+	/*
 	
 	MACRO API:
 	
@@ -9,21 +15,19 @@ define(['jquery', 'story', 'state', 'utils', 'wordarray'], function($, story, st
 	* macros.get(name) : get a registered macro function.
 	* macros.add(descriptor): register a new macro.
 		descriptor is a map of the following:
-			- fn: the function to execute when the macro runs. It may be absent for scoping macros. See macrolib for the API.
+			- fn: the function to execute when the macro runs. It may be absent for hook macros. See macrolib for the API.
 			- name: a string, or an array of strings serving as 'alias' names.
 			- selfClosing: boolean, determines if the macro tag has contents. If false, then all subsequent code
 				up until a closing tag ("<<endmacro>>" or <</macro>>") or until the end of the passage,
 				will be captured by this.contents.
 			- version: a map { major: Number, minor: Number, revision: number }.
-			- scoping: targets a particular scope, which is to say, causes all macros within to apply
-				solely to the scope it sets.
-			- deferred: boolean, denotes that the scoping macro is "deferred" - its contents will not immediately be rendered.
-				Its presence causes fn to become a function that sets up the deferring condition (e.g for <<time>> it sets up a timeout).
-			- enchantment: a map whose presence denotes that the scoping macro is an "enchantment" - its contents will not immediately
-				be rendered until a denoted event is performed on its scope.
+			- hooked: boolean, denotes that this is a hook macro.
+			- deferred: boolean, denotes that the hook macro is "deferred" - it will not immediately execute. Currently unused.
+			- enchantment: a map whose presence denotes that the hook macro is an "enchantment" - its contents will not immediately
+				be rendered until a denoted event is performed on its hook(s).
 				The map contains the following:
 				- event: the DOM event that triggers the rendering of this macro's contents.
-				- classList: the list of classes to 'enchant' the scope with, to denote that it is ready for the player to
+				- classList: the list of classes to 'enchant' the hook with, to denote that it is ready for the player to
 				trigger an event on it.
 				- once: whether or not the enchanted DOM elements can trigger this macro multiple times.
 			
@@ -31,11 +35,12 @@ define(['jquery', 'story', 'state', 'utils', 'wordarray'], function($, story, st
 		main: name of the 'parent' macro.
 		
 	For other modules:
-	* macros.matchMacroTag(html, callback(e) ) : perform a function for each valid macro call in the HTML.
+	* macros.matchMacroTag(html, callback(e)) : perform a function for each valid macro call in the HTML.
 		html: a string of escaped HTML.
 		e: a MacroInstance object matching a macro invocation in the HTML.
 	
 	*/
+	
 	var MacroInstance, Scope, macros,
 		// Private collection of registered macros.
 		_handlers = {},
@@ -137,28 +142,14 @@ define(['jquery', 'story', 'state', 'utils', 'wordarray'], function($, story, st
 				return a[0];
 			}
 		},
-		
-		// Find the nearest scope in which this macro is contained.
-		findScope: function()
-		{
-			var i, c = this.contextQuery();
-			for (i = 0; i < c.length; i += 1)
-			{
-				if (c[i] && c[i].data && c[i].data.scoping && c[i].scope)
-				{
-					return c[i].scope;
-				}
-			}
-			return this.top;
-		},
 
-		// Set the scope, if it is a SCOPING macro.
+		// Set the scope, if it is a hook macro.
 		setScope: function(name)
 		{
 			this.scope = Scope.create(name, this.top);
 		},
 		
-		// Enchant the scope, if it is a SCOPING macro.
+		// Enchant the scope, if it is a hook macro.
 		enchantScope: function()
 		{
 			if (this.scope && this.data && this.data.enchantment)
@@ -167,8 +158,9 @@ define(['jquery', 'story', 'state', 'utils', 'wordarray'], function($, story, st
 			}
 		},
 		
-		// Refresh the scope to reflect the current passage DOM state.
-		// Necessary if the scope selector is a WordArray or jQuery selector.
+		// Refresh the hook to reflect the current passage DOM state.
+		// Necessary if the pseudo-hook selector is a WordArray or jQuery selector,
+		// or if a hook was removed or inserted for some other reason.
 		refreshScope: function(name)
 		{
 			if (this.scope)
@@ -186,24 +178,24 @@ define(['jquery', 'story', 'state', 'utils', 'wordarray'], function($, story, st
 		{
 			if (typeof expr === "string")
 			{
+				// Phrase "set x to 2" as "state.variables['x'] = 2"
+				if (setter)
+				{
+					expr = alter(expr, "\\$(\\w+)\\b", "state.variables['$1']");
+				}
+				else
+				// Phrase "if x is 2" as "state.getVar('x') === 2"
+				{
+					expr = alter(expr, "\\$(\\w+)\\b", "state.getVar('$1')");
+					// No unintended assignments allowed
+					expr = alter(expr, "\\w=\\w", " === ");
+				}
 				expr = alter(expr, "\\bis\\s+not\\b", " !== ");
 				expr = alter(expr, "\\bis\\b", " === ");
 				expr = alter(expr, "\\bto\\b", " = ");
 				expr = alter(expr, "\\band\\b", " && ");
 				expr = alter(expr, "\\bor\\b", " || ");
 				expr = alter(expr, "\\bnot\\b", " ! ");
-				// Phrase "set x to 2" as "state.variables['x'] = 2"
-				if (setter)
-				{
-					expr = alter(expr, "\\$(\\w+)\\b", " state.variables['$1'] ");
-				}
-				else
-				// Phrase "if x is 2" as "state.getVar('x') === 2"
-				{
-					expr = alter(expr, "\\$(\\w+)\\b", " state.getVar('$1') ");
-					// No unintended assignments allowed
-					expr = alter(expr, "\\b=\\b", " === ");
-				}
 			}
 			return expr;
 		},
@@ -247,7 +239,7 @@ define(['jquery', 'story', 'state', 'utils', 'wordarray'], function($, story, st
 		// and apply a class to those hooks.
 		// Pseudo-hooks are cleaned up in engine.updateEnchantments()
 		enchant: {
-			value: function(className, scopestr, top) {
+			value: function(className, top) {
 				var i;
 				// Targeting actual hooks?
 				if (utils.type(this.selector) === "hook string")
@@ -272,24 +264,25 @@ define(['jquery', 'story', 'state', 'utils', 'wordarray'], function($, story, st
 	}));
 	
 	/*
-		Common function of scoping macros.
+		Common function of hook macros.
 	*/
-	function _scopingMacroFn(deferred, callback)
+	function _hookMacroFn(deferred, innerFn)
 	{
-		var c,
 		// Get the args, but with quotes retained.
-			quotedArgs = this.rawArgs.split(unquotedWhitespace);
+		var	quotedArgs = this.rawArgs.split(unquotedWhitespace);
 		// No argument given?
 		if (quotedArgs.length < 1)
 		{
-			this.error('no scope argument given');
+			this.error('no hook ID given');
 			return;
 		}
-		if (!this.ready || !deferred)
+		// For deferred macros, only run this once.
+		if (!this.ready)
 		{
-			this.ready = true;
-			// Designate this as a scoping macro.
-			this.el.addClass("scoping-macro");
+			deferred && (this.ready = true);
+			
+			// Designate this as a hook macro.
+			this.el.addClass("hook-macro");
 			// Keep the MacroInstance around
 			this.el.data("instance", this);
 			
@@ -298,15 +291,11 @@ define(['jquery', 'story', 'state', 'utils', 'wordarray'], function($, story, st
 			
 			if (deferred)
 			{
-				if (callback && typeof callback === "function")
-				{
-					this.render(callback.apply(this, this.args));
-				}
 				return;
 			}
 			else
 			{
-				//Will run immediately - enchant now
+				//Will run immediately - enchant now.
 				this.enchantScope();
 			}
 		}
@@ -315,56 +304,33 @@ define(['jquery', 'story', 'state', 'utils', 'wordarray'], function($, story, st
 			// Deferred macro was activated - refresh the scope.
 			this.refreshScope();
 		}
-		this.render(this.HTMLcontents);
+		// If an inner function was given, run that.
+		if (innerFn && typeof innerFn === "function")
+		{
+			innerFn.apply(this, this.args);
+		}
+		else
+		// Default behaviour: simply parse the inner contents.
+		{
+			this.render(this.HTMLcontents);
+		}
 	};
 	
-	// Generate a unique copy for each macro.
-	function scopingMacroFn(deferred, callback)
+	// Generate a unique wrapper for each macro.
+	function hookMacroFn(deferred, innerFn)
 	{
 		return function(a)
 		{
-			return _scopingMacroFn.call(this, deferred, callback);
+			return _hookMacroFn.call(this, deferred, innerFn);
 		};
-	};
-	
-	/*
-		Common function of scoped macros, which wraps around an inner function (innerFn)
-		that should also be defined for the macro.
-	*/
-	function _scopedMacroFn(innerFn, args)
-	{
-		args = Array.prototype.slice.call(args);
-		//TODO: is this bugged?
-		this.scope = (/*args[0] ? this.setScope(args[0]) :*/ this.findScope());
-		
-		if (this.scope && this.scope.wordarray)
-		{
-			if (innerFn && (typeof innerFn === "function"))
-			{
-				innerFn.apply(this, args);
-			}
-			this.clear();
-		}
-		else
-		{
-			this.error("no scope was found.");
-		}
-	};
-	
-	// Generate a unique function object for each macro
-	function scopedMacroFn(innerFn)
-	{
-		return function() {
-			_scopedMacroFn.call(this, innerFn, arguments);
-		}
 	};
 	
 	// Called when an enchantment's event is triggered. Sub-function of macros.add()
 	function enchantmentEventFn()
 	{
 		var elem = $(this);
-		// Trigger the scoped macros that refer to this enchantment.
-		$(".scoping-macro").each(function() {
+		// Trigger the hook macros that refer to this enchantment.
+		$(".hook-macro").each(function() {
 			var instance = $(this).data("instance");
 			if (instance && instance.scope && instance.scope.hooks)
 			{
@@ -418,7 +384,7 @@ define(['jquery', 'story', 'state', 'utils', 'wordarray'], function($, story, st
 			{
 				return loaderError("Argument 1 of macros.add isn't an array or a string.");
 			}
-			if (!(desc && typeof desc === "object" && ((desc.fn && typeof desc.fn === "function") || desc.scoping)))
+			if (!(desc && typeof desc === "object" && ((desc.fn && typeof desc.fn === "function") || desc.hooked)))
 			{
 				return loaderError("Argument 2 of macros.add (\"" + name + "\") isn't a valid or complete descriptor.");
 			}
@@ -427,25 +393,21 @@ define(['jquery', 'story', 'state', 'utils', 'wordarray'], function($, story, st
 				fn = desc.fn;
 				delete desc.fn;
 			}
-			// Scoping macro? Use a scopingMacroFn for its function.
-			if (desc.scoping)
+			// Hook macro? Use a hookMacroFn for its function.
+			if (desc.hooked)
 			{
 				// Enchantment macro? Register the enchantment's event.
 				if (desc.enchantment && desc.enchantment.event && desc.enchantment.classList)
 				{
+					// Set the event that the enchantment descriptor declares
 					$(document.documentElement).on(desc.enchantment.event + "." + desc.name + "-macro", utils.classListToSelector(desc.enchantment.classList), enchantmentEventFn);
 					
-					fn = scopingMacroFn(true, fn);
+					fn = hookMacroFn(true, fn);
 				}
 				else
 				{
-					fn = scopingMacroFn(!!desc.deferred, fn);
+					fn = hookMacroFn(!!desc.deferred, fn);
 				}
-			}
-			// Scoped macro? Wrap its function in a scope-checking wrapper.
-			else if (desc.scoped)
-			{
-				fn = scopedMacroFn(fn);
 			}
 			// Add all remaining properties of desc to fn.
 			$.extend(fn,desc);

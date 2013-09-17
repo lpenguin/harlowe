@@ -3,7 +3,7 @@ define(['jquery', 'story', 'script', 'macros', 'engine', 'utils'], function($, s
 	"use strict";
 	/*
 		macrolib: Twine macro standard library.
-		Modifies the 'macros' module only.
+		Modifies the 'macros' module only. Exports nothing.
 	*/
 	
 	/*
@@ -67,21 +67,24 @@ define(['jquery', 'story', 'script', 'macros', 'engine', 'utils'], function($, s
 	// rawArgs: expression to execute, converting operators first.
 	macros.add("set", {
 		selfClosing: true,
-		fn: function(variable, to)
+		fn: function(variable, rawTo)
 		{
-			var value;
+			var to, value;
 			
-			if (!(/to|(?:[+\-\%\&\|\^\/\*]|<<|>>)?=/.test(to)))
+			if (!rawTo)
 			{
-				return this.error("second argument is not 'to', '+=' or similar.");
+				return this.error("too few arguments.");
 			}
-			
+			if (!(/to|(?:[+\-\%\&\|\^\/\*]|<<|>>)?=/.test(rawTo)))
+			{
+				return this.error("second argument '" + rawTo + "' is not 'to', '+=' or similar.");
+			}
 			// Convert the variable (with 'set' true)
 			variable = this.convertOperators(variable, true);
 			// Convert the operator
-			to = this.convertOperators(to);
+			to = this.convertOperators(rawTo);
 			// Convert the value
-			value = this.convertOperators(this.args.slice(2).join(""));
+			value = this.convertOperators(this.rawArgs.slice(this.rawArgs.indexOf(rawTo)+rawTo.length));
 			
 			try
 			{
@@ -307,36 +310,11 @@ define(['jquery', 'story', 'script', 'macros', 'engine', 'utils'], function($, s
 		}
 	});
 	
-	// <<with ... >> ... <</with>>
-	// The simplest kind of scoped macro.
-	macros.add("with", {
-		scoping: true,
-		version: {
-			major: 0,
-			minor: 0,
-			revision: 0
-		}
-	});
-	
 	// <<key ... >> ... <</key>>
 	// Perform the enclosed macros after the given keyboard letter is pushed
 	/*macros.add("key", {
-		scoping: true,
 		deferred: true,
 		fn: function(key) {
-			if (key)
-			{
-				
-					if ($(document.documentElement).find(this.el).length > 0)
-					{
-						engine.renderMacro(this);
-					}
-				
-			}
-			else
-			{
-				return this.error(key + " is not a valid key or keycode.");
-			}
 		},
 		version: {
 			major: 0,
@@ -348,7 +326,7 @@ define(['jquery', 'story', 'script', 'macros', 'engine', 'utils'], function($, s
 	// <<click ... >> ... <</click>>
 	// Perform the enclosed macros when the scope is clicked.
 	macros.add("click", {
-		scoping: true,
+		hooked: true,
 		enchantment: {
 			event: "click",
 			once: true,
@@ -364,7 +342,7 @@ define(['jquery', 'story', 'script', 'macros', 'engine', 'utils'], function($, s
 	// <<mouseover ... >> ... <</mouseover>>
 	// Perform the enclosed macros when the scope is moused over.
 	macros.add("mouseover", {
-		scoping: true,
+		hooked: true,
 		enchantment: {
 			event: "mouseenter",
 			once: true,
@@ -380,7 +358,7 @@ define(['jquery', 'story', 'script', 'macros', 'engine', 'utils'], function($, s
 	// <<mouseout ... >> ... <</mouseout>>
 	// Perform the enclosed macros when the scope is moused away.
 	macros.add("mouseout", {
-		scoping: true,
+		hooked: true,
 		enchantment: {
 			event: "mouseleave",
 			once: true,
@@ -396,7 +374,7 @@ define(['jquery', 'story', 'script', 'macros', 'engine', 'utils'], function($, s
 	/*// <<hover ... >> ... <</hover>>
 	// Perform the enclosed macros when the scope is moused over.
 	macros.add("hover", {
-		scoping: true,
+		hooked: true,
 		enchantment: {
 			event: "mouseenter",
 			once: false,
@@ -415,10 +393,10 @@ define(['jquery', 'story', 'script', 'macros', 'engine', 'utils'], function($, s
 	*/
 	
 	// <<replace [...] >> ... <</replace>>
-	// A scoped macro that replaces the scope element(s) with its contents.
+	// A macro that replaces the scope element(s) with its contents.
 	
 	macros.add("replace", {
-		scoped: true,
+		hooked: true,
 		fn: function()
 		{
 			this.scope.replace(engine.render(this.HTMLcontents));
@@ -434,7 +412,7 @@ define(['jquery', 'story', 'script', 'macros', 'engine', 'utils'], function($, s
 	// <<append [...] >> ... <</append>>
 	// Similar to replace, but appends the contents to the scope(s).
 	macros.add("append", {
-		scoped: true, 
+		hooked: true, 
 		fn: function()
 		{
 			this.scope.append(engine.render(this.HTMLcontents));
@@ -450,7 +428,7 @@ define(['jquery', 'story', 'script', 'macros', 'engine', 'utils'], function($, s
 	// <<prepend [...] >> ... <</prepend>>
 	// Similar to replace, but prepends the contents to the scope(s).
 	macros.add("prepend", {
-		scoped: true, 
+		hooked: true, 
 		fn: function()
 		{
 			this.scope.prepend(engine.render(this.HTMLcontents));
@@ -466,7 +444,7 @@ define(['jquery', 'story', 'script', 'macros', 'engine', 'utils'], function($, s
 	// <<remove [...] >>
 	// Removes the scope(s).
 	macros.add("remove", {
-		scoped: true, 
+		hooked: true, 
 		selfClosing: true,
 		fn: function()
 		{
