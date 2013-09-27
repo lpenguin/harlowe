@@ -3,6 +3,7 @@ define(['jquery', 'marked', 'story', 'utils', 'state', 'macros'], function ($, M
 	"use strict";
 	/*
 		engine: Module that renders passages to the DOM.
+		Exported singleton: engine
 	*/
 	var engine;
 	
@@ -99,8 +100,13 @@ define(['jquery', 'marked', 'story', 'utils', 'state', 'macros'], function ($, M
 		// Hooks
 		function hook(cap, link)
 		{
-		    return '<span class="hook" data-hook="' + link + '">'
-			  + this.output(cap[1]) + '</span>';
+			// If a hook is empty, fill it with a zero-width space,
+			// so that it can still be selected by WordArrays.
+		    var out = this.output(cap[1]) || (out = utils.charSpanify("&zwnj;"));
+			return '<span class="hook" data-hook="' + link + '"'
+				// Debug mode: show the hook destination as a title.
+				+ (story.options.debug ? 'title="Hook: ?' + link + '"' : '') + '>'
+				+ out + '</span>';
 		};
 		
 		function reflink(cap)
@@ -174,7 +180,8 @@ define(['jquery', 'marked', 'story', 'utils', 'state', 'macros'], function ($, M
 		}
 		visited = (state.passageNameVisited(passage));
 		
-		return '<span class="link passage-link ' + (visited ? 'visited" ' : '" ') + (!story.options.opaquelinks ? 'href="#' + escape(passage.replace(/\s/g, '')) + '"' : '')
+		return '<span class="link passage-link ' + (visited ? 'visited" ' : '" ')
+		    + (!story.options.opaquelinks ? 'href="#' + escape(passage.replace(/\s/g, '')) + '"' : '')
 			+ ' data-passage-link="' + passage + '">' + text + '</span>';
 	};
 	
@@ -267,11 +274,11 @@ define(['jquery', 'marked', 'story', 'utils', 'state', 'macros'], function ($, M
 	function updateEnchantments(top)
 	{
 		// Remove the old enchantments
-		$(".pseudohook").children().unwrap();
+		$(".pseudo-hook").children().unwrap();
 		$(".hook").attr("class", "hook");
 				
 		// Perform actions for each scoping macro's scope.
-		$(".scoping-macro", top).each(function() {
+		$(".hook-macro", top).each(function() {
 			var instance = $(this).data("instance");
 			
 			if (instance)

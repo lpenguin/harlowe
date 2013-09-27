@@ -3,7 +3,10 @@ define(['jquery', 'utils'], function($, utils)
 	"use strict";
 	/*
 		story: Module governing data concerning the stort and its structure.
-		
+		Exported singleton: story
+	*/
+	
+	/*
 		Story options:
 			opaquelinks : prevent players 'link sniffing' by eliminating the HREF of internal passage links.
 			debug : debug mode is ready. Click the bug icon to reveal all macro spans.

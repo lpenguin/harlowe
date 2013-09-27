@@ -303,7 +303,19 @@ h1, h2, h3, h4, h5, h6
 .debug-mode [data-macro="replace"] { background-color: hsla(20,75%,50%,0.2) !important; }
 
 /* Colours for other things */
-.debug-mode .hook { background-color: hsla(220,100%,50%,0.1) !important;}
+.debug-mode .hook  { background-color: hsla(220,100%,50%,0.1) !important;}
+.debug-mode .pseudo-hook  { background-color: hsla(40,100%,50%,0.1) !important;}
+.debug-mode .hook::before, .debug-mode .pseudo-hook::before {
+	content: "["
+}
+.debug-mode .hook::after, .debug-mode .pseudo-hook::after {
+	content: "]"
+}
+
+.debug-mode .passage-link::after {
+	font-size: 0.5rem;
+	content: attr(data-passage-link)
+}
 
 /* Show the macro name */
 .debug-mode [data-macro]::before {

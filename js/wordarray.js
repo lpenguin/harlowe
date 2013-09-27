@@ -144,6 +144,7 @@ define(['jquery', 'utils'], function ($, utils)
 			return "";
 		},
 		
+		// Updates this WordArray's contents to match its selector.
 		refresh: function(word, top)
 		{
 			var type = utils.type(word),
@@ -175,12 +176,13 @@ define(['jquery', 'utils'], function ($, utils)
 				}
 				case "wordarray string":
 				{
+					// Remove quote marks.
 					this.contents = findCharSpans(word.slice(1,-1), top);
 					break;
 				}
 				case "hook string":
 				{
-					$(utils.hookToSelector(word), top).each(forEachjQuery);
+					utils.hookTojQuery(word, top).each(forEachjQuery);
 					break;
 				}
 			}

@@ -3,6 +3,7 @@ define(['jquery'], function($)
 	"use strict";
 	/*
 		utils: Utility functions, constants, etc.
+		Exported singleton: utils
 	*/
 	
 	var p = $('<p>'),
@@ -11,13 +12,13 @@ define(['jquery'], function($)
 		// Make object properties non-deletable and non-writable.
 		lockProperties: function(obj)
 		{
-			var i,
+			var i, prop,
 				keys = Object.keys(obj),
 				propDesc = {};
 				
 			for (i = 0; i < keys.length; i++)
 			{
-				var prop = keys[i];
+				prop = keys[i];
 				
 				propDesc[prop] = {
 					enumerable: true,
@@ -27,7 +28,7 @@ define(['jquery'], function($)
 			return Object.defineProperties(obj, propDesc);
 		},
 
-		// Clone - faster than $.extend()
+		// Clone - faster than $.extend({}, ...)
 		clone: function(obj) {
 			var i, ret = Object.create(Object.getPrototypeOf(obj)),
 				keys = Object.keys(obj),
@@ -45,10 +46,10 @@ define(['jquery'], function($)
 			For strings, determines the type of scope selector used.
 		*/
 		type: function(val) {
-			var u;
+			var r;
 			if (!val)
 			{
-				return u+"";
+				return "undefined";
 			}
 			if (typeof val === "object")
 			{
@@ -56,7 +57,7 @@ define(['jquery'], function($)
 				{
 					return "wordarray";
 				}
-				else if (val.jquery)
+				if (val.jquery)
 				{
 					return "jquery";
 				}
@@ -64,8 +65,8 @@ define(['jquery'], function($)
 			else if (typeof val === "string")
 			{
 				//TODO: permit either quote form in jQuery selector
-				var r = /\$\("([^"]*)"\)|"((?:[^"\\]|\\.)*)"|(\w*)/.exec(val);
-				if (r.length)
+				r = /\$\("([^"]*)"\)|"((?:[^"\\]|\\.)*)"|\?(\w*)/.exec(val);
+				if (r && r.length)
 				{
 					// jQuery selector $("...")
 					if (r[1])
@@ -73,17 +74,17 @@ define(['jquery'], function($)
 						return "jquery string";
 					}
 					// Word selector "..."
-					else if (r[2])
+					if (r[2])
 					{
 						return "wordarray string";
 					}
-					// Hook
-					else if (r[3])
+					// Hook ?...
+					if (r[3])
 					{
 						return "hook string";
 					}
 				}
-				return u+"";
+				return "undefined";
 			}
 		},
 
@@ -100,8 +101,10 @@ define(['jquery'], function($)
 				case "&gt;": return '>';
 				case "&amp;": return '&';
 				case "&quot;": return '"';
+				case "&nbsp;": return String.fromCharCode(160);
+				case "&zwnj;": return String.fromCharCode(8204);
 				default: return p.html(text).text();
-			};
+			}
 		},
 		
 		// Convert a class selector chain (".magic.link") into a HTML classlist attribute.
@@ -127,6 +130,12 @@ define(['jquery'], function($)
 		{
 			c = c.replace(/"/g, "&quot;");
 			return '.hook[data-hook="' + c + '"]';
+		},
+		
+		// Convert a hook index string into a jQuery.
+		hookTojQuery: function(c, top)
+		{
+			return $(utils.hookToSelector(c.slice(1), top))
 		},
 		
 		// Takes a string containing a character or HTML entity, and wraps it into a

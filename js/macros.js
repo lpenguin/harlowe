@@ -29,6 +29,8 @@ define(['jquery', 'story', 'state', 'utils', 'wordarray'], function($, story, st
 				- event: the DOM event that triggers the rendering of this macro's contents.
 				- classList: the list of classes to 'enchant' the hook with, to denote that it is ready for the player to
 				trigger an event on it.
+				- rerender: a string determining whether to clear the span before rendering into it ("replace", default),
+				append the rendering to its current contents ("append") or prepend it ("prepend").
 				- once: whether or not the enchanted DOM elements can trigger this macro multiple times.
 			
 	* macros.supplement(name, selfClosing, main) : register a macro which has no code, but is used as a sub-tag in another macro.
@@ -76,7 +78,7 @@ define(['jquery', 'story', 'state', 'utils', 'wordarray'], function($, story, st
 			macro.HTMLcall = html.slice(startIndex, endIndex);
 			macro.HTMLcontents = (selfClosing ? "" : macro.HTMLcall.replace(/^(?:[^&]|&(?!gt;&gt;))*&gt;&gt;/i, '').replace(/&lt;&lt;(?:[^&]|&(?!gt;&gt;))*&gt;&gt;$/i, ''));
 			
-			// unescape HTML entities (like "&amp;")
+			// unescape HTML entities ("&amp;" etc.)
 			macro.call = $('<p>').html(macro.HTMLcall).text();
 			macro.contents = (selfClosing ? "" : macro.call.replace(/^(?:[^>]|>(?!>))*>>/i, '').replace(/<<(?:[^>]|>(?!>))*>>$/i, ''));
 			macro.rawArgs = macro.call.replace(/^<<\s*\w*\s*/, '').replace(/\s*>>[^]*/, '').trim();
@@ -229,7 +231,7 @@ define(['jquery', 'story', 'state', 'utils', 'wordarray'], function($, story, st
 		create: {
 			value: function(word, top) {
 				var pseudohookSelector, ret;
-				ret = Object.getPrototypeOf(this).create.call(this, word, top);
+				ret = WordArray.create.call(this, word, top);
 				ret.selector = word;
 				return ret;
 			}
@@ -244,7 +246,7 @@ define(['jquery', 'story', 'state', 'utils', 'wordarray'], function($, story, st
 				// Targeting actual hooks?
 				if (utils.type(this.selector) === "hook string")
 				{
-					this.hooks = $(utils.hookToSelector(this.selector), top);
+					this.hooks = utils.hookTojQuery(this.selector, top);
 				}
 				else if (this.selector)
 				// Pseudohooks (WordArray selector etc)
@@ -253,7 +255,9 @@ define(['jquery', 'story', 'state', 'utils', 'wordarray'], function($, story, st
 					// Create pseudohooks around the Words
 					for(i = 0; i < this.contents.length; i++)
 					{
-						this.contents[i].wrapAll("<span class='pseudohook'/>");
+						this.contents[i].wrapAll("<span class='pseudo-hook' "
+						// Debug mode: show the pseudo-hook selector as a tooltip
+							+ (story.options.debug ? "title='Pseudo-hook: " + this.selector + "'" : "") + "/>");
 						this.hooks = this.hooks.add(this.contents[i].parent());
 					};
 				}
@@ -266,10 +270,12 @@ define(['jquery', 'story', 'state', 'utils', 'wordarray'], function($, story, st
 	/*
 		Common function of hook macros.
 	*/
-	function _hookMacroFn(deferred, innerFn)
+	function hookMacroFn(deferred, innerFn)
 	{
-		// Get the args, but with quotes retained.
-		var	quotedArgs = this.rawArgs.split(unquotedWhitespace);
+		var	rerender = this.data.enchantment && this.data.enchantment.rerender,
+			// Get the args, but with quotes retained.
+			quotedArgs = this.rawArgs.split(unquotedWhitespace);
+		
 		// No argument given?
 		if (quotedArgs.length < 1)
 		{
@@ -312,18 +318,23 @@ define(['jquery', 'story', 'state', 'utils', 'wordarray'], function($, story, st
 		else
 		// Default behaviour: simply parse the inner contents.
 		{
-			this.render(this.HTMLcontents);
+			if (!rerender || rerender === "replace")
+			{
+				this.el.empty();
+			}
+			this.render(this.HTMLcontents, rerender === "prepend");
 		}
-	};
+	}
 	
-	// Generate a unique wrapper for each macro.
-	function hookMacroFn(deferred, innerFn)
+	// Generate a unique wrapper for each macro,
+	// outside the scope of macros.add.
+	function newHookMacroFn(deferred, innerFn)
 	{
 		return function(a)
 		{
-			return _hookMacroFn.call(this, deferred, innerFn);
+			return hookMacroFn.call(this, deferred, innerFn);
 		};
-	};
+	}
 	
 	// Called when an enchantment's event is triggered. Sub-function of macros.add()
 	function enchantmentEventFn()
@@ -348,9 +359,9 @@ define(['jquery', 'story', 'state', 'utils', 'wordarray'], function($, story, st
 			}
 			//TODO: error message
 		});
-	};
+	}
 	
-	// Report an error when a user-loaded macro fails.
+	// Report an error when a user-loaded macro fails. Sub-function of macros.add() and macros.supplement().
 	function loaderError(text)
 	{
 		// TODO: Instead of a basic alert, display a notification banner somewhere.
@@ -402,11 +413,11 @@ define(['jquery', 'story', 'state', 'utils', 'wordarray'], function($, story, st
 					// Set the event that the enchantment descriptor declares
 					$(document.documentElement).on(desc.enchantment.event + "." + desc.name + "-macro", utils.classListToSelector(desc.enchantment.classList), enchantmentEventFn);
 					
-					fn = hookMacroFn(true, fn);
+					fn = newHookMacroFn(true, fn);
 				}
 				else
 				{
-					fn = hookMacroFn(!!desc.deferred, fn);
+					fn = newHookMacroFn(!!desc.deferred, fn);
 				}
 			}
 			// Add all remaining properties of desc to fn.
@@ -496,7 +507,8 @@ define(['jquery', 'story', 'state', 'utils', 'wordarray'], function($, story, st
 							if (foundEndMacro !== null)
 							{
 								if (foundEndMacro[2])
-								{ // Found <</macro>>
+								{
+									// Found <</macro>>
 									if (nesting)
 									{
 										nesting -= 1;
@@ -523,6 +535,9 @@ define(['jquery', 'story', 'state', 'utils', 'wordarray'], function($, story, st
 				}
 			} while (foundMacro);
 		},
+		
+		// Stub function to be replaced by macrolib's render()
+		render: $.noop,
 		
 		MacroInstance: MacroInstance
 	});

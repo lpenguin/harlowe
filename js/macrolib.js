@@ -44,12 +44,12 @@ define(['jquery', 'story', 'script', 'macros', 'engine', 'utils'], function($, s
 	
 	$.extend(macros.MacroInstance, {	
 		// Renders given HTML and inserts it into macro.el
-		render: function(html)
+		render: function(html, prepend)
 		{
 			var result = engine.render(html + '', this, this.top);
 			if (result)
 			{
-				this.el.append(result);
+				prepend ? this.el.prepend(result) : this.el.append(result);
 				engine.updateEnchantments();
 			}
 			else if (result === null)
@@ -135,7 +135,7 @@ define(['jquery', 'story', 'script', 'macros', 'engine', 'utils'], function($, s
 		fn: function()
 		{
 			// To prevent keywords from being created by concatenating lines,
-			// replace the line breaks with a zero-width non-joining space.
+			// replace the line breaks with a zero-width space.
 			this.render(this.HTMLcontents.replace(/\\n/,"&zwnj;"));
 		},
 		version: {
@@ -330,6 +330,7 @@ define(['jquery', 'story', 'script', 'macros', 'engine', 'utils'], function($, s
 		enchantment: {
 			event: "click",
 			once: true,
+			rerender: "replace",
 			classList: "link enchantment-link"
 		},
 		version: {
@@ -346,6 +347,7 @@ define(['jquery', 'story', 'script', 'macros', 'engine', 'utils'], function($, s
 		enchantment: {
 			event: "mouseenter",
 			once: true,
+			rerender: "replace",
 			classList: "enchantment-mouseover"
 		},
 		version: {
@@ -362,6 +364,7 @@ define(['jquery', 'story', 'script', 'macros', 'engine', 'utils'], function($, s
 		enchantment: {
 			event: "mouseleave",
 			once: true,
+			rerender: "replace",
 			classList: "enchantment-mouseout"
 		},
 		version: {
