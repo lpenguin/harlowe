@@ -1,4 +1,4 @@
-define(['jquery', 'marked', 'story', 'utils', 'state', 'macros'], function ($, Marked, story, utils, state, macros)
+define(['jquery', 'marked', 'story', 'utils', 'state', 'macros'], function ($, Marked, Story, Utils, State, Macros)
 {
 	"use strict";
 	/*
@@ -82,19 +82,19 @@ define(['jquery', 'marked', 'story', 'utils', 'state', 'macros'], function ($, M
 				href = Marked.escape(cap[1]);
 				text = href;
 			}
-			return '<a class="link" href="' + href + '">' + utils.charSpanify(text) + '</a>';
+			return '<a class="link" href="' + href + '">' + Utils.charSpanify(text) + '</a>';
 		});
 		// Chars, links
 		Marked.InlineLexer.setFunc("url", function(cap, src)
 		{
 			var text = Marked.escape(cap[1]),
 				href = text;
-			return '<a class="link" href="' + href + '">' + utils.charSpanify(text) + '</a>';
+			return '<a class="link" href="' + href + '">' + Utils.charSpanify(text) + '</a>';
 		});
 		// Chars, text.
 		Marked.InlineLexer.setFunc("text", function(cap)
 		{
-			return utils.charSpanify(Marked.escape(this.smartypants(cap[0])));
+			return Utils.charSpanify(Marked.escape(this.smartypants(cap[0])));
 		});
 		
 		// Hooks
@@ -102,10 +102,10 @@ define(['jquery', 'marked', 'story', 'utils', 'state', 'macros'], function ($, M
 		{
 			// If a hook is empty, fill it with a zero-width space,
 			// so that it can still be selected by WordArrays.
-		    var out = this.output(cap[1]) || (out = utils.charSpanify("&zwnj;"));
+		    var out = this.output(cap[1]) || (out = Utils.charSpanify("&zwnj;"));
 			return '<span class="hook" data-hook="' + link + '"'
 				// Debug mode: show the hook destination as a title.
-				+ (story.options.debug ? 'title="Hook: ?' + link + '"' : '') + '>'
+				+ (Story.options.debug ? 'title="Hook: ?' + link + '"' : '') + '>'
 				+ out + '</span>';
 		};
 		
@@ -153,11 +153,11 @@ define(['jquery', 'marked', 'story', 'utils', 'state', 'macros'], function ($, M
 			newhtml = "",
 			index = 0;
 
-		macros.matchMacroTag(source, null, function (m) {
+		Macros.matchMacroTag(source, null, function (m) {
 			if (!m.data)
 			{
 				// A macro by that name doesn't exist
-				m.data = macros.get("unknown");
+				m.data = Macros.get("unknown");
 			}
 			// Contain the macro in a hidden span.
 			newhtml += source.slice(index, m.startIndex) + '<span data-count="' + macroCount + '" data-macro="' + m.name + '" hidden></span>';
@@ -174,14 +174,14 @@ define(['jquery', 'marked', 'story', 'utils', 'state', 'macros'], function ($, M
 	{
 		var visited;
 		
-		if (!story.passageNamed(passage))
+		if (!Story.passageNamed(passage))
 		{
 			return '<span class="broken-link">' + text + '</span>';
 		}
-		visited = (state.passageNameVisited(passage));
+		visited = (State.passageNameVisited(passage));
 		
 		return '<span class="link passage-link ' + (visited ? 'visited" ' : '" ')
-		    + (!story.options.opaquelinks ? 'href="#' + escape(passage.replace(/\s/g, '')) + '"' : '')
+		    + (!Story.options.opaquelinks ? 'href="#' + escape(passage.replace(/\s/g, '')) + '"' : '')
 			+ ' data-passage-link="' + passage + '">' + text + '</span>';
 	};
 	
@@ -245,7 +245,7 @@ define(['jquery', 'marked', 'story', 'utils', 'state', 'macros'], function ($, M
 		html = $(source);
 		
 		// Render macro instances
-		$("[data-macro]", html).each(function(){
+		Utils.$("[data-macro]", html).each(function(){
 			this.removeAttribute("hidden");
 			var count = this.getAttribute("data-count");
 			runMacro(macroInstances[count], $(this), context, top || html);
@@ -274,11 +274,11 @@ define(['jquery', 'marked', 'story', 'utils', 'state', 'macros'], function ($, M
 	function updateEnchantments(top)
 	{
 		// Remove the old enchantments
-		$(".pseudo-hook").children().unwrap();
-		$(".hook").attr("class", "hook");
+		Utils.$(".pseudo-hook", top).children().unwrap();
+		Utils.$(".hook", top).attr("class", "hook");
 				
 		// Perform actions for each scoping macro's scope.
-		$(".hook-macro", top).each(function() {
+		Utils.$(".hook-macro", top).each(function() {
 			var instance = $(this).data("instance");
 			
 			if (instance)
@@ -300,9 +300,9 @@ define(['jquery', 'marked', 'story', 'utils', 'state', 'macros'], function ($, M
 		back = $('<span class="link icon undo" title="Undo">&#8630;</span>').click(engine.goBack);
 		fwd = $('<span class="link icon redo" title="Redo">&#8631;</span>').click(engine.goForward);
 		
-		if (!state.hasPast())
+		if (!State.hasPast())
 			back.css({visibility:"hidden"});
-		if (!state.hasFuture())
+		if (!State.hasFuture())
 			fwd.css({visibility:"hidden"});
 		
 		sidebar.append(back).append(fwd);
@@ -320,8 +320,8 @@ define(['jquery', 'marked', 'story', 'utils', 'state', 'macros'], function ($, M
 		var newPassage,
 			transIndex,
 			el = el || $('#story'),
-			passageData = story.passageWithID(id),
-			oldPassages = el.children(".passage").not(".transition-out");
+			passageData = Story.passageWithID(id),
+			oldPassages = Utils.$(el.children(".passage"));
 		
 		if (passageData === null) 
 		{
@@ -334,17 +334,9 @@ define(['jquery', 'marked', 'story', 'utils', 'state', 'macros'], function ($, M
 		transIndex = passageData.attr("data-t8n") || "dissolve";
 		
 		// Transition out
-		if (stretch)
+		if (!stretch && transIndex)
 		{
-			oldPassages = oldPassages.last();
-		}
-		if (transIndex)
-		{
-			oldPassages.attr("data-t8n", transIndex).addClass("transition-out");
-			if (!stretch)
-			{
-				oldPassages.one("animationend webkitAnimationEnd MSAnimationEnd oAnimationEnd", function(){ oldPassages.remove(); });
-			}
+			Utils.transitionOut(oldPassages, transIndex);
 		}
 		
 		// Create new passage
@@ -355,8 +347,7 @@ define(['jquery', 'marked', 'story', 'utils', 'state', 'macros'], function ($, M
 		// Transition in
 		if (transIndex)
 		{
-			newPassage.attr("data-t8n", transIndex).addClass("transition-in")
-				.one("animationend webkitAnimationEnd MSAnimationEnd oAnimationEnd", function(){ newPassage.removeClass("transition-in") });
+			Utils.transitionIn(newPassage, transIndex);
 		}
 		
 		// TODO: HTML5 history
@@ -367,9 +358,9 @@ define(['jquery', 'marked', 'story', 'utils', 'state', 'macros'], function ($, M
 		goBack: function()
 		{
 			//TODO: get the stretch value from state
-			if (state.rewind())
+			if (State.rewind())
 			{
-				showPassage(state.passage);
+				showPassage(State.passage);
 			}
 		},
 
@@ -377,9 +368,9 @@ define(['jquery', 'marked', 'story', 'utils', 'state', 'macros'], function ($, M
 		goForward: function()
 		{
 			//TODO: get the stretch value from state
-			if (state.fastForward())
+			if (State.fastForward())
 			{
-				showPassage(state.passage);
+				showPassage(State.passage);
 			}
 		},
 
@@ -387,7 +378,7 @@ define(['jquery', 'marked', 'story', 'utils', 'state', 'macros'], function ($, M
 		goToPassage: function(id, stretch)
 		{
 			// Update the state.
-			state.play(id);
+			State.play(id);
 			showPassage(id, stretch);
 		},
 
@@ -402,7 +393,7 @@ define(['jquery', 'marked', 'story', 'utils', 'state', 'macros'], function ($, M
 			// Install handler for links
 			html.on('click.passage-link', '.passage-link[data-passage-link]', function (e)
 			{
-				var next = story.getPassageID($(this).attr('data-passage-link'));
+				var next = Story.getPassageID($(this).attr('data-passage-link'));
 				if (next)
 				{
 					engine.goToPassage(next);
@@ -411,7 +402,7 @@ define(['jquery', 'marked', 'story', 'utils', 'state', 'macros'], function ($, M
 			});
 			
 			// If debug, add button
-			if (story.options.debug)
+			if (Story.options.debug)
 			{
 				$(document.body).append($('<div class="debug-button">').click(function(e) {
 					html.toggleClass('debug-mode');

@@ -1,4 +1,4 @@
-define(['jquery', 'story', 'script', 'macros', 'engine', 'utils'], function($, story, script, macros, engine, utils)
+define(['jquery', 'story', 'script', 'macros', 'engine', 'utils'], function($, Story, Script, Macros, Engine, Utils)
 {
 	"use strict";
 	/*
@@ -42,19 +42,16 @@ define(['jquery', 'story', 'script', 'macros', 'engine', 'utils'], function($, s
 		Extend MacroInstance
 	*/
 	
-	$.extend(macros.MacroInstance, {	
+	$.extend(Macros.MacroInstance, {	
 		// Renders given HTML and inserts it into macro.el
 		render: function(html, prepend)
 		{
-			var result = engine.render(html + '', this, this.top);
+			var result = Engine.render(html + '', this, this.top);
 			if (result)
 			{
+				Utils.transitionIn(result, "fade-in");
 				prepend ? this.el.prepend(result) : this.el.append(result);
-				engine.updateEnchantments();
-			}
-			else if (result === null)
-			{
-				result.remove();
+				Engine.updateEnchantments();
 			}
 		}
 	});
@@ -65,7 +62,7 @@ define(['jquery', 'story', 'script', 'macros', 'engine', 'utils'], function($, s
 	
 	// <<set ... >>
 	// rawArgs: expression to execute, converting operators first.
-	macros.add("set", {
+	Macros.add("set", {
 		selfClosing: true,
 		fn: function(variable, rawTo)
 		{
@@ -89,7 +86,7 @@ define(['jquery', 'story', 'script', 'macros', 'engine', 'utils'], function($, s
 			try
 			{
 				// Before setting it to the value, default it to 0.
-				script.eval(variable + "=" + variable + "||" + utils.defaultValue +";" + variable + to + value);
+				Script.eval(variable + "=" + variable + "||" + Utils.defaultValue +";" + variable + to + value);
 				this.clear();
 			}
 			catch (e)
@@ -106,14 +103,14 @@ define(['jquery', 'story', 'script', 'macros', 'engine', 'utils'], function($, s
 
 	// <<print ... >>
 	// rawArgs: expression to execute and print, converting operators first.
-	macros.add("print", {
+	Macros.add("print", {
 		selfClosing: true,
 		fn: function()
 		{
 			try
 			{
 				var args = this.convertOperators(this.rawArgs);
-				this.render(script.eval(args));
+				this.render(Script.eval(args));
 			}
 			catch (e)
 			{
@@ -131,7 +128,7 @@ define(['jquery', 'story', 'script', 'macros', 'engine', 'utils'], function($, s
 	// Remove line breaks from contained passage text.
 	// Suggested by @mcclure111.
 	// Manual line breaks can be inserted with <br>.
-	macros.add("nobr",{
+	Macros.add("nobr",{
 		fn: function()
 		{
 			// To prevent keywords from being created by concatenating lines,
@@ -147,14 +144,14 @@ define(['jquery', 'story', 'script', 'macros', 'engine', 'utils'], function($, s
 	
 	// <<script>> ... <</script>>
 	// contents: JS to execute.
-	macros.add("script", {
+	Macros.add("script", {
 		fn: function()
 		{
 			try
 			{
 				// Eval this in the context of the script object,
 				// where the Twinescript API is.
-				script.eval.call(this.el, this.contents, this.top);
+				Script.eval.call(this.el, this.contents, this.top);
 				this.clear();
 			}
 			catch (e)
@@ -173,13 +170,13 @@ define(['jquery', 'story', 'script', 'macros', 'engine', 'utils'], function($, s
 	// Insert the enclosed raw CSS into a <script> tag that exists for the
 	// duration of the current passage only.
 	// contents: raw CSS.
-	macros.add("style", {
+	Macros.add("style", {
 		fn: function()
 		{
 			var selector = 'style#macro';
 			if ($(selector).length == 0)
 			{
-				$('head').append($('<style id="macro"></style>'));
+				$(document.head).append($('<style id="macro"></style>'));
 			}
 			$(selector).text(this.contents);
 			this.clear();
@@ -193,7 +190,7 @@ define(['jquery', 'story', 'script', 'macros', 'engine', 'utils'], function($, s
 
 	// <<if ... >> ... <</if>>
 	// rawArgs: expression to determine whether to display.
-	macros.add("if", {
+	Macros.add("if", {
 		fn: function()
 		{
 			var html = this.HTMLcontents,
@@ -202,7 +199,7 @@ define(['jquery', 'story', 'script', 'macros', 'engine', 'utils'], function($, s
 				lastIndex = 0, i;
 			
 			// Search for <<else>>s, collect sets of contents
-			macros.matchMacroTag(html, "else|elseif", function(m) {
+			Macros.matchMacroTag(html, "else|elseif", function(m) {
 				contents.push(html.slice(lastIndex, m.startIndex));
 				// Strip "if" from <<else if>>
 				var expr = m.rawArgs.replace(/^\s*if\b/,'');
@@ -217,7 +214,7 @@ define(['jquery', 'story', 'script', 'macros', 'engine', 'utils'], function($, s
 			{
 				try
 				{
-					var result = script.eval(this.convertOperators(args[i]));
+					var result = Script.eval(this.convertOperators(args[i]));
 					if (result) {
 						this.render(contents[i]);
 						return;
@@ -240,11 +237,11 @@ define(['jquery', 'story', 'script', 'macros', 'engine', 'utils'], function($, s
 	});
 	// <<else>>, <<else if ...>>, <<elseif ...>>
 	// Used inside <<if>>
-	macros.supplement(["else","elseif"], { selfClosing: true }, "if");
+	Macros.supplement(["else","elseif"], { selfClosing: true }, "if");
 	
 	// <<display ... >>
 	// rawArgs: expression to evaluate to determine the passage name.
-	macros.add("display", {
+	Macros.add("display", {
 		selfClosing: true,
 		fn: function()
 		{
@@ -253,7 +250,7 @@ define(['jquery', 'story', 'script', 'macros', 'engine', 'utils'], function($, s
 				var args = this.convertOperators(this.rawArgs),
 					name = eval(args) + '';
 				// Test for existence
-				if (!story.passageNamed(name))
+				if (!Story.passageNamed(name))
 				{
 					this.error('Can\'t <<display>> passage "' + name + '"', true);
 					return;
@@ -267,7 +264,7 @@ define(['jquery', 'story', 'script', 'macros', 'engine', 'utils'], function($, s
 					return;
 				}
 				this.el.attr("data-display",name);
-				this.render(story.passageNamed(name).html());
+				this.render(Story.passageNamed(name).html());
 			}
 			catch (e)
 			{
@@ -284,7 +281,7 @@ define(['jquery', 'story', 'script', 'macros', 'engine', 'utils'], function($, s
 	
 	// <<time ... >> ... <</time>>
 	// Perform the enclosed macros after the time has passed.
-	macros.add("time", {
+	Macros.add("time", {
 		fn: function(time) {
 			var ms = this.cssTimeUnit(time);
 			if (ms)
@@ -312,7 +309,7 @@ define(['jquery', 'story', 'script', 'macros', 'engine', 'utils'], function($, s
 	
 	// <<key ... >> ... <</key>>
 	// Perform the enclosed macros after the given keyboard letter is pushed
-	/*macros.add("key", {
+	/*Macros.add("key", {
 		deferred: true,
 		fn: function(key) {
 		},
@@ -325,7 +322,7 @@ define(['jquery', 'story', 'script', 'macros', 'engine', 'utils'], function($, s
 	
 	// <<click ... >> ... <</click>>
 	// Perform the enclosed macros when the scope is clicked.
-	macros.add("click", {
+	Macros.add("click", {
 		hooked: true,
 		enchantment: {
 			event: "click",
@@ -342,7 +339,7 @@ define(['jquery', 'story', 'script', 'macros', 'engine', 'utils'], function($, s
 
 	// <<mouseover ... >> ... <</mouseover>>
 	// Perform the enclosed macros when the scope is moused over.
-	macros.add("mouseover", {
+	Macros.add("mouseover", {
 		hooked: true,
 		enchantment: {
 			event: "mouseenter",
@@ -359,7 +356,7 @@ define(['jquery', 'story', 'script', 'macros', 'engine', 'utils'], function($, s
 	
 	// <<mouseout ... >> ... <</mouseout>>
 	// Perform the enclosed macros when the scope is moused away.
-	macros.add("mouseout", {
+	Macros.add("mouseout", {
 		hooked: true,
 		enchantment: {
 			event: "mouseleave",
@@ -376,7 +373,7 @@ define(['jquery', 'story', 'script', 'macros', 'engine', 'utils'], function($, s
 	
 	/*// <<hover ... >> ... <</hover>>
 	// Perform the enclosed macros when the scope is moused over.
-	macros.add("hover", {
+	Macros.add("hover", {
 		hooked: true,
 		enchantment: {
 			event: "mouseenter",
@@ -398,12 +395,12 @@ define(['jquery', 'story', 'script', 'macros', 'engine', 'utils'], function($, s
 	// <<replace [...] >> ... <</replace>>
 	// A macro that replaces the scope element(s) with its contents.
 	
-	macros.add("replace", {
+	Macros.add("replace", {
 		hooked: true,
 		fn: function()
 		{
-			this.scope.replace(engine.render(this.HTMLcontents));
-			engine.updateEnchantments();
+			this.scope.replace(Engine.render(this.HTMLcontents));
+			Engine.updateEnchantments();
 		},
 		version: {
 			major: 0,
@@ -414,12 +411,12 @@ define(['jquery', 'story', 'script', 'macros', 'engine', 'utils'], function($, s
 	
 	// <<append [...] >> ... <</append>>
 	// Similar to replace, but appends the contents to the scope(s).
-	macros.add("append", {
+	Macros.add("append", {
 		hooked: true, 
 		fn: function()
 		{
-			this.scope.append(engine.render(this.HTMLcontents));
-			engine.updateEnchantments();
+			this.scope.append(Engine.render(this.HTMLcontents));
+			Engine.updateEnchantments();
 		},
 		version: {
 			major: 0,
@@ -430,12 +427,12 @@ define(['jquery', 'story', 'script', 'macros', 'engine', 'utils'], function($, s
 	
 	// <<prepend [...] >> ... <</prepend>>
 	// Similar to replace, but prepends the contents to the scope(s).
-	macros.add("prepend", {
+	Macros.add("prepend", {
 		hooked: true, 
 		fn: function()
 		{
-			this.scope.prepend(engine.render(this.HTMLcontents));
-			engine.updateEnchantments();
+			this.scope.prepend(Engine.render(this.HTMLcontents));
+			Engine.updateEnchantments();
 		},
 		version: {
 			major: 0,
@@ -446,13 +443,15 @@ define(['jquery', 'story', 'script', 'macros', 'engine', 'utils'], function($, s
 	
 	// <<remove [...] >>
 	// Removes the scope(s).
-	macros.add("remove", {
+	Macros.add("remove", {
 		hooked: true, 
 		selfClosing: true,
 		fn: function()
 		{
+			// TODO: implement a means by which pseudo-hooks and hooks can transition-out,
+			// instead of simply removing them.
 			this.scope.remove();
-			engine.updateEnchantments();
+			Engine.updateEnchantments();
 		},
 		version: {
 			major: 0,

@@ -165,26 +165,26 @@ h1, h2, h3, h4, h5, h6
 /* Transitions */
 
 /* Invalid/instant transition */
-.passage.transition-in
+.transition-in
 {
 	animation: appear 1ms step-start;
 	-webkit-animation: appear 1ms step-start;
 }
 
-.passage.transition-out
+.transition-out
 {
 	animation: appear 1ms step-end;
 	-webkit-animation: appear 1ms step-end;
 }
 
-/* Dissolve */
-.passage[data-t8n=dissolve].transition-in
+/* Dissolve, fade-in */
+[data-t8n=dissolve].transition-in, [data-t8n=fade-in].transition-in
 {
 	animation: appear 0.8s ease;	
 	-webkit-animation: appear 0.8s ease;
 }
 
-.passage[data-t8n=dissolve].transition-out
+[data-t8n=dissolve].transition-out
 {
 	animation: disappear 0.8s ease;	
 	-webkit-animation: disappear 0.8s ease;	

@@ -1,4 +1,4 @@
-define(['jquery', 'utils'], function ($, utils)
+define(['jquery', 'utils'], function ($, Utils)
 {
 	"use strict";
 	/* 
@@ -17,7 +17,7 @@ define(['jquery', 'utils'], function ($, utils)
 		}
 		else if (typeof word === "string")
 		{
-			word = $(utils.charSpanify(word));
+			word = $(Utils.charSpanify(word));
 		}
 		else if (!word.jquery)
 		{
@@ -42,7 +42,9 @@ define(['jquery', 'utils'], function ($, utils)
 					// Insert a copy of the replacement word
 					w = word.clone();
 					(modifier === "append" ? e.last().after(w) : e.first().before(w));
-					(modifier === "replace" && e.remove());
+					Utils.transitionIn(w, "fade-in");
+					// Remove old contents
+					(modifier === "replace" && /*e.remove()*/Utils.transitionOut(e, "fade-in"));
 					return w;
 				}
 				else
@@ -62,7 +64,8 @@ define(['jquery', 'utils'], function ($, utils)
 	*/
 	function findCharSpans(selector, top)
 	{
-		return _findCharSpans(selector, $(utils.charSpanSelector, top), true);
+		// Recursive call
+		return _findCharSpans(selector, $(Utils.charSpanSelector, top), true);
 	}
 	
 	//Gets the char value of a charspan element
@@ -147,12 +150,12 @@ define(['jquery', 'utils'], function ($, utils)
 		// Updates this WordArray's contents to match its selector.
 		refresh: function(word, top)
 		{
-			var type = utils.type(word),
+			var type = Utils.type(word),
 				other = this;
 			
 			// Turn each matched element in the jQuery into a separate word.
 			function forEachjQuery() {
-				other.contents.push($(this).find(utils.charSpanSelector));
+				other.contents.push($(this).find(Utils.charSpanSelector));
 			};
 			
 			this.contents = [];
@@ -182,7 +185,7 @@ define(['jquery', 'utils'], function ($, utils)
 				}
 				case "hook string":
 				{
-					utils.hookTojQuery(word, top).each(forEachjQuery);
+					Utils.hookTojQuery(word, top).each(forEachjQuery);
 					break;
 				}
 			}
@@ -220,6 +223,7 @@ define(['jquery', 'utils'], function ($, utils)
 		{
 			this.contents.forEach(function(e)
 			{
+				// TODO: use transition-out
 				e.remove();
 			});
 			this.contents = [];

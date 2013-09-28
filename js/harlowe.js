@@ -5,7 +5,7 @@
 						state <- story <- utils
 	macrolib <- script <-/
 */
-define(['jquery', 'story', 'engine', 'macrolib'], function ($, story, engine)
+define(['jquery', 'story', 'engine', 'macrolib'], function ($, Story, Engine)
 {
 	"use strict";
 	
@@ -24,18 +24,18 @@ define(['jquery', 'story', 'engine', 'macrolib'], function ($, story, engine)
 		// Load options
 		options = header.attr('data-options');
 		options.replace(/\b(\w+)\b/, function(a, b) {
-			story.options[b] = true;
+			Story.options[b] = true;
 		});
-		Object.freeze(story);
+		Object.freeze(Story);
 
 		// Init game engine
-		engine.init();
+		Engine.init();
 		
 		// Show first passage!
 		start = header.attr('data-startnode');
 		if (start)
 		{
-			engine.goToPassage(start);
+			Engine.goToPassage(start);
 		}
 	});
 	

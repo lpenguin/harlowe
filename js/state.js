@@ -1,4 +1,4 @@
-define(['story', 'utils'], function(story, utils)
+define(['story', 'utils'], function(Story, Utils)
 {
 	"use strict";
 	/*
@@ -19,7 +19,7 @@ define(['story', 'utils'], function(story, utils)
 		create: function(v, p)
 		{
 			var ret = Object.create(StateInstance);
-			ret.variables = (v ? utils.clone(v) : {});
+			ret.variables = (v ? Utils.clone(v) : {});
 			ret.passage = p || "";
 			return ret;
 		}
@@ -54,7 +54,7 @@ define(['story', 'utils'], function(story, utils)
 	/*
 		The current game's state.
 	*/
-	state = Object.freeze({
+	State = Object.freeze({
 		/*
 			Getters/setters
 		*/
@@ -88,14 +88,14 @@ define(['story', 'utils'], function(story, utils)
 				return present.variables[name];
 			}
 			// No value found...
-			return utils.defaultValue;
+			return Utils.defaultValue;
 		},
 		
 		// Did we ever visit this passage, given its name?
 		// Return the number of times visited.
 		passageNameVisited: function(name)
 		{
-			var id = story.getPassageID(name);
+			var id = Story.getPassageID(name);
 			
 			return this.passageIDVisited(id);
 		},
@@ -106,7 +106,7 @@ define(['story', 'utils'], function(story, utils)
 		{
 			var ret;
 			
-			if (story.passageWithID(id) === null)
+			if (Story.passageWithID(id) === null)
 			{
 				return 0;
 			}
@@ -124,7 +124,7 @@ define(['story', 'utils'], function(story, utils)
 		// Return how long ago this named passage has been visited.
 		passageNameLastVisited: function(name)
 		{
-			var id = story.getPassageID(name);
+			var id = Story.getPassageID(name);
 			
 			return this.passageIDLastVisited(id);
 		},
@@ -134,7 +134,7 @@ define(['story', 'utils'], function(story, utils)
 		{
 			var ret, i;
 			
-			if (story.passageWithID(id) === null)
+			if (Story.passageWithID(id) === null)
 			{
 				return Infinity;
 			}
@@ -158,11 +158,11 @@ define(['story', 'utils'], function(story, utils)
 		// Return an array of names of all previously visited passages
 		pastPassageNames: function()
 		{
-			var ret = [story.getPassageName(present.passage)];
+			var ret = [Story.getPassageName(present.passage)];
 			
 			past.forEach(function(e)
 			{
-				ret.unshift(story.getPassageName(e.passage));
+				ret.unshift(Story.getPassageName(e.passage));
 			});
 			
 			return ret;
@@ -212,7 +212,7 @@ define(['story', 'utils'], function(story, utils)
 				moved = true;
 				future.push(recent);
 				present = past.pop();
-				recent = utils.clone(present);
+				recent = Utils.clone(present);
 			}
 			
 			return moved;
@@ -234,11 +234,11 @@ define(['story', 'utils'], function(story, utils)
 				moved = true;
 				past.push(recent);
 				present = future.pop();
-				recent = utils.clone(present);
+				recent = Utils.clone(present);
 			}
 			
 			return moved;
 		}
 	});
-	return state;
+	return State;
 });

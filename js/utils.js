@@ -7,9 +7,14 @@ define(['jquery'], function($)
 	*/
 	
 	var p = $('<p>'),
-		utils = Object.freeze({
+		Utils = Object.freeze({
+		
+		/*
+			Object utilities
+		*/
 
-		// Make object properties non-deletable and non-writable.
+		// Make object properties non-deletable and non-writable,
+		// without making the object non-extensible.
 		lockProperties: function(obj)
 		{
 			var i, prop,
@@ -35,10 +40,14 @@ define(['jquery'], function($)
 				prop;
 			for (i = 0; i<keys.length; i++) {
 				prop = obj[keys[i]];
-				ret[keys[i]] = $.isPlainObject(prop) ? utils.clone(prop) : prop;
+				ret[keys[i]] = $.isPlainObject(prop) ? Utils.clone(prop) : prop;
 			}
 			return ret;
 		},
+		
+		/*
+			String utilities
+		*/
 		
 		/*
 			Get the type of a scope string or Twine-specific object.
@@ -47,6 +56,7 @@ define(['jquery'], function($)
 		*/
 		type: function(val) {
 			var r;
+			// Coerce empty string and null to undefined
 			if (!val)
 			{
 				return "undefined";
@@ -135,7 +145,7 @@ define(['jquery'], function($)
 		// Convert a hook index string into a jQuery.
 		hookTojQuery: function(c, top)
 		{
-			return $(utils.hookToSelector(c.slice(1), top))
+			return Utils.$(Utils.hookToSelector(c.slice(1)), top)
 		},
 		
 		// Takes a string containing a character or HTML entity, and wraps it into a
@@ -143,14 +153,42 @@ define(['jquery'], function($)
 		charToSpan: function(c)
 		{
 			return "<span class='char' data-char='"
-				+ utils.HTMLEntityConvert(c) + "'>"
+				+ Utils.HTMLEntityConvert(c) + "'>"
 				+ c + "</span>";
 		},
 		
 		// Calls charToSpan() on the whole string.
-		charSpanify: function(text)	{
-			return text.replace(/&[#\w]+;|./g, utils.charToSpan);
+		charSpanify: function(text)
+		{
+			return text.replace(/&[#\w]+;|./g, Utils.charToSpan);
 		},
+		
+		/*
+			Element utilities
+		*/
+		
+		transitionOut: function(el, transIndex)
+		{
+			return el.attr("data-t8n", transIndex).addClass("transition-out")
+				.one("animationend webkitAnimationEnd MSAnimationEnd oAnimationEnd", function(){ el.remove(); });
+		},
+		
+		transitionIn: function(el, transIndex)
+		{
+			el.attr("data-t8n", transIndex).addClass("transition-in")
+				.one("animationend webkitAnimationEnd MSAnimationEnd oAnimationEnd", function(){ el.removeClass("transition-in") });
+			console.log(el)
+			debugger
+		},
+		
+		// A jQuery call that filters out transitioning-out elements
+		$: function(str, context)
+		{
+			return $(str, context).not(".transition-out");
+		},
+		/*
+			Constants
+		*/
 		
 		// Selector for CharSpans
 		charSpanSelector: "span.char, br",
@@ -162,5 +200,5 @@ define(['jquery'], function($)
 		// string. This accounts for both quote styles and escaped quote characters.
 		unquotedCharRegexSuffix: "(?=(?:[^\"'\\\\]*(?:\\\\.|'(?:[^'\\\\]*\\\\.)*[^'\\\\]*'|\"(?:[^\"\\\\]*\\\\.)*[^\"\\\\]*\"))*[^'\"]*$)"
 	});
-	return utils;
+	return Utils;
 });

@@ -1,4 +1,4 @@
-define(['jquery', 'utils'], function($, utils)
+define(['jquery', 'utils'], function($, Utils)
 {
 	"use strict";
 	/*
@@ -25,14 +25,14 @@ define(['jquery', 'utils'], function($, utils)
 		// Get a passage, given a name
 		passageNamed: function (name)
 		{
-			var passage = $('div[data-role="twinestory"] > div[data-name="' + name + '"]');
+			var passage = Utils.$('div[data-role="twinestory"] > div[data-name="' + name + '"]');
 			return (passage.length == 0 ? null : passage);
 		},
 		
 		// Get a passage, given an ID
 		passageWithID: function (id)
 		{
-			var passage = $('div[data-role="twinestory"] > div[data-id="' + id + '"]');
+			var passage = Utils.$('div[data-role="twinestory"] > div[data-id="' + id + '"]');
 			return (passage.length == 0 ? null : passage);
 		},
 			

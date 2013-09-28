@@ -1,4 +1,4 @@
-define(['jquery', 'state', 'utils', 'engine', 'wordarray'], function ($, state, utils, engine, WordArray)
+define(['jquery', 'state', 'utils', 'engine', 'wordarray'], function ($, State, Utils, Engine, WordArray)
 {
 	"use strict";
 	/*
@@ -7,9 +7,7 @@ define(['jquery', 'state', 'utils', 'engine', 'wordarray'], function ($, state, 
 		Everything in here is exposed to authors via <<script>>, etc.
 	*/
 	// The calling macro's top reference - set by every _eval() call.
-	var _top,
-	// Constant - the selector for charspans
-		_selector = "span.char, br";
+	var _top;
 	
 	/*
 		Basic randomness
@@ -33,13 +31,13 @@ define(['jquery', 'state', 'utils', 'engine', 'wordarray'], function ($, state, 
 		}
 		to += 1;
 		return ~~((Math.random()*(to-from)))+from;
-	};
+	}
 	
 	// Choose one argument, up to 16. Can be used as such: <<display either( "pantry", "larder", "cupboard" )>>
 	function either()
 	{
 		return arguments[~~(Math.random()*arguments.length)];
-	};
+	}
 	
 	/*
 		Wrappers for state
@@ -47,8 +45,8 @@ define(['jquery', 'state', 'utils', 'engine', 'wordarray'], function ($, state, 
 	
 	function visited(name)
 	{
-		return name ? state.passageNameVisited(name) : state.passageIDVisited(state.passage);
-	};
+		return name ? State.passageNameVisited(name) : State.passageIDVisited(State.passage);
+	}
 	
 	/*
 		Wrappers for engine
@@ -56,35 +54,39 @@ define(['jquery', 'state', 'utils', 'engine', 'wordarray'], function ($, state, 
 	
 	function goto(name)
 	{
-		return engine.goToPassage(name);
-	};
+		return Engine.goToPassage(name);
+	}
+	
+	/*
+		Wrappers for engine
+	*/
 	
 	function Text(a)
 	{
 		return WordArray.create.call(WordArray, '"' + a + '"', _top);
-	};
+	}
 	
 	/*
-		Text selectors and manipulators
+		eval() the script in the context of this module.
 	*/
 	
-	// eval() the script in the context of this module.
+	// Filter the call through this function so that 'this' points to
+	// the calling <<script>> element.
 	function _eval(text, top)
 	{
 		_top = top;
 		return eval(text + '');
-	};
+	}
 	
 	return Object.freeze({
 		
-		// Filter for _eval()
 		eval: function()
 		{
 			var self = this;
 			// Convert jQuery into WordArray
 			if (self && self.jquery)
 			{
-				self = WordArray.create(self.find(utils.charSpanSelector));
+				self = WordArray.create(self.find(Utils.charSpanSelector));
 			}
 			return _eval.apply(self, arguments);
 		}
