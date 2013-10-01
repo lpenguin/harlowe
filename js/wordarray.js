@@ -81,40 +81,42 @@ define(['jquery', 'utils'], function ($, Utils)
 		return (elem.tagName === "br" ? "\n" : elem.getAttribute("data-char"));
 	}
 	
-	function _findCharSpans(selector, chars, fullword)
+	function _findCharSpans(selector, chars, fulltext)
 	{ 
 		var selector, temp, query, el1, el2, i,
-			ret = (fullword ? [] : $());
+			ret = (fulltext ? [] : $());
 		
-		// Crudely coerce to string
+		// Coerce to string
 		selector += "";
-
-		if (selector.length > 1)
+		if (selector.length > 1 || fulltext)
 		{
 			// Recursive case: see if each instance of search string's first character is followed
 			// by search string's next character.
 			for (i = 0; i < chars.length; i++)
 			{
 				el1 = chars.get(i);
-				el2 = chars.get(i + 1);
-				if (el2)
+				// If length <= 1, don't bother checking next char
+				query = ((selector.length <= 1 || i >= chars.length - 1) && (_elementGetChar(el1) === selector[0]) && el1);
+				
+				if (!query)
 				{
-					if (_elementGetChar(el1) === selector[0] && _elementGetChar(el2) === selector[1])
+					el2 = chars.get(i + 1);
+					if (el2 && _elementGetChar(el1) === selector[0] && _elementGetChar(el2) === selector[1])
 					{
 						// See if a further search yields profit
 						query = _findCharSpans(selector.slice(1), chars.slice(i+1, i+selector.length), false);
-						// If so, add the element and the search's results to the return set.
-						if (query)
-						{
-							if (fullword)
-							{
-								ret.push($(el1).add(query));
-							}
-							else
-							{
-								ret = ret.add(el1).add(query);
-							}
-						}
+					}
+				}
+				// Add the results to the return set.
+				if (query)
+				{
+					if (fulltext)
+					{
+						ret.push($(el1).add(query));
+					}
+					else
+					{
+						ret = ret.add(el1).add(query);
 					}
 				}
 			}
@@ -122,16 +124,17 @@ define(['jquery', 'utils'], function ($, Utils)
 		else
 		{
 			// Base case: return char if it matches the search string.
-			temp = (chars.attr("data-char") === selector ? chars.first() : null);
-			if (fullword)
+			temp = (chars.attr("data-char") === selector ? chars.first() : []);
+			if (fulltext)
 			{
 				ret.push(temp);
-			} else
+			}
+			else
 			{
 				ret = temp;
 			}
 		}
-		return (ret.length > 0 || fullword ? ret : null);
+		return (ret.length > 0 || fulltext ? ret : void 0);
 	};
 	
 	var WordArray = {
@@ -230,15 +233,15 @@ define(['jquery', 'utils'], function ($, Utils)
 		{
 			this.contents.forEach(function(e)
 			{
-				// TODO: use transition-out
-				e.remove();
+				Utils.transitionOut(e, "dissolve");
 			});
 			this.contents = [];
 			return this;
 		},
 		
 		// style: alters the style attribute of all chars
-		style: function(style) {
+		style: function(style)
+		{
 			this.contents.forEach(function(e)
 			{
 				e.attr("style",style);

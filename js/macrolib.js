@@ -132,7 +132,7 @@ define(['jquery', 'story', 'script', 'macros', 'engine', 'utils'], function($, S
 		{
 			// To prevent keywords from being created by concatenating lines,
 			// replace the line breaks with a zero-width space.
-			this.render(this.HTMLcontents.replace(/\\n/,"&zwnj;"));
+			this.render(this.HTMLcontents.replace(/\n/g, "&zwnj;"));
 		},
 		version: {
 			major: 0,
@@ -447,8 +447,6 @@ define(['jquery', 'story', 'script', 'macros', 'engine', 'utils'], function($, S
 		selfClosing: true,
 		fn: function()
 		{
-			// TODO: implement a means by which pseudo-hooks and hooks can transition-out,
-			// instead of simply removing them.
 			this.scope.remove();
 			Engine.updateEnchantments();
 		},

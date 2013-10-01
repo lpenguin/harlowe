@@ -249,7 +249,6 @@ define(['jquery'], function($)
 			el.attr("data-t8n", transIndex).addClass("transition-in");
 			delay = Utils.cssTimeUnit(el.css("animation-duration")) + Utils.cssTimeUnit(el.css("animation-delay"));
 			!delay ? fn() : window.setTimeout(fn, delay);
-			debugger
 		},
 		
 		// A jQuery call that filters out transitioning-out elements
