@@ -41,10 +41,17 @@ define(['jquery', 'utils'], function ($, Utils)
 					}
 					// Insert a copy of the replacement word
 					w = word.clone();
-					(modifier === "append" ? e.last().after(w) : e.first().before(w));
-					Utils.transitionIn(w, "fade-in");
-					// Remove old contents
-					(modifier === "replace" && /*e.remove()*/Utils.transitionOut(e, "fade-in"));
+					// Peform transition-in
+					if (modifier === "replace")
+					{
+						Utils.transitionReplace(e, w, "dissolve", modifier === "append");
+					}
+					else
+					{
+						(modifier === "append" ? e.last() : e.first().before(w));
+						Utils.transitionIn(w, "dissolve");
+					}
+
 					return w;
 				}
 				else

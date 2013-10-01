@@ -29,7 +29,6 @@ define(['jquery', 'story', 'script', 'macros', 'engine', 'utils'], function($, S
 		this.clear(): removes the destination element, unless in debug mode.
 		this.convertOperators(args): used for 'code' macros like <<set>> and <<print>>.
 		this.contextQuery(name): searches back through the context chain to find macro instances of a specific name.
-		this.cssTimeUnit(str): converts a CSS time unit to a number of milliseconds.
 		
 		return value: 
 			- string of Twine code to be rendered, whose resultant HTML will
@@ -283,7 +282,7 @@ define(['jquery', 'story', 'script', 'macros', 'engine', 'utils'], function($, S
 	// Perform the enclosed macros after the time has passed.
 	Macros.add("time", {
 		fn: function(time) {
-			var ms = this.cssTimeUnit(time);
+			var ms = Utils.cssTimeUnit(time);
 			if (ms)
 			{
 				// TODO: Check for memory leak potential?

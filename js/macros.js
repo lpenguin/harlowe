@@ -157,7 +157,7 @@ define(['jquery', 'story', 'utils', 'wordarray'], function($, Story, Utils, Word
 		{
 			if (this.scope && this.data && this.data.enchantment)
 			{
-				this.scope.enchant(this.data.enchantment.classList);
+				this.scope.enchant(this.data.enchantment.classList, this.top);
 			}
 		},
 		
@@ -201,24 +201,6 @@ define(['jquery', 'story', 'utils', 'wordarray'], function($, Story, Utils, Word
 				expr = alter(expr, "\\bnot\\b", " ! ");
 			}
 			return expr;
-		},
-		
-		// Takes a string argument, expressed as a CSS time,
-		// and returns the time in milliseconds that it equals.
-		cssTimeUnit: function(s)
-		{
-			if (typeof s == "string")
-			{
-			  if (s.slice(-2).toLowerCase() == "ms")
-			  {
-				return (+s.slice(0, -2)) || 0;
-			  }
-			  else if (s.slice(-1).toLowerCase() == "s")
-			  {
-				return (+s.slice(0, -1)) * 1000 || 0;
-			  }
-			}
-			return 0;
 		}
 	});
 	
@@ -340,9 +322,11 @@ define(['jquery', 'story', 'utils', 'wordarray'], function($, Story, Utils, Word
 	// Called when an enchantment's event is triggered. Sub-function of macros.add()
 	function enchantmentEventFn()
 	{
-		var elem = $(this);
+		var elem = $(this),
+			story = Utils.storyElement;
+		
 		// Trigger the hook macros that refer to this enchantment.
-		Utils.$(".hook-macro").each(function() {
+		Utils.$(".hook-macro", story).each(function() {
 			var instance = $(this).data("instance");
 			if (instance && instance.scope && instance.scope.hooks)
 			{

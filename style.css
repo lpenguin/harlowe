@@ -6,63 +6,74 @@
 
 /*** Animations ***/
 
-
 @keyframes appear
 {
 	0% { opacity: 0 }
-	100% { opacity: 1 }
+	to { opacity: 1 }
 }
 @-webkit-keyframes appear
 {
 	0% { opacity: 0 }
-	100% { opacity: 1 }
+	to { opacity: 1 }
 }
 
 @keyframes disappear
 {
 	0% { opacity: 1 }
-	100% { opacity: 0 }
+	to { opacity: 0 }
 }
 @-webkit-keyframes disappear
 {
 	0% { opacity: 1 }
-	100% { opacity: 0 }
+	to { opacity: 0 }
 }
 
 @keyframes fade-in-out
 {
-	0%,100% { opacity: 0 }
+	0%,to { opacity: 0 }
 	50% { opacity: 1 }
 }
 @-webkit-keyframes fade-in-out
 {
-	0%,100% { opacity: 0 }
+	0%,to { opacity: 0 }
 	50% { opacity: 1 }
 }
 
 @keyframes rumble 
 {
-	0%, 100% {}
+	0%,to {}
 	50% { transform: translateY(-0.2em) }
 }
 @-webkit-keyframes rumble 
 {
-	0%, 100% {}
+	0%,to {}
 	50% { -webkit-transform: translateY(-0.2em) }
 }
 
 @keyframes shudder 
 {
-	0%, 100% {}
+	0%,to {}
 	50% { transform: translateX(0.2em) }
 }
 @-webkit-keyframes shudder 
 {
-	0%, 100% {}
+	0%,to {}
 	50% { -webkit-transform: translateX(0.2em) }
 }
 
+@keyframes box-flash
+{
+	0% { background-color: white; color: white; }
+	100% {}
+}
+
+@-webkit-keyframes box-flash {
+	0% { background-color: white; color: white; }
+	100% {}
+}
+
 /* Slightly eased-out shudders */
+
 @keyframes shudder-in
 {
    0%, 100% { transform: translateX(0em); }
@@ -138,6 +149,11 @@ h1, h2, h3, h4, h5, h6
 	width: 60%;
 }
 
+.passage *
+{
+	position: relative;
+}
+
 @media screen and (max-width: 1280px)
 {
 	#story
@@ -162,33 +178,91 @@ h1, h2, h3, h4, h5, h6
 	}
 }
 
+/* Transition-containers */
+
+/* This contains the inner two containers, and the transition-out-container, if any */
+.transition-main-container
+{
+	position: relative;
+}
+
+/* This contains the arriving entity */
+.transition-in-container
+{
+}
+
+/* This contains the departing entity */
+.transition-out-container
+{
+	position: absolute;
+}
+
 /* Transitions */
 
 /* Invalid/instant transition */
 .transition-in
 {
-	animation: appear 1ms step-start;
-	-webkit-animation: appear 1ms step-start;
+	animation: appear 0ms step-start;
+	-webkit-animation: appear 0ms step-start;
+	/*background-color: hsla(10,50%,50%,0.5);*/
 }
 
 .transition-out
 {
-	animation: appear 1ms step-end;
-	-webkit-animation: appear 1ms step-end;
+	animation: appear 0ms step-end;
+	-webkit-animation: appear 0ms step-end;
 }
 
 /* Dissolve, fade-in */
-[data-t8n=dissolve].transition-in, [data-t8n=fade-in].transition-in
+[data-t8n^=dissolve].transition-in, [data-t8n^=fade-in].transition-in
 {
-	animation: appear 0.8s ease;	
-	-webkit-animation: appear 0.8s ease;
+	animation: appear 0.8s;	
+	-webkit-animation: appear 0.8s;
+	/*background-color: hsla(120,50%,50%,0.5);*/
 }
 
-[data-t8n=dissolve].transition-out
+[data-t8n^=dissolve].transition-out
 {
-	animation: disappear 0.8s ease;	
-	-webkit-animation: disappear 0.8s ease;	
+	animation: disappear 0.8s;	
+	-webkit-animation: disappear 0.8s;	
 }
+
+/* Shudder, shudder-in, shudder-out */
+[data-t8n^=shudder].transition-in, [data-t8n^=shudder-in].transition-in
+{
+	animation: shudder-in 0.8s;	
+	-webkit-animation: shudder-in 0.8s;	
+}
+
+[data-t8n^=shudder].transition-out, [data-t8n^=shudder-out].transition-out
+{
+	animation: shudder-out 0.8s;
+	-webkit-animation: shudder-out 0.8s;
+}
+
+/* Box-flash */
+[data-t8n^=boxflash].transition-in
+{
+	animation: shudder-out 0.8s;
+	-webkit-animation: shudder-out 0.8s;
+}
+
+/* Modifiers */
+[data-t8n$=fast]
+{
+	animation-duration: 0.4s;
+	-webkit-animation-duration: 0.4s;
+}
+
+/* Modifiers */
+[data-t8n$=slow]
+{
+	animation-duration: 1.2s;
+	-webkit-animation-duration: 1.2s;
+}
+
+/*
+ .cyclingLinkEnabled { animation: cyc-box-flash 0.8s; -webkit-animation: cyc-box-flash 0.8s; } .cyclingLinkInit, .cyclingLinkInit::before { animation-iteration-count: 0 !important; -webkit-animation-iteration-count: 0 !important; } 
 
 /* Sidebar */
 
@@ -305,20 +379,24 @@ h1, h2, h3, h4, h5, h6
 /* Colours for other things */
 .debug-mode .hook  { background-color: hsla(220,100%,50%,0.1) !important;}
 .debug-mode .pseudo-hook  { background-color: hsla(40,100%,50%,0.1) !important;}
-.debug-mode .hook::before, .debug-mode .pseudo-hook::before {
+.debug-mode .hook::before, .debug-mode .pseudo-hook::before
+{
 	content: "["
 }
-.debug-mode .hook::after, .debug-mode .pseudo-hook::after {
+.debug-mode .hook::after, .debug-mode .pseudo-hook::after
+{
 	content: "]"
 }
 
-.debug-mode .passage-link::after {
+.debug-mode .passage-link::after
+{
 	font-size: 0.5rem;
 	content: attr(data-passage-link)
 }
 
 /* Show the macro name */
-.debug-mode [data-macro]::before {
+.debug-mode [data-macro]::before
+{
 	content: attr(data-macro);
 	padding: 0 0.5rem;
 	font-size: 1rem;

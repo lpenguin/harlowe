@@ -83,7 +83,7 @@ define(['story', 'utils'], function(Story, Utils)
 		// out undefined.
 		// Used by <<if>> and other conditional macros.
 		getVar: function(name) {
-			if (present.variables[name] !== undefined)
+			if (present.variables[name] !== void 0)
 			{
 				return present.variables[name];
 			}

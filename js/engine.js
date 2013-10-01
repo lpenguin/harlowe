@@ -312,14 +312,14 @@ define(['jquery', 'marked', 'story', 'utils', 'state', 'macros'], function ($, M
 	
 	/*
 		Show a passage.
-		Transitions the old passage(s) out, and ads the new passages.
+		Transitions the old passage(s) out, and adds the new passages.
 		stretch: is stretchtext.
 	*/
 	function showPassage(id, stretch, el)
 	{
 		var newPassage,
 			transIndex,
-			el = el || $('#story'),
+			el = el || Utils.storyElement,
 			passageData = Story.passageWithID(id),
 			oldPassages = Utils.$(el.children(".passage"));
 		
@@ -340,7 +340,7 @@ define(['jquery', 'marked', 'story', 'utils', 'state', 'macros'], function ($, M
 		}
 		
 		// Create new passage
-		newPassage = createPassageElement().append(render(passageData.html()));
+		newPassage = createPassageElement().append(render(passageData.html(), void 0, el));
 		el.append(newPassage);
 		updateEnchantments();
 		

@@ -6,6 +6,7 @@ define(['jquery'], function($)
 		Exported singleton: utils
 	*/
 	
+	// Used by HTMLEntityConvert
 	var p = $('<p>'),
 		Utils = Object.freeze({
 		
@@ -52,14 +53,13 @@ define(['jquery'], function($)
 		/*
 			Get the type of a scope string or Twine-specific object.
 			Returns a string.
-			For strings, determines the type of scope selector used.
 		*/
 		type: function(val) {
 			var r;
 			// Coerce empty string and null to undefined
 			if (!val)
 			{
-				return "undefined";
+				return void 0+"";
 			}
 			if (typeof val === "object")
 			{
@@ -94,7 +94,7 @@ define(['jquery'], function($)
 						return "hook string";
 					}
 				}
-				return "undefined";
+				return void 0+"";
 			}
 		},
 
@@ -162,22 +162,93 @@ define(['jquery'], function($)
 		{
 			return text.replace(/&[#\w]+;|./g, Utils.charToSpan);
 		},
+
+		// Takes a string argument, expressed as a CSS time,
+		// and returns the time in milliseconds that it equals.
+		cssTimeUnit: function(s)
+		{
+			if (typeof s == "string")
+			{
+				s = s.toLowerCase();
+				if (s.slice(-2) == "ms")
+				{
+					return (+s.slice(0, -2)) || 0;
+				}
+				if (s.slice(-1) == "s")
+				{
+					return (+s.slice(0, -1)) * 1000 || 0;
+				}
+			}
+			return 0;
+		},
 		
 		/*
 			Element utilities
 		*/
 		
-		transitionOut: function(el, transIndex)
+		/*
+			Replaces oldElem with newElem while transitioning between both.
+			oldElem: required - an elem currently in the DOM or DOM structure
+			newElem: an unattached elem to attach
+		*/
+		transitionReplace: function(oldElem, newElem, transIndex)
 		{
-			return el.attr("data-t8n", transIndex).addClass("transition-out")
-				.one("animationend webkitAnimationEnd MSAnimationEnd oAnimationEnd", function(){ el.remove(); });
+			var delay, container1, container2a, container2b;
+			
+			// Create a transition-main-container
+			container1 = $('<span class="transition-main-container"/>');
+			// Connect to DOM
+			container1.insertBefore(oldElem.first());
+			
+			if (newElem)
+			{
+				// Create a transition-in-container
+				container2a = $('<span class="transition-in-container"/>').appendTo(container1);
+				// Insert new element
+				newElem.appendTo(container2a);
+			}
+			// Create a transition-out-container
+			// while inserting it into the transition-main-container.
+			container2b = $('<span class="transition-out-container"/>').prependTo(container1);
+			// Insert old element
+			oldElem.detach().appendTo(container2b);
+			
+			// Transition-out the old element, removing it
+			Utils.transitionOut(container2b, transIndex);
+			// Transition-in the new element
+			if (newElem)
+			{
+				Utils.transitionIn(container2a, transIndex, function() {
+					// Remove container1 and container2a
+					container2a.unwrap().children().first().unwrap();
+				});
+			}
 		},
 		
-		transitionIn: function(el, transIndex)
+		// Transition an element out.
+		// fn: optional callback.
+		transitionOut: function(el, transIndex, fn)
 		{
-			el.attr("data-t8n", transIndex).addClass("transition-in")
-				.one("animationend webkitAnimationEnd MSAnimationEnd oAnimationEnd", function(){ el.removeClass("transition-in") });
-			console.log(el)
+			var delay, fn = fn || function(){ el.remove(); };
+			
+			el.attr("data-t8n", transIndex).addClass("transition-out")
+			
+			// Ideally I'd use this:
+			//.one("animationend webkitAnimationEnd MSAnimationEnd oAnimationEnd", function(){ oldElem.remove(); });
+			// but in the event of CSS being off, these events won't trigger - whereas the below method will simply occur immedately.
+			delay = Utils.cssTimeUnit(el.css("animation-duration")) + Utils.cssTimeUnit(el.css("animation-delay"));
+			!delay ? fn() : window.setTimeout(fn, delay);
+		},
+		
+		// Transition an element in.
+		// fn: optional callback.
+		transitionIn: function(el, transIndex, fn)
+		{
+			var delay, fn = fn || function(){ el.removeClass("transition-in"); };
+			
+			el.attr("data-t8n", transIndex).addClass("transition-in");
+			delay = Utils.cssTimeUnit(el.css("animation-duration")) + Utils.cssTimeUnit(el.css("animation-delay"));
+			!delay ? fn() : window.setTimeout(fn, delay);
 			debugger
 		},
 		
@@ -186,6 +257,7 @@ define(['jquery'], function($)
 		{
 			return $(str, context).not(".transition-out");
 		},
+		
 		/*
 			Constants
 		*/
@@ -195,6 +267,9 @@ define(['jquery'], function($)
 		
 		// Default value for variables affected with <<set>>
 		defaultValue: 0,
+		
+		// Story element
+		storyElement: $('#story'),
 		
 		// Regex suffix that, when applied, causes the preceding match to only apply when not inside a quoted
 		// string. This accounts for both quote styles and escaped quote characters.
