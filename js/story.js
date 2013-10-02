@@ -14,7 +14,7 @@ define(['jquery', 'utils'], function($, Utils)
 			redo : enable the redo button.
 	*/
 
-	return Object.seal({
+	var Story = {
 
 		// Set of options, loaded at startup.
 		options: {},
@@ -69,5 +69,7 @@ define(['jquery', 'utils'], function($, Utils)
 			}
 			return "";
 		}
-	});
+	};
+	// Story is finally frozen by Harlowe.js
+	return Object.seal(Story);
 });

@@ -8,7 +8,7 @@ define(['jquery'], function($)
 	
 	// Used by HTMLEntityConvert
 	var p = $('<p>'),
-		Utils = Object.freeze({
+		Utils = {
 		
 		/*
 			Object utilities
@@ -254,7 +254,7 @@ define(['jquery'], function($)
 		// A jQuery call that filters out transitioning-out elements
 		$: function(str, context)
 		{
-			return $(str, context).not(".transition-out");
+			return $(str, context).not(".transition-out, .transition-out *");
 		},
 		
 		/*
@@ -273,6 +273,6 @@ define(['jquery'], function($)
 		// Regex suffix that, when applied, causes the preceding match to only apply when not inside a quoted
 		// string. This accounts for both quote styles and escaped quote characters.
 		unquotedCharRegexSuffix: "(?=(?:[^\"'\\\\]*(?:\\\\.|'(?:[^'\\\\]*\\\\.)*[^'\\\\]*'|\"(?:[^\"\\\\]*\\\\.)*[^\"\\\\]*\"))*[^'\"]*$)"
-	});
-	return Utils;
+	};
+	return Object.freeze(Utils);
 });

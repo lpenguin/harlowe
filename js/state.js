@@ -8,7 +8,7 @@ define(['story', 'utils'], function(Story, Utils)
 	*/
 	
 	// Prototype object for states remembered by the game.
-	var StateInstance = Object.seal({
+	var StateInstance = {
 		// Variables
 		variables: {},
 		
@@ -23,7 +23,7 @@ define(['story', 'utils'], function(Story, Utils)
 			ret.passage = p || "";
 			return ret;
 		}
-	}),
+	},
 	
 	// The present, after or while the current passage is executing.
 	// This is pushed into recent when going forward.
@@ -54,7 +54,7 @@ define(['story', 'utils'], function(Story, Utils)
 	/*
 		The current game's state.
 	*/
-	State = Object.freeze({
+	State = {
 		/*
 			Getters/setters
 		*/
@@ -239,6 +239,7 @@ define(['story', 'utils'], function(Story, Utils)
 			
 			return moved;
 		}
-	});
-	return State;
+	};
+	Object.seal(StateInstance);
+	return Object.freeze(State);
 });

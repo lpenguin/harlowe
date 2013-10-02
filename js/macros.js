@@ -12,8 +12,8 @@ define(['jquery', 'story', 'utils', 'wordarray'], function($, Story, Utils, Word
 	MACRO API:
 	
 	For end users:
-	* macros.get(name) : get a registered macro function.
-	* macros.add(descriptor): register a new macro.
+	* Macros.get(name) : get a registered macro function.
+	* Macros.add(descriptor): register a new macro.
 		descriptor is a map of the following:
 			- fn: the function to execute when the macro runs. It may be absent for hook macros. See macrolib for the API.
 			- name: a string, or an array of strings serving as 'alias' names.
@@ -33,17 +33,17 @@ define(['jquery', 'story', 'utils', 'wordarray'], function($, Story, Utils, Word
 				append the rendering to its current contents ("append") or prepend it ("prepend").
 				- once: whether or not the enchanted DOM elements can trigger this macro multiple times.
 			
-	* macros.supplement(name, selfClosing, main) : register a macro which has no code, but is used as a sub-tag in another macro.
+	* Macros.supplement(name, selfClosing, main) : register a macro which has no code, but is used as a sub-tag in another macro.
 		main: name of the 'parent' macro.
 		
 	For other modules:
-	* macros.matchMacroTag(html, callback(e)) : perform a function for each valid macro call in the HTML.
+	* Macros.matchMacroTag(html, callback(e)) : perform a function for each valid macro call in the HTML.
 		html: a string of escaped HTML.
 		e: a MacroInstance object matching a macro invocation in the HTML.
 	
 	*/
 	
-	var MacroInstance, Scope, macros,
+	var MacroInstance, Scope, Macros,
 		// Private collection of registered macros.
 		_handlers = {},
 		// Precompile some regexes
@@ -60,7 +60,7 @@ define(['jquery', 'story', 'utils', 'wordarray'], function($, Story, Utils, Word
 		and apply()ed to macro functions.
 		This contains utility functions that any macro function can call on.
 	*/
-	MacroInstance = Utils.lockProperties({
+	MacroInstance = {
 	
 		create: function(html, name, startIndex, endIndex)
 		{
@@ -202,14 +202,14 @@ define(['jquery', 'story', 'utils', 'wordarray'], function($, Story, Utils, Word
 			}
 			return expr;
 		}
-	});
+	};
 	
 	/*
 		Scope: an extension to WordArray that stores the containing 
 		hooks/pseudo-hooks of its contents, as well as the selector string
 		used to select its contents.
 	*/
-	Scope = Object.freeze(Object.create(WordArray, {
+	Scope = Object.create(WordArray, {
 	
 		create: {
 			value: function(word, top) {
@@ -248,7 +248,7 @@ define(['jquery', 'story', 'utils', 'wordarray'], function($, Story, Utils, Word
 				return this;
 			}
 		}
-	}));
+	});
 	
 	/*
 		Common function of hook macros.
@@ -310,16 +310,16 @@ define(['jquery', 'story', 'utils', 'wordarray'], function($, Story, Utils, Word
 	}
 	
 	// Generate a unique wrapper for each macro,
-	// outside the scope of macros.add.
+	// outside the scope of Macros.add.
 	function newHookMacroFn(deferred, innerFn)
 	{
-		return function(a)
+		return function hookMacroFnCall(a)
 		{
 			return hookMacroFn.call(this, deferred, innerFn);
 		};
 	}
 	
-	// Called when an enchantment's event is triggered. Sub-function of macros.add()
+	// Called when an enchantment's event is triggered. Sub-function of Macros.add()
 	function enchantmentEventFn()
 	{
 		var elem = $(this),
@@ -346,7 +346,7 @@ define(['jquery', 'story', 'utils', 'wordarray'], function($, Story, Utils, Word
 		});
 	}
 	
-	// Report an error when a user-loaded macro fails. Sub-function of macros.add() and macros.supplement().
+	// Report an error when a user-loaded macro fails. Sub-function of Macros.add() and Macros.supplement().
 	function loaderError(text)
 	{
 		// TODO: Instead of a basic alert, display a notification banner somewhere.
@@ -354,7 +354,7 @@ define(['jquery', 'story', 'utils', 'wordarray'], function($, Story, Utils, Word
 		return true;
 	};
 	
-	// Sub-function of macros.add() and macros.supplement()
+	// Sub-function of Macros.add() and Macros.supplement()
 	function stringOrArray(n)
 	{
 		return (typeof n === "string" || Array.isArray(n));
@@ -363,7 +363,7 @@ define(['jquery', 'story', 'utils', 'wordarray'], function($, Story, Utils, Word
 	/*
 		The object containing all the macros available to a story.
 	*/
-	macros = Object.freeze({
+	Macros = {
 		
 		// Get a macro.
 		get: function(e)
@@ -378,11 +378,11 @@ define(['jquery', 'story', 'utils', 'wordarray'], function($, Story, Utils, Word
 			var fn;
 			if (!stringOrArray(name))
 			{
-				return loaderError("Argument 1 of macros.add isn't an array or a string.");
+				return loaderError("Argument 1 of Macros.add isn't an array or a string.");
 			}
 			if (!(desc && typeof desc === "object" && ((desc.fn && typeof desc.fn === "function") || desc.hooked)))
 			{
-				return loaderError("Argument 2 of macros.add (\"" + name + "\") isn't a valid or complete descriptor.");
+				return loaderError("Argument 2 of Macros.add (\"" + name + "\") isn't a valid or complete descriptor.");
 			}
 			if (desc.fn)
 			{
@@ -426,7 +426,7 @@ define(['jquery', 'story', 'utils', 'wordarray'], function($, Story, Utils, Word
 		supplement: function(name, desc, main)
 		{
 			var mfunc,
-				errorMsg = " of macros.supplement isn't an array or a string.",
+				errorMsg = " of Macros.supplement isn't an array or a string.",
 				selfClosing = desc.selfClosing;
 			
 			// Type checking
@@ -439,7 +439,7 @@ define(['jquery', 'story', 'utils', 'wordarray'], function($, Story, Utils, Word
 				return loaderError("Argument " + 3 + errorMsg);
 			}
 			// Get the main macro's data
-			mfunc = macros.get(main);
+			mfunc = Macros.get(main);
 			// Define a function for the supplement
 			desc.fn = function() {
 				if (!this.context || ~~main.indexOf(this.context.name))
@@ -456,7 +456,7 @@ define(['jquery', 'story', 'utils', 'wordarray'], function($, Story, Utils, Word
 			{
 				desc.version = mfunc.version;
 			}
-			macros.add(name, desc);
+			Macros.add(name, desc);
 		},
 
 		// Performs a function for each macro instance found in the HTML.
@@ -525,10 +525,10 @@ define(['jquery', 'story', 'utils', 'wordarray'], function($, Story, Utils, Word
 		render: $.noop,
 		
 		MacroInstance: MacroInstance
-	});
+	};
 	
 	// This replaces unknown or incorrect macros.
-	macros.add("unknown", {
+	Macros.add("unknown", {
 		selfClosing: true,
 		fn: function()
 		{
@@ -536,5 +536,7 @@ define(['jquery', 'story', 'utils', 'wordarray'], function($, Story, Utils, Word
 		}
 	});
 	
-	return macros;
+	Utils.lockProperties(MacroInstance);
+	Object.freeze(Scope);
+	return Object.freeze(Macros);
 });

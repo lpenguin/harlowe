@@ -28,6 +28,33 @@ define(['jquery', 'state', 'utils', 'engine', 'wordarray'], function ($, State, 
 	},
 	
 	/*
+		Wrappers for Date
+	*/
+	
+	// The current weekday, in full
+	weekday = function() {
+		return ['Sun','Mon','Tues','Wednes','Thurs','Fri','Satur'][new Date().getDay()] + "day";
+	},
+	
+	// The current day number
+	monthday = function() {
+		return new Date().getDate();
+	},
+	
+	// The current time in 12-hour hours:minutes format.
+	time = function() {
+		var d = new Date(),
+			am = d.getHours() < 12;
+			
+		return d.getHours() % 12 + ":" + d.getMinutes() + " " + (am ? "A" : "P") + "M";
+	},
+	
+	// The current date in DateString format (eg. "Thu Jan 01 1970").
+	date = function() {
+		return new Date().toDateString();
+	},
+	
+	/*
 		Wrappers for basic Math
 		(includes ES6 polyfills)
 	*/
@@ -131,7 +158,10 @@ define(['jquery', 'state', 'utils', 'engine', 'wordarray'], function ($, State, 
 	{
 		_top = top;
 		return eval(text + '');
-	};
+	},
+	
+	/* Undefine previous helpers */
+	_mathFilter = void 0;
 	
 	return Object.freeze({
 		

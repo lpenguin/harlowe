@@ -2,10 +2,10 @@ define(['jquery', 'marked', 'story', 'utils', 'state', 'macros'], function ($, M
 {
 	"use strict";
 	/*
-		engine: Module that renders passages to the DOM.
-		Exported singleton: engine
+		Engine: Module that renders passages to the DOM.
+		Exported singleton: Engine
 	*/
-	var engine;
+	var Engine;
 	
 	/*
 		Perform alterations to Marked's lexer/parser as used by Twine.
@@ -245,7 +245,8 @@ define(['jquery', 'marked', 'story', 'utils', 'state', 'macros'], function ($, M
 		html = $(source);
 		
 		// Render macro instances
-		Utils.$("[data-macro]", html).each(function(){
+		// (Naming this closure for stacktrace visibility)
+		Utils.$("[data-macro]", html).each(function renderMacroInstances(){
 			this.removeAttribute("hidden");
 			var count = this.getAttribute("data-count");
 			runMacro(macroInstances[count], $(this), context, top || html);
@@ -268,7 +269,7 @@ define(['jquery', 'marked', 'story', 'utils', 'state', 'macros'], function ($, M
 	/*
 		Alters the passage DOM by appending a new jQuery structure.
 		Requires updating all enchantments.
-		Sub-function of showPassage(), also used by engine.renderMacro().
+		Sub-function of showPassage(), also used by Engine.renderMacro().
 		TODO: Make this not need to run multiple times during a "reflow".
 	*/
 	function updateEnchantments(top)
@@ -278,7 +279,7 @@ define(['jquery', 'marked', 'story', 'utils', 'state', 'macros'], function ($, M
 		Utils.$(".hook", top).attr("class", "hook");
 				
 		// Perform actions for each scoping macro's scope.
-		Utils.$(".hook-macro", top).each(function() {
+		Utils.$(".hook-macro", top).each(function () {
 			var instance = $(this).data("instance");
 			
 			if (instance)
@@ -297,8 +298,8 @@ define(['jquery', 'marked', 'story', 'utils', 'state', 'macros'], function ($, M
 		container = $('<section class="passage"><nav class="sidebar"><span class="link icon permalink" title="Permanent link to this passage">&sect;</span></nav></section>'),
 		sidebar = container.children(".sidebar");
 		
-		back = $('<span class="link icon undo" title="Undo">&#8630;</span>').click(engine.goBack);
-		fwd = $('<span class="link icon redo" title="Redo">&#8631;</span>').click(engine.goForward);
+		back = $('<span class="link icon undo" title="Undo">&#8630;</span>').click(Engine.goBack);
+		fwd = $('<span class="link icon redo" title="Redo">&#8631;</span>').click(Engine.goForward);
 		
 		if (!State.hasPast())
 			back.css({visibility:"hidden"});
@@ -353,7 +354,7 @@ define(['jquery', 'marked', 'story', 'utils', 'state', 'macros'], function ($, M
 		// TODO: HTML5 history
 	};
 	
-	engine = Object.freeze({
+	Engine = {
 		// Advance the game state back
 		goBack: function()
 		{
@@ -396,7 +397,7 @@ define(['jquery', 'marked', 'story', 'utils', 'state', 'macros'], function ($, M
 				var next = Story.getPassageID($(this).attr('data-passage-link'));
 				if (next)
 				{
-					engine.goToPassage(next);
+					Engine.goToPassage(next);
 				}
 				e.preventDefault();
 			});
@@ -413,7 +414,7 @@ define(['jquery', 'marked', 'story', 'utils', 'state', 'macros'], function ($, M
 		render: render,
 		
 		updateEnchantments: updateEnchantments
-	});
+	};
 	
-	return engine;
+	return Object.freeze(Engine);
 });

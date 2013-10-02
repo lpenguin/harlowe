@@ -48,7 +48,7 @@ define(['jquery', 'utils'], function ($, Utils)
 					}
 					else
 					{
-						(modifier === "append" ? e.last() : e.first().before(w));
+						(modifier === "append" ? e.last().after(w) : e.first().before(w));
 						Utils.transitionIn(w, "dissolve");
 					}
 
@@ -72,7 +72,7 @@ define(['jquery', 'utils'], function ($, Utils)
 	function findCharSpans(selector, top)
 	{
 		// Recursive call
-		return _findCharSpans(selector, $(Utils.charSpanSelector, top), true);
+		return _findCharSpans(selector, Utils.$(Utils.charSpanSelector, top), true);
 	}
 	
 	//Gets the char value of a charspan element
@@ -233,6 +233,7 @@ define(['jquery', 'utils'], function ($, Utils)
 		{
 			this.contents.forEach(function(e)
 			{
+				e.length > 1 && (e = e.wrapAll('<span class="transition-out-container"/>'));
 				Utils.transitionOut(e, "dissolve");
 			});
 			this.contents = [];
