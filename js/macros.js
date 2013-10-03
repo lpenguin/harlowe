@@ -45,7 +45,7 @@ define(['jquery', 'story', 'utils', 'wordarray'], function($, Story, Utils, Word
 	
 	var MacroInstance, Scope, Macros,
 		// Private collection of registered macros.
-		_handlers = {},
+		macroRegistry = {},
 		// Precompile some regexes
 		unquotedWhitespace = new RegExp(" "+Utils.unquotedCharRegexSuffix);
 	
@@ -68,10 +68,10 @@ define(['jquery', 'story', 'utils', 'wordarray'], function($, Story, Utils, Word
 				macro = Object.create(this);
 			
 			macro.name = name;
-			macro.data = _handlers[name];
+			macro.desc = macroRegistry[name];
 			macro.startIndex = startIndex;
 			macro.endIndex = endIndex;
-			selfClosing = macro.data && macro.data.selfClosing;
+			selfClosing = macro.desc && macro.desc.selfClosing;
 			
 			// HTMLcall / call is the entire macro invocation, rawArgs is all arguments,
 			// HTMLcontents / contents is what's between a <<macro>> and <</macro>> call
@@ -155,9 +155,9 @@ define(['jquery', 'story', 'utils', 'wordarray'], function($, Story, Utils, Word
 		// Enchant the scope, if it is a hook macro.
 		enchantScope: function()
 		{
-			if (this.scope && this.data && this.data.enchantment)
+			if (this.scope && this.desc && this.desc.enchantment)
 			{
-				this.scope.enchant(this.data.enchantment.classList, this.top);
+				this.scope.enchant(this.desc.enchantment.classList, this.top);
 			}
 		},
 		
@@ -255,7 +255,7 @@ define(['jquery', 'story', 'utils', 'wordarray'], function($, Story, Utils, Word
 	*/
 	function hookMacroFn(deferred, innerFn)
 	{
-		var	rerender = this.data.enchantment && this.data.enchantment.rerender,
+		var	rerender = this.desc.enchantment && this.desc.enchantment.rerender,
 			// Get the args, but with quotes retained.
 			quotedArgs = this.rawArgs.split(unquotedWhitespace);
 		
@@ -313,7 +313,7 @@ define(['jquery', 'story', 'utils', 'wordarray'], function($, Story, Utils, Word
 	// outside the scope of Macros.add.
 	function newHookMacroFn(deferred, innerFn)
 	{
-		return function hookMacroFnCall(a)
+		return function hookMacroFnCall()
 		{
 			return hookMacroFn.call(this, deferred, innerFn);
 		};
@@ -333,10 +333,10 @@ define(['jquery', 'story', 'utils', 'wordarray'], function($, Story, Utils, Word
 				if (instance.scope.hooks.is(elem))
 				{
 					// TODO: make it so that the scope can sometimes only affect the clicked object
-					instance.data.apply(instance,instance.args);
+					instance.desc.fn.apply(instance, instance.args);
 					
 					// Remove hook if it's a once-only enchantment.
-					if (instance.data.enchantment.once)
+					if (instance.desc.enchantment.once)
 					{
 						instance.scope.hooks.children().unwrap();
 					}
@@ -368,7 +368,7 @@ define(['jquery', 'story', 'utils', 'wordarray'], function($, Story, Utils, Word
 		// Get a macro.
 		get: function(e)
 		{
-			return _handlers.hasOwnProperty(e) && _handlers[e];
+			return macroRegistry.hasOwnProperty(e) && macroRegistry[e];
 		},
 		
 		// Register a new macro.
@@ -384,11 +384,6 @@ define(['jquery', 'story', 'utils', 'wordarray'], function($, Story, Utils, Word
 			{
 				return loaderError("Argument 2 of Macros.add (\"" + name + "\") isn't a valid or complete descriptor.");
 			}
-			if (desc.fn)
-			{
-				fn = desc.fn;
-				delete desc.fn;
-			}
 			// Hook macro? Use a hookMacroFn for its function.
 			if (desc.hooked)
 			{
@@ -396,27 +391,26 @@ define(['jquery', 'story', 'utils', 'wordarray'], function($, Story, Utils, Word
 				if (desc.enchantment && desc.enchantment.event && desc.enchantment.classList)
 				{
 					// Set the event that the enchantment descriptor declares
-					$(document.documentElement).on(desc.enchantment.event + "." + desc.name + "-macro", Utils.classListToSelector(desc.enchantment.classList), enchantmentEventFn);
+					$(document.documentElement).on(desc.enchantment.event + "." + "macro",
+						Utils.classListToSelector(desc.enchantment.classList), enchantmentEventFn);
 					
-					fn = newHookMacroFn(true, fn);
+					desc.fn = newHookMacroFn(true, desc.fn);
 				}
 				else
 				{
-					fn = newHookMacroFn(!!desc.deferred, fn);
+					desc.fn = newHookMacroFn(!!desc.deferred, desc.fn);
 				}
 			}
-			// Add all remaining properties of desc to fn.
-			$.extend(fn,desc);
-			// Add fn to the _handlers, plus aliases (if name is an array of aliases)
+			// Add desc to the macroRegistry, plus aliases (if name is an array of aliases)
 			if (Array.isArray(name))
 			{
 				name.forEach(function(n) {
-					_handlers[n] = fn;
+					macroRegistry[n] = desc;
 				});
 			}
 			else
 			{
-				_handlers[name + ''] = fn;
+				macroRegistry[name + ''] = desc;
 			}
 		},
 
@@ -464,7 +458,10 @@ define(['jquery', 'story', 'utils', 'wordarray'], function($, Story, Utils, Word
 		// Callback function's argument is a macro instance.
 		matchMacroTag: function(html, macroname, callback)
 		{
-			var macroRE = new RegExp("&lt;&lt;\\s*(" + (macroname || "\\w+") + ")(?:[^&]|&(?!gt;&gt;))*&gt;&gt;",'ig'),
+			var macroRE = new RegExp("&lt;&lt;\\s*(" +
+				// Valid macro name characters: A-Za-z0-9_-?!
+				(macroname || "[\\w\\-?!]+") +
+				")(?:[^&]|&(?!gt;&gt;))*&gt;&gt;",'ig'),
 				macro, endMacroRE, foundMacro, foundEndMacro, nesting, selfClosing,
 				endIndex, data;
 			// Search through html for macro tags

@@ -357,6 +357,7 @@ h1, h2, h3, h4, h5, h6
 .debug-mode [data-macro][title] {
 	cursor: help;
 }
+.debug-mode [data-macro] { display:inline-block }
 /* Colours for generic macros */
 .debug-mode [data-macro]:nth-of-type(4n+0) { background-color: hsla(80,20%,50%,0.15); }
 .debug-mode [data-macro]:nth-of-type(2n+1) { background-color: hsla(120,20%,50%,0.15); }
@@ -372,25 +373,27 @@ h1, h2, h3, h4, h5, h6
 .debug-mode [data-macro="set"] { background-color: hsla(30,100%,50%,0.2) !important; }
 .debug-mode [data-macro="script"] { background-color: hsla(45,100%,50%,0.2) !important; }
 .debug-mode [data-macro="style"] { background-color: hsla(180,10%,75%,0.2) !important; }
-.debug-mode [data-macro="with"],
-.debug-mode [data-macro="onclick"] { background-color: hsla(90,75%,50%,0.2) !important; }
-.debug-mode [data-macro="replace"] { background-color: hsla(20,75%,50%,0.2) !important; }
+.debug-mode [data-macro="click"] { background-color: hsla(90,75%,50%,0.2) !important; }
+.debug-mode [data-macro="replace"],
+.debug-mode [data-macro="prepend"] ,
+.debug-mode [data-macro="append"],
+.debug-mode [data-macro="remove"]  { background-color: hsla(20,75%,50%,0.2) !important; }
 
 /* Colours for other things */
 .debug-mode .hook  { background-color: hsla(220,100%,50%,0.1) !important;}
 .debug-mode .pseudo-hook  { background-color: hsla(40,100%,50%,0.1) !important;}
-.debug-mode .hook::before, .debug-mode .pseudo-hook::before
-{
-	content: "["
-}
+
+/* Show IDs of hooks */
 .debug-mode .hook::after, .debug-mode .pseudo-hook::after
 {
-	content: "]"
+	font-size: 0.8rem;
+	content: attr(data-hook)
 }
 
-.debug-mode .passage-link::after
+/* Show destinations of links */
+.debug-mode .passage-link::after, .debug-mode .broken-link::after
 {
-	font-size: 0.5rem;
+	font-size: 0.8rem;
 	content: attr(data-passage-link)
 }
 

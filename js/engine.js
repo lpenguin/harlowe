@@ -133,13 +133,13 @@ define(['jquery', 'marked', 'story', 'utils', 'state', 'macros'], function ($, M
 	// Render a macro naturally found in the passage. Sub-function of render().
 	function runMacro(macro, span, context, top)
 	{
-		if (macro.data)
+		if (macro.desc)
 		{
 			macro.el = span;
 			macro.context = context;
 			macro.top = top;
 			macro.init && (macro.init());
-			macro.data.apply(macro, macro.args);
+			macro.desc.fn.apply(macro, macro.args);
 		}
 		else
 			span.addClass('error').html('No macro named ' + macro.name);
@@ -154,10 +154,10 @@ define(['jquery', 'marked', 'story', 'utils', 'state', 'macros'], function ($, M
 			index = 0;
 
 		Macros.matchMacroTag(source, null, function (m) {
-			if (!m.data)
+			if (!m.desc)
 			{
 				// A macro by that name doesn't exist
-				m.data = Macros.get("unknown");
+				m.desc = Macros.get("unknown");
 			}
 			// Contain the macro in a hidden span.
 			newhtml += source.slice(index, m.startIndex) + '<span data-count="' + macroCount + '" data-macro="' + m.name + '" hidden></span>';
@@ -174,11 +174,15 @@ define(['jquery', 'marked', 'story', 'utils', 'state', 'macros'], function ($, M
 	{
 		var visited;
 		
-		if (!Story.passageNamed(passage))
+		try
 		{
-			return '<span class="broken-link">' + text + '</span>';
+			visited = (State.passageNameVisited(passage));
 		}
-		visited = (State.passageNameVisited(passage));
+		// State.passageNameVisited() throws a custom RangeError if the passage doesn't exist.
+		catch (e)
+		{
+			return '<span class="broken-link" data-passage-link="' + passage + '">' + text + '</span>';
+		}
 		
 		return '<span class="link passage-link ' + (visited ? 'visited" ' : '" ')
 		    + (!Story.options.opaquelinks ? 'href="#' + escape(passage.replace(/\s/g, '')) + '"' : '')
@@ -281,7 +285,6 @@ define(['jquery', 'marked', 'story', 'utils', 'state', 'macros'], function ($, M
 		// Perform actions for each scoping macro's scope.
 		Utils.$(".hook-macro", top).each(function () {
 			var instance = $(this).data("instance");
-			
 			if (instance)
 			{
 				// Refresh the scope, and enchant it.

@@ -277,7 +277,6 @@ define(['jquery', 'story', 'script', 'macros', 'engine', 'utils'], function($, S
 		}
 	});
 	
-	
 	// <<time ... >> ... <</time>>
 	// Perform the enclosed macros after the time has passed.
 	Macros.add("time", {
@@ -450,6 +449,21 @@ define(['jquery', 'story', 'script', 'macros', 'engine', 'utils'], function($, S
 			this.scope.remove();
 			Engine.updateEnchantments();
 		},
+		version: {
+			major: 0,
+			minor: 0,
+			revision: 0
+		}
+	});
+	
+	/*
+		Combos
+	*/
+	
+	Macros.add("click_replace", {
+		hooked: true,
+		enchantment: Macros.get("click").enchantment,
+		fn: Macros.get("replace").fn,
 		version: {
 			major: 0,
 			minor: 0,
