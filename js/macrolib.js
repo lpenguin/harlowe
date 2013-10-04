@@ -37,6 +37,10 @@ define(['jquery', 'story', 'script', 'macros', 'engine', 'utils'], function($, S
 			- null, whereupon this.el will be removed.
 	*/
 	
+	var revisionTypes = ["replace", "append", "prepend"],
+		interactionTypes = ["click", "mouseover", "mouseout"],
+		i, j;
+	
 	/*
 		Extend MacroInstance
 	*/
@@ -48,8 +52,8 @@ define(['jquery', 'story', 'script', 'macros', 'engine', 'utils'], function($, S
 			var result = Engine.render(html + '', this, this.top);
 			if (result)
 			{
-				Utils.transitionIn(result, "fade-in");
 				prepend ? this.el.prepend(result) : this.el.append(result);
+				Utils.transitionIn(result, "fade-in");
 				Engine.updateEnchantments();
 			}
 		}
@@ -387,7 +391,7 @@ define(['jquery', 'story', 'script', 'macros', 'engine', 'utils'], function($, S
 	
 	
 	/*
-		Scope-affecting macros
+		Revision macros
 	*/
 	
 	// <<replace [...] >> ... <</replace>>
@@ -460,14 +464,21 @@ define(['jquery', 'story', 'script', 'macros', 'engine', 'utils'], function($, S
 		Combos
 	*/
 	
-	Macros.add("click_replace", {
-		hooked: true,
-		enchantment: Macros.get("click").enchantment,
-		fn: Macros.get("replace").fn,
-		version: {
-			major: 0,
-			minor: 0,
-			revision: 0
+	for (i = 0; i < interactionTypes.length; i++)
+	{
+		for (j = 0; j < revisionTypes.length; j++)
+		{
+			Macros.add(interactionTypes[i] + "-" + revisionTypes[j], {
+				hooked: true,
+				enchantment: Macros.get(interactionTypes[i]).enchantment,
+				fn: Macros.get(revisionTypes[j]).fn,
+				version: {
+					major: 0,
+					minor: 0,
+					revision: 0
+				}
+			});
 		}
-	});
+	};
+
 });

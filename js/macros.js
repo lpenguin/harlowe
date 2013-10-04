@@ -46,13 +46,17 @@ define(['jquery', 'story', 'utils', 'wordarray'], function($, Story, Utils, Word
 	var MacroInstance, Scope, Macros,
 		// Private collection of registered macros.
 		macroRegistry = {},
+		// Tracker of registered events and their class lists
+		enchantmentEventRegistry = {},
 		// Precompile some regexes
-		unquotedWhitespace = new RegExp(" "+Utils.unquotedCharRegexSuffix);
+		unquotedWhitespace = new RegExp(" "+Utils.regexStrings.unquoted),
+		macroTagFront = new RegExp("^<<\\s*" + Utils.regexStrings.macroName + "\\s*");
+		
 	
 	// Sub-function of MacroInstance.convertOperators
 	function alter(expr, from, to)
 	{
-		return expr.replace(new RegExp(from + Utils.unquotedCharRegexSuffix, "gi"), to);
+		return expr.replace(new RegExp(from + Utils.regexStrings.unquoted, "gi"), to);
 	}
 	
 	/*
@@ -82,7 +86,7 @@ define(['jquery', 'story', 'utils', 'wordarray'], function($, Story, Utils, Word
 			// unescape HTML entities ("&amp;" etc.)
 			macro.call = $('<p>').html(macro.HTMLcall).text();
 			macro.contents = (selfClosing ? "" : macro.call.replace(/^(?:[^>]|>(?!>))*>>/i, '').replace(/<<(?:[^>]|>(?!>))*>>$/i, ''));
-			macro.rawArgs = macro.call.replace(/^<<\s*\w*\s*/, '').replace(/\s*>>[^]*/, '').trim();
+			macro.rawArgs = macro.call.replace(macroTagFront, '').replace(/\s*>>[^]*/, '').trim();
 			
 			// tokenize arguments
 			// e.g. 1 "two three" 'four five' "six \" seven" 'eight \' nine'
@@ -352,13 +356,28 @@ define(['jquery', 'story', 'utils', 'wordarray'], function($, Story, Utils, Word
 		// TODO: Instead of a basic alert, display a notification banner somewhere.
 		window.alert(text);
 		return true;
-	};
+	}
 	
 	// Sub-function of Macros.add() and Macros.supplement()
 	function stringOrArray(n)
 	{
 		return (typeof n === "string" || Array.isArray(n));
-	};
+	}
+	
+	function registerEnchantmentEvent(name, newList)
+	{
+		// Get the currently stored event class lists
+		var list = enchantmentEventRegistry[name] || "",
+			eventName = name + ".macro";
+
+		// Add the new list
+		(!~list.indexOf(newList) && (list += (list && ", ") + newList));
+		
+		// Set the event handler
+		$(document.documentElement).off(eventName).on(eventName, list, enchantmentEventFn);
+		// Add to registry
+		enchantmentEventRegistry[name] = list;
+	}
 	
 	/*
 		The object containing all the macros available to a story.
@@ -391,8 +410,7 @@ define(['jquery', 'story', 'utils', 'wordarray'], function($, Story, Utils, Word
 				if (desc.enchantment && desc.enchantment.event && desc.enchantment.classList)
 				{
 					// Set the event that the enchantment descriptor declares
-					$(document.documentElement).on(desc.enchantment.event + "." + "macro",
-						Utils.classListToSelector(desc.enchantment.classList), enchantmentEventFn);
+					registerEnchantmentEvent(desc.enchantment.event, Utils.classListToSelector(desc.enchantment.classList));
 					
 					desc.fn = newHookMacroFn(true, desc.fn);
 				}
@@ -458,12 +476,11 @@ define(['jquery', 'story', 'utils', 'wordarray'], function($, Story, Utils, Word
 		// Callback function's argument is a macro instance.
 		matchMacroTag: function(html, macroname, callback)
 		{
-			var macroRE = new RegExp("&lt;&lt;\\s*(" +
-				// Valid macro name characters: A-Za-z0-9_-?!
-				(macroname || "[\\w\\-?!]+") +
-				")(?:[^&]|&(?!gt;&gt;))*&gt;&gt;",'ig'),
-				macro, endMacroRE, foundMacro, foundEndMacro, nesting, selfClosing,
-				endIndex, data;
+			var re = Utils.regexStrings,
+				macroRE = new RegExp(re.macroOpen + "\\s*(" + (macroname || re.macroName) +
+					")" + re.notMacroClose + re.macroClose, 'ig'),
+				macro, endMacroRE, foundMacro, foundEndMacro, nesting,
+				endIndex, desc;
 			// Search through html for macro tags
 			do 
 			{
@@ -471,16 +488,14 @@ define(['jquery', 'story', 'utils', 'wordarray'], function($, Story, Utils, Word
 				if (foundMacro !== null)
 				{
 					endIndex = macroRE.lastIndex;
-					data = this.get(foundMacro[1]);
-					selfClosing = true;
+					desc = this.get(foundMacro[1]);
 
 					// If macro is not self-closing, search for endtag
 					// and capture entire contents.
-					if (data && !data.selfClosing)
+					if (desc && !desc.selfClosing)
 					{
-						selfClosing = false;
-						endMacroRE = new RegExp(macroRE.source + "|&lt;&lt;((?:\\/|end)"
-							+ foundMacro[1] + ")(?:[^&]|&(?!gt;&gt;))*&gt;&gt;","g");
+						endMacroRE = new RegExp(macroRE.source + "|" + re.macroOpen + "((?:\\/|end)"
+							+ foundMacro[1] + ")" + re.notMacroClose + re.macroClose,"g");
 						endMacroRE.lastIndex = endIndex;
 						nesting = 0;
 						do
@@ -501,7 +516,9 @@ define(['jquery', 'story', 'utils', 'wordarray'], function($, Story, Utils, Word
 										break;
 									}
 								}
-								else if (foundEndMacro[1] && foundEndMacro[1] === foundMacro[1]) { // Found nested <<macro>>
+								// Found nested <<macro>>
+								else if (foundEndMacro[1] && foundEndMacro[1] === foundMacro[1])
+								{
 									nesting += 1;
 								}
 							}

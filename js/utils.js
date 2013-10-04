@@ -270,9 +270,16 @@ define(['jquery'], function($)
 		// Story element
 		storyElement: $('#story'),
 		
-		// Regex suffix that, when applied, causes the preceding match to only apply when not inside a quoted
-		// string. This accounts for both quote styles and escaped quote characters.
-		unquotedCharRegexSuffix: "(?=(?:[^\"'\\\\]*(?:\\\\.|'(?:[^'\\\\]*\\\\.)*[^'\\\\]*'|\"(?:[^\"\\\\]*\\\\.)*[^\"\\\\]*\"))*[^'\"]*$)"
+		// Components for regexps
+		regexStrings: {
+			macroOpen: "&lt;&lt;",
+			macroName: "[\\w\\-\\?\\!]+",
+			notMacroClose: "(?:[^&]|&(?!gt;&gt;))*",
+			macroClose: "&gt;&gt;",
+			// Regex suffix that, when applied, causes the preceding match to only apply when not inside a quoted
+			// string. This accounts for both quote styles and escaped quote characters.
+			unquoted: "(?=(?:[^\"'\\\\]*(?:\\\\.|'(?:[^'\\\\]*\\\\.)*[^'\\\\]*'|\"(?:[^\"\\\\]*\\\\.)*[^\"\\\\]*\"))*[^'\"]*$)",
+		}
 	};
 	return Object.freeze(Utils);
 });
