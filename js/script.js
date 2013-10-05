@@ -14,14 +14,14 @@ define(['jquery', 'state', 'utils', 'engine', 'wordarray'], function ($, State, 
 	// Filter out NaN and Infinities, throwing an error instead.
 	// This is only applied to functions that can create non-numerics,
 	// namely log, sqrt, etc.
-	_mathFilter = function(fn)
+	mathFilter = function(fn)
 	{
 		return function()
 		{
 			var result = fn.apply(this,arguments);
 			if (!$.isNumeric(result))
 			{
-				throw new RangeError("Math result is " + result);
+				throw new RangeError("math result is " + result);
 			}
 			return result;
 		};
@@ -73,12 +73,12 @@ define(['jquery', 'state', 'utils', 'engine', 'wordarray'], function ($, State, 
 	ceil = Math.ceil,
 	pow = Math.pow,
 	exp = Math.exp,
-	sqrt = _mathFilter(Math.sqrt),
-	log = _mathFilter(Math.log),
-	log10 = _mathFilter(Math.log10 || function(value) {
+	sqrt = mathFilter(Math.sqrt),
+	log = mathFilter(Math.log),
+	log10 = mathFilter(Math.log10 || function(value) {
 		return log(value) * (1 / Math.LN10);
 	}),
-	log2 = _mathFilter(Math.log2 || function(value) {
+	log2 = mathFilter(Math.log2 || function(value) {
 		return log(value) * (1 / Math.LN2);
 	}),
 	
@@ -139,6 +139,11 @@ define(['jquery', 'state', 'utils', 'engine', 'wordarray'], function ($, State, 
 		return WordArray.create('"' + a + '"', _top);
 	},
 	
+	Hook = function(a)
+	{
+		return WordArray.create('?' + a, _top);
+	},
+	
 	/*
 		Wrappers for Window (which could be redefined later).
 	*/
@@ -158,10 +163,10 @@ define(['jquery', 'state', 'utils', 'engine', 'wordarray'], function ($, State, 
 	{
 		_top = top;
 		return eval(text + '');
-	},
+	};
 	
 	/* Undefine previous helpers */
-	_mathFilter = void 0;
+	mathFilter = void 0;
 	
 	return Object.freeze({
 		

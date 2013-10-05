@@ -111,6 +111,7 @@ define(['jquery'], function($)
 				case "&gt;": return '>';
 				case "&amp;": return '&';
 				case "&quot;": return '"';
+				case "&#39;": return "'";
 				case "&nbsp;": return String.fromCharCode(160);
 				case "&zwnj;": return String.fromCharCode(8204);
 				default: return p.html(text).text();
@@ -145,6 +146,8 @@ define(['jquery'], function($)
 		// Convert a hook index string into a jQuery.
 		hookTojQuery: function(c, top)
 		{
+			console.log("hookTojQuery: "+Utils.hookToSelector(c.slice(1)));
+			top && console.log();
 			return Utils.$(Utils.hookToSelector(c.slice(1)), top)
 		},
 		
@@ -152,8 +155,9 @@ define(['jquery'], function($)
 		// <span> tag (converting the entity if it is one).
 		charToSpan: function(c)
 		{
-			return "<span class='char' data-char='"
-				+ Utils.HTMLEntityConvert(c) + "'>"
+			var quot = (c === "&#39;" ? '"' : "'");
+			return "<span class='char' data-char="
+				+ quot + Utils.HTMLEntityConvert(c) + quot + ">"
 				+ c + "</span>";
 		},
 		
@@ -253,7 +257,10 @@ define(['jquery'], function($)
 		
 		// A jQuery call that filters out transitioning-out elements
 		$: function(str, context)
-		{
+		{			
+			console.log("Utils.$: " + str + " " + context);
+			console.log($(context));
+			console.log($(str, context));
 			return $(str, context).not(".transition-out, .transition-out *");
 		},
 		

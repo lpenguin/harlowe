@@ -101,7 +101,7 @@ define(['jquery', 'marked', 'story', 'utils', 'state', 'macros'], function ($, M
 		function hook(cap, link)
 		{
 			// If a hook is empty, fill it with a zero-width space,
-			// so that it can still be selected by WordArrays.
+			// so that it can still be used as a scope.
 		    var out = this.output(cap[1]) || (out = Utils.charSpanify("&zwnj;"));
 			return '<span class="hook" data-hook="' + link + '"'
 				// Debug mode: show the hook destination as a title.
@@ -243,7 +243,16 @@ define(['jquery', 'marked', 'story', 'utils', 'state', 'macros'], function ($, M
 
 		// Finally, do Markdown
 		// (This must come last due to the charspan generation inhibiting any further matches.)
-		source = Marked(source);
+		try
+		{
+			source = Marked(source);
+		}
+		catch (e)
+		{
+			temp = makeMacros(Utils.regexStrings.macroOpen + "rendering-error " + e.text +Utils.regexStrings.macroClose);
+			source = temp[0];
+			macroInstances = temp[1];
+		}
 		
 		// Render the HTML
 		html = $(source);
@@ -253,7 +262,7 @@ define(['jquery', 'marked', 'story', 'utils', 'state', 'macros'], function ($, M
 		Utils.$("[data-macro]", html).each(function renderMacroInstances(){
 			this.removeAttribute("hidden");
 			var count = this.getAttribute("data-count");
-			runMacro(macroInstances[count], $(this), context, top || html);
+			runMacro(macroInstances[count], $(this), context, html.add(top));
 		});
 		
 		// If one <p> tag encloses all the HTML, unwrap it.
@@ -281,7 +290,7 @@ define(['jquery', 'marked', 'story', 'utils', 'state', 'macros'], function ($, M
 		// Remove the old enchantments
 		Utils.$(".pseudo-hook", top).children().unwrap();
 		Utils.$(".hook", top).attr("class", "hook");
-				
+		
 		// Perform actions for each scoping macro's scope.
 		Utils.$(".hook-macro", top).each(function () {
 			var instance = $(this).data("instance");
@@ -346,7 +355,7 @@ define(['jquery', 'marked', 'story', 'utils', 'state', 'macros'], function ($, M
 		// Create new passage
 		newPassage = createPassageElement().append(render(passageData.html(), void 0, el));
 		el.append(newPassage);
-		updateEnchantments();
+		updateEnchantments(el);
 		
 		// Transition in
 		if (transIndex)

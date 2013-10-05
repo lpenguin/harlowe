@@ -198,6 +198,10 @@ define(['jquery', 'utils'], function ($, Utils)
 					Utils.hookTojQuery(word, top).each(forEachjQuery);
 					break;
 				}
+				default:
+				{
+					throw new TypeError("unknown WordArray selector: "+word);
+				}
 			}
 		},
 		
@@ -269,6 +273,8 @@ define(['jquery', 'utils'], function ($, Utils)
 			return this;
 		}
 	};
+	//Make text() its toString() method, so that <<print ?hook>> etc. works.
+	WordArray.toString = WordArray.text;
 	
 	// Mirror a couple of other jQuery methods on WordArray
 	// Note to self: add jQueryUI's version of addClass, pronto.

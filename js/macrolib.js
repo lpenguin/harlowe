@@ -37,6 +37,8 @@ define(['jquery', 'story', 'script', 'macros', 'engine', 'utils'], function($, S
 			- null, whereupon this.el will be removed.
 	*/
 	
+
+	
 	var revisionTypes = ["replace", "append", "prepend"],
 		interactionTypes = ["click", "mouseover", "mouseout"],
 		i, j;
@@ -89,7 +91,7 @@ define(['jquery', 'story', 'script', 'macros', 'engine', 'utils'], function($, S
 			try
 			{
 				// Before setting it to the value, default it to 0.
-				Script.eval(variable + "=" + variable + "||" + Utils.defaultValue +";" + variable + to + value);
+				Script.eval(variable + "=" + variable + "||" + Utils.defaultValue +";" + variable + to + value, this.top);
 				this.clear();
 			}
 			catch (e)
@@ -113,7 +115,7 @@ define(['jquery', 'story', 'script', 'macros', 'engine', 'utils'], function($, S
 			try
 			{
 				var args = this.convertOperators(this.rawArgs);
-				this.render(Script.eval(args));
+				this.render(Script.eval(args, this.top));
 			}
 			catch (e)
 			{
@@ -217,7 +219,7 @@ define(['jquery', 'story', 'script', 'macros', 'engine', 'utils'], function($, S
 			{
 				try
 				{
-					var result = Script.eval(this.convertOperators(args[i]));
+					var result = Script.eval(this.convertOperators(args[i]), this.top);
 					if (result) {
 						this.render(contents[i]);
 						return;
@@ -251,7 +253,7 @@ define(['jquery', 'story', 'script', 'macros', 'engine', 'utils'], function($, S
 			try
 			{
 				var args = this.convertOperators(this.rawArgs),
-					name = eval(args) + '';
+					name = Script.eval(args, this.top) + '';
 				// Test for existence
 				if (!Story.passageNamed(name))
 				{
@@ -266,7 +268,7 @@ define(['jquery', 'story', 'script', 'macros', 'engine', 'utils'], function($, S
 					this.error('<<display>> loop: "' + name + '" is displaying itself 5+ times.', true);
 					return;
 				}
-				this.el.attr("data-display",name);
+				this.el.attr("data-display", name);
 				this.render(Story.passageNamed(name).html());
 			}
 			catch (e)
@@ -289,7 +291,8 @@ define(['jquery', 'story', 'script', 'macros', 'engine', 'utils'], function($, S
 			if (ms)
 			{
 				// TODO: Check for memory leak potential?
-				setTimeout(function() {
+				setTimeout(function()
+				{
 					if ($(document.documentElement).find(this.el).length > 0)
 					{
 						this.render(this.HTMLcontents);

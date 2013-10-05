@@ -29,7 +29,7 @@ define(['jquery', 'utils'], function($, Utils)
 			
 			if (!passage.length)
 			{
-				throw new RangeError("There's no passage named " + name);
+				throw new RangeError("there's no passage named " + name);
 				return;
 			}
 			return passage;
@@ -42,7 +42,7 @@ define(['jquery', 'utils'], function($, Utils)
 			
 			if (!passage.length)
 			{
-				throw new RangeError("There's no passage with ID " + id);
+				throw new RangeError("there's no passage with ID " + id);
 				return;
 			}
 			return passage;

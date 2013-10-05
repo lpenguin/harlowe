@@ -188,15 +188,17 @@ define(['jquery', 'story', 'utils', 'wordarray'], function($, Story, Utils, Word
 				// Phrase "set x to 2" as "state.variables['x'] = 2"
 				if (setter)
 				{
-					expr = alter(expr, "\\$(\\w+)\\b", "State.variables['$1']");
+					expr = alter(expr, "\\$(\\w+)\\b", " State.variables['$1'] ");
 				}
 				else
 				// Phrase "if x is 2" as "state.getVar('x') === 2"
 				{
-					expr = alter(expr, "\\$(\\w+)\\b", "State.getVar('$1')");
+					expr = alter(expr, "\\$(\\w+)\\b", " State.getVar('$1') ");
 					// No unintended assignments allowed
 					expr = alter(expr, "\\w=\\w", " === ");
 				}
+				// Hooks
+				expr = alter(expr, "^\\?(\\w+)\\b", " Hook('$1') ");
 				expr = alter(expr, "\\bis\\s+not\\b", " !== ");
 				expr = alter(expr, "\\bis\\b", " === ");
 				expr = alter(expr, "\\bto\\b", " = ");
@@ -336,7 +338,6 @@ define(['jquery', 'story', 'utils', 'wordarray'], function($, Story, Utils, Word
 			{
 				if (instance.scope.hooks.is(elem))
 				{
-					// TODO: make it so that the scope can sometimes only affect the clicked object
 					instance.desc.fn.apply(instance, instance.args);
 					
 					// Remove hook if it's a once-only enchantment.
@@ -547,6 +548,15 @@ define(['jquery', 'story', 'utils', 'wordarray'], function($, Story, Utils, Word
 		fn: function()
 		{
 			return this.error("Unknown macro: " + this.name, true);
+		}
+	});
+	
+	// This replaces passage text that Marked cannot render.
+	Macros.add("rendering-error", {
+		selfClosing: true,
+		fn: function()
+		{
+			return this.error("The passage code couldn't be rendered!\n" + this.rawArgs, true);
 		}
 	});
 	
