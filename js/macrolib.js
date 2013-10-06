@@ -315,9 +315,7 @@ define(['jquery', 'story', 'script', 'macros', 'engine', 'utils'], function($, S
 	// using each delay in order.
 	Macros.add("time", {
 		fn: function() {
-			var delays = Utils.cssTimeUnit(this.args), timeMacroTimeout;
-			// Convert single number to array
-			delays && typeof delays === "number" && (delays = [delays]);
+			var delays = [].concat(Utils.cssTimeUnit(this.args)), timeMacroTimeout;
 			
 			if (delays.length)
 			{

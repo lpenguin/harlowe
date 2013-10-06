@@ -151,9 +151,9 @@ define(['jquery', 'story', 'utils', 'wordarray'], function($, Story, Utils, Word
 		},
 
 		// Set the scope, if it is a hook macro.
-		setScope: function(name)
+		setScope: function(selectors)
 		{
-			this.scope = Scope.create(name, this.top);
+			this.scope = Scope.create(selectors, this.top);
 		},
 		
 		// Enchant the scope, if it is a hook macro.
@@ -168,11 +168,11 @@ define(['jquery', 'story', 'utils', 'wordarray'], function($, Story, Utils, Word
 		// Refresh the hook to reflect the current passage DOM state.
 		// Necessary if the pseudo-hook selector is a WordArray or jQuery selector,
 		// or if a hook was removed or inserted for some other reason.
-		refreshScope: function(name)
+		refreshScope: function()
 		{
 			if (this.scope)
 			{
-				this.scope.refresh(this.scope.selector, this.top);
+				this.scope.refresh(this.top);
 			}
 		},
 		
@@ -212,43 +212,40 @@ define(['jquery', 'story', 'utils', 'wordarray'], function($, Story, Utils, Word
 	
 	/*
 		Scope: an extension to WordArray that stores the containing 
-		hooks/pseudo-hooks of its contents, as well as the selector string
-		used to select its contents.
+		hooks/pseudo-hooks of its contents.
 	*/
 	Scope = Object.create(WordArray, {
-	
-		create: {
-			value: function(word, top) {
-				var pseudohookSelector, ret;
-				ret = WordArray.create.call(this, word, top);
-				ret.selector = word;
-				return ret;
-			}
-		},
 		
 		// enchant: select the matching hooks, or create pseudo-hooks around matching words,
 		// and apply a class to those hooks.
 		// Pseudo-hooks are cleaned up in engine.updateEnchantments()
 		enchant: {
 			value: function(className, top) {
-				var i;
-				// Targeting actual hooks?
-				if (Utils.type(this.selector) === "hook string")
+				var i,j,selector;
+				
+				this.hooks = $();
+				
+				// Do all the selector(s).
+				for(i = 0; i < this.selectors.length; i+=1)
 				{
-					this.hooks = Utils.hookTojQuery(this.selector, top);
-				}
-				else if (this.selector)
-				// Pseudohooks (WordArray selector etc)
-				{
-					this.hooks = $();
-					// Create pseudohooks around the Words
-					for(i = 0; i < this.contents.length; i++)
+					selector = this.selectors[i];
+					// Targeting actual hooks?
+					if (Utils.type(selector) === "hook string")
 					{
-						this.contents[i].wrapAll("<span class='pseudo-hook' "
-						// Debug mode: show the pseudo-hook selector as a tooltip
-							+ (Story.options.debug ? "title='Pseudo-hook: " + this.selector + "'" : "") + "/>");
-						this.hooks = this.hooks.add(this.contents[i].parent());
-					};
+						this.hooks = this.hooks.add(Utils.hookTojQuery(selector, top));
+					}
+					else if (selector)
+					// Pseudohooks (WordArray selector etc)
+					{
+						// Create pseudohooks around the Words
+						for(j = 0; j < this.contents.length; j++)
+						{
+							this.contents[j].wrapAll("<span class='pseudo-hook' "
+							// Debug mode: show the pseudo-hook selector as a tooltip
+								+ (Story.options.debug ? "title='Pseudo-hook: " + selector + "'" : "") + "/>");
+							this.hooks = this.hooks.add(this.contents[j].parent());
+						};
+					}
 				}
 				(this.hooks && this.hooks.addClass(className));
 				return this;
@@ -282,7 +279,7 @@ define(['jquery', 'story', 'utils', 'wordarray'], function($, Story, Utils, Word
 			this.el.data("instance", this);
 			
 			// Set up the scope
-			this.setScope(quotedArgs[0]);
+			this.setScope(quotedArgs);
 			
 			if (deferred)
 			{
@@ -359,12 +356,6 @@ define(['jquery', 'story', 'utils', 'wordarray'], function($, Story, Utils, Word
 		return true;
 	}
 	
-	// Sub-function of Macros.add() and Macros.supplement()
-	function stringOrArray(n)
-	{
-		return (typeof n === "string" || Array.isArray(n));
-	}
-	
 	function registerEnchantmentEvent(name, newList)
 	{
 		// Get the currently stored event class lists
@@ -396,7 +387,7 @@ define(['jquery', 'story', 'utils', 'wordarray'], function($, Story, Utils, Word
 		add: function (name, desc)
 		{
 			var fn;
-			if (!stringOrArray(name))
+			if (!Utils.stringOrArray(name))
 			{
 				return loaderError("Argument 1 of Macros.add isn't an array or a string.");
 			}
@@ -443,11 +434,11 @@ define(['jquery', 'story', 'utils', 'wordarray'], function($, Story, Utils, Word
 				selfClosing = desc.selfClosing;
 			
 			// Type checking
-			if (!stringOrArray(name))
+			if (!Utils.stringOrArray(name))
 			{
 				return loaderError("Argument " + 1 + errorMsg);
 			}
-			if (!stringOrArray(main))
+			if (!Utils.stringOrArray(main))
 			{
 				return loaderError("Argument " + 3 + errorMsg);
 			}

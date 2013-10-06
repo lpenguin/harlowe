@@ -50,6 +50,12 @@ define(['jquery'], function($)
 			String utilities
 		*/
 		
+		// Shorthand
+		stringOrArray: function(n)
+		{
+			return (typeof n === "string" || Array.isArray(n));
+		},
+	
 		/*
 			Get the type of a scope string or Twine-specific object.
 			Returns a string.

@@ -157,59 +157,66 @@ define(['jquery', 'utils'], function ($, Utils)
 			return "";
 		},
 		
-		// Updates this WordArray's contents to match its selector.
-		refresh: function(word, top)
+		// Updates this WordArray's contents to match its selector(s).
+		refresh: function(top)
 		{
-			var type = Utils.type(word),
-				other = this;
-			
+			var other = this,
+				type, i, word;
+				
 			// Turn each matched element in the jQuery into a separate word.
 			function forEachjQuery() {
 				other.contents.push($(this).find(Utils.charSpanSelector));
 			};
 			
 			this.contents = [];
-			switch(type)
+			
+			for (i = 0; i < this.selectors.length; i+=1)
 			{
-				case "wordarray":
+				word = this.selectors[i];
+				type = Utils.type(word);
+
+				switch(type)
 				{
-					this.contents.concat(word.contents);
-					break;
-				}
-				case "jquery":
-				{
-					word.each(forEachjQuery);
-					break;
-				}
-				case "jquery string":
-				{
-					// Remove $(" and ") from the string. 
-					$(word.replace(/^\$\(["']|["']\)$/, '')).each(forEachjQuery);
-					break;
-				}
-				case "wordarray string":
-				{
-					// Remove quote marks.
-					this.contents = findCharSpans(word.slice(1,-1), top);
-					break;
-				}
-				case "hook string":
-				{
-					Utils.hookTojQuery(word, top).each(forEachjQuery);
-					break;
-				}
-				default:
-				{
-					throw new TypeError("unknown WordArray selector: "+word);
+					case "wordarray":
+					{
+						this.contents.concat(word.contents);
+						break;
+					}
+					case "jquery":
+					{
+						word.each(forEachjQuery);
+						break;
+					}
+					case "jquery string":
+					{
+						// Remove $(" and ") from the string. 
+						$(word.replace(/^\$\(["']|["']\)$/, '')).each(forEachjQuery);
+						break;
+					}
+					case "wordarray string":
+					{
+						// Remove quote marks.
+						this.contents = findCharSpans(word.slice(1,-1), top);
+						break;
+					}
+					case "hook string":
+					{
+						Utils.hookTojQuery(word, top).each(forEachjQuery);
+						break;
+					}
+					default:
+					{
+						throw new TypeError("unknown WordArray selector: "+word);
+					}
 				}
 			}
 		},
 		
-		create: function(word, top)
+		create: function(selectorstring, top)
 		{
 			var ret = Object.create(this);
-
-			ret.refresh(word, top);
+			ret.selectors = [].concat(selectorstring);
+			ret.refresh(top);
 			return ret;
 		},
 		
