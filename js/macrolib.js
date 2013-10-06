@@ -105,6 +105,31 @@ define(['jquery', 'story', 'script', 'macros', 'engine', 'utils'], function($, S
 			revision: 0
 		}
 	});
+	
+	// <<run ... >>
+	// A silent <<print>>, designed to execute one-line functions.
+	// rawArgs: expression to execute, converting operators first.
+	Macros.add("run", {
+		selfClosing: true,
+		fn: function()
+		{
+			try
+			{
+				var args = this.convertOperators(this.rawArgs);
+				Script.eval(args, this.top);
+			}
+			catch (e)
+			{
+				this.error(e.message);
+			}
+		}, 
+		version: {
+			major: 0,
+			minor: 0,
+			revision: 0
+		}
+	});
+
 
 	// <<print ... >>
 	// rawArgs: expression to execute and print, converting operators first.
@@ -220,7 +245,8 @@ define(['jquery', 'story', 'script', 'macros', 'engine', 'utils'], function($, S
 				try
 				{
 					var result = Script.eval(this.convertOperators(args[i]), this.top);
-					if (result) {
+					if (result)
+					{
 						this.render(contents[i]);
 						return;
 					}
@@ -284,20 +310,30 @@ define(['jquery', 'story', 'script', 'macros', 'engine', 'utils'], function($, S
 	});
 	
 	// <<time ... >> ... <</time>>
-	// Perform the enclosed macros after the time has passed.
+	// Perform the enclosed macros after the delay has passed.
+	// If multiple delay are given, run the macro multiple times,
+	// using each delay in order.
 	Macros.add("time", {
-		fn: function(time) {
-			var ms = Utils.cssTimeUnit(time);
-			if (ms)
+		fn: function() {
+			var delays = Utils.cssTimeUnit(this.args), timeMacroTimeout;
+			// Convert single number to array
+			delays && typeof delays === "number" && (delays = [delays]);
+			
+			if (delays.length)
 			{
-				// TODO: Check for memory leak potential?
-				setTimeout(function()
+				timeMacroTimeout = function()
 				{
 					if ($(document.documentElement).find(this.el).length > 0)
 					{
 						this.render(this.HTMLcontents);
+						// Re-run the timer with the next number.
+						if (delays.length)
+						{
+							window.setTimeout(timeMacroTimeout, delays.shift());
+						}
 					}
-				}.bind(this), ms);
+				}.bind(this);
+				window.setTimeout(timeMacroTimeout, delays.shift());
 			}
 			else
 			{

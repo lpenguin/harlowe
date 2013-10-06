@@ -146,8 +146,6 @@ define(['jquery'], function($)
 		// Convert a hook index string into a jQuery.
 		hookTojQuery: function(c, top)
 		{
-			console.log("hookTojQuery: "+Utils.hookToSelector(c.slice(1)));
-			top && console.log();
 			return Utils.$(Utils.hookToSelector(c.slice(1)), top)
 		},
 		
@@ -169,8 +167,11 @@ define(['jquery'], function($)
 
 		// Takes a string argument, expressed as a CSS time,
 		// and returns the time in milliseconds that it equals.
+		// Or, when given an array, takes all valid strings contained
+		// and returns an array of times.
 		cssTimeUnit: function(s)
 		{
+			var ret;
 			if (typeof s == "string")
 			{
 				s = s.toLowerCase();
@@ -182,6 +183,15 @@ define(['jquery'], function($)
 				{
 					return (+s.slice(0, -1)) * 1000 || 0;
 				}
+			}
+			else if (Array.isArray(s))
+			{
+				ret = [];
+				s.forEach(function(e) {
+					var time = Utils.cssTimeUnit(e);
+					(time > 0 && ret.push(time));
+				});
+				return ret;
 			}
 			return 0;
 		},
@@ -257,10 +267,7 @@ define(['jquery'], function($)
 		
 		// A jQuery call that filters out transitioning-out elements
 		$: function(str, context)
-		{			
-			console.log("Utils.$: " + str + " " + context);
-			console.log($(context));
-			console.log($(str, context));
+		{
 			return $(str, context).not(".transition-out, .transition-out *");
 		},
 		
