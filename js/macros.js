@@ -15,7 +15,7 @@ define(['jquery', 'story', 'utils', 'wordarray'], function($, Story, Utils, Word
 	* Macros.get(name) : get a registered macro function.
 	* Macros.add(descriptor): register a new macro.
 		descriptor is a map of the following:
-			- fn: the function to execute when the macro runs. It may be absent for hook macros. See macrolib for the API.
+			- fn: the function to execute when the macro runs. It may be absent for hook macros. 'this' is the MacroInstance running it.
 			- name: a string, or an array of strings serving as 'alias' names.
 			- selfClosing: boolean, determines if the macro tag has contents. If false, then all subsequent code
 				up until a closing tag ("<<endmacro>>" or <</macro>>") or until the end of the passage,
@@ -32,6 +32,8 @@ define(['jquery', 'story', 'utils', 'wordarray'], function($, Story, Utils, Word
 				- rerender: a string determining whether to clear the span before rendering into it ("replace", default),
 				append the rendering to its current contents ("append") or prepend it ("prepend").
 				- once: whether or not the enchanted DOM elements can trigger this macro multiple times.
+				- filterFn: a function to determines whether to apply the enchantment class to said hook. First arg is the
+				jQuery to test.
 			
 	* Macros.supplement(name, selfClosing, main) : register a macro which has no code, but is used as a sub-tag in another macro.
 		main: name of the 'parent' macro.
@@ -230,7 +232,7 @@ define(['jquery', 'story', 'utils', 'wordarray'], function($, Story, Utils, Word
 				{
 					selector = this.selectors[i];
 					// Targeting actual hooks?
-					if (Utils.type(selector) === "hook string")
+					if (Utils.scopeType(selector) === "hook string")
 					{
 						this.hooks = this.hooks.add(Utils.hookTojQuery(selector, top));
 					}
@@ -258,7 +260,7 @@ define(['jquery', 'story', 'utils', 'wordarray'], function($, Story, Utils, Word
 	*/
 	function hookMacroFn(deferred, innerFn)
 	{
-		var	rerender = this.desc.enchantment && this.desc.enchantment.rerender,
+		var	rerender = this.desc && this.desc.enchantment && this.desc.enchantment.rerender,
 			// Get the args, but with quotes retained.
 			quotedArgs = this.rawArgs.split(unquotedWhitespace);
 		
@@ -272,14 +274,21 @@ define(['jquery', 'story', 'utils', 'wordarray'], function($, Story, Utils, Word
 		if (!this.ready)
 		{
 			deferred && (this.ready = true);
+
+			// Set up the scope
+			try
+			{
+				this.setScope(quotedArgs);
+			}
+			catch (e)
+			{
+				return this.error("invalid macro scope: " + this.rawArgs);
+			}
 			
 			// Designate this as a hook macro.
 			this.el.addClass("hook-macro");
 			// Keep the MacroInstance around
 			this.el.data("instance", this);
-			
-			// Set up the scope
-			this.setScope(quotedArgs);
 			
 			if (deferred)
 			{

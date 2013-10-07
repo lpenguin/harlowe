@@ -64,19 +64,19 @@
 @keyframes box-flash
 {
 	0% { background-color: white; color: white; }
-	100% {}
+	to {}
 }
 
 @-webkit-keyframes box-flash {
 	0% { background-color: white; color: white; }
-	100% {}
+	to  {}
 }
 
 /* Slightly eased-out shudders */
 
 @keyframes shudder-in
 {
-   0%, 100% { transform: translateX(0em); }
+   0%, to { transform: translateX(0em); }
    5%, 25%, 45% { transform: translateX(-1em); }
    15%, 35%, 55% { transform: translateX(1em); }
    65% { transform: translateX(-0.6em); }
@@ -86,7 +86,7 @@
 }
 @-webkit-keyframes shudder-in
 {
-   0%, 100% { -webkit-transform: translateX(0em); }
+   0%, to { -webkit-transform: translateX(0em); }
    5%, 25%, 45% { -webkit-transform: translateX(-1em); }
    15%, 35%, 55% { -webkit-transform: translateX(1em); }
    65% { -webkit-transform: translateX(-0.6em); }
@@ -261,9 +261,6 @@ h1, h2, h3, h4, h5, h6
 	-webkit-animation-duration: 1.2s;
 }
 
-/*
- .cyclingLinkEnabled { animation: cyc-box-flash 0.8s; -webkit-animation: cyc-box-flash 0.8s; } .cyclingLinkInit, .cyclingLinkInit::before { animation-iteration-count: 0 !important; -webkit-animation-iteration-count: 0 !important; } 
-
 /* Sidebar */
 
 .sidebar
@@ -357,7 +354,7 @@ h1, h2, h3, h4, h5, h6
 .debug-mode [data-macro][title] {
 	cursor: help;
 }
-.debug-mode [data-macro] { display:inline-block }
+.debug-mode [data-macro] { display:inline-block; }
 /* Colours for generic macros */
 .debug-mode [data-macro]:nth-of-type(4n+0) { background-color: hsla(80,20%,50%,0.15); }
 .debug-mode [data-macro]:nth-of-type(2n+1) { background-color: hsla(120,20%,50%,0.15); }
@@ -380,14 +377,22 @@ h1, h2, h3, h4, h5, h6
 .debug-mode [data-macro="remove"]  { background-color: hsla(20,75%,50%,0.2) !important; }
 
 /* Colours for other things */
-.debug-mode .hook  { background-color: hsla(220,100%,50%,0.1) !important;}
-.debug-mode .pseudo-hook  { background-color: hsla(40,100%,50%,0.1) !important;}
+.debug-mode .hook  { background-color: hsla(220,100%,50%,0.1) !important; }
+.debug-mode .pseudo-hook  { background-color: hsla(40,100%,50%,0.1) !important; }
+
+.debug-mode .hook::before, .debug-mode .pseudo-hook::before
+{
+	content: "["
+}
 
 /* Show IDs of hooks */
-.debug-mode .hook::after, .debug-mode .pseudo-hook::after
+.debug-mode .hook::after
 {
-	font-size: 0.8rem;
-	content: attr(data-hook)
+	content: "][" attr(data-hook) "]"
+}
+.debug-mode .pseudo-hook::after
+{
+	content: "]"
 }
 
 /* Show destinations of links */

@@ -10,7 +10,6 @@ define(['jquery', 'state', 'utils', 'engine', 'wordarray'], function ($, State, 
 	// The calling macro's top reference - set by every _eval() call.
 	var _top,
 	
-	
 	// Filter out NaN and Infinities, throwing an error instead.
 	// This is only applied to functions that can create non-numerics,
 	// namely log, sqrt, etc.
@@ -145,13 +144,17 @@ define(['jquery', 'state', 'utils', 'engine', 'wordarray'], function ($, State, 
 	},
 	
 	/*
-		Wrappers for Window (which could be redefined later).
+		Wrappers for Window (properties which are either on the location object, or could be redefined later).
 	*/
 	
-	alert = window.alert,
+	// Keep "undefined" from being the default text.
+	alert = function(text) { return this(text || ""); }.bind(window.alert),
+	prompt = function(text, value) { return this(text || "", value || "") || ""; }.bind(window.prompt), 
 	confirm = window.confirm,
-	prompt = window.prompt,
-	open = window.open,
+	openURL = window.open,
+	reload = window.location.reload,
+	gotoURL = window.location.assign,
+	pageURL = function() { return window.location.href; },
 	
 	/*
 		eval() the script in the context of this module.
@@ -167,6 +170,9 @@ define(['jquery', 'state', 'utils', 'engine', 'wordarray'], function ($, State, 
 	
 	/* Undefine previous helpers */
 	mathFilter = void 0;
+	
+	/* Help ensure eval will remain valid */
+	Object.defineProperty(window, "eval", { writable: 0, configurable: 0 });
 	
 	return Object.freeze({
 		

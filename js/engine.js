@@ -28,7 +28,8 @@ define(['jquery', 'marked', 'story', 'utils', 'state', 'macros'], function ($, M
 		Marked.setOptions({
 			tables: false,
 			breaks: true,
-			smartLists: true
+			smartLists: true,
+			smartypants: true
 		});
 		// Delete comments
 		// (Note: not strictly required (while commented-out macro tags are

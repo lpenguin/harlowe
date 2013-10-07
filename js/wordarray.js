@@ -161,7 +161,7 @@ define(['jquery', 'utils'], function ($, Utils)
 		refresh: function(top)
 		{
 			var other = this,
-				type, i, word;
+				type, i, word, invalid;
 				
 			// Turn each matched element in the jQuery into a separate word.
 			function forEachjQuery() {
@@ -173,7 +173,7 @@ define(['jquery', 'utils'], function ($, Utils)
 			for (i = 0; i < this.selectors.length; i+=1)
 			{
 				word = this.selectors[i];
-				type = Utils.type(word);
+				type = Utils.scopeType(word);
 
 				switch(type)
 				{
@@ -206,9 +206,14 @@ define(['jquery', 'utils'], function ($, Utils)
 					}
 					default:
 					{
-						throw new TypeError("unknown WordArray selector: "+word);
+						invalid += 1;
+						break;
 					}
 				}
+			}
+			if ((this.selectors.length - 1) === invalid)
+			{
+				throw new TypeError("invalid WordArray selector" + (this.selectors.length ? "s" : "") + ": "+this.selectors.join(" "));
 			}
 		},
 		

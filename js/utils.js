@@ -27,7 +27,7 @@ define(['jquery'], function($)
 				prop = keys[i];
 				
 				propDesc[prop] = {
-					enumerable: true,
+					configurable: false,
 					writable: false
 				};
 			}
@@ -60,7 +60,8 @@ define(['jquery'], function($)
 			Get the type of a scope string or Twine-specific object.
 			Returns a string.
 		*/
-		type: function(val) {
+		scopeType: function(val)
+		{
 			var r;
 			// Coerce empty string and null to undefined
 			if (!val)
@@ -80,22 +81,21 @@ define(['jquery'], function($)
 			}
 			else if (typeof val === "string")
 			{
-				//TODO: permit either quote form in jQuery selector
-				r = /\$\("([^"]*)"\)|"((?:[^"\\]|\\.)*)"|\?(\w*)/.exec(val);
+				r = /\$\("([^"]*)"\)|\$\('([^']*)'\)|"((?:[^"\\]|\\.)*)"|'((?:[^'\\]|\\.)*)'|\?(\w*)/.exec(val);
 				if (r && r.length)
 				{
-					// jQuery selector $("...")
-					if (r[1])
+					// jQuery selector $("..."), $('...')
+					if (r[1] || r[2])
 					{
 						return "jquery string";
 					}
-					// Word selector "..."
-					if (r[2])
+					// Word selector "...", '...'
+					if (r[3] || r[4])
 					{
 						return "wordarray string";
 					}
 					// Hook ?...
-					if (r[3])
+					if (r[5])
 					{
 						return "hook string";
 					}

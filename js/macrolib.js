@@ -206,7 +206,7 @@ define(['jquery', 'story', 'script', 'macros', 'engine', 'utils'], function($, S
 			var selector = 'style#macro';
 			if ($(selector).length == 0)
 			{
-				$(document.head).append($('<style id="macro"></style>'));
+				$(document.head).append($('<style id="macro">'));
 			}
 			$(selector).text(this.contents);
 			this.clear();
@@ -315,7 +315,8 @@ define(['jquery', 'story', 'script', 'macros', 'engine', 'utils'], function($, S
 	// using each delay in order.
 	Macros.add("time", {
 		fn: function() {
-			var delays = [].concat(Utils.cssTimeUnit(this.args)), timeMacroTimeout;
+			var delays = [].concat(Utils.cssTimeUnit(this.args)),
+				timeMacroTimeout;
 			
 			if (delays.length)
 			{
@@ -323,7 +324,7 @@ define(['jquery', 'story', 'script', 'macros', 'engine', 'utils'], function($, S
 				{
 					if ($(document.documentElement).find(this.el).length > 0)
 					{
-						this.render(this.HTMLcontents);
+						this.desc.delayedFn ? this.desc.delayedFn.call(this) : this.render(this.HTMLcontents);
 						// Re-run the timer with the next number.
 						if (delays.length)
 						{
@@ -335,7 +336,8 @@ define(['jquery', 'story', 'script', 'macros', 'engine', 'utils'], function($, S
 			}
 			else
 			{
-				this.error(time + " is not a valid time delay.");
+				this.error("'" + this.rawArgs + "' isn't " + (delays.length <= 1 ? "a " : "")
+					+ "valid time delay" + (delays.length > 1 ? "s" : ""));
 				return;
 			}
 		},
@@ -501,9 +503,10 @@ define(['jquery', 'story', 'script', 'macros', 'engine', 'utils'], function($, S
 		Combos
 	*/
 	
-	for (i = 0; i < interactionTypes.length; i++)
+	for (j = 0; j < revisionTypes.length; j++)
 	{
-		for (j = 0; j < revisionTypes.length; j++)
+		// Enchantment macros
+		for (i = 0; i < interactionTypes.length; i++)
 		{
 			Macros.add(interactionTypes[i] + "-" + revisionTypes[j], {
 				hooked: true,
@@ -516,6 +519,16 @@ define(['jquery', 'story', 'script', 'macros', 'engine', 'utils'], function($, S
 				}
 			});
 		}
+		// Timed macros
+		Macros.add("timed-" + revisionTypes[j], {
+			hooked: true,
+			fn: Macros.get("time").fn,
+			delayedFn: Macros.get(revisionTypes[j]).fn,
+			version: {
+				major: 0,
+				minor: 0,
+				revision: 0
+			}
+		});
 	};
-
 });
