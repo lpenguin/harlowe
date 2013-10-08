@@ -27,11 +27,18 @@ define(['jquery'], function($)
 				prop = keys[i];
 				
 				propDesc[prop] = {
-					configurable: false,
-					writable: false
+					configurable: 0,
+					writable: 0
 				};
 			}
 			return Object.defineProperties(obj, propDesc);
+		},
+		
+		lockProperty: function(obj, prop, value)
+		{
+			var propDesc = { configurable: 0, writable: 0 };
+			value && (propDesc.value = value);
+			Object.defineProperty(obj,prop, propDesc);
 		},
 
 		// Clone - faster than $.extend({}, ...)
@@ -155,6 +162,12 @@ define(['jquery'], function($)
 			return Utils.$(Utils.hookToSelector(c.slice(1)), top)
 		},
 		
+		// Convert "$('selector')" to a jQuery.
+		jQueryStringTojQuery: function(word)
+		{
+			return $(word.replace(/^\$\(["']|["']\)$/, ''));
+		},
+		
 		// Takes a string containing a character or HTML entity, and wraps it into a
 		// <span> tag (converting the entity if it is one).
 		charToSpan: function(c)
@@ -206,14 +219,24 @@ define(['jquery'], function($)
 			Element utilities
 		*/
 		
+		// Find the closest enclosing hook span for the passed jQuery, if any.
+		closestHookSpan: function(elems)
+		{
+			var ret = elems.closest(".hook, .pseudo-hook");
+			
+			return (ret.length ? ret : elems);
+		},
+		
 		/*
 			Replaces oldElem with newElem while transitioning between both.
-			oldElem: required - an elem currently in the DOM or DOM structure
-			newElem: an unattached elem to attach
+			oldElem: required - a jQuery currently in the DOM or DOM structure
+			newElem: an unattached jQuery to attach
 		*/
 		transitionReplace: function(oldElem, newElem, transIndex)
 		{
 			var delay, container1, container2a, container2b;
+			
+			oldElem = Utils.closestHookSpan(oldElem);
 			
 			// Create a transition-main-container
 			container1 = $('<span class="transition-main-container"/>');

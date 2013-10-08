@@ -37,7 +37,7 @@ define(['jquery', 'utils'], function ($, Utils)
 					// Waste not...
 					if (modifier === "replace" && e.text() === word)
 					{
-						return e;
+						return this;
 					}
 					// Insert a copy of the replacement word
 					w = word.clone();
@@ -51,13 +51,10 @@ define(['jquery', 'utils'], function ($, Utils)
 						(modifier === "append" ? e.last().after(w) : e.first().before(w));
 						Utils.transitionIn(w, "dissolve");
 					}
-
-					return w;
 				}
 				else
 				{
 					// TODO: Error message
-					return e;
 				}
 			});
 		}
@@ -147,6 +144,25 @@ define(['jquery', 'utils'], function ($, Utils)
 			return this.contents.length;
 		},
 		
+		first: function()
+		{
+			return this.reduce(this.contents[0]);
+		},
+		
+		last: function()
+		{
+			return this.reduce(this.contents[this.contents.length - 1]);
+		},
+		
+		// Return a copy of this WordArray, but with all but the given jQuery removed from contents.
+		// NOTE: the selectors are unaltered. When it gets refresh()ed, the full contents will be reinstated.
+		reduce: function(elem)
+		{
+			var ret = Utils.clone(this);
+			ret.contents = [elem];
+			return ret;
+		},
+		
 		// Get the text of the first element.
 		text: function()
 		{
@@ -164,9 +180,10 @@ define(['jquery', 'utils'], function ($, Utils)
 				type, i, word, invalid;
 				
 			// Turn each matched element in the jQuery into a separate word.
-			function forEachjQuery() {
+			function forEachjQuery()
+			{
 				other.contents.push($(this).find(Utils.charSpanSelector));
-			};
+			}
 			
 			this.contents = [];
 			
@@ -190,7 +207,7 @@ define(['jquery', 'utils'], function ($, Utils)
 					case "jquery string":
 					{
 						// Remove $(" and ") from the string. 
-						$(word.replace(/^\$\(["']|["']\)$/, '')).each(forEachjQuery);
+						Utils.jQueryStringTojQuery(word).each(forEachjQuery);
 						break;
 					}
 					case "wordarray string":
@@ -227,6 +244,7 @@ define(['jquery', 'utils'], function ($, Utils)
 		
 		// replace(str): Takes a string, charSpans it, then
 		// replaces this WordArray's words with it.
+		// Note: unlike jQuery, this is an in-place modification.
 		replace: function(word)
 		{
 			return modifyWordArray.call(this,word,"replace");
@@ -263,25 +281,6 @@ define(['jquery', 'utils'], function ($, Utils)
 			{
 				e.attr("style",style);
 			});
-			return this;
-		},
-		
-		// unhook(): removes whatever hook(s) the spans are contained in.
-		//
-		// The rule is as follows:
-		// For each char, find something .closest(".hook")
-		// and .unwrap() its children.
-		unhook: function()
-		{
-			var i, l;
-			for (i = 0; i < this.contents.length; i++)
-			{
-				l = this.contents[i].closest(".hook");
-				if (l.length)
-				{
-					l.children().unwrap();
-				}
-			};
 			return this;
 		}
 	};

@@ -131,21 +131,6 @@ define(['jquery', 'marked', 'story', 'utils', 'state', 'macros'], function ($, M
 		Passage rendering
 	*/
 	
-	// Render a macro naturally found in the passage. Sub-function of render().
-	function runMacro(macro, span, context, top)
-	{
-		if (macro.desc)
-		{
-			macro.el = span;
-			macro.context = context;
-			macro.top = top;
-			macro.init && (macro.init());
-			macro.desc.fn.apply(macro, macro.args);
-		}
-		else
-			span.addClass('error').html('No macro named ' + macro.name);
-	}
-	
 	// Makes a macro span. Sub-function of render().
 	function makeMacros(source)
 	{
@@ -260,10 +245,10 @@ define(['jquery', 'marked', 'story', 'utils', 'state', 'macros'], function ($, M
 		
 		// Render macro instances
 		// (Naming this closure for stacktrace visibility)
-		Utils.$("[data-macro]", html).each(function renderMacroInstances(){
-			this.removeAttribute("hidden");
+		Utils.$("[data-macro]", html).each(function renderMacroInstances() {
 			var count = this.getAttribute("data-count");
-			runMacro(macroInstances[count], $(this), context, html.add(top));
+			this.removeAttribute("hidden");
+			macroInstances[count].run($(this), context, html.add(top));
 		});
 		
 		// If one <p> tag encloses all the HTML, unwrap it.

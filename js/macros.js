@@ -45,7 +45,7 @@ define(['jquery', 'story', 'utils', 'wordarray'], function($, Story, Utils, Word
 	
 	*/
 	
-	var MacroInstance, Scope, Macros,
+	var MacroInstance, HookMacroInstance, Scope, Macros,
 		// Private collection of registered macros.
 		macroRegistry = {},
 		// Tracker of registered events and their class lists
@@ -109,6 +109,23 @@ define(['jquery', 'story', 'utils', 'wordarray'], function($, Story, Utils, Word
 				this.el.attr("title", this.call);
 			}
 		},
+		
+		// Render a macro naturally found in the passage.
+		run: function(span, context, top)
+		{
+			if (this.desc)
+			{
+				this.el = span;
+				this.context = context;
+				this.top = top;
+				this.init && (this.init());
+				this.desc.fn.apply(this, this.args);
+			}
+			else
+			{
+				span.addClass('error').html('No macro named ' + this.name);
+			}
+		},
 	
 		// Outputs an error to the macro's element.
 		error: function (text, noprefix)
@@ -151,32 +168,6 @@ define(['jquery', 'story', 'utils', 'wordarray'], function($, Story, Utils, Word
 				return a[0];
 			}
 		},
-
-		// Set the scope, if it is a hook macro.
-		setScope: function(selectors)
-		{
-			this.scope = Scope.create(selectors, this.top);
-		},
-		
-		// Enchant the scope, if it is a hook macro.
-		enchantScope: function()
-		{
-			if (this.scope && this.desc && this.desc.enchantment)
-			{
-				this.scope.enchant(this.desc.enchantment.classList, this.top);
-			}
-		},
-		
-		// Refresh the hook to reflect the current passage DOM state.
-		// Necessary if the pseudo-hook selector is a WordArray or jQuery selector,
-		// or if a hook was removed or inserted for some other reason.
-		refreshScope: function()
-		{
-			if (this.scope)
-			{
-				this.scope.refresh(this.top);
-			}
-		},
 		
 		// This implements a small handful of more authorly JS operators for <<set>> and <<print>>.
 		// <<set hp to 3>> --> <<set hp = 3>>
@@ -213,45 +204,140 @@ define(['jquery', 'story', 'utils', 'wordarray'], function($, Story, Utils, Word
 	};
 	
 	/*
+		HookMacroInstance
+		A sub-class that has scope methods.
+	*/
+	HookMacroInstance = $.extend(Object.create(MacroInstance), {
+		
+		// Set the scope
+		setScope: function(selectors)
+		{
+			this.scope = Scope.create(selectors, this.top);
+		},
+		
+		// Enchant the scope
+		enchantScope: function()
+		{
+			if (this.scope && this.desc && this.desc.enchantment)
+			{
+				this.scope.enchant(this.desc.enchantment.classList, this.top);
+			}
+		},
+		
+		// Refresh the hook to reflect the current passage DOM state.
+		// Necessary if the pseudo-hook selector is a WordArray or jQuery selector,
+		// or if a hook was removed or inserted for some other reason.
+		refreshScope: function()
+		{
+			if (this.scope)
+			{
+				this.scope.refresh(this.top);
+			}
+		},
+		
+		// Return a reduced scope 
+		reducedScope: function()
+		{
+			switch(this.subsetSelector())
+			{
+				case "first": return this.scope.first();
+				case "last": return this.scope.last();
+				case "this": return this.scope.reduce(this.trigger);
+				default: return this.scope;
+			}
+		},
+		
+		// Search rawArgs to find any subset keywords ("first", "last", "this")
+		subsetSelector: function()
+		{
+			var i, str, keyword, tmp,
+				args = this.rawArgs.split(unquotedWhitespace);
+			
+			// Look for subset keywords in the arguments
+			for(i = 0; i < args.length; i+=1)
+			{
+				str = args[i];
+				tmp = tmp || (typeof str === "string" && (str === "this" && "this")
+					|| (str === "first" && "first")
+					|| (str === "last" && "last"));
+				
+				// Have multiple keywords been given??
+				if (tmp && keyword)
+				{
+					// TODO: throw error?
+				}
+				keyword = tmp;
+			}
+			return keyword || "all";
+		},
+		
+		// The instance is being re-run due to being triggered by an enchantment.
+		// Trigger: the element which was the trigger.
+		runEnchantment: function(trigger)
+		{
+			this.trigger = trigger;
+			
+			this.desc.fn.apply(this, this.args);
+			
+			// Remove hook if it's a once-only enchantment.
+			if (this.desc.enchantment.once && this.subsetSelector() === "all")
+			{
+				this.scope.unhook();
+			}
+		}
+	});
+	
+	/*
 		Scope: an extension to WordArray that stores the containing 
 		hooks/pseudo-hooks of its contents.
 	*/
-	Scope = Object.create(WordArray, {
+	Scope = $.extend(Object.create(WordArray), {
 		
 		// enchant: select the matching hooks, or create pseudo-hooks around matching words,
 		// and apply a class to those hooks.
 		// Pseudo-hooks are cleaned up in engine.updateEnchantments()
-		enchant: {
-			value: function(className, top) {
-				var i,j,selector;
-				
-				this.hooks = $();
-				
-				// Do all the selector(s).
-				for(i = 0; i < this.selectors.length; i+=1)
+		enchant: function(className, top)
+		{
+			var i, j, selector, type;
+			
+			this.hooks = $();
+			
+			// Do all the selector(s).
+			for (i = 0; i < this.selectors.length; i+=1)
+			{
+				selector = this.selectors[i],
+				type = Utils.scopeType(selector);
+				// Targeting actual hooks?
+				if (type === "hook string")
 				{
-					selector = this.selectors[i];
-					// Targeting actual hooks?
-					if (Utils.scopeType(selector) === "hook string")
-					{
-						this.hooks = this.hooks.add(Utils.hookTojQuery(selector, top));
-					}
-					else if (selector)
-					// Pseudohooks (WordArray selector etc)
-					{
-						// Create pseudohooks around the Words
-						for(j = 0; j < this.contents.length; j++)
-						{
-							this.contents[j].wrapAll("<span class='pseudo-hook' "
-							// Debug mode: show the pseudo-hook selector as a tooltip
-								+ (Story.options.debug ? "title='Pseudo-hook: " + selector + "'" : "") + "/>");
-							this.hooks = this.hooks.add(this.contents[j].parent());
-						};
-					}
+					this.hooks = this.hooks.add(Utils.hookTojQuery(selector, top));
 				}
-				(this.hooks && this.hooks.addClass(className));
-				return this;
+				else if (type === "jquery string")
+				{
+					this.hooks = this.hooks.add(Utils.jQueryStringTojQuery(selector));
+				}
+				else if (type === "wordarray string")
+				// Pseudohooks
+				{
+					// Create pseudohooks around the Words
+					for(j = 0; j < this.contents.length; j++)
+					{
+						this.contents[j].wrapAll("<span class='pseudo-hook' "
+						// Debug mode: show the pseudo-hook selector as a tooltip
+							+ (Story.options.debug ? "title='Pseudo-hook: " + selector + "'" : "") + "/>");
+						this.hooks = this.hooks.add(this.contents[j].parent());
+					};
+				}
 			}
+			// this.hooks is used by enchantmentEventFn()
+			(this.hooks && this.hooks.addClass(className));
+			return this;
+		},
+		
+		// unhook: removes the hook spans around each hook.
+		unhook: function()
+		{
+			this.hooks && this.hooks.children().unwrap();
 		}
 	});
 	
@@ -270,6 +356,7 @@ define(['jquery', 'story', 'utils', 'wordarray'], function($, Story, Utils, Word
 			this.error('no hook ID given');
 			return;
 		}
+		
 		// For deferred macros, only run this once.
 		if (!this.ready)
 		{
@@ -305,6 +392,7 @@ define(['jquery', 'story', 'utils', 'wordarray'], function($, Story, Utils, Word
 			// Deferred macro was activated - refresh the scope.
 			this.refreshScope();
 		}
+		
 		// If an inner function was given, run that.
 		if (innerFn && typeof innerFn === "function")
 		{
@@ -340,20 +428,11 @@ define(['jquery', 'story', 'utils', 'wordarray'], function($, Story, Utils, Word
 		// Trigger the hook macros that refer to this enchantment.
 		Utils.$(".hook-macro", story).each(function() {
 			var instance = $(this).data("instance");
-			if (instance && instance.scope && instance.scope.hooks)
+			
+			if (instance.scope && instance.scope.hooks && instance.scope.hooks.is(elem))
 			{
-				if (instance.scope.hooks.is(elem))
-				{
-					instance.desc.fn.apply(instance, instance.args);
-					
-					// Remove hook if it's a once-only enchantment.
-					if (instance.desc.enchantment.once)
-					{
-						instance.scope.hooks.children().unwrap();
-					}
-				}
+				instance.runEnchantment(elem);
 			}
-			//TODO: error message
 		});
 	}
 	
@@ -365,6 +444,8 @@ define(['jquery', 'story', 'utils', 'wordarray'], function($, Story, Utils, Word
 		return true;
 	}
 	
+	// Register an enchantment without creating multiple event handlers for the same event.
+	// Sub-function of Macros.add()
 	function registerEnchantmentEvent(name, newList)
 	{
 		// Get the currently stored event class lists
@@ -420,16 +501,17 @@ define(['jquery', 'story', 'utils', 'wordarray'], function($, Story, Utils, Word
 					desc.fn = newHookMacroFn(!!desc.deferred, desc.fn);
 				}
 			}
+			desc = Object.freeze(desc);
 			// Add desc to the macroRegistry, plus aliases (if name is an array of aliases)
 			if (Array.isArray(name))
 			{
 				name.forEach(function(n) {
-					macroRegistry[n] = desc;
+					Utils.lockProperty(macroRegistry, n, desc);
 				});
 			}
 			else
 			{
-				macroRegistry[name + ''] = desc;
+				Utils.lockProperty(macroRegistry, name + "", desc);
 			}
 		},
 
@@ -528,7 +610,8 @@ define(['jquery', 'story', 'utils', 'wordarray'], function($, Story, Utils, Word
 							}
 						} while (foundEndMacro);
 					}
-					macro = MacroInstance.create(html, foundMacro[1], foundMacro.index, endIndex);
+					macro = (desc.hooked ? HookMacroInstance : MacroInstance)
+						.create(html, foundMacro[1], foundMacro.index, endIndex);
 					// Run the callback
 					callback(macro);
 					macroRE.lastIndex = endIndex;
@@ -561,6 +644,7 @@ define(['jquery', 'story', 'utils', 'wordarray'], function($, Story, Utils, Word
 	});
 	
 	Utils.lockProperties(MacroInstance);
+	Object.freeze(HookMacroInstance);
 	Object.freeze(Scope);
 	return Object.freeze(Macros);
 });

@@ -144,13 +144,13 @@ define(['jquery', 'state', 'utils', 'engine', 'wordarray'], function ($, State, 
 	},
 	
 	/*
-		Wrappers for Window (properties which are either on the location object, or could be redefined later).
+		Wrappers for Window
 	*/
 	
 	// Keep "undefined" from being the default text.
-	alert = function(text) { return this(text || ""); }.bind(window.alert),
-	prompt = function(text, value) { return this(text || "", value || "") || ""; }.bind(window.prompt), 
-	confirm = window.confirm,
+	alert = function(text) { return window.alert(text || ""); },
+	prompt = function(text, value) { return window.prompt(text || "", value || "") || ""; }, 
+	confirm = function(text) { return window.confirm(text || ""); },
 	openURL = window.open,
 	reload = window.location.reload,
 	gotoURL = window.location.assign,
@@ -170,9 +170,6 @@ define(['jquery', 'state', 'utils', 'engine', 'wordarray'], function ($, State, 
 	
 	/* Undefine previous helpers */
 	mathFilter = void 0;
-	
-	/* Help ensure eval will remain valid */
-	Object.defineProperty(window, "eval", { writable: 0, configurable: 0 });
 	
 	return Object.freeze({
 		

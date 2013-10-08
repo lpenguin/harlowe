@@ -440,7 +440,7 @@ define(['jquery', 'story', 'script', 'macros', 'engine', 'utils'], function($, S
 		hooked: true,
 		fn: function()
 		{
-			this.scope.replace(Engine.render(this.HTMLcontents));
+			this.reducedScope().replace(Engine.render(this.HTMLcontents));
 			Engine.updateEnchantments();
 		},
 		version: {
@@ -456,7 +456,7 @@ define(['jquery', 'story', 'script', 'macros', 'engine', 'utils'], function($, S
 		hooked: true, 
 		fn: function()
 		{
-			this.scope.append(Engine.render(this.HTMLcontents));
+			this.reducedScope().append(Engine.render(this.HTMLcontents));
 			Engine.updateEnchantments();
 		},
 		version: {
@@ -472,7 +472,7 @@ define(['jquery', 'story', 'script', 'macros', 'engine', 'utils'], function($, S
 		hooked: true, 
 		fn: function()
 		{
-			this.scope.prepend(Engine.render(this.HTMLcontents));
+			this.reducedScope().prepend(Engine.render(this.HTMLcontents));
 			Engine.updateEnchantments();
 		},
 		version: {
@@ -489,7 +489,7 @@ define(['jquery', 'story', 'script', 'macros', 'engine', 'utils'], function($, S
 		selfClosing: true,
 		fn: function()
 		{
-			this.scope.remove();
+			this.reducedScope().remove();
 			Engine.updateEnchantments();
 		},
 		version: {
