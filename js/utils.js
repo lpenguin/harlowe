@@ -62,6 +62,11 @@ define(['jquery'], function($)
 		{
 			return (typeof n === "string" || Array.isArray(n));
 		},
+		
+		splitUnquoted: function(str, split)
+		{
+			return str.split(new RegExp((split || " ")+Utils.regexStrings.unquoted));
+		},
 	
 		/*
 			Get the type of a scope string or Twine-specific object.

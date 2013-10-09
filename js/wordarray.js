@@ -8,7 +8,7 @@ define(['jquery', 'utils'], function ($, Utils)
 	*/
 	
 	// Modifier: "prepend", "append", "replace"
-	function modifyWordArray(word, modifier)
+	function modifyWordArray(word, modifier, t8n)
 	{
 		// Convert word to a jQuery of spanified HTML
 		if (word.wordarray && word.contents.length[0])
@@ -44,12 +44,12 @@ define(['jquery', 'utils'], function ($, Utils)
 					// Peform transition-in
 					if (modifier === "replace")
 					{
-						Utils.transitionReplace(e, w, "dissolve", modifier === "append");
+						Utils.transitionReplace(e, w, t8n || "dissolve", modifier === "append");
 					}
 					else
 					{
 						(modifier === "append" ? e.last().after(w) : e.first().before(w));
-						Utils.transitionIn(w, "dissolve");
+						Utils.transitionIn(w, t8n || "dissolve");
 					}
 				}
 				else
@@ -139,7 +139,14 @@ define(['jquery', 'utils'], function ($, Utils)
 		// Used for duck-typing
 		wordarray: true,
 		
+		// Number of selected words in the array
 		get length()
+		{
+			return this.contents.length;
+		},
+		
+		// An alias for use by macro invokers (e.g. <<print ?hook.count()>>)
+		get count()
 		{
 			return this.contents.length;
 		},
@@ -155,7 +162,6 @@ define(['jquery', 'utils'], function ($, Utils)
 		},
 		
 		// Return a copy of this WordArray, but with all but the given jQuery removed from contents.
-		// NOTE: the selectors are unaltered. When it gets refresh()ed, the full contents will be reinstated.
 		reduce: function(elem)
 		{
 			var ret = Utils.clone(this);
@@ -163,12 +169,12 @@ define(['jquery', 'utils'], function ($, Utils)
 			return ret;
 		},
 		
-		// Get the text of the first element.
-		text: function()
+		// Get the text of the first element, or the n-th if index is specified.
+		text: function(index)
 		{
 			if (this.contents.length)
 			{
-				return this.contents[0].text();
+				return this.contents[(+index) || 0].text();
 			}
 			return "";
 		},
@@ -245,21 +251,21 @@ define(['jquery', 'utils'], function ($, Utils)
 		// replace(str): Takes a string, charSpans it, then
 		// replaces this WordArray's words with it.
 		// Note: unlike jQuery, this is an in-place modification.
-		replace: function(word)
+		replace: function(word, t8n)
 		{
-			return modifyWordArray.call(this,word,"replace");
+			return modifyWordArray.call(this,word,"replace", t8n);
 		},
 		
 		// append(str): appends instead of replaces.
-		append: function(word)
+		append: function(word, t8n)
 		{
-			return modifyWordArray.call(this,word,"append");
+			return modifyWordArray.call(this,word,"append", t8n);
 		},
 		
 		// prepend(str): prepends instead of replaces.
-		prepend: function(word)
+		prepend: function(word, t8n)
 		{
-			return modifyWordArray.call(this,word,"prepend");
+			return modifyWordArray.call(this,word,"prepend", t8n);
 		},
 		
 		// remove(): removes the chars from the DOM.

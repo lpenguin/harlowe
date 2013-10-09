@@ -211,6 +211,7 @@ h1, h2, h3, h4, h5, h6
 {
 	animation: appear 0ms step-end;
 	-webkit-animation: appear 0ms step-end;
+	/*background-color: hsla(120,50%,50%,0.5);*/
 }
 
 /* Dissolve, fade-in */
@@ -230,12 +231,14 @@ h1, h2, h3, h4, h5, h6
 /* Shudder, shudder-in, shudder-out */
 [data-t8n^=shudder].transition-in, [data-t8n^=shudder-in].transition-in
 {
+	display: inline-block;
 	animation: shudder-in 0.8s;	
 	-webkit-animation: shudder-in 0.8s;	
 }
 
 [data-t8n^=shudder].transition-out, [data-t8n^=shudder-out].transition-out
 {
+	display: inline-block;
 	animation: shudder-out 0.8s;
 	-webkit-animation: shudder-out 0.8s;
 }
@@ -572,14 +575,14 @@ blink
 {
 	-webkit-animation: rumble linear 0.1s 0s infinite;
 	animation: rumble linear 0.1s 0s infinite;
-      display:inline-block;
+	display:inline-block;
 }
 
 .shudder 
 {
 	-webkit-animation: shudder linear 0.1s 0s infinite;
 	animation: shudder linear 0.1s 0s infinite;
-      display:inline-block;
+	display:inline-block;
 }
 
 /* Insertion effects */
