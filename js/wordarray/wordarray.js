@@ -2,10 +2,12 @@ define(['jquery', 'utils'], function ($, Utils)
 {
 	"use strict";
 	/* 
-	   WordArray object:
-	   Contains a sequential set of jQuery-wrapped charspans
-	   that correspond to a search term in the text.
+	   WordArray
+	   Object containing a sequential set of jQuery-wrapped charspans
+	   that correspond to a search term in the passage text.
 	*/
+	
+	var WordArray;
 	
 	// Modifier: "prepend", "append", "replace"
 	function modifyWordArray(word, modifier, t8n)
@@ -134,8 +136,8 @@ define(['jquery', 'utils'], function ($, Utils)
 		return (ret.length > 0 || fulltext ? ret : void 0);
 	};
 	
-	var WordArray = {
-	
+	WordArray = {
+		
 		// Used for duck-typing
 		wordarray: true,
 		

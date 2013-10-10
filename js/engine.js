@@ -2,9 +2,10 @@ define(['jquery', 'marked', 'story', 'utils', 'state', 'macros'], function ($, M
 {
 	"use strict";
 	/*
-		Engine: Module that renders passages to the DOM.
-		Exported singleton: Engine
+		Engine
+		Module that renders passages to the DOM.
 	*/
+	
 	var Engine;
 	
 	/*

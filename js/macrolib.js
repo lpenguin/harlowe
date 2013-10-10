@@ -1,9 +1,11 @@
-define(['jquery', 'story', 'script', 'macros', 'engine', 'utils'], function($, Story, Script, Macros, Engine, Utils)
+define(['jquery', 'story', 'script', 'macros', 'macroinstance', 'engine', 'utils'],
+function($, Story, Script, Macros, MacroInstance, Engine, Utils)
 {
 	"use strict";
 	/*
-		macrolib: Twine macro standard library.
-		Modifies the 'macros' module only. Exports nothing.
+		MacroLib
+		Twine macro standard library.
+		Modifies the Macros module only. Exports nothing.
 	*/
 	
 	/*
@@ -37,8 +39,6 @@ define(['jquery', 'story', 'script', 'macros', 'engine', 'utils'], function($, S
 			- null, whereupon this.el will be removed.
 	*/
 	
-
-	
 	var revisionTypes = ["replace", "append", "prepend"],
 		interactionTypes = ["click", "mouseover", "mouseout"],
 		i, j;
@@ -47,7 +47,7 @@ define(['jquery', 'story', 'script', 'macros', 'engine', 'utils'], function($, S
 		Extend MacroInstance
 	*/
 	
-	$.extend(Macros.MacroInstance, {	
+	$.extend(MacroInstance, {	
 		// Renders given HTML and inserts it into macro.el
 		render: function(html, prepend)
 		{

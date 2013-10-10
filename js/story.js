@@ -2,8 +2,8 @@ define(['jquery', 'utils'], function($, Utils)
 {
 	"use strict";
 	/*
-		story: Module governing data concerning the stort and its structure.
-		Exported singleton: story
+		Story
+		Module governing data concerning the stort and its structure.
 	*/
 	
 	/*

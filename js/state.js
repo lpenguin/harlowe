@@ -2,9 +2,10 @@ define(['story', 'utils'], function(Story, Utils)
 {
 	"use strict";
 	/*
-		state: manages the game state.
-		Object type: StateInstance
-		Exported singleton: state
+		State
+		Singleton controlling the running game state.
+		
+		Internal object type: StateInstance
 	*/
 	
 	// Prototype object for states remembered by the game.

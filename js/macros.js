@@ -1,9 +1,10 @@
-define(['jquery', 'story', 'utils', 'wordarray', 'macroinstance'], function($, Story, Utils, WordArray, MI)
+define(['jquery', 'story', 'utils', 'wordarray', 'macroinstance', 'hookmacroinstance', 'scope'],
+function($, Story, Utils, WordArray, MacroInstance, HookMacroInstance, Scope)
 {
 	"use strict";
 	/*
-		macros: Macro engine
-		Exported singleton: macros
+		Macros
+		Macro execution engine.
 	*/
 	
 	/*
@@ -45,9 +46,6 @@ define(['jquery', 'story', 'utils', 'wordarray', 'macroinstance'], function($, S
 	*/
 	
 	var Macros,
-		MacroInstance = MI.MacroInstance,
-		HookMacroInstance = MI.HookMacroInstance,
-		Scope = MI.Scope,
 		// Private collection of registered macros.
 		macroRegistry = {},
 		// Tracker of registered events and their class lists
@@ -335,9 +333,7 @@ define(['jquery', 'story', 'utils', 'wordarray', 'macroinstance'], function($, S
 		},
 		
 		// Stub function to be replaced by macrolib's render()
-		render: $.noop,
-		
-		MacroInstance: MacroInstance
+		render: $.noop
 	};
 	
 	// This replaces unknown or incorrect macros.

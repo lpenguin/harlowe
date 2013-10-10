@@ -1,11 +1,17 @@
-/*
-	Internal dependency chain:
-
-	engine <- macros <---\
-						state <- story <- utils
-	macrolib <- script <-/
-*/
-define(['jquery', 'story', 'engine', 'macrolib'], function ($, Story, Engine)
+require.config({ 
+	paths: {
+		// External libraries
+		jquery: 'lib/jquery',
+		marked: 'lib/marked',
+		// WordArray and subclasses
+		wordarray: 'wordarray/wordarray',
+		scope: 'wordarray/scope',
+		// MacroInstance and subclasses
+		macroinstance: 'macroinstance/macroinstance',
+		hookmacroinstance: 'macroinstance/hookmacroinstance',
+	}
+});
+require(['jquery', 'story', 'engine', 'macrolib'], function ($, Story, Engine)
 {
 	"use strict";
 	

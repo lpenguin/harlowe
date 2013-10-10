@@ -2,11 +2,11 @@ define(['jquery', 'story', 'utils', 'wordarray'], function($, Story, Utils, Word
 {
 	"use strict";
 	/*
-		MacroInstance: object representing a single macro instantiation.
-		Exported singleton: MacroInstance
+		MacroInstance
+		Object representing a single macro instantiation.
 	*/
 	
-	var MacroInstance, HookMacroInstance, Scope,
+	var MacroInstance,
 		// Precompile a regex
 		macroTagFront = new RegExp("^<<\\s*" + Utils.regexStrings.macroName + "\\s*");
 		
@@ -160,171 +160,8 @@ define(['jquery', 'story', 'utils', 'wordarray'], function($, Story, Utils, Word
 			return expr;
 		}
 	};
-	
-	/*
-		HookMacroInstance
-		A sub-class that has scope methods.
-	*/
-	HookMacroInstance = $.extend(Object.create(MacroInstance), {
-		
-		// Set the scope
-		setScope: function(selectors)
-		{
-			this.scope = Scope.create(selectors, this.top);
-		},
-		
-		// Enchant the scope
-		enchantScope: function()
-		{
-			if (this.scope && this.desc && this.desc.enchantment)
-			{
-				this.scope.enchant(this.desc.enchantment.classList, this.top);
-			}
-		},
-		
-		// Refresh the hook to reflect the current passage DOM state.
-		// Necessary if the pseudo-hook selector is a WordArray or jQuery selector,
-		// or if a hook was removed or inserted for some other reason.
-		refreshScope: function()
-		{
-			if (this.scope)
-			{
-				this.scope.refresh(this.top);
-			}
-		},
-		
-		// Return a reduced scope 
-		reducedScope: function()
-		{
-			switch(this.subsetSelector())
-			{
-				case "first": return this.scope.first();
-				case "last": return this.scope.last();
-				case "this": return this.scope.reduce(this.trigger);
-				default: return this.scope;
-			}
-		},
-		
-		// Search args to find any subset keywords ("first", "last", "this")
-		subsetSelector: function()
-		{
-			var str, keyword, tmp;
-			
-			// Look for subset keywords in the arguments
-			this.args.forEach(function(str)
-			{
-				tmp = tmp || (typeof str === "string" && (str === "this" && "this")
-					|| (str === "first" && "first")
-					|| (str === "last" && "last"));
-				
-				// Have multiple keywords been given??
-				if (tmp && keyword)
-				{
-					// TODO: throw error?
-				}
-				keyword = tmp;
-			});
-			return keyword || "all";
-		},
-		
-		// Search args to find any terms beginning with "t8n-"
-		transitionSelector: function()
-		{
-			var str, keyword, tmp;
-			
-			// Look for subset keywords in the arguments
-			this.args.forEach(function(str)
-			{
-				tmp = tmp || (typeof str === "string" && (str.indexOf("t8n-") === 0)
-					&& str.slice(4));
-				
-				// Have multiple keywords been given??
-				if (tmp && keyword)
-				{
-					// TODO: throw error?
-				}
-				keyword = tmp;
-			});
-			return keyword || "dissolve";
-		},
-		
-		// The instance is being re-run due to being triggered by an enchantment.
-		// Trigger: the element which was the trigger.
-		runEnchantment: function(trigger)
-		{
-			this.trigger = trigger;
-			
-			this.desc.fn.apply(this, this.applyArgs);
-			
-			// Remove hook if it's a once-only enchantment.
-			if (this.desc.enchantment.once && this.subsetSelector() === "all")
-			{
-				this.scope.unhook();
-			}
-		}
-	});
-	
-	/*
-		Scope: an extension to WordArray that stores the containing 
-		hooks/pseudo-hooks of its contents.
-	*/
-	Scope = $.extend(Object.create(WordArray), {
-		
-		// enchant: select the matching hooks, or create pseudo-hooks around matching words,
-		// and apply a class to those hooks.
-		// Pseudo-hooks are cleaned up in engine.updateEnchantments()
-		enchant: function(className, top)
-		{
-			var i, j, selector, type;
-			
-			this.hooks = $();
-			
-			// Do all the selector(s).
-			for (i = 0; i < this.selectors.length; i+=1)
-			{
-				selector = this.selectors[i],
-				type = Utils.scopeType(selector);
-				// Targeting actual hooks?
-				if (type === "hook string")
-				{
-					this.hooks = this.hooks.add(Utils.hookTojQuery(selector, top));
-				}
-				else if (type === "jquery string")
-				{
-					this.hooks = this.hooks.add(Utils.jQueryStringTojQuery(selector));
-				}
-				else if (type === "wordarray string")
-				// Pseudohooks
-				{
-					// Create pseudohooks around the Words
-					for(j = 0; j < this.contents.length; j++)
-					{
-						this.contents[j].wrapAll("<span class='pseudo-hook' "
-						// Debug mode: show the pseudo-hook selector as a tooltip
-							+ (Story.options.debug ? "title='Pseudo-hook: " + selector + "'" : "") + "/>");
-						this.hooks = this.hooks.add(this.contents[j].parent());
-					};
-				}
-			}
-			// this.hooks is used by enchantmentEventFn()
-			(this.hooks && this.hooks.addClass(className));
-			return this;
-		},
-		
-		// unhook: removes the hook spans around each hook.
-		unhook: function()
-		{
-			this.hooks && this.hooks.children().unwrap();
-		}
-	});
-	
+
 	Utils.lockProperties(MacroInstance);
-	Object.freeze(HookMacroInstance);
-	Object.freeze(Scope);
 	
-	return {
-		MacroInstance: MacroInstance,
-		HookMacroInstance: HookMacroInstance,
-		Scope: Scope
-	};
+	return MacroInstance;
 });

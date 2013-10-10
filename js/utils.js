@@ -2,8 +2,8 @@ define(['jquery'], function($)
 {
 	"use strict";
 	/*
-		utils: Utility functions, constants, etc.
-		Exported singleton: utils
+		Utils
+		Utility functions, constants, etc.
 	*/
 	
 	// Used by HTMLEntityConvert

@@ -1,8 +1,10 @@
-define(['jquery', 'state', 'utils', 'engine', 'wordarray'], function ($, State, Utils, Engine, WordArray)
+define(['jquery', 'state', 'utils', 'engine', 'wordarray'],
+function ($, State, Utils, Engine, WordArray)
 {
 	"use strict";
 	/*
-		script: Scope in which script-based macros are evaluated.
+		Script
+		Special eval() scope in which script-based macros are evaluated.
 		
 		Everything in here is exposed to authors via <<script>>, etc.
 	*/
