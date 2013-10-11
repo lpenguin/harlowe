@@ -50,43 +50,49 @@ function($, Story, Utils, WordArray, MacroInstance, Scope)
 		// Search args to find any subset keywords ("first", "last", "this")
 		subsetSelector: function()
 		{
-			var str, keyword, tmp;
+			var i, str, keyword, tmp;
 			
 			// Look for subset keywords in the arguments
-			this.args.forEach(function(str)
-			{
-				tmp = tmp || (typeof str === "string" && (str === "this" && "this")
+			for (i = 0; i < this.args.length; i+=1)
+			{	
+				str = this.args[i];
+				tmp = (typeof str === "string" && (str === "this" && "this")
 					|| (str === "first" && "first")
 					|| (str === "last" && "last"));
 				
 				// Have multiple keywords been given??
 				if (tmp && keyword)
 				{
-					// TODO: throw error?
+					// Print a warning
+					this.warning("multiple subset keywords (" + tmp + ", " + keyword + ") are here.");
+					break;
 				}
 				keyword = tmp;
-			});
+			};
 			return keyword || "all";
 		},
 		
 		// Search args to find any terms beginning with "t8n-"
 		transitionSelector: function()
 		{
-			var str, keyword, tmp;
+			var i, str, keyword, tmp;
 			
 			// Look for subset keywords in the arguments
-			this.args.forEach(function(str)
+			for (i = 0; i < this.args.length; i+=1)
 			{
-				tmp = tmp || (typeof str === "string" && (str.indexOf("t8n-") === 0)
+				str = this.args[i];
+				tmp = (typeof str === "string" && (str.indexOf("t8n-") === 0)
 					&& str.slice(4));
 				
 				// Have multiple keywords been given??
 				if (tmp && keyword)
 				{
-					// TODO: throw error?
+					// Print a warning
+					this.warning("multiple t8n keywords (t8n-" + tmp + ", t8n-" + keyword + ") are here.");
+					break;
 				}
 				keyword = tmp;
-			});
+			};
 			return keyword || "dissolve";
 		},
 		

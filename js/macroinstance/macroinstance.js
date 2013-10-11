@@ -86,9 +86,16 @@ define(['jquery', 'story', 'utils', 'wordarray'], function($, Story, Utils, Word
 		},
 	
 		// Outputs an error to the macro's element.
-		error: function (text, noprefix)
+		error: function (text, noprefix, type)
 		{
-			this.el.addClass("error").attr("title", this.call).removeAttr("data-macro").text( (noprefix ? "" : "<<" + this.name + ">> error: ") + text);
+			type || (type = "error");
+			this.el.addClass(type).attr("title", this.call).removeAttr("data-macro").text( (noprefix ? "" : "<<" + this.name + ">> " + type + ": ") + text);
+		},
+		
+		// Outputs a warning to the macro's element.
+		warning: function (text, noprefix)
+		{
+			this.error(text, noprefix, "warning");
 		},
 		
 		// Remove the macro's element, unless in debug mode

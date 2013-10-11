@@ -317,8 +317,7 @@ define(['jquery', 'marked', 'story', 'utils', 'state', 'macros'], function ($, M
 	*/
 	function showPassage(id, stretch, el)
 	{
-		var newPassage,
-			transIndex,
+		var newPassage, t8n,
 			el = el || Utils.storyElement,
 			passageData = Story.passageWithID(id),
 			oldPassages = Utils.$(el.children(".passage"));
@@ -331,12 +330,12 @@ define(['jquery', 'marked', 'story', 'utils', 'state', 'macros'], function ($, M
 		$(window).scrollTop(oldPassages.offset());
 		
 		// Load the default transition if none specified
-		transIndex = passageData.attr("data-t8n") || "dissolve";
+		t8n = passageData.attr("data-t8n") || "dissolve";
 		
 		// Transition out
-		if (!stretch && transIndex)
+		if (!stretch && t8n)
 		{
-			Utils.transitionOut(oldPassages, transIndex);
+			Utils.transitionOut(oldPassages, t8n);
 		}
 		
 		// Create new passage
@@ -345,9 +344,9 @@ define(['jquery', 'marked', 'story', 'utils', 'state', 'macros'], function ($, M
 		updateEnchantments(el);
 		
 		// Transition in
-		if (transIndex)
+		if (t8n)
 		{
-			Utils.transitionIn(newPassage, transIndex);
+			Utils.transitionIn(newPassage, t8n);
 		}
 		
 		// TODO: HTML5 history

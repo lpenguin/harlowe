@@ -97,12 +97,34 @@
 
 /*** Main formatting ***/
 
-body
+html
 {
 	font: 100% Georgia, serif;
-	background: #fcfcfc;
+	background-color: #fcfcfc;
 	color: #000;
 	margin: 0;
+}
+
+html.sans-serif
+{
+	font: 100% Verdana, serif;
+}
+
+html.serif
+{
+	font: 100% Georgia, serif;
+}
+
+html.white
+{
+	background-color: #fcfcfc;
+	color: #000;
+}
+
+html.black
+{
+	background-color: #000;
+	color: #fcfcfc;
 }
 
 h1
@@ -343,13 +365,18 @@ h1, h2, h3, h4, h5, h6
 	cursor: not-allowed;
 }
 
-.error
+.error, .warning
 {
-	background-color: #E9D;
+	background-color: hsla(312, 72%, 55%, 0.4);
 	border-radius: 0.2em;
 	padding: 0.2em;
 	font-size: 1rem;
 	cursor: help;
+}
+
+.warning
+{
+	background-color: hsla(30, 72%, 55%, 0.4);
 }
 
 /*** Debug mode ***/
