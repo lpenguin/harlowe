@@ -1,0 +1,29 @@
+{
+	"name": "twine-harlowe",
+	"version": "1.0.0",
+	"author": "Leon Arnott",
+	"description": "the default runtime for Twine 2 stories",
+	"license": "GPL v3",
+	"repository":
+	{
+		"type": "hg",
+		"url": "https://bitbucket.org/klembot/harlowe"
+	},
+	"contributors":
+	[
+		{
+			"name": "Chris Klimas",
+			"email": "klimas@gmail.com"
+		}
+	],
+	"dependencies":
+	{
+		"grunt": "*",
+		"grunt-contrib-clean": "*",
+		"grunt-contrib-jshint": "*",
+		"grunt-contrib-watch": "*",
+		"grunt-contrib-yuidoc": "*",
+		"grunt-text-replace": "*",
+		"grunt-usemin": "*"
+	}
+}
