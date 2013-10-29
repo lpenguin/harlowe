@@ -62,6 +62,13 @@ function updateBlockGrammars() {
     ('tag', '<' + block._tag)
     ('def', block.def)
     ();
+    
+  // Permit custom block syntax to be included in the paragraph regex
+  for (i in block) {
+    if (block[i].inParagraph) {
+      block.paragraph = replace(block.paragraph)(i, block[i])();
+    }
+  }
   
   // Normal Block Grammar
   block.normal = merge({}, block);
@@ -105,19 +112,21 @@ function Lexer(options) {
 
 Lexer.rules = block;
 
-Lexer.setRule = function(name, regex, end) {
+Lexer.setRule = function(name, regex, inParagraph) {
   var obj = {};
+  if (inParagraph) {
+    regex.inParagraph = true;
+  }
   if (regex) {
-    if (block[name] || end) {
-	  block[name] = regex;
+    if (block[name]) {
+      block[name] = regex;
     }
     else {
       // Add new rule to the start
-	  // of the for..in chain
+      // of the for..in chain
       obj[name] = regex;
-	  block = merge(obj, block);
-	}
-	updateBlockGrammars();
+      block = merge(obj, block);
+    }
   }
 };
 
@@ -525,15 +534,14 @@ InlineLexer.setRule = function(name, regex, end) {
   var obj = {};
   if (regex) {
     if (inline[name] || end) {
-	  inline[name] = regex;
+      inline[name] = regex;
     }
-	else {
+    else {
       // Add new rule to the start
-	  // of the for..in chain
+      // of the for..in chain
       obj[name] = regex;
-	  inline = merge(obj, inline);
-	}
-	updateInlineGrammars();
+      inline = merge(obj, inline);
+    }
   }
 };
 
@@ -657,7 +665,7 @@ InlineLexer.prototype.output = function(src) {
     done = false;
     for(rs in this.rules) {
       r = this.rules[rs];
-	 
+     
       if (this.rules.hasOwnProperty(rs) && r.constructor === RegExp && this.funcs[rs]) {
         if (cap = r.exec(src)) {
           src = src.slice(cap[0].length);
@@ -748,7 +756,7 @@ function Parser(options) {
 
 Parser.setFunc = function(name, func) {
   if (func) {
-  	Parser.prototype.funcs[name] = func;
+      Parser.prototype.funcs[name] = func;
   }
 }
 
@@ -815,11 +823,11 @@ Parser.prototype.funcs = {
     space: function() {
       return '';
     },
-	
+    
     hr: function() {
       return '<hr>\n';
     },
-	
+    
     heading: function() {
       return '<h'
         + this.token.depth
@@ -829,7 +837,7 @@ Parser.prototype.funcs = {
         + this.token.depth
         + '>\n';
     },
-	
+    
     code: function() {
       if (this.options.highlight) {
         var code = this.options.highlight(this.token.text, this.token.lang);
@@ -854,7 +862,7 @@ Parser.prototype.funcs = {
         + this.token.text
         + '</code></pre>\n';
     },
-	
+    
     table: function() {
       var body = ''
         , heading
@@ -892,7 +900,7 @@ Parser.prototype.funcs = {
         + body
         + '</table>\n';
     },
-	
+    
     blockquote_start: function() {
       var body = '';
 
@@ -904,7 +912,7 @@ Parser.prototype.funcs = {
         + body
         + '</blockquote>\n';
     },
-	
+    
     list_start: function() {
       var type = this.token.ordered ? 'ol' : 'ul'
         , body = '';
@@ -921,7 +929,7 @@ Parser.prototype.funcs = {
         + type
         + '>\n';
     },
-	
+    
     list_item_start: function() {
       var body = '';
 
@@ -935,7 +943,7 @@ Parser.prototype.funcs = {
         + body
         + '</li>\n';
     },
-	
+    
     loose_item_start: function() {
       var body = '';
 
@@ -947,19 +955,19 @@ Parser.prototype.funcs = {
         + body
         + '</li>\n';
     },
-	
+    
     html: function() {
       return !this.token.pre && !this.options.pedantic
         ? this.inline.output(this.token.text)
         : this.token.text;
     },
-	
+    
     paragraph: function() {
       return '<p>'
         + this.inline.output(this.token.text)
         + '</p>\n';
     },
-	
+    
     text: function() {
       return '<p>'
         + this.parseText()
@@ -1139,6 +1147,11 @@ marked.inlineLexer = InlineLexer.output;
 marked.parse = marked;
 
 marked.escape = escape;
+
+marked.update = function() {
+  updateBlockGrammars();
+  updateInlineGrammars();
+}
 
 if (typeof exports === 'object') {
   module.exports = marked;

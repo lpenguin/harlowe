@@ -14,13 +14,13 @@ module.exports = function (grunt) {
 		requirejs: {
 			compile: {
 				options: {
-					baseUrl: './js',
-					mainConfigFile: './js/harlowe.js',
-					include: ['./lib/almond', 'harlowe'],
+					baseUrl: 'js',
+					mainConfigFile: 'js/harlowe.js',
+					include: ['lib/almond', 'harlowe'],
 					insertRequire: ['harlowe'],
 					name: 'harlowe',
 					wrap: true,
-					out: "./build/harlowe-min.js"
+					out: "build/harlowe-min.js"
 				}
 			}
 		},
@@ -36,7 +36,7 @@ module.exports = function (grunt) {
 			all: {
 				requires: ['requirejs', 'cssmin'],
 				src: ['template.html'],
-				dest: 'index.html',
+				dest: 'dist/index.html',
 				replacements: [{
 					from: '{{STORY_NAME}}',
 					to: 'My Unreasonably Long Story Title That Is Used For Testing'

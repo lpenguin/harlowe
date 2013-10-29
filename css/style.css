@@ -4,11 +4,6 @@
   display: none;
 }
 
-@import "animations.css";
-@import "transitions.css";
-@import "debugmode.css";
-@import "textstyles.css";
-
 /*** Main formatting ***/
 
 html
@@ -141,6 +136,23 @@ h1, h2, h3, h4, h5, h6
 }
 
 /*** Inner passage formatting ***/
+
+.align-center
+{
+	text-align:center;
+	max-width:50%;
+	margin:auto;
+}
+
+.align-right
+{
+	text-align:right;
+}
+
+.align-justify
+{
+	text-align:justify;
+}
 
 .enchantment-hover
 {

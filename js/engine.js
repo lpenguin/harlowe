@@ -295,8 +295,8 @@ define(['jquery', 'marked', 'story', 'utils', 'state', 'macros'], function ($, M
 			try {
 				source = Marked(source);
 			} catch (e) {
-				temp = Engine.renderMacros(Utils.regexStrings.macroOpen + "rendering-error " +
-					e.text + Utils.regexStrings.macroClose);
+				temp = Engine.renderMacros("<p>"+Utils.regexStrings.macroOpen + "rendering-error " +
+					e + Utils.regexStrings.macroClose+"</p>");
 				source = temp[0];
 				macroInstances = temp[1];
 			}
@@ -304,7 +304,7 @@ define(['jquery', 'marked', 'story', 'utils', 'state', 'macros'], function ($, M
 			// Render the HTML
 
 			html = $(source);
-
+			
 			// Render macro instances
 			// (Naming this closure for stacktrace visibility)
 
@@ -337,13 +337,17 @@ define(['jquery', 'marked', 'story', 'utils', 'state', 'macros'], function ($, M
 				. Marked.options.tables
 				. Marked.options.breaks
 				. Marked.options.smartLists
+				. Marked.options.smartypants
+				
 				- All line breaks are hard
 				- Consecutive line breaks are kept
 				- No Setext-style headers (horizontal rule conflict)
+				
 				+ Line breaks preceded with '\' are deleted
 				+ HTML comments are deleted
 				+ Text chars are wrapped in char <span>s
 				+ Code spans are currently exempted.
+				+ New text-align syntax
 			*/
 
 			Marked.setOptions({
@@ -371,7 +375,52 @@ define(['jquery', 'marked', 'story', 'utils', 'state', 'macros'], function ($, M
 			// Multiple line breaks + no Sextext-style headers, part 2
 
 			Marked.Lexer.setRule("paragraph",
-				/^((?:[^\n]+\n?(?!hr|heading|lheading|blockquote|tag|def))+)\n?/);
+				/^((?:[^\n]+\n?(?!hr|align|heading|blockquote|tag|def))+)\n?/);
+			
+			/*
+				Text align syntax
+				
+				==>  : right-aligned
+				=><= : centered
+				<==> : justified
+				<==  : left-aligned (undoes the above)
+			*/
+			
+			Marked.Lexer.setRule("align", /^ *(==&gt;|&lt;==|=&gt;&lt;=|&lt;==&gt;)(?:\n|$)/, true);
+			Marked.Lexer.setFunc("align", function(cap) {
+				var align;
+				
+				switch(cap[1]) {
+					case "==&gt;": align = "right"; break;
+					case "&lt;==": align = "left"; break;
+					case "=&gt;&lt;=": align = "center"; break;
+					case "&lt;==&gt;": align = "justify"; break;
+				}
+				this.tokens.push({
+					type: 'align',
+					align: align
+				});
+			});
+			
+			Marked.Parser.setFunc("align", function() {
+				var body = '', align = this.token.align;
+				
+				if (this.token.align === "left") {
+					return '';
+				}
+				while (this.peek() && this.peek().type !== 'align') {
+					this.next();
+					body += this.token.type === 'text'
+						? this.parseText()
+						: this.tok();
+				}
+				
+				return '<div class="align align-' + align + '">'
+					+ body + '</div>\n';
+			});
+			
+			// Multiple line breaks
+			
 			Marked.Lexer.setRule("br", /^\n/);
 
 			Marked.Lexer.setFunc("br", function (cap) {
@@ -449,6 +498,9 @@ define(['jquery', 'marked', 'story', 'utils', 'state', 'macros'], function ($, M
 
 			Marked.InlineLexer.setFunc("nolink", reflink);
 			Marked.InlineLexer.setFunc("reflink", reflink);
+			
+			// Finished
+			Marked.update();
 		}
 	};
 

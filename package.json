@@ -28,8 +28,8 @@
 		"grunt-contrib-watch": "*",
 		"grunt-contrib-yuidoc": "*",
 		"grunt-contrib-requirejs": "*",
+		"grunt-contrib-cssmin": "*",
 		"grunt-text-replace": "*",
-		"grunt-usemin": "*",
 		"requirejs": "*"
 	}
 }
