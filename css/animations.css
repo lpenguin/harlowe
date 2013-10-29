@@ -1,0 +1,90 @@
+/*** Animations ***/
+
+@keyframes appear
+{
+	0% { opacity: 0 }
+	to { opacity: 1 }
+}
+@-webkit-keyframes appear
+{
+	0% { opacity: 0 }
+	to { opacity: 1 }
+}
+
+@keyframes disappear
+{
+	0% { opacity: 1 }
+	to { opacity: 0 }
+}
+@-webkit-keyframes disappear
+{
+	0% { opacity: 1 }
+	to { opacity: 0 }
+}
+
+@keyframes fade-in-out
+{
+	0%,to { opacity: 0 }
+	50% { opacity: 1 }
+}
+@-webkit-keyframes fade-in-out
+{
+	0%,to { opacity: 0 }
+	50% { opacity: 1 }
+}
+
+@keyframes rumble 
+{
+	0%,to {}
+	50% { transform: translateY(-0.2em) }
+}
+@-webkit-keyframes rumble 
+{
+	0%,to {}
+	50% { -webkit-transform: translateY(-0.2em) }
+}
+
+@keyframes shudder 
+{
+	0%,to {}
+	50% { transform: translateX(0.2em) }
+}
+@-webkit-keyframes shudder 
+{
+	0%,to {}
+	50% { -webkit-transform: translateX(0.2em) }
+}
+
+@keyframes box-flash
+{
+	0% { background-color: white; color: white; }
+	to {}
+}
+
+@-webkit-keyframes box-flash {
+	0% { background-color: white; color: white; }
+	to  {}
+}
+
+/* Slightly eased-out shudders */
+
+@keyframes shudder-in
+{
+   0%, to { transform: translateX(0em); }
+   5%, 25%, 45% { transform: translateX(-1em); }
+   15%, 35%, 55% { transform: translateX(1em); }
+   65% { transform: translateX(-0.6em); }
+   75% { transform: translateX(0.6em); }
+   85% { transform: translateX(-0.2em); }
+   95% { transform: translateX(0.2em); }
+}
+@-webkit-keyframes shudder-in
+{
+   0%, to { -webkit-transform: translateX(0em); }
+   5%, 25%, 45% { -webkit-transform: translateX(-1em); }
+   15%, 35%, 55% { -webkit-transform: translateX(1em); }
+   65% { -webkit-transform: translateX(-0.6em); }
+   75% { -webkit-transform: translateX(0.6em); }
+   85% { -webkit-transform: translateX(-0.2em); }
+   95% { -webkit-transform: translateX(0.2em); }
+}
