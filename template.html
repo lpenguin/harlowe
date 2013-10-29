@@ -3,28 +3,20 @@
 <head>
 <meta charset="utf-8">
 <title>{{STORY_NAME}}</title>
-<link rel="stylesheet" href="css/style.css">
+<style title="Twine CSS">
+{{CSS}}
+</style>
 </head>
 
 <body>
 
-<article id="story"></article>
+<article title="" id="story"></article>
 
 {{STORY_DATA}}
 
-<script src="js/lib/jquery.js"></script>
-<script src="js/lib/marked.js"></script>
-
-<script src="js/utils.js"></script>
-<script src="js/script.js"></script>
-<script src="js/state.js"></script>
-<script src="js/story.js"></script>
-<script src="js/macroinstance/macroinstance.js"></script>
-<script src="js/macroinstance/hookmacroinstance.js"></script>
-<script src="js/macros.js"></script>
-<script src="js/macrolib.js"></script>
-<script src="js/engine.js"></script>
-<script src="js/harlowe.js"></script>
+<script title="Twine engine code" data-main="harlowe">
+{{HARLOWE}}
+</script>
 
 </body>
 </html>

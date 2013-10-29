@@ -7,10 +7,14 @@
 	"repository":
 	{
 		"type": "hg",
-		"url": "https://bitbucket.org/klembot/harlowe"
+		"url": "https://bitbucket.org/_L_/harlowe"
 	},
 	"contributors":
 	[
+		{
+			"name": "Leon Arnott",
+			"email": null
+		},
 		{
 			"name": "Chris Klimas",
 			"email": "klimas@gmail.com"
@@ -23,7 +27,9 @@
 		"grunt-contrib-jshint": "*",
 		"grunt-contrib-watch": "*",
 		"grunt-contrib-yuidoc": "*",
+		"grunt-contrib-requirejs": "*",
 		"grunt-text-replace": "*",
-		"grunt-usemin": "*"
+		"grunt-usemin": "*",
+		"requirejs": "*"
 	}
 }
