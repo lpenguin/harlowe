@@ -1,0 +1,89 @@
+<div data-role="twinestory" data-name="Tester" data-startnode="start" data-creator="Leon" data-creator-version="2.0a" data-options="debug">
+<div data-id="start" data-name="start" data-type="text/markdown" data-twine-position="0,0">
+* [[Hook test->One Two]]
+* [[Pseudo-hook test->Pseudo]]
+* [[Time macro test->Clocks]]
+
+</div>
+
+<div data-id="onetwo" data-name="One Two" data-t8n="dissolve" data-type="text/markdown" data-twine-position="0,0">
+#One macro, two different hooks.
+One [bunny][1], two [bunnies][1].
+&lt;&lt;click ?1&gt;&gt;\
+&lt;&lt;replace ?1&gt;&gt;sheep&lt;&lt;/replace&gt;&gt;
+&lt;&lt;/click&gt;&gt;
+
+#A hook that enchants a second hook.
+One [bunny][2], two [bunnies][3].
+&lt;&lt;click ?2&gt;&gt;\
+&lt;&lt;replace ?2&gt;&gt;sheep&lt;&lt;/replace&gt;&gt;
+&lt;&lt;click-replace ?3&gt;&gt;sheep&lt;&lt;/click-replace&gt;&gt;
+&lt;&lt;/click&gt;&gt;
+
+#A hook that replaces a different hook.
+One [bunny][4], two [bunnies][5].
+&lt;&lt;click ?4&gt;&gt;\
+&lt;&lt;replace ?5&gt;&gt;sheep&lt;&lt;/replace&gt;&gt;
+&lt;&lt;/click&gt;&gt;
+&lt;&lt;click ?5&gt;&gt;\
+&lt;&lt;replace ?4&gt;&gt;sheep&lt;&lt;/replace&gt;&gt;
+&lt;&lt;/click&gt;&gt;
+</div>
+<div data-id="clocks" data-name="Clocks" data-t8n="dissolve" data-type="text/markdown" data-twine-position="0,0">
+A [red clock][1]. A [blue clock][2].
+A [green clock][3].
+A [white clock][4].
+&lt;&lt;time 1s&gt;&gt;
+&lt;&lt;replace ?1&gt;&gt;blue clock&lt;&lt;/replace&gt;&gt;
+&lt;&lt;/time&gt;&gt;&lt;&lt;time 1500ms&gt;&gt;
+&lt;&lt;append ?2&gt;&gt; and a red clock&lt;&lt;/append&gt;&gt;
+&lt;&lt;/time&gt;&gt;
+
+&lt;&lt;time 0.8s 0.7s "Invalid parameter that should be ignored" 0.6s 0.5s 0.4s&gt;&gt;
+&lt;&lt;append ?3&gt;&gt;...tick&lt;&lt;/append&gt;&gt;
+&lt;&lt;/time&gt;&gt;
+
+&lt;&lt;timed-append ?4 1s&gt;&gt; with red hands&lt;&lt;/timed-append&gt;&gt;
+</div>
+<div data-id="Pseudo" data-name="Pseudo" data-type="text/markdown" data-t8n="instant" data-twine-position="0,0">
+A definite article indicates that its noun is a particular one (or ones) identifiable to the listener. It may be something that the speaker has already mentioned, or it may be something uniquely specified. The definite article in English, for both singular and plural nouns, is the.
+
+*The children know the fastest way home.*
+The sentence above refers to specific children and a specific way home; it contrasts with the much more general observation that:
+*Children know the fastest way home.*
+The latter sentence refers to children in general, perhaps all or most of them.
+
+Likewise,
+*Give me the book.*
+refers to a specific book whose identity is known or obvious to the listener; as such it has a markedly different meaning from
+*Give me a book.*
+which does not specify what book is to be given.
+
+The definite article can also be used in English to indicate a specific class among other classes:
+The cabbage white butterfly lays its eggs on members of the Brassica genus.
+
+[Bold "the" and make "Children" and "children" shudder][1]
+[Add "?" to each "in"][2]
+[Remove lowercase vowels][3]
+
+&lt;&lt;nobr&gt;&gt;
+&lt;&lt;click ?1&gt;&gt;
+&lt;&lt;replace "the"&gt;&gt;**the**&lt;&lt;/replace&gt;&gt;
+&lt;&lt;replace "Children"&gt;&gt;<span class="shudder">Children</span>&lt;&lt;/replace&gt;&gt;
+&lt;&lt;replace "children"&gt;&gt;<span class="shudder">children</span>&lt;&lt;/replace&gt;&gt;
+&lt;&lt;/click&gt;&gt;
+
+&lt;&lt;click ?2&gt;&gt;
+&lt;&lt;append "in"&gt;&gt;?&lt;&lt;/append&gt;&gt;
+&lt;&lt;/click&gt;&gt;
+
+&lt;&lt;click ?3&gt;&gt;
+&lt;&lt;remove "a"&gt;&gt;
+&lt;&lt;remove "e"&gt;&gt;
+&lt;&lt;remove "i"&gt;&gt;
+&lt;&lt;remove "o"&gt;&gt;
+&lt;&lt;remove "u"&gt;&gt;
+&lt;&lt;/click&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;
+</div>
+</div>

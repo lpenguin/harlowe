@@ -78,17 +78,6 @@ define(['story', 'utils'], function(Story, Utils) {
 			return future.length > 0;
 		},
 
-		// Query a variable's present value, but filtering
-		// out undefined.
-		// Used by <<if>> and other conditional macros.
-		getVar: function (name) {
-			if (present.variables[name] !== void 0) {
-				return present.variables[name];
-			}
-			// No value found...
-			return Utils.defaultValue;
-		},
-
 		// Did we ever visit this passage, given its name?
 		// Return the number of times visited.
 		passageNameVisited: function (name) {

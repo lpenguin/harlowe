@@ -80,8 +80,7 @@ define(['jquery', 'story', 'script', 'macros', 'macroinstance', 'engine', 'utils
 			value = this.convertOperators(this.rawArgs.slice(this.rawArgs.indexOf(rawTo) + rawTo.length));
 
 			try {
-				// Before setting it to the value, default it to 0.
-				Script.eval(variable + "=" + variable + "||" + Utils.defaultValue + ";" + variable + to + value, this.top);
+				Script.eval(variable + to + value, this.top);
 				this.clear();
 			} catch (e) {
 				this.error(e.message);
@@ -150,7 +149,7 @@ define(['jquery', 'story', 'script', 'macros', 'macroinstance', 'engine', 'utils
 		}
 	});
 
-	// <<script>> ... <</script>>
+	// <<script>> ... << /script>>
 	// contents: JS to execute.
 	Macros.add("script", {
 		fn: function () {

@@ -11,7 +11,7 @@ require.config({
 		hookmacroinstance: './macroinstance/hookmacroinstance',
 	}
 });
-require(['jquery', 'story', 'engine', 'macrolib'], function ($, Story, Engine) {
+require(['jquery', 'story', 'engine', 'utils', 'macrolib'], function ($, Story, Engine, Utils) {
 	"use strict";
 	
 	$(document).ready(function() {
@@ -28,7 +28,7 @@ require(['jquery', 'story', 'engine', 'macrolib'], function ($, Story, Engine) {
 		options = header.attr('data-options');
 
 		if (options) {
-			options.replace(/\b(\w+)\b/, function(a, b) {
+			options.replace(new RegExp("\\b(" + Utils.regexStrings.anyLetter + "+)\\b"), function(a, b) {
 				Story.options[b] = true;
 			});
 		}

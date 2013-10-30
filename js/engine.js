@@ -15,7 +15,6 @@ define(['jquery', 'twinemarked', 'story', 'utils', 'state', 'macros'], function 
 
 			@method goBack
 		*/
-
 		goBack: function () {
 			//TODO: get the stretch value from state
 
@@ -29,7 +28,6 @@ define(['jquery', 'twinemarked', 'story', 'utils', 'state', 'macros'], function 
 
 			@method goForward
 		*/
-
 		goForward: function () {
 			//TODO: get the stretch value from state
 
@@ -45,7 +43,6 @@ define(['jquery', 'twinemarked', 'story', 'utils', 'state', 'macros'], function 
 			@param {String} id			id of the passage to display
 			@param {Boolean} stretch	display as stretchtext?
 		*/
-
 		goToPassage: function (id, stretch) {
 			// Update the state.
 			State.play(id);
@@ -57,7 +54,6 @@ define(['jquery', 'twinemarked', 'story', 'utils', 'state', 'macros'], function 
 
 			@method init
 		*/
-
 		init: function () {
 			var html = $(document.documentElement);
 			
@@ -81,6 +77,12 @@ define(['jquery', 'twinemarked', 'story', 'utils', 'state', 'macros'], function 
 			}
 		},
 
+		/**
+			Updates all enchantment DOM structures in the passage.
+
+			@method updateEnchantments
+			@param {jQuery} top The passage element in which this is being performed.
+		*/
 		updateEnchantments: function (top) {
 			// Remove the old enchantments
 			Utils.$(".pseudo-hook", top).children().unwrap();
@@ -101,8 +103,8 @@ define(['jquery', 'twinemarked', 'story', 'utils', 'state', 'macros'], function 
 			Creates the HTML structure of the passage <section>. Sub-function of showPassage().
 
 			@method createPassageElement
+			@private
 		*/
-
 		createPassageElement: function () {
 			var container, back, fwd, sidebar;
 			container = $(
@@ -132,11 +134,11 @@ define(['jquery', 'twinemarked', 'story', 'utils', 'state', 'macros'], function 
 			Shows a passage by transitioning the old passage(s) out, and then adds the new passages.
 
 			@method showPassage
+			@private
 			@param {String} id
 			@param {Boolean} stretch	is stretchtext
 			@param {jQuery} el			DOM parent element to append to
 		*/
-
 		showPassage: function (id, stretch, el) {
 			var newPassage,
 				t8n,
@@ -175,10 +177,10 @@ define(['jquery', 'twinemarked', 'story', 'utils', 'state', 'macros'], function 
 			Renders macros to HTML. Called by render().
 
 			@method renderMacros
+			@private
 			@param {String} source		source text to render
 			@return {Array} Two entries: the HTML to render, and all Macros 
 		**/
-
 		renderMacros: function (source) {
 			var macroInstances = [],
 				macroCount = 0,
@@ -208,11 +210,11 @@ define(['jquery', 'twinemarked', 'story', 'utils', 'state', 'macros'], function 
 			Makes a passage link. Sub-function of render().
 
 			@method renderLink
+			@private
 			@param {String} text		text to display as link
 			@param {Passage} passage	passage to link to
 			@return HTML source
 		*/
-
 		renderLink: function (text, passage) {
 			var visited;
 
@@ -237,7 +239,6 @@ define(['jquery', 'twinemarked', 'story', 'utils', 'state', 'macros'], function 
 			@param {top: the topmost DOM level into which this will be rendered (usually ".passage"). Undefined if this is the top.
 			@return HTML source
 		*/
-
 		render: function (source, context, top) {
 			var html, temp, macroInstances;
 			

@@ -104,8 +104,8 @@ function($, Story, Utils, WordArray, MacroInstance, HookMacroInstance, Scope) {
 		if (innerFn && typeof innerFn === "function") {
 			innerFn.apply(this, this.applyArgs);
 		} else
-		// Default behaviour: simply parse the inner contents.
 		{
+			// Default behaviour: simply parse the inner contents.
 			if (!rerender || rerender === "replace") {
 				Utils.transitionOut(this.el.children(), "fade-in")
 			}

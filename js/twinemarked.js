@@ -1,4 +1,5 @@
 define(['marked', 'story', 'utils'], function(Marked, Story, Utils) {
+	"use strict";
 	/*
 		TwineMarked
 		This module simply patches Marked with Twine's syntax changes.
