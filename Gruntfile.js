@@ -1,4 +1,12 @@
 module.exports = function (grunt) {
+	"use strict";
+	var jsFileList = ['js/*.js', 'js/wordarray/*.js', 'js/macroinstance/*.js'],
+		jsFullFileList = ['js/lib/*.js'].concat(jsFileList),
+		cssFileList = ['./css/*.css'],
+		testFile = 'tests/hooktest.html',
+		testTitle = 'My Unreasonably Long Story Title That Is Used For Testing',
+		sourceHTML = ['template.html'];
+	
 	grunt.initConfig({
 		pkg: grunt.file.readJSON('package.json'),
 
@@ -8,7 +16,7 @@ module.exports = function (grunt) {
 		},
 
 		jshint: {
-			all: ['js/*.js', 'js/wordarray/*.js', 'js/macroinstance/*.js']
+			all: jsFileList,
 		},
 
 		requirejs: {
@@ -27,31 +35,56 @@ module.exports = function (grunt) {
 
 		cssmin: {
 			minify: {
-				src: ['./css/*.css'],
-				dest: "./build/harlowe-min.css"
+				src: cssFileList,
+				dest: "/build/harlowe-min.css"
 			}
 		},
 
 		replace: {
-			all: {
-				requires: ['requirejs', 'cssmin'],
-				src: ['template.html'],
+			test: {
+				src: sourceHTML,
 				dest: 'dist/index.html',
 				replacements: [{
 					from: '{{STORY_NAME}}',
-					to: 'My Unreasonably Long Story Title That Is Used For Testing'
+					to: testTitle,
 				}, {
 					from: '{{STORY_DATA}}',
-					to: grunt.file.read('tests/hooktest.html')
+					to: grunt.file.read(testFile)
 				}, {
 					from: '{{CSS}}',
 					to: function () {
-						return grunt.file.read("./build/harlowe-min.css")
+						var ret = '';
+						
+						grunt.file.expand(cssFileList).forEach(function(a) {
+							ret += '<link rel="stylesheet" href=".' + a + '"/>';
+						});
+						
+						return ret;
+					}
+				}, {
+					from: '{{HARLOWE}}',
+					to: '<script data-main="../js/harlowe.js" src="../node_modules/requirejs/require.js"></script>'
+				}]
+			},
+			build: {
+				requires: ['requirejs', 'cssmin'],
+				src: sourceHTML,
+				dest: 'dist/index.html',
+				replacements: [{
+					from: '{{STORY_NAME}}',
+					to: testTitle
+				}, {
+					from: '{{STORY_DATA}}',
+					to: grunt.file.read(testFile)
+				}, {
+					from: '{{CSS}}',
+					to: function () {
+						return '<style title="Twine CSS">' + grunt.file.read("./build/harlowe-min.css") + '</style>'
 					}
 				}, {
 					from: '{{HARLOWE}}',
 					to: function () {
-						return grunt.file.read("./build/harlowe-min.js")
+						return '<script title="Twine engine code" data-main="harlowe">' + grunt.file.read("./build/harlowe-min.js") + '</script>'
 					}
 				}]
 			}
@@ -85,7 +118,8 @@ module.exports = function (grunt) {
 	grunt.loadNpmTasks('grunt-contrib-cssmin');
 	grunt.loadNpmTasks('grunt-text-replace');
 
-	grunt.registerTask('default', [ /*'jshint',*/ /*'yuidoc',*/ 'requirejs', 'cssmin', 'replace']);
+	grunt.registerTask('default', [ 'replace:test']);
+	grunt.registerTask('build', [ /*'jshint',*/ /*'yuidoc',*/ 'requirejs', 'cssmin', 'replace:build']);
 	grunt.registerTask('release', [
 		'clean', 'yuidoc'
 	]);

@@ -64,7 +64,7 @@ function updateBlockGrammars() {
     ();
     
   // Permit custom block syntax to be included in the paragraph regex
-  for (i in block) {
+  for (var i in block) {
     if (block[i].inParagraph) {
       block.paragraph = replace(block.paragraph)(i, block[i])();
     }
