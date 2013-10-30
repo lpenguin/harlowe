@@ -5,18 +5,18 @@ define(['jquery'], function($) {
 	var p = $('<p>');
 
 	/**
-	 A static class with helper methods used throughout Harlowe.
+		A static class with helper methods used throughout Harlowe.
 
-	 @class Utils
+		@class Utils
 	*/
 
 	var Utils = {
 		/**
-		 Make object properties immutable and impossible to delete,
-		 without preventing the object from being extended.
+			Make object properties immutable and impossible to delete,
+			without preventing the object from being extended.
 
-		 @method lockProperties
-		 @param {Object} obj		object to lock
+			@method lockProperties
+			@param {Object} obj		object to lock
 		*/
 
 		lockProperties: function (obj) {
@@ -37,12 +37,12 @@ define(['jquery'], function($) {
 		},
 
 		/**
-		 Locks a particular property of an object.
-		 Make object properties immutable and impossible to delete,
-		 without preventing the object from being extended.
+			Locks a particular property of an object.
+			Make object properties immutable and impossible to delete,
+			without preventing the object from being extended.
 
-		 @method lockProperties
-		 @param {Object} obj		object to lock
+			@method lockProperties
+			@param {Object} obj		object to lock
 		*/
 
 		lockProperty: function (obj, prop, value) {
@@ -55,11 +55,11 @@ define(['jquery'], function($) {
 		},
 
 		/**
-		 A faster way to extend an object than $.extend({}, ...).
+			A faster way to extend an object than $.extend({}, ...).
 
-		 @method clone
-		 @param {Object} obj	object to extend
-		 @return {Object} cloned object
+			@method clone
+			@param {Object} obj	object to extend
+			@return {Object} cloned object
 		*/
 
 		clone: function (obj) {
@@ -81,11 +81,11 @@ define(['jquery'], function($) {
 		*/
 
 		/**
-		 Returns whether a value is either a string or array.
+			Returns whether a value is either a string or array.
 
-		 @method stringOrArray
-		 @param n	value to test
-		 @return {Boolean}
+			@method stringOrArray
+			@param n	value to test
+			@return {Boolean}
 		*/
 
 		stringOrArray: function (n) {
@@ -93,12 +93,12 @@ define(['jquery'], function($) {
 		},
 
 		/**
-		 Splits a string, but only at unquoted separator characters.
+			Splits a string, but only at unquoted separator characters.
 
-		 @method splitUnquoted
-		 @param {String} str		string to split
-		 @param {String} split		separator, default single space
-		 @return {Array} array of strings
+			@method splitUnquoted
+			@param {String} str		string to split
+			@param {String} split		separator, default single space
+			@return {Array} array of strings
 		*/
 
 		splitUnquoted: function (str, split) {
@@ -106,11 +106,11 @@ define(['jquery'], function($) {
 		},
 
 		/**
-		 Returns the type of a scope string or Twine-specific object.
+			Returns the type of a scope string or Twine-specific object.
 
-		 @method scopeType
-		 @param val		value to examine
-		 @return {String} description
+			@method scopeType
+			@param val		value to examine
+			@return {String} description
 		*/
 
 		scopeType: function (val) {
@@ -149,12 +149,11 @@ define(['jquery'], function($) {
 		},
 
 		/**
-		  For speed, convert common entities quickly, and convert others with jQuery.
-		  This only works on a single entity, not a string full of them.
+			For speed, convert common entities quickly, and convert others with jQuery.
 
-		  @method convertEntity
-		  @param {String} text		text to convert
-		  return {String} converted entity
+			@method convertEntity
+			@param {String} text		text to convert
+			return {String} converted entity
 		*/
 
 		convertEntity: function (text) {
@@ -182,12 +181,12 @@ define(['jquery'], function($) {
 		},
 
 		/**
-		 Convert a CSS class selector chain (".magic.link") into
-		 a HTML classlist attribute (e.g. class="magic link").
+			Convert a CSS class selector chain (".magic.link") into
+			a HTML classlist attribute (e.g. class="magic link").
 
-		 @method classListToSelector
-		 @param {String} list	chain to convert
-		 @return {String} classlist string
+			@method classListToSelector
+			@param {String} list	chain to convert
+			@return {String} classlist string
 		*/
 
 		classListToSelector: function (c) {
@@ -197,12 +196,12 @@ define(['jquery'], function($) {
 		},
 
 		/**
-		 Convert a HTML classlist attribute (e.g. class="magic link") into 
-		 a CSS class selector chain (".magic.link").
+			Convert a HTML classlist attribute (e.g. class="magic link") into 
+			a CSS class selector chain (".magic.link").
 
-		 @method classListToSelector
-		 @param {String} list	chain to convert
-		 @return {String} classlist string
+			@method classListToSelector
+			@param {String} list	chain to convert
+			@return {String} classlist string
 		*/
 
 		selectorToClassList: function (c) {
@@ -212,11 +211,11 @@ define(['jquery'], function($) {
 		},
 
 		/**
-		 Convert a hook index string to a CSS selector.
+			Convert a hook index string to a CSS selector.
 
-		 @method hookToSelector
-		 @param {String} list	chain to convert
-		 @return {String} classlist string
+			@method hookToSelector
+			@param {String} list	chain to convert
+			@return {String} classlist string
 		*/
 
 		hookToSelector: function (c) {
@@ -225,12 +224,12 @@ define(['jquery'], function($) {
 		},
 
 		/**
-		 Convert a hook index string into a jQuery object.
+			Convert a hook index string into a jQuery object.
 
-		 @method hookTojQuery
-		 @param {String} c		hook index
-		 @param {Element} top	
-		 @return jQuery object
+			@method hookTojQuery
+			@param {String} c		hook index
+			@param {Element} top	
+			@return jQuery object
 		*/
 
 		hookTojQuery: function (c, top) {
@@ -238,11 +237,11 @@ define(['jquery'], function($) {
 		},
 
 		/**
-		 Convert "$('selector')" to a jQuery object.
+			Convert "$('selector')" to a jQuery object.
 
-		 @method jQueryStringTojQuery
-		 @param {String} jQuery invocation
-		 @return jQuery object
+			@method jQueryStringTojQuery
+			@param {String} jQuery invocation
+			@return jQuery object
 		*/
 
 		jQueryStringTojQuery: function (word) {
@@ -250,11 +249,11 @@ define(['jquery'], function($) {
 		},
 
 		/**
-		 Takes a string containing a character or HTML entity, and wraps it into a
-		 <span> tag, converting the entity if it is one.
+			Takes a string containing a character or HTML entity, and wraps it into a
+			<span> tag, converting the entity if it is one.
 
-		 @method charToSpan
-		 @param {String} chararctr
+			@method charToSpan
+			@param {String} chararctr
 		*/
 
 		charToSpan: function (c) {
@@ -267,12 +266,12 @@ define(['jquery'], function($) {
 		},
 
 		/**
-		 Converts an entire string into individual characters, each enclosed
-		 by a <span>.
+			Converts an entire string into individual characters, each enclosed
+			by a <span>.
 
-		 @method charToSpan
-		 @param {String} source string
-		 @return {String} HTML source
+			@method charToSpan
+			@param {String} source string
+			@return {String} HTML source
 		*/
 
 		charSpanify: function (text) {
@@ -280,16 +279,16 @@ define(['jquery'], function($) {
 		},
 
 		/**
-		 Takes a string argument, expressed as a CSS time,
-		 and returns the time in milliseconds that it equals.
-		 Or, when given an array, takes all valid strings contained
-		 and returns an array of times in milliseconds.
+			Takes a string argument, expressed as a CSS time,
+			and returns the time in milliseconds that it equals.
+			Or, when given an array, takes all valid strings contained
+			and returns an array of times in milliseconds.
 
-		 If the string can't be parsed as a time, then this returns 0.
+			If the string can't be parsed as a time, then this returns 0.
 
-		 @method cssTimeUnit
-		 @param s		either string, or array of strings
-		 @return either single string or array of times	
+			@method cssTimeUnit
+			@param s		either string, or array of strings
+			@return either single string or array of times	
 		*/
 
 		cssTimeUnit: function (s) {
@@ -320,10 +319,10 @@ define(['jquery'], function($) {
 		*/
 
 		/**
-		 Find the closest enclosing hook span(s) for the passed jQuery object, if any.
+			Find the closest enclosing hook span(s) for the passed jQuery object, if any.
 
-		 @method closestHookSpan
-		 @param elems 	jQuery object
+			@method closestHookSpan
+			@param elems 	jQuery object
 		*/
 
 		closestHookSpan: function (elems) {
@@ -332,12 +331,12 @@ define(['jquery'], function($) {
 		},
 
 		/**
-		 Replaces oldElem with newElem while transitioning between both.
+			Replaces oldElem with newElem while transitioning between both.
 
-		 @method transitionReplace
-		 @param oldElem 		a jQuery object currently in the DOM or DOM structure
-		 @param newElem			an unattached jQuery object to attach
-		 @param transIndex		transition to use
+			@method transitionReplace
+			@param oldElem 		a jQuery object currently in the DOM or DOM structure
+			@param newElem			an unattached jQuery object to attach
+			@param transIndex		transition to use
 		*/
 
 		transitionReplace: function (oldElem, newElem, transIndex) {
@@ -381,12 +380,12 @@ define(['jquery'], function($) {
 		},
 
 		/**
-		 Transition an element out.
+			Transition an element out.
 		
-		 @method transitionOut
-		 @param {jQuery} el			element to transition out
-		 @param (String) transIndex		transition to use			
-		 @param {Function} onComplete	function to call when completed
+			@method transitionOut
+			@param {jQuery} el			element to transition out
+			@param (String) transIndex		transition to use			
+			@param {Function} onComplete	function to call when completed
 		*/
 
 		transitionOut: function (el, transIndex, onComplete) {
@@ -407,12 +406,12 @@ define(['jquery'], function($) {
 		},
 
 		/**
-		 Transition an element in.
+			Transition an element in.
 		
-		 @method transitionIn
-		 @param {jQuery} el			element to transition out
-		 @param (String) transIndex		transition to use		
-		 @param {Function} onComplete	function to call when completed
+			@method transitionIn
+			@param {jQuery} el			element to transition out
+			@param (String) transIndex		transition to use		
+			@param {Function} onComplete	function to call when completed
 		*/
 
 		transitionIn: function (el, transIndex, onComplete) {
@@ -428,11 +427,11 @@ define(['jquery'], function($) {
 		},
 
 		/**
-		 Runs a jQuery selector, but ignores elements that are transitioning out.
+			Runs a jQuery selector, but ignores elements that are transitioning out.
 
-		 @method $
-		 @param str			jQuery selector
-		 @param context		jQuery context
+			@method $
+			@param str			jQuery selector
+			@param context		jQuery context
 		*/
 
 		$: function (str, context) {
@@ -455,13 +454,13 @@ define(['jquery'], function($) {
 		// Components for regexps
 
 		regexStrings: {
-			macroOpen: "&lt;&lt;",
+			macroOpen: "<<",
 			macroName: "[\\w\\-\\?\\!]+",
-			notMacroClose: "(?:[^&]|&(?!gt;&gt;))*",
-			macroClose: "&gt;&gt;",
+			notMacroClose: "(?:[^>]|>(?!>))*",
+			macroClose: ">>",
 
 			// Regex suffix that, when applied, causes the preceding match to only apply when not inside a quoted
-			// string. This accounts for both quote styles and escaped quote characters.
+			// string. This accounts for both single- and double-quotes, and escaped quote characters.
 
 			unquoted: "(?=(?:[^\"'\\\\]*(?:\\\\.|'(?:[^'\\\\]*\\\\.)*[^'\\\\]*'|\"(?:[^\"\\\\]*\\\\.)*[^\"\\\\]*\"))*[^'\"]*$)",
 		}

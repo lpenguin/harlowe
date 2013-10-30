@@ -21,7 +21,7 @@ define(['jquery', 'story', 'utils', 'wordarray'], function($, Story, Utils, Word
 	*/
 	MacroInstance = {
 
-		create: function (html, name, startIndex, endIndex) {
+		create: function (code, name, startIndex, endIndex) {
 			var selfClosing,
 				macro = Object.create(this);
 
@@ -30,15 +30,10 @@ define(['jquery', 'story', 'utils', 'wordarray'], function($, Story, Utils, Word
 			macro.startIndex = startIndex;
 			macro.endIndex = endIndex;
 			selfClosing = macro.desc && macro.desc.selfClosing;
-
-			// HTMLcall / call is the entire macro invocation, rawArgs is all arguments,
-			// HTMLcontents / contents is what's between a <<macro>> and <</macro>> call
-			macro.HTMLcall = html.slice(startIndex, endIndex);
-			macro.HTMLcontents = (selfClosing ? "" : macro.HTMLcall.replace(/^(?:[^&]|&(?!gt;&gt;))*&gt;&gt;/i, '').replace(
-				/&lt;&lt;(?:[^&]|&(?!gt;&gt;))*&gt;&gt;$/i, ''));
-
-			// unescape HTML entities ("&amp;" etc.)
-			macro.call = $('<p>').html(macro.HTMLcall).text();
+			
+			// call is the entire macro invocation, rawArgs is all arguments,
+			// contents is what's between a <<macro>> and <</macro>> call
+			macro.call = code.slice(startIndex, endIndex);
 			macro.contents = (selfClosing ? "" : macro.call.replace(/^(?:[^>]|>(?!>))*>>/i, '').replace(/<<(?:[^>]|>(?!>))*>>$/i,
 				''));
 			macro.rawArgs = macro.call.replace(macroTagFront, '').replace(/\s*>>[^]*/, '').trim();

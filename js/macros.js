@@ -109,7 +109,7 @@ function($, Story, Utils, WordArray, MacroInstance, HookMacroInstance, Scope) {
 			if (!rerender || rerender === "replace") {
 				Utils.transitionOut(this.el.children(), "fade-in")
 			}
-			this.render(this.HTMLcontents, rerender === "prepend");
+			this.render(this.contents, rerender === "prepend");
 		}
 	}
 

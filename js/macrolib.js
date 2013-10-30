@@ -11,12 +11,10 @@ define(['jquery', 'story', 'script', 'macros', 'macroinstance', 'engine', 'utils
 		
 		function arguments: each of this.args.
 		this.call: string containing the unescaped macro call, eg. "<<set escaped = false>>"
-		this.HTMLcall: string containing this.call as escaped (as in "&amp;") HTML.
 		this.name: string name of the macro, eg. "set".
 		this.rawArgs: string containing the unescaped untrimmed arguments, eg. " escaped = false".
 		this.args: array of unescaped argument strings in the call. eg. [ "escaped", "=", "false" ]
-		this.contents: string containing the HTML between the open tag and close tag, if any.
-		this.HTMLcontents: string containing this.contents as escaped HTML.
+		this.contents: string containing the code between the open tag and close tag, if any.
 		
 		this.el: jQuery-wrapped destination <span>.
 		this.context: the macro instance which caused this macro to be rendered, or null if it's the top passage.
@@ -46,9 +44,9 @@ define(['jquery', 'story', 'script', 'macros', 'macroinstance', 'engine', 'utils
 	*/
 
 	$.extend(MacroInstance, {
-		// Renders given HTML and inserts it into macro.el
-		render: function (html, prepend) {
-			var result = Engine.render(html + '', this, this.top);
+		// Renders given code and inserts it into macro.el
+		render: function (code, prepend) {
+			var result = Engine.render(code + '', this, this.top);
 			if (result) {
 				prepend ? this.el.prepend(result) : this.el.append(result);
 				Utils.transitionIn(result, "fade-in");
@@ -143,7 +141,7 @@ define(['jquery', 'story', 'script', 'macros', 'macroinstance', 'engine', 'utils
 		fn: function () {
 			// To prevent keywords from being created by concatenating lines,
 			// replace the line breaks with a zero-width space.
-			this.render(this.HTMLcontents.replace(/\n/g, "&zwnj;"));
+			this.render(this.contents.replace(/\n/g, "&zwnj;"));
 		},
 		version: {
 			major: 0,
@@ -196,22 +194,22 @@ define(['jquery', 'story', 'script', 'macros', 'macroinstance', 'engine', 'utils
 	// rawArgs: expression to determine whether to display.
 	Macros.add("if", {
 		fn: function () {
-			var html = this.HTMLcontents,
+			var code = this.contents,
 				args = [this.rawArgs],
 				contents = [],
 				lastIndex = 0,
 				i;
 
 			// Search for <<else>>s, collect sets of contents
-			Macros.matchMacroTag(html, "else|elseif", function (m) {
-				contents.push(html.slice(lastIndex, m.startIndex));
+			Macros.matchMacroTag(code, "else|elseif", function (m) {
+				contents.push(code.slice(lastIndex, m.startIndex));
 				// Strip "if" from <<else if>>
 				var expr = m.rawArgs.replace(/^\s*if\b/, '');
 				expr = expr || "true";
 				args.push(expr);
 				lastIndex = m.startIndex;
 			});
-			contents.push(html.slice(lastIndex));
+			contents.push(code.slice(lastIndex));
 
 			// Now, run through them all until you find a true arg.
 			for (i = 0; i < args.length; i += 1) {
@@ -286,7 +284,7 @@ define(['jquery', 'story', 'script', 'macros', 'macroinstance', 'engine', 'utils
 			if (delays.length) {
 				timeMacroTimeout = function () {
 					if ($(document.documentElement).find(this.el).length > 0) {
-						this.desc.delayedFn ? this.desc.delayedFn.call(this) : this.render(this.HTMLcontents);
+						this.desc.delayedFn ? this.desc.delayedFn.call(this) : this.render(this.contents);
 						// Re-run the timer with the next number.
 						if (delays.length) {
 							window.setTimeout(timeMacroTimeout, delays.shift());
@@ -397,7 +395,7 @@ define(['jquery', 'story', 'script', 'macros', 'macroinstance', 'engine', 'utils
 	Macros.add("replace", {
 		hooked: true,
 		fn: function () {
-			this.reducedScope().replace(Engine.render(this.HTMLcontents), this.transitionSelector());
+			this.reducedScope().replace(Engine.render(this.contents), this.transitionSelector());
 			Engine.updateEnchantments();
 		},
 		version: {
@@ -412,7 +410,7 @@ define(['jquery', 'story', 'script', 'macros', 'macroinstance', 'engine', 'utils
 	Macros.add("append", {
 		hooked: true,
 		fn: function () {
-			this.reducedScope().append(Engine.render(this.HTMLcontents), this.transitionSelector());
+			this.reducedScope().append(Engine.render(this.contents), this.transitionSelector());
 			Engine.updateEnchantments();
 		},
 		version: {
@@ -427,7 +425,7 @@ define(['jquery', 'story', 'script', 'macros', 'macroinstance', 'engine', 'utils
 	Macros.add("prepend", {
 		hooked: true,
 		fn: function () {
-			this.reducedScope().prepend(Engine.render(this.HTMLcontents), this.transitionSelector());
+			this.reducedScope().prepend(Engine.render(this.contents), this.transitionSelector());
 			Engine.updateEnchantments();
 		},
 		version: {
