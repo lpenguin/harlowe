@@ -1,4 +1,4 @@
-define(['jquery', 'state', 'utils', 'engine', 'wordarray'], function ($, State, Utils, Engine, WordArray) {
+define(['jquery', 'story', 'state', 'utils', 'engine', 'wordarray'], function ($, Story, State, Utils, Engine, WordArray) {
 	"use strict";
 	/*
 		Script
@@ -107,8 +107,22 @@ define(['jquery', 'state', 'utils', 'engine', 'wordarray'], function ($, State, 
 			Wrappers for state
 		*/
 
+		// Return the number of times the named passage was visited.
+		// For multiple arguments, return the smallest visited value.
 		visited = function (name) {
+			var ret, i;
+			if (arguments.length > 1) {
+				for (i = 0, ret = State.pastLength(); i < arguments.length; i++) {
+					ret = Math.min(ret, visited(arguments[i]));
+				}
+				return ret;
+			}
 			return name ? State.passageNameVisited(name) : State.passageIDVisited(State.passage);
+		},
+		
+		// Return the name of the previous visited passage.
+		previous = function () {
+			return Story.getPassageName(State.previousPassage() || Story.startPassage);
 		},
 
 		/*
@@ -160,6 +174,8 @@ define(['jquery', 'state', 'utils', 'engine', 'wordarray'], function ($, State, 
 		// the calling <<script>> element.
 		_eval = function (text, top) {
 			_top = top;
+			// This specifically has to be a "direct eval()" - calling eval() "indirectly"
+			// makes it run in global scope.
 			return eval(text + '');
 		};
 
@@ -167,6 +183,61 @@ define(['jquery', 'state', 'utils', 'engine', 'wordarray'], function ($, State, 
 	mathFilter = void 0;
 
 	return Object.freeze({
+
+		/**
+			This implements a small handful of more authorly JS operators for <<set>> and <<print>>.
+			<<set hp to 3>> --> <<set hp = 3>>
+			<<if hp is 3>> --> <<if hp === 3>>
+			<<if hp is not 3>> --> <<if hp != 3>>
+			<<if not defeated>> --> <<if ! defeated>>
+			@method convertOperators
+			@param {String} expr The expression to convert.
+			@param {Boolean} [setter] Whether it is or isn't a setter, which disallows '='
+			@return {String} The converted expression.
+		*/
+		convertOperators: function (expr, setter) {
+			var re, find, found = [];
+			
+			function alter(expr, from, to) {
+				return expr.replace(new RegExp(from + Utils.regexStrings.unquoted, "gi"), to);
+			}
+			
+			if (typeof expr === "string") {
+				expr = expr.trim();
+				
+				// Find all the variables referenced in the expression, and set them to 0 if undefined.
+				re = new RegExp(Utils.regexStrings.variable, "gi");
+				
+				while (find = re.exec(expr)) {
+					// Prepend the expression with a defaulter for this variable.
+					// e.g. "$red == null && ($red = 0);"
+					if (!~found.indexOf(find[0])) {
+						// This deliberately contains a 'null or undefined' check
+						expr = find[0] + " == null && (" + find[0] + " = " + Utils.defaultValue + ");" + expr;
+						found.push(find[0]);
+					}
+				}
+				
+				// Phrase "set $x to 2" as "state.variables.x = 2"
+				// and "set $x[4] to 2" as "state.variables.x[4] = 2"
+				expr = alter(expr, Utils.regexStrings.variable, " State.variables.$1 ");
+				// If not a setter, no unintended assignments allowed
+				if (!setter) {
+					expr = alter(expr, "\\b=\\b", " === ");
+				}
+				// Hooks
+				expr = alter(expr, "^\\?(\\w+)\\b", " Hook('$1') ");
+				// Other operators
+				expr = alter(expr, "\\bis\\s+not\\b", " !== ");
+				expr = alter(expr, "\\bis\\b", " === ");
+				expr = alter(expr, "\\bto\\b", " = ");
+				expr = alter(expr, "\\band\\b", " && ");
+				expr = alter(expr, "\\bor\\b", " || ");
+				expr = alter(expr, "\\bnot\\b", " ! ");
+			}
+			return expr;
+		},
+		
 		eval: function () {
 			var self = this;
 			// Convert jQuery into WordArray

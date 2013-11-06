@@ -69,13 +69,13 @@ define(['story', 'utils'], function(Story, Utils) {
 		},
 
 		// Is there an undo cache?
-		hasPast: function () {
-			return past.length > 1;
+		pastLength: function () {
+			return past.length;
 		},
 
 		// Is there a redo cache?
-		hasFuture: function () {
-			return future.length > 0;
+		futureLength: function () {
+			return future.length;
 		},
 
 		// Did we ever visit this passage, given its name?
@@ -91,7 +91,7 @@ define(['story', 'utils'], function(Story, Utils) {
 		passageIDVisited: function (id) {
 			var ret;
 
-			if (Story.passageWithID(id) === null) {
+			if (!Story.passageWithID(id)) {
 				return 0;
 			}
 
@@ -115,7 +115,7 @@ define(['story', 'utils'], function(Story, Utils) {
 		passageIDLastVisited: function (id) {
 			var ret, i;
 
-			if (Story.passageWithID(id) === null) {
+			if (!Story.passageWithID(id)) {
 				return Infinity;
 			}
 
@@ -130,6 +130,11 @@ define(['story', 'utils'], function(Story, Utils) {
 			}
 
 			return Infinity;
+		},
+		
+		// Returns the ID of the previous passage visited.
+		previousPassage: function() {
+			return past[0].passage;
 		},
 
 		// Return an array of names of all previously visited passages

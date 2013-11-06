@@ -20,45 +20,36 @@ define(['jquery', 'utils'], function($, Utils) {
 
 		// Set of JS-based text effects.
 		effects: {},
+		
+		// ID of the start passage.
+		startPassage: "",
 
 		// Get a passage, given a name
 		passageNamed: function (name) {
 			var passage = $('div[data-role="twinestory"] > div[data-name="' + name + '"]');
-
-			if (!passage.length) {
-				throw new RangeError("there's no passage named " + name);
-				return;
-			}
-			return passage;
+			
+			return !!passage.length && passage;
 		},
 
 		// Get a passage, given an ID
 		passageWithID: function (id) {
 			var passage = $('div[data-role="twinestory"] > div[data-id="' + id + '"]');
 
-			if (!passage.length) {
-				throw new RangeError("there's no passage with ID " + id);
-				return;
-			}
-			return passage;
+			return !!passage.length && passage;
 		},
 
 		// Get the name of a passage, given its ID
 		getPassageName: function (id) {
 			var p = this.passageWithID(id);
-			if (p) {
-				return p.attr("data-name");
-			}
-			return "";
+			
+			return p ? p.attr("data-name") : "";
 		},
 
 		// Get the ID of a passage, given its name
 		getPassageID: function (name) {
 			var p = this.passageNamed(name);
-			if (p) {
-				return p.attr("data-id");
-			}
-			return "";
+			
+			return p ? p.attr("data-id") : ""
 		}
 	};
 

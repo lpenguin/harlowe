@@ -460,7 +460,7 @@ define(['jquery'], function($) {
 			upperLetter: "[A-Z\u00c0-\u00de\u0150\u0170]",
 			lowerLetter: "[a-z0-9_\\-\u00df-\u00ff\u0151\u0171]",
 			anyLetter: "[\\w\\-\u00c0-\u00de\u00df-\u00ff\u0150\u0170\u0151\u0171]",
-			anyLetterStrict: "[A-Za-z0-9\u00c0-\u00de\u00df-\u00ff\u0150\u0170\u0151\u0171]",
+			anyLetterStrict: "[\\w\u00c0-\u00de\u00df-\u00ff\u0150\u0170\u0151\u0171]",
 			
 			// Macro syntax components
 			
@@ -477,8 +477,10 @@ define(['jquery'], function($) {
 	};
 		
 	// Variable syntax component
-	// Should handle normal variables, plus array indexing.
-	Utils.regexStrings.variable = "\\$((?:" + Utils.regexStrings.anyLetter.replace("\\-", "\\.") + "|\\[[^\\]]+\\])+)";
+	// Should handle normal variables, plus array indexing. Disallows all-digit variable names.
+	Utils.regexStrings.variable = "\\$((?:" + Utils.regexStrings.anyLetter.replace("\\-", "\\.") + "*"
+		+ Utils.regexStrings.anyLetter.replace("\\w\\-", "a-zA-Z\\.") + "+"
+		+ Utils.regexStrings.anyLetter.replace("\\-", "\\.") + "*" + "|\\[[^\\]]+\\])+)";
 	
 	return Object.freeze(Utils);
 });

@@ -73,11 +73,11 @@ define(['jquery', 'story', 'script', 'macros', 'macroinstance', 'engine', 'utils
 				return this.error("second argument '" + rawTo + "' is not 'to', '+=' or similar.");
 			}
 			// Convert the variable (with 'set' true)
-			variable = this.convertOperators(variable, true);
+			variable = Script.convertOperators(variable);
 			// Convert the operator
-			to = this.convertOperators(rawTo);
+			to = Script.convertOperators(rawTo, true);
 			// Convert the value
-			value = this.convertOperators(this.rawArgs.slice(this.rawArgs.indexOf(rawTo) + rawTo.length));
+			value = Script.convertOperators(this.rawArgs.slice(this.rawArgs.indexOf(rawTo) + rawTo.length));
 
 			try {
 				Script.eval(variable + to + value, this.top);
@@ -100,7 +100,7 @@ define(['jquery', 'story', 'script', 'macros', 'macroinstance', 'engine', 'utils
 		selfClosing: true,
 		fn: function () {
 			try {
-				var args = this.convertOperators(this.rawArgs);
+				var args = Script.convertOperators(this.rawArgs);
 				Script.eval(args, this.top);
 			} catch (e) {
 				this.error(e.message);
@@ -119,7 +119,7 @@ define(['jquery', 'story', 'script', 'macros', 'macroinstance', 'engine', 'utils
 		selfClosing: true,
 		fn: function () {
 			try {
-				var args = this.convertOperators(this.rawArgs);
+				var args = Script.convertOperators(this.rawArgs);
 				this.render(Script.eval(args, this.top));
 			} catch (e) {
 				this.error(e.message);
@@ -213,7 +213,7 @@ define(['jquery', 'story', 'script', 'macros', 'macroinstance', 'engine', 'utils
 			// Now, run through them all until you find a true arg.
 			for (i = 0; i < args.length; i += 1) {
 				try {
-					var result = Script.eval(this.convertOperators(args[i]), this.top);
+					var result = Script.eval(Script.convertOperators(args[i]), this.top);
 					if (result) {
 						this.render(contents[i]);
 						return;
@@ -244,7 +244,7 @@ define(['jquery', 'story', 'script', 'macros', 'macroinstance', 'engine', 'utils
 		selfClosing: true,
 		fn: function () {
 			try {
-				var args = this.convertOperators(this.rawArgs),
+				var args = Script.convertOperators(this.rawArgs),
 					name = Script.eval(args, this.top) + '';
 				// Test for existence
 				if (!Story.passageNamed(name)) {

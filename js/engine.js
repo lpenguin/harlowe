@@ -1,4 +1,4 @@
-define(['jquery', 'twinemarked', 'story', 'utils', 'state', 'macros'], function ($, Marked, Story, Utils, State, Macros) {
+define(['jquery', 'twinemarked', 'story', 'utils', 'state', 'macros', 'script'], function ($, Marked, Story, Utils, State, Macros, Script) {
 	"use strict";
 
 	/**
@@ -115,12 +115,12 @@ define(['jquery', 'twinemarked', 'story', 'utils', 'state', 'macros'], function 
 			back = $('<span class="link icon undo" title="Undo">&#8630;</span>').click(Engine.goBack);
 			fwd = $('<span class="link icon redo" title="Redo">&#8631;</span>').click(Engine.goForward);
 
-			if (!State.hasPast()) {
+			if (State.pastLength() <= 1) {
 				back.css({
 					visibility: "hidden"
 				});
 			}
-			if (!State.hasFuture()) {
+			if (!State.futureLength()) {
 				fwd.css({
 					visibility: "hidden"
 				});
@@ -136,8 +136,8 @@ define(['jquery', 'twinemarked', 'story', 'utils', 'state', 'macros'], function 
 			@method showPassage
 			@private
 			@param {String} id
-			@param {Boolean} stretch	is stretchtext
-			@param {jQuery} el			DOM parent element to append to
+			@param {Boolean} stretch Is stretchtext
+			@param {jQuery} el DOM parent element to append to
 		*/
 		showPassage: function (id, stretch, el) {
 			var newPassage,
@@ -146,7 +146,7 @@ define(['jquery', 'twinemarked', 'story', 'utils', 'state', 'macros'], function 
 				passageData = Story.passageWithID(id),
 				oldPassages = Utils.$(el.children(".passage"));
 
-			if (passageData === null)
+			if (!passageData)
 				return;
 
 			$(window).scrollTop(oldPassages.offset());
@@ -208,35 +208,46 @@ define(['jquery', 'twinemarked', 'story', 'utils', 'state', 'macros'], function 
 
 		/**
 			Makes a passage link. Sub-function of render().
+			Passage links can be either passage names, or Twine
+			code (e.g. "red" + $val).
+			TODO: Figure out how external links fit into this.
+			TODO: All link code is executed before all macro code. Fix this.
 
 			@method renderLink
 			@private
-			@param {String} text		text to display as link
-			@param {Passage} passage	passage to link to
-			@return HTML source
+			@param {String} [text] Text to display as link
+			@param {jQuery} passage Passage to link to
+			@return HTML string
 		*/
 		renderLink: function (text, passage) {
-			var visited;
+			var visited = -1;
 
-			// State.passageNameVisited() throws a custom RangeError if the passage doesn't exist.
-
-			try {
+			if (Story.passageNamed(passage)) {
 				visited = (State.passageNameVisited(passage));
-			} catch (e) {
-				return '<span class="broken-link" data-passage-link="' + passage + '">' + text + '</span>';
+			} else {
+				// Is it a code link?
+				try {
+					passage = Script.eval(Script.convertOperators(passage));
+					Story.passageNamed(passage) && (visited = (State.passageNameVisited(passage)));
+				} catch(e) { console.log(e.message) }
+				
+				// Not an internal link?
+				if (!~visited) {
+					return '<span class="broken-link" data-passage-link="' + passage + '">' + (text || passage) + '</span>';
+				}
 			}
 
 			return '<span class="link passage-link ' + (visited ? 'visited" ' : '" ') + (Story.options.opaquelinks ? '' :
-				'href="#' + escape(passage.replace(/\s/g, '')) + '"') + ' data-passage-link="' + passage + '">' + text + '</span>';
+				'href="#' + escape(passage.replace(/\s/g, '')) + '"') + ' data-passage-link="' + passage + '">' + (text || passage) + '</span>';
 		},
 
 		/**
 			The top-level rendering method.
 
 			@method render
-			@param {string} source				the code to render - HTML entities must be unescaped
-			@param {MacroInstance} context		macro instance which triggered this rendering.
-			@param {top: the topmost DOM level into which this will be rendered (usually ".passage"). Undefined if this is the top.
+			@param {string} source The code to render - HTML entities must be unescaped
+			@param {MacroInstance} context Macro instance which triggered this rendering.
+			@param {jQuery} top the topmost DOM level into which this will be rendered (usually ".passage"). Undefined if this is the top.
 			@return HTML source
 		*/
 		render: function (source, context, top) {
@@ -256,7 +267,7 @@ define(['jquery', 'twinemarked', 'story', 'utils', 'state', 'macros'], function 
 
 			source += "";
 			source = source.replace(/\[\[([^\|\]]*?)\|([^\|\]]*)?\]\]/g, function (match, text, passage) {
-				return makeLink(text, passage);
+				return Engine.renderLink(text, passage);
 			});
 
 			/*
@@ -279,7 +290,7 @@ define(['jquery', 'twinemarked', 'story', 'utils', 'state', 'macros'], function 
 			// [[link]] format
 
 			source = source.replace(/\[\[([^\|\]]*?)\]\]/g, function (match, p1) {
-				return Engine.renderLink(p1, p1);
+				return Engine.renderLink(void 0, p1);
 			});
 
 			// macros

@@ -33,6 +33,7 @@ require(['jquery', 'story', 'engine', 'utils', 'macrolib'], function ($, Story, 
 			});
 		}
 
+		Story.startPassage = header.attr('data-startnode');
 		Object.freeze(Story);
 
 		// init game engine
@@ -40,10 +41,6 @@ require(['jquery', 'story', 'engine', 'utils', 'macrolib'], function ($, Story, 
 		Engine.init();
 
 		// show first passage!
-
-		start = header.attr('data-startnode');
-
-		if (start)
-			Engine.goToPassage(start);
+		Engine.goToPassage(Story.startPassage);
 	});
 });

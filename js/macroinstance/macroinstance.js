@@ -10,12 +10,7 @@ define(['jquery', 'story', 'utils', 'wordarray'], function($, Story, Utils, Word
 	var MacroInstance,
 		// Precompile a regex
 		macroTagFront = new RegExp("^<<\\s*" + Utils.regexStrings.macroName + "\\s*");
-
-	// Sub-function of MacroInstance.convertOperators
-	function alter(expr, from, to) {
-		return expr.replace(new RegExp(from + Utils.regexStrings.unquoted, "gi"), to);
-	}
-
+	
 	/**
 		The prototype object for MacroInstances, the object type used by matchMacroTag
 		and apply()ed to macro functions.
@@ -160,55 +155,6 @@ define(['jquery', 'story', 'utils', 'wordarray'], function($, Story, Utils, Word
 			if (a.length) {
 				return a[0];
 			}
-		},
-
-		/**
-			This implements a small handful of more authorly JS operators for <<set>> and <<print>>.
-			<<set hp to 3>> --> <<set hp = 3>>
-			<<if hp is 3>> --> <<if hp === 3>>
-			<<if hp is not 3>> --> <<if hp != 3>>
-			<<if not defeated>> --> <<if ! defeated>>
-			@method convertOperators
-			@param {String} expr The expression to convert.
-			@param {Boolean} setter Whether it is or isn't a setter, such as a <<set>> macro expression.
-			@return {String} The converted expression.
-		*/
-		convertOperators: function (expr, setter) {
-			var re, find, found = [];
-			
-			if (typeof expr === "string") {
-				
-				// Find all the variables referenced in the expression, and set them to 0 if undefined.
-				re = new RegExp(Utils.regexStrings.variable, "gi");
-				
-				while (find = re.exec(expr)) {
-					// Prepend the expression with a defaulter for this variable.
-					// e.g. "$red == null && ($red = 0);"
-					if (!~found.indexOf(find[0])) {
-						// This deliberately contains a 'null or undefined' check
-						expr = find[0] + " == null && (" + find[0] + " = " + Utils.defaultValue + ");" + expr;
-						found.push(find[0]);
-					}
-				}
-				
-				// Phrase "set $x to 2" as "state.variables.x = 2"
-				// and "set $x[4] to 2" as "state.variables.x[4] = 2"
-				expr = alter(expr, Utils.regexStrings.variable, " State.variables.$1 ");
-				if (!setter) {
-					// No unintended assignments allowed
-					expr = alter(expr, "\\w=\\w", " === ");
-				}
-				// Hooks
-				expr = alter(expr, "^\\?(\\w+)\\b", " Hook('$1') ");
-				// Other operators
-				expr = alter(expr, "\\bis\\s+not\\b", " !== ");
-				expr = alter(expr, "\\bis\\b", " === ");
-				expr = alter(expr, "\\bto\\b", " = ");
-				expr = alter(expr, "\\band\\b", " && ");
-				expr = alter(expr, "\\bor\\b", " || ");
-				expr = alter(expr, "\\bnot\\b", " ! ");
-			}
-			return expr;
 		}
 	};
 
