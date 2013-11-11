@@ -26,14 +26,14 @@ define(['jquery', 'utils'], function($, Utils) {
 
 		// Get a passage, given a name
 		passageNamed: function (name) {
-			var passage = $('div[data-role="twinestory"] > div[data-name="' + name + '"]');
+			var passage = $('div[data-role="twinestory"] > [data-role="passage"][data-name="' + name + '"]');
 			
 			return !!passage.length && passage;
 		},
 
 		// Get a passage, given an ID
 		passageWithID: function (id) {
-			var passage = $('div[data-role="twinestory"] > div[data-id="' + id + '"]');
+			var passage = $('div[data-role="twinestory"] > [data-role="passage"][data-id="' + id + '"]');
 
 			return !!passage.length && passage;
 		},

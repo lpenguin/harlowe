@@ -44,8 +44,8 @@
 
 [data-t8n^=dissolve].transition-out
 {
-	animation: disappear 0.8s;	
-	-webkit-animation: disappear 0.8s;	
+	animation: appear 0.8s reverse;	
+	-webkit-animation: appear 0.8s reverse;
 }
 
 /* Shudder, shudder-in, shudder-out */
@@ -68,6 +68,19 @@
 {
 	animation: shudder-out 0.8s;
 	-webkit-animation: shudder-out 0.8s;
+}
+
+/* Pulse */
+[data-t8n^=pulse].transition-in
+{
+	animation: pulse-in 0.8s;
+	-webkit-animation: pulse-in 0.8s;
+}
+
+[data-t8n^=pulse].transition-out
+{
+	animation: pulse-in 0.8s reverse;
+	-webkit-animation: pulse-in 0.8s reverse;
 }
 
 /* Modifiers */

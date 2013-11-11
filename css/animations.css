@@ -11,17 +11,6 @@
 	to { opacity: 1 }
 }
 
-@keyframes disappear
-{
-	0% { opacity: 1 }
-	to { opacity: 0 }
-}
-@-webkit-keyframes disappear
-{
-	0% { opacity: 1 }
-	to { opacity: 0 }
-}
-
 @keyframes fade-in-out
 {
 	0%,to { opacity: 0 }
@@ -64,6 +53,25 @@
 @-webkit-keyframes box-flash {
 	0% { background-color: white; color: white; }
 	to  {}
+}
+
+@keyframes pulse-in
+{
+	0% { transform: scale(0,0) }
+	20% { transform: scale(1.2,1.2) }
+	40% { transform: scale(0.9,0.9) }
+	60% { transform: scale(1.05,1.05) }
+	80% { transform: scale(0.925,0.925) }
+	to { transform: scale(1,1) }
+}
+@-webkit-keyframes pulse-in
+{
+	0% { -webkit-transform: scale(0,0) }
+	20% { -webkit-transform: scale(1.2,1.2) }
+	40% { -webkit-transform: scale(0.9,0.9) }
+	60% { -webkit-transform: scale(1.05,1.05) }
+	80% { -webkit-transform: scale(0.925,0.925) }
+	to { -webkit-transform: scale(1,1) }
 }
 
 /* Slightly eased-out shudders */
