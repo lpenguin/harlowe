@@ -11,19 +11,25 @@ require.config({
 		hookmacroinstance: './macroinstance/hookmacroinstance',
 	}
 });
-require(['jquery', 'story', 'engine', 'utils', 'macrolib'], function ($, Story, Engine, Utils) {
+require(['jquery', 'story', 'engine', 'utils', 'macros', 'macrolib'], function ($, Story, Engine, Utils, Macros) {
 	"use strict";
 	
+	function _eval(text) {
+		return eval(text + '');
+	}
+	
 	$(document).ready(function() {
-		var header = $('div[data-role="twinestory"]'),
+		var header = $('[data-role="twinestory"]'),
 			options,
+			script = $('[data-role="script"]'),
+			stylesheet = $('[data-role="stylesheet"]'),
 			start;
 
 		if (header.length == 0) {
 			return;
 		}
 
-		// load options from attribute into story object
+		// Load options from attribute into story object
 
 		options = header.attr('data-options');
 
@@ -36,11 +42,29 @@ require(['jquery', 'story', 'engine', 'utils', 'macrolib'], function ($, Story, 
 		Story.startPassage = header.attr('data-startnode');
 		Object.freeze(Story);
 
-		// init game engine
+		// Init game engine
 
 		Engine.init();
+		
+		// Execute the custom scripts
+		
+		script.each(function(i) {
+			try { 
+				_eval($(this).html());
+			} catch (e) {
+				// TODO: Something more graceful - an 'error passage', perhaps?
+				alert("There is a problem with this story's script (#" + (i + 1) + "):\n\n" + e.message);
+			}
+		});
+		
+		// Apply the stylesheets
+		
+		stylesheet.each(function(i) {
+			// In the future, pre-processing may occur.
+			$(document.head).after('<style data-title="Story stylesheet ' + (i + 1) + '">' + $(this).html());
+		});
 
-		// show first passage!
+		// Show first passage!
 		Engine.goToPassage(Story.startPassage);
 	});
 });

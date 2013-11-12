@@ -1,6 +1,6 @@
 module.exports = function (grunt) {
 	"use strict";
-	var testFile = 'tests/samplestory.html',
+	var testFile = 'tests/hooktest.html',
 		testTitle = 'My Unreasonably Long Story Title That Is Used For Testing',
 		
 		// Source files

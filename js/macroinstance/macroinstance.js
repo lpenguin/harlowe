@@ -1,4 +1,4 @@
-define(['jquery', 'story', 'utils', 'wordarray'], function($, Story, Utils, WordArray) {
+define(['jquery', 'story', 'utils', 'wordarray', 'engine'], function($, Story, Utils, WordArray, Engine) {
 	"use strict";
 	/**
 		MacroInstance
@@ -74,7 +74,7 @@ define(['jquery', 'story', 'utils', 'wordarray'], function($, Story, Utils, Word
 		},
 
 		/**
-			Render a macro naturally found in the passage.
+			Run a macro naturally found in the passage.
 			@method run
 			@param {jQuery} span The macro's output <span> element.
 			@param {MacroInstance} context The MacroInstance which caused this macro to be rendered, or null if it's the top passage.
@@ -86,7 +86,11 @@ define(['jquery', 'story', 'utils', 'wordarray'], function($, Story, Utils, Word
 				this.context = context;
 				this.top = top;
 				this.init && (this.init());
-				this.desc.fn.apply(this, this.applyArgs);
+				try {
+					this.desc.fn.apply(this, this.applyArgs);
+				} catch (e) {
+					this.error("The <<" + this.name + ">> macro's Javascript has a problem:" + e.message, true);
+				}
 			} else {
 				span.addClass('error').html('No macro named ' + this.name);
 			}

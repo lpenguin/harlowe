@@ -41,10 +41,20 @@ define(['jquery', 'story', 'script', 'macros', 'macroinstance', 'engine', 'utils
 
 	/*
 		Extend MacroInstance
+		This has to be done because of a circular requirement:
+		MacroInstance -needs-> Engine -needs-> Macros -needs-> MacroInstance
+		Engine is available here, but not in the MacroInstance module.
 	*/
 
 	$.extend(MacroInstance, {
-		// Renders given code and inserts it into macro.el
+		/**
+			Render a section of Twine code into the macro's element, without replacing
+			the existing content.
+			@method render
+			@param {String} code The Twine code to render.
+			@param {Boolean} prepend Whether to prepend or append the code.
+			@return {Boolean} Whether any content was actually inserted.
+		*/
 		render: function (code, prepend) {
 			var result = Engine.render(code + '', this, this.top);
 			if (result) {
@@ -52,6 +62,7 @@ define(['jquery', 'story', 'script', 'macros', 'macroinstance', 'engine', 'utils
 				Utils.transitionIn(result, "fade-in");
 				Engine.updateEnchantments();
 			}
+			return !!result;
 		}
 	});
 
