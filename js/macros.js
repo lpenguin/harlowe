@@ -127,7 +127,7 @@ function($, Story, Utils, WordArray, MacroInstance, HookMacroInstance, Scope) {
 			story = Utils.storyElement;
 
 		// Trigger the hook macros that refer to this enchantment.
-		Utils.$(".hook-macro", story).each(function () {
+		Utils.$(Utils.selectors.hookMacroInstance, story).each(function () {
 			var instance = $(this).data("instance");
 
 			if (instance.scope && instance.scope.hooks && instance.scope.hooks.is(elem)) {
@@ -305,6 +305,6 @@ function($, Story, Utils, WordArray, MacroInstance, HookMacroInstance, Scope) {
 			return this.error("The passage code couldn't be rendered!\n" + this.rawArgs, true);
 		}
 	});
-
+	Utils.log("Macros module ready!");
 	return Object.freeze(Macros);
 });

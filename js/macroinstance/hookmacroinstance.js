@@ -97,6 +97,8 @@ function($, Story, Utils, WordArray, MacroInstance, Scope) {
 			}
 		}
 	});
-
+	
+	Utils.log("HookMacroInstance object ready!");
+	
 	return Object.freeze(HookMacroInstance);
 });

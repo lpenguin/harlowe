@@ -30,7 +30,7 @@ define(['jquery', 'story', 'utils', 'wordarray'], function($, Story, Utils, Word
 				{
 					// Create pseudohooks around the Words
 					for (j = 0; j < this.contents.length; j++) {
-						this.contents[j].wrapAll("<span class='pseudo-hook' "
+						this.contents[j].wrapAll("<tw-pseudo-hook "
 							// Debug mode: show the pseudo-hook selector as a tooltip
 							+ (Story.options.debug ? "title='Pseudo-hook: " + selector + "'" : "") + "/>");
 						this.hooks = this.hooks.add(this.contents[j].parent());
@@ -47,6 +47,8 @@ define(['jquery', 'story', 'utils', 'wordarray'], function($, Story, Utils, Word
 			this.hooks && this.hooks.children().unwrap();
 		}
 	});
-
+	
+	Utils.log("Scope object ready!");
+	
 	return Object.freeze(Scope);
 });

@@ -54,12 +54,12 @@ define(['jquery', 'utils'], function ($, Utils) {
 	*/
 	function findCharSpans(selector, top) {
 		// Recursive call
-		return _findCharSpans(selector, Utils.$(Utils.charSpanSelector, top), true);
+		return _findCharSpans(selector, Utils.$(Utils.selectors.charSpan, top), true);
 	}
 
 	//Gets the char value of a charspan element
 	function _elementGetChar(elem) {
-		return (elem.tagName === "br" ? "\n" : elem.getAttribute("data-char"));
+		return (elem.tagName === "br" ? "\n" : elem.getAttribute("value"));
 	}
 
 	function _findCharSpans(selector, chars, fulltext) {
@@ -94,7 +94,7 @@ define(['jquery', 'utils'], function ($, Utils) {
 			}
 		} else {
 			// Base case: return char if it matches the search string.
-			temp = (chars.attr("data-char") === selector ? chars.first() : []);
+			temp = (chars.attr("value") === selector ? chars.first() : []);
 			if (fulltext) {
 				ret.push(temp);
 			} else {
@@ -149,7 +149,7 @@ define(['jquery', 'utils'], function ($, Utils) {
 
 			// Turn each matched element in the jQuery into a separate word.
 			function forEachjQuery() {
-				other.contents.push($(this).find(Utils.charSpanSelector));
+				other.contents.push($(this).find(Utils.selectors.charSpan));
 			}
 
 			this.contents = [];
@@ -226,7 +226,7 @@ define(['jquery', 'utils'], function ($, Utils) {
 		// remove(): removes the chars from the DOM.
 		remove: function () {
 			this.contents.forEach(function (e) {
-				e.length > 1 && (e = e.wrapAll('<span class="transition-out-container"/>'));
+				e.length > 1 && (e = e.wrapAll('<tw-transition-container>'));
 				Utils.transitionOut(e, "dissolve");
 			});
 			this.contents = [];
@@ -255,6 +255,8 @@ define(['jquery', 'utils'], function ($, Utils) {
 			return this;
 		};
 	});
-
+	
+	Utils.log("WordArray object ready!");
+	
 	return Object.freeze(WordArray);
 });

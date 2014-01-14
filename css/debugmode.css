@@ -1,61 +1,61 @@
 
 /*** Debug mode ***/
 
-.debug-mode [data-macro][title] {
+.debug-mode tw-macro[title] {
 	cursor: help;
 }
-.debug-mode [data-macro] { display:inline-block; }
+.debug-mode tw-macro { display:inline-block; }
 /* Colours for generic macros */
-.debug-mode [data-macro]:nth-of-type(4n+0) { background-color: hsla(80,20%,50%,0.15); }
-.debug-mode [data-macro]:nth-of-type(2n+1) { background-color: hsla(120,20%,50%,0.15); }
-.debug-mode [data-macro]:nth-of-type(4n+2) { background-color: hsla(160,20%,50%,0.15); }
+.debug-mode tw-macro:nth-of-type(4n+0) { background-color: hsla(80,20%,50%,0.15); }
+.debug-mode tw-macro:nth-of-type(2n+1) { background-color: hsla(120,20%,50%,0.15); }
+.debug-mode tw-macro:nth-of-type(4n+2) { background-color: hsla(160,20%,50%,0.15); }
 
 /* Colours for specific macros */
-.debug-mode [data-macro="display"] { background-color: hsla(200,100%,50%,0.1) !important; }
-.debug-mode [data-macro="if"],
-.debug-mode [data-macro="elseif"],
-.debug-mode [data-macro="else"] { background-color: hsla(120,100%,50%,0.1) !important; } 
-.debug-mode [data-macro="if"].false-if { background-color: hsla(0,100%,50%,0.2) !important; } 
-.debug-mode [data-macro="print"] { background-color: hsla(60,100%,50%,0.2) !important; } 
-.debug-mode [data-macro="set"] { background-color: hsla(30,100%,50%,0.2) !important; }
-.debug-mode [data-macro="script"] { background-color: hsla(45,100%,50%,0.2) !important; }
-.debug-mode [data-macro="style"] { background-color: hsla(180,10%,75%,0.2) !important; }
-.debug-mode [data-macro="click"] { background-color: hsla(90,75%,50%,0.2) !important; }
-.debug-mode [data-macro="replace"],
-.debug-mode [data-macro="prepend"] ,
-.debug-mode [data-macro="append"],
-.debug-mode [data-macro="remove"]  { background-color: hsla(20,75%,50%,0.2) !important; }
+.debug-mode tw-macro[name="display"] { background-color: hsla(200,100%,50%,0.1) !important; }
+.debug-mode tw-macro[name="if"],
+.debug-mode tw-macro[name="elseif"],
+.debug-mode tw-macro[name="else"] { background-color: hsla(120,100%,50%,0.1) !important; } 
+.debug-mode tw-macro[name="if"].false-if { background-color: hsla(0,100%,50%,0.2) !important; } 
+.debug-mode tw-macro[name="print"] { background-color: hsla(60,100%,50%,0.2) !important; } 
+.debug-mode tw-macro[name="set"] { background-color: hsla(30,100%,50%,0.2) !important; }
+.debug-mode tw-macro[name="script"] { background-color: hsla(45,100%,50%,0.2) !important; }
+.debug-mode tw-macro[name="style"] { background-color: hsla(180,10%,75%,0.2) !important; }
+.debug-mode tw-macro[name="click"] { background-color: hsla(90,75%,50%,0.2) !important; }
+.debug-mode tw-macro[name="replace"],
+.debug-mode tw-macro[name="prepend"] ,
+.debug-mode tw-macro[name="append"],
+.debug-mode tw-macro[name="remove"]  { background-color: hsla(20,75%,50%,0.2) !important; }
 
 /* Colours for other things */
-.debug-mode .hook  { background-color: hsla(220,100%,50%,0.1) !important; }
-.debug-mode .pseudo-hook  { background-color: hsla(40,100%,50%,0.1) !important; }
+.debug-mode  tw-hook  { background-color: hsla(220,100%,50%,0.1) !important; }
+.debug-mode tw-pseudo-hook  { background-color: hsla(40,100%,50%,0.1) !important; }
 
-.debug-mode .hook::before, .debug-mode .pseudo-hook::before
+.debug-mode tw-hook::before, .debug-mode tw-pseudo-hook::before
 {
 	content: "["
 }
 
 /* Show IDs of hooks */
-.debug-mode .hook::after
+.debug-mode tw-hook::after
 {
-	content: "][" attr(data-hook) "]"
+	content: "][" attr(name) "]"
 }
-.debug-mode .pseudo-hook::after
+.debug-mode tw-pseudo-hook::after
 {
 	content: "]"
 }
 
 /* Show destinations of links */
-.debug-mode .passage-link::after, .debug-mode .broken-link::after
+.debug-mode tw-link::after, .debug-mode tw-broken-link::after
 {
 	font-size: 0.8rem;
-	content: attr(data-passage-link)
+	content: attr(passage-id)
 }
 
 /* Show the macro name */
-.debug-mode [data-macro]::before
+.debug-mode tw-macro::before
 {
-	content: attr(data-macro);
+	content: attr(name);
 	padding: 0 0.5rem;
 	font-size: 1rem;
 	background-color:  inherit;

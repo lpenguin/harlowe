@@ -105,7 +105,7 @@ define(['jquery', 'story', 'utils', 'wordarray', 'engine'], function($, Story, U
 		*/
 		error: function (text, noprefix, type) {
 			type || (type = "error");
-			this.el.addClass(type).attr("title", this.call).removeAttr("data-macro").text((noprefix ? "" : "<<" + this.name +
+			this.el.addClass(type).attr("title", this.call).removeAttr("macro").text((noprefix ? "" : "<<" + this.name +
 				">> " + type + ": ") + text);
 		},
 
@@ -161,6 +161,8 @@ define(['jquery', 'story', 'utils', 'wordarray', 'engine'], function($, Story, U
 			}
 		}
 	};
-
+	
+	Utils.log("MacroInstance object ready!");
+	
 	return Utils.lockProperties(MacroInstance);
 });

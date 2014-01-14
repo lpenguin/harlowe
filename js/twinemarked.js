@@ -18,7 +18,7 @@ define(['marked', 'story', 'utils'], function(Marked, Story, Utils) {
 		
 		+ Line breaks preceded with '\' are deleted
 		+ HTML comments are deleted
-		+ Text chars are wrapped in char <span>s
+		+ Text chars are wrapped in <tw-char>s
 		+ Code spans are currently exempted.
 		+ New text-align syntax
 	*/
@@ -118,9 +118,8 @@ define(['marked', 'story', 'utils'], function(Marked, Story, Utils) {
 				}
 		}
 		
-		return '<div class="align"'
-			+ (style ? ('style="' + style + '"') : '') + '>'
-			+ body + '</div>\n';
+		return '<tw-align ' + (style ? ('style="' + style + '"') : '') + '>'
+			+ body + '</tw-align>\n';
 	});
 	
 	// Multiple line breaks
@@ -185,9 +184,9 @@ define(['marked', 'story', 'utils'], function(Marked, Story, Utils) {
 		// so that it can still be used as a scope.
 
 		var out = this.output(cap[1]) || (out = Utils.charSpanify("&zwnj;"));
-		return '<span class="hook" data-hook="' + link + '"'
+		return '<tw-hook name="' + link + '"'
 		// Debug mode: show the hook destination as a title.
-		+ (Story.options.debug ? 'title="Hook: ?' + link + '"' : '') + '>' + out + '</span>';
+		+ (Story.options.debug ? 'title="Hook: ?' + link + '"' : '') + '>' + out + '</tw-hook>';
 	};
 
 	function reflink(cap) {
@@ -205,6 +204,8 @@ define(['marked', 'story', 'utils'], function(Marked, Story, Utils) {
 	
 	// Finished
 	Marked.update();
+	
+	Utils.log("Twinemarked module ready!");
 	
 	return Marked;
 });

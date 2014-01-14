@@ -209,7 +209,7 @@ define(['story', 'utils'], function(Story, Utils) {
 			return moved;
 		}
 	};
-
+	Utils.log("State module ready!");
 	Object.seal(StateInstance);
 	return Object.freeze(State);
 });

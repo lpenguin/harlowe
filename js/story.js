@@ -26,14 +26,14 @@ define(['jquery', 'utils'], function($, Utils) {
 
 		// Get a passage, given a name
 		passageNamed: function (name) {
-			var passage = $('div[data-role="twinestory"] > [data-role="passage"][data-name="' + name + '"]');
+			var passage = $(Utils.selectors.storyData + " > " + Utils.selectors.passageData +'[data-name="' + name + '"]');
 			
 			return !!passage.length && passage;
 		},
 
 		// Get a passage, given an ID
 		passageWithID: function (id) {
-			var passage = $('div[data-role="twinestory"] > [data-role="passage"][data-id="' + id + '"]');
+			var passage = $(Utils.selectors.storyData + " > " + Utils.selectors.passageData +'[data-id="' + id + '"]');
 
 			return !!passage.length && passage;
 		},
@@ -53,7 +53,8 @@ define(['jquery', 'utils'], function($, Utils) {
 		}
 	};
 
+	Utils.log("Story module ready! (" + $(Utils.selectors.passageData).length + " passages)");
+	
 	// Story is finally frozen by Harlowe.js
-
 	return Object.seal(Story);
 });

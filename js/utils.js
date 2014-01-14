@@ -1,4 +1,4 @@
-define(['jquery'], function($) {
+define(['jquery', 'customelements'], function($) {
 	"use strict";
 
 	// Used by HTMLEntityConvert
@@ -220,7 +220,7 @@ define(['jquery'], function($) {
 
 		hookToSelector: function (c) {
 			c = c.replace(/"/g, "&quot;");
-			return '.hook[data-hook="' + c + '"]';
+			return Utils.selectors.hook+'[name="' + c + '"]';
 		},
 
 		/**
@@ -250,7 +250,7 @@ define(['jquery'], function($) {
 
 		/**
 			Takes a string containing a character or HTML entity, and wraps it into a
-			<span> tag, converting the entity if it is one.
+			<tw-char> tag, converting the entity if it is one.
 
 			@method charToSpan
 			@param {String} chararctr
@@ -258,16 +258,27 @@ define(['jquery'], function($) {
 
 		charToSpan: function (c) {
 			// Use single-quotes if the char is a double-quote.
-			var quot = (c === "&#39;" ? '"' : "'");
+			var quot = (c === "&#39;" ? '"' : "'"),
+				value = Utils.convertEntity(c);
 
-			return "<span class='char' data-char=" +
-				quot + Utils.convertEntity(c) + quot + ">" +
-				c + "</span>";
+			switch(value) {
+				case ' ': {
+					value = "space";
+					break;
+				}
+				case '\t': {
+					value = "tab";
+					break;
+				}
+			}
+			return "<tw-char value=" +
+				quot + value + quot + ">" +
+				c + "</tw-char>";
 		},
 
 		/**
 			Converts an entire string into individual characters, each enclosed
-			by a <span>.
+			by a <tw-char>.
 
 			@method charToSpan
 			@param {String} source string
@@ -326,7 +337,7 @@ define(['jquery'], function($) {
 		*/
 
 		closestHookSpan: function (elems) {
-			var ret = elems.closest(".hook, .pseudo-hook");
+			var ret = elems.closest(Utils.selectors.hook + "," + Utils.selectors.pseudoHook);
 			return (ret.length ? ret : elems);
 		},
 
@@ -345,14 +356,14 @@ define(['jquery'], function($) {
 			oldElem = Utils.closestHookSpan(oldElem);
 
 			// Create a transition-main-container
-			container1 = $('<span class="transition-main-container"/>');
+			container1 = $('<tw-transition-container>').css('position', 'relative');
 
 			// Connect to DOM
 			container1.insertBefore(oldElem.first());
 
 			if (newElem) {
 				// Create a transition-in-container
-				container2a = $('<span class="transition-in-container"/>').appendTo(container1);
+				container2a = $('<tw-transition-container>').appendTo(container1);
 
 				// Insert new element
 				newElem.appendTo(container2a);
@@ -360,7 +371,8 @@ define(['jquery'], function($) {
 
 			// Create a transition-out-container
 			// while inserting it into the transition-main-container.
-			container2b = $('<span class="transition-out-container"/>').prependTo(container1);
+			container2b = $('<tw-transition-container>').css('position', 'absolute')
+				.prependTo(container1);
 
 			// Insert old element
 			oldElem.detach().appendTo(container2b);
@@ -437,19 +449,58 @@ define(['jquery'], function($) {
 		$: function (str, context) {
 			return $(str, context).not(".transition-out, .transition-out *");
 		},
+		
+		/**
+			Internal logging function. Currently a wrapper for console.log.
+			
+			@method log
+			@param data			line to log
+			@param Number [severity] How severe the error is.
+		*/
+		
+		log: function (data) {
+			return console.log(data);
+		},
+		
+		/**
+			Internal error logging function. Currently a wrapper for console.log.
 
+			@method log
+			@param data			line to log
+		*/
+		
+		impossible: function (data) {
+			return Utils.log("/!\\ " + data);
+		},
+		
 		/*
 			Constants
 		*/
 
-		// Selector for CharSpans
-		charSpanSelector: "span.char, br",
+		// Selectors
+		
+		selectors: {
+			passage: "tw-passage",
+			story: "tw-story",
+			sidebar: "tw-sidebar",
+			charSpan: "tw-char, br",
+			internalLink: "tw-link",
+			brokenLink: "tw-broken-link",
+			hook: "tw-hook",
+			pseudoHook: "tw-pseudo-hook",
+			macroInstance: "tw-macro",
+			hookMacroInstance: ".hook-macro",
+			script: "[data-role=script]",
+			stylesheet: "[data-role=stylesheet]",
+			storyData: "tw-storydata",
+			passageData: "[data-role=passage]"
+		},
 
 		// Default value for variables affected with <<set>>
 		defaultValue: 0,
 
 		// Story element
-		storyElement: $('#story'),
+		storyElement: $("tw-story"),
 
 		// Components for regexps
 
@@ -481,6 +532,8 @@ define(['jquery'], function($) {
 	Utils.regexStrings.variable = "\\$((?:" + Utils.regexStrings.anyLetter.replace("\\-", "\\.") + "*"
 		+ Utils.regexStrings.anyLetter.replace("\\w\\-", "a-zA-Z\\.") + "+"
 		+ Utils.regexStrings.anyLetter.replace("\\-", "\\.") + "*" + "|\\[[^\\]]+\\])+)";
+	
+	Utils.log("Utils module ready!");
 	
 	return Object.freeze(Utils);
 });

@@ -1,8 +1,3 @@
-/*** HTML5 compatibility ***/
-
-[hidden]  {
-  display: none;
-}
 
 /*** Main formatting ***/
 
@@ -55,39 +50,41 @@ h1, h2, h3, h4, h5, h6
 }
 
 /* Used for all links - hook-links, passage-links, external links... */
-.link
+.link, tw-icon
 {
 	cursor: pointer;
 }
 
 /* The story data div */
-[data-role="twinestory"]
+tw-storydata, [data-role="twinestory"]
 {
 	display: none;
 }
 
-#story
+tw-story
 {
 	width: 60%;
 	margin: 4% auto;
 	font-size: 1.5em;
 	line-height: 1.5em;
+	display:block;
 }
 
-.passage
+tw-passage
 {
 	position: absolute;
 	width: 60%;
+	display:block;
 }
 
-.passage *
+tw-passage *
 {
 	position: relative;
 }
 
 @media screen and (max-width: 1280px)
 {
-	#story
+	tw-story
 	{
 		font-size: 1.25em;
 	}
@@ -95,7 +92,7 @@ h1, h2, h3, h4, h5, h6
 
 @media screen and (max-width: 960px)
 {
-	#story
+	tw-story
 	{
 		font-size: 1em;
 	}
@@ -103,7 +100,7 @@ h1, h2, h3, h4, h5, h6
 
 @media screen and (max-width: 640px)
 {
-	#story
+	tw-story
 	{
 		font-size: 0.8em;
 	}
@@ -112,15 +109,16 @@ h1, h2, h3, h4, h5, h6
 
 /* Sidebar */
 
-.sidebar
+tw-sidebar
 {
 	left: -5em;
 	width: 3em;
 	position:absolute;
 	text-align:center;
+	display:block;
 }
 
-.sidebar .icon
+tw-icon
 {
 	display:block;
 	margin: 0.33em 0 1em 0;
@@ -130,7 +128,7 @@ h1, h2, h3, h4, h5, h6
 	text-decoration:none;
 }
 
-.sidebar .icon:hover
+tw-icon:hover
 {
 	opacity: 0.3;
 }
@@ -154,7 +152,7 @@ h1, h2, h3, h4, h5, h6
 	border-radius: 0.2em;
 }
 
-.passage-link, .enchantment-link
+tw-link, .enchantment-link
 {
 	color: #4169E1;
 	font-weight: bold;
@@ -167,12 +165,12 @@ h1, h2, h3, h4, h5, h6
 	color: #6941e1;
 }
 
-.passage-link:hover, .enchantment-link:hover
+tw-link:hover, .enchantment-link:hover
 {
 	color: DeepSkyBlue;
 }
 
-.passage-link:active, .enchantment-link:active
+tw-link:active, .enchantment-link:active
 {
 	color: #DD4B39;
 }
@@ -182,7 +180,7 @@ h1, h2, h3, h4, h5, h6
 	color: #E3E;
 }
 
-.broken-link
+tw-broken-link
 {
 	color: #993333;
 	border-bottom: 2px solid #993333;

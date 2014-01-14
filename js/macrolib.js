@@ -264,12 +264,12 @@ define(['jquery', 'story', 'script', 'macros', 'macroinstance', 'engine', 'utils
 				}
 				// Test for recursion
 				if (this.contextQuery("display").filter(function (e) {
-					return e.el.filter("[data-display='" + name + "']").length > 0;
+					return e.el.filter("[display='" + name + "']").length > 0;
 				}).length >= 5) {
 					this.error('<<display>> loop: "' + name + '" is displaying itself 5+ times.', true);
 					return;
 				}
-				this.el.attr("data-display", name);
+				this.el.attr("display", name);
 				this.render(Story.passageNamed(name).html());
 			} catch (e) {
 				this.error(e.message);
@@ -491,4 +491,5 @@ define(['jquery', 'story', 'script', 'macros', 'macroinstance', 'engine', 'utils
 			}
 		});
 	};
+	Utils.log("Macrolib module ready!");
 });

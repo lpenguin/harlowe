@@ -182,6 +182,8 @@ define(['jquery', 'story', 'state', 'utils', 'engine', 'wordarray'], function ($
 	/* Undefine previous helpers */
 	mathFilter = void 0;
 
+	Utils.log("Script module ready!");
+	
 	return Object.freeze({
 
 		/**

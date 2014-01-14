@@ -14,15 +14,16 @@ require.config({
 require(['jquery', 'story', 'engine', 'utils', 'macros', 'macrolib'], function ($, Story, Engine, Utils, Macros) {
 	"use strict";
 	
+	// Used to execute custom scripts
 	function _eval(text) {
 		return eval(text + '');
 	}
 	
 	$(document).ready(function() {
-		var header = $('[data-role="twinestory"]'),
+		var header = $(Utils.selectors.storyData),
 			options,
-			script = $('[data-role="script"]'),
-			stylesheet = $('[data-role="stylesheet"]'),
+			script = $(Utils.selectors.script),
+			stylesheet = $(Utils.selectors.stylesheet),
 			start;
 
 		if (header.length == 0) {
@@ -31,15 +32,14 @@ require(['jquery', 'story', 'engine', 'utils', 'macros', 'macrolib'], function (
 
 		// Load options from attribute into story object
 
-		options = header.attr('data-options');
+		options = header.attr('options');
 
 		if (options) {
 			options.replace(new RegExp("\\b(" + Utils.regexStrings.anyLetter + "+)\\b"), function(a, b) {
 				Story.options[b] = true;
 			});
 		}
-
-		Story.startPassage = header.attr('data-startnode');
+		Story.startPassage = header.attr('startnode');
 		Object.freeze(Story);
 
 		// Init game engine

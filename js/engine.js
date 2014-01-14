@@ -59,8 +59,8 @@ define(['jquery', 'twinemarked', 'story', 'utils', 'state', 'macros', 'script'],
 			
 			// Install handler for links
 
-			html.on('click.passage-link', '.passage-link[data-passage-link]', function (e) {
-				var next = Story.getPassageID($(this).attr('data-passage-link'));
+			html.on('click.passage-link', Utils.selectors.internalLink+'[passage-id]', function (e) {
+				var next = Story.getPassageID($(this).attr('passage-id'));
 
 				if (next)
 					Engine.goToPassage(next);
@@ -85,11 +85,11 @@ define(['jquery', 'twinemarked', 'story', 'utils', 'state', 'macros', 'script'],
 		*/
 		updateEnchantments: function (top) {
 			// Remove the old enchantments
-			Utils.$(".pseudo-hook", top).children().unwrap();
-			Utils.$(".hook", top).attr("class", "hook");
+			Utils.$(Utils.selectors.pseudoHook, top).children().unwrap();
+			Utils.$(Utils.selectors.hook, top).attr("class", "");
 
 			// Perform actions for each scoping macro's scope.
-			Utils.$(".hook-macro", top).each(function () {
+			Utils.$(Utils.selectors.hookMacroInstance, top).each(function () {
 				var instance = $(this).data("instance");
 				if (instance) {
 					// Refresh the scope, and enchant it.
@@ -108,12 +108,13 @@ define(['jquery', 'twinemarked', 'story', 'utils', 'state', 'macros', 'script'],
 		createPassageElement: function () {
 			var container, back, fwd, sidebar;
 			container = $(
-				'<section class="passage"><nav class="sidebar"><span class="link icon permalink" title="Permanent link to this passage">&sect;</span></nav></section>'
+				'<tw-passage><tw-sidebar><tw-icon class="permalink" title="Permanent link to this passage">&sect;</tw-icon></tw-sidebar></tw-passage>'
 			),
-			sidebar = container.children(".sidebar");
+			sidebar = container.children(Utils.selectors.sidebar);
 
-			back = $('<span class="link icon undo" title="Undo">&#8630;</span>').click(Engine.goBack);
-			fwd = $('<span class="link icon redo" title="Redo">&#8631;</span>').click(Engine.goForward);
+			// Apart from the Permalink, the sidebar buttons consist of Undo (Back) and Redo (Forward) buttons.
+			back = $('<tw-icon class="undo" title="Undo">&#8630;</tw-undo>').click(Engine.goBack);
+			fwd = $('<tw-icon class="redo" title="Redo">&#8631;</tw-redo>').click(Engine.goForward);
 
 			if (State.pastLength() <= 1) {
 				back.css({
@@ -137,17 +138,19 @@ define(['jquery', 'twinemarked', 'story', 'utils', 'state', 'macros', 'script'],
 			@private
 			@param {String} id
 			@param {Boolean} stretch Is stretchtext
-			@param {jQuery} el DOM parent element to append to
+			@param {jQuery} el The DOM parent element to append to
 		*/
 		showPassage: function (id, stretch, el) {
-			var newPassage,
-				t8n,
+			var newPassage, // Passage element to create
+				t8n, // Transition ID
 				el = el || Utils.storyElement,
 				passageData = Story.passageWithID(id),
-				oldPassages = Utils.$(el.children(".passage"));
+				oldPassages = Utils.$(el.children(Utils.passageSelector));
 
-			if (!passageData)
+			if (!passageData) {
+				Utils.impossible("In Engine.showPassage(): no passage with id \""+id+"\"");
 				return;
+			}
 
 			$(window).scrollTop(oldPassages.offset());
 
@@ -195,8 +198,8 @@ define(['jquery', 'twinemarked', 'story', 'utils', 'state', 'macros', 'script'],
 
 				// Contain the macro in a hidden span.
 
-				newhtml += source.slice(index, m.startIndex) + '<span data-count="' + macroCount + '" data-macro="' + m.name +
-					'" hidden></span>';
+				newhtml += source.slice(index, m.startIndex) + '<tw-macro count="' + macroCount + '" name="' + m.name +
+					'" hidden></tw-macro>';
 				macroInstances.push(m);
 				macroCount += 1;
 				index = m.endIndex;
@@ -229,16 +232,16 @@ define(['jquery', 'twinemarked', 'story', 'utils', 'state', 'macros', 'script'],
 				try {
 					passage = Script.eval(Script.convertOperators(passage));
 					Story.passageNamed(passage) && (visited = (State.passageNameVisited(passage)));
-				} catch(e) { console.log(e.message) }
+				} catch(e) { /* pass */ }
 				
 				// Not an internal link?
 				if (!~visited) {
-					return '<span class="broken-link" data-passage-link="' + passage + '">' + (text || passage) + '</span>';
+					return '<tw-broken-link passage-id="' + passage + '">' + (text || passage) + '</tw-broken-link>';
 				}
 			}
 
-			return '<span class="link passage-link ' + (visited ? 'visited" ' : '" ') + (Story.options.opaquelinks ? '' :
-				'href="#' + escape(passage.replace(/\s/g, '')) + '"') + ' data-passage-link="' + passage + '">' + (text || passage) + '</span>';
+			return '<tw-link class="link ' + (visited ? 'visited" ' : '" ') + (Story.options.opaquelinks ? '' :
+				'title="' + passage + '"') + ' passage-id="' + passage + '">' + (text || passage) + '</tw-link>';
 		},
 
 		/**
@@ -247,7 +250,7 @@ define(['jquery', 'twinemarked', 'story', 'utils', 'state', 'macros', 'script'],
 			@method render
 			@param {string} source The code to render - HTML entities must be unescaped
 			@param {MacroInstance} context Macro instance which triggered this rendering.
-			@param {jQuery} top the topmost DOM level into which this will be rendered (usually ".passage"). Undefined if this is the top.
+			@param {jQuery} top the topmost DOM level into which this will be rendered (usually "tw-passage"). Undefined if this is the top.
 			@return HTML source
 		*/
 		render: function (source, context, top) {
@@ -318,8 +321,8 @@ define(['jquery', 'twinemarked', 'story', 'utils', 'state', 'macros', 'script'],
 			// Render macro instances
 			// (Naming this closure for stacktrace visibility)
 
-			Utils.$("[data-macro]", html).each(function renderMacroInstances() {
-				var count = this.getAttribute("data-count");
+			Utils.$(Utils.selectors.macroInstance, html).each(function renderMacroInstances() {
+				var count = this.getAttribute("count");
 				this.removeAttribute("hidden");
 				macroInstances[count].run($(this), context, html.add(top));
 			});
@@ -333,6 +336,8 @@ define(['jquery', 'twinemarked', 'story', 'utils', 'state', 'macros', 'script'],
 			return html;
 		}
 	};
-
+	
+	Utils.log("Engine module ready!");
+	
 	return Object.freeze(Engine);
 });

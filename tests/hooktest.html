@@ -1,12 +1,13 @@
-<div data-role="twinestory" data-name="Tester" data-startnode="start" data-creator="Leon" data-creator-version="2.0a" data-options="debug">
-<div data-id="start" data-name="start" data-type="text/markdown" data-twine-position="0,0">
+<tw-storydata data-role="twinestory" storyname="Tester" startnode="start" creator="Leon" creator-version="2.0a" options="debug">
+<script type="text/twine" data-role="passage" data-id="start" data-name="start" data-type="text/markdown" data-twine-position="0,0">
 * [[Hook test->One Two]]
 * [[Pseudo-hook test->Pseudo]]
 * [[Time macro test->Clocks]]
 
-</div>
+&lt;&lt;set $red to "ocks"&gt;&gt;
+</script>
 
-<div data-id="onetwo" data-name="One Two" data-t8n="dissolve" data-type="text/markdown" data-twine-position="0,0">
+<script type="text/twine" data-role="passage" data-id="onetwo" data-name="One Two" data-t8n="fade-in" data-type="text/markdown" data-twine-position="0,0">
 #One macro, two different hooks.
 One [bunny][1], two [bunnies][1].
 &lt;&lt;click ?1&gt;&gt;\
@@ -28,8 +29,8 @@ One [bunny][4], two [bunnies][5].
 &lt;&lt;click ?5&gt;&gt;\
 &lt;&lt;replace ?4&gt;&gt;sheep&lt;&lt;/replace&gt;&gt;
 &lt;&lt;/click&gt;&gt;
-</div>
-<div data-id="clocks" data-name="Clocks" data-t8n="dissolve" data-type="text/markdown" data-twine-position="0,0">
+</script>
+<script type="text/twine" data-role="passage" data-id="Clocks" data-name="Clocks" data-t8n="pulse" data-type="text/markdown" data-twine-position="0,0">
 A [red clock][1]. A [blue clock][2].
 A [green clock][3].
 A [white clock][4].
@@ -44,8 +45,8 @@ A [white clock][4].
 &lt;&lt;/time&gt;&gt;
 
 &lt;&lt;timed-append ?4 1s&gt;&gt; with red hands&lt;&lt;/timed-append&gt;&gt;
-</div>
-<div data-id="Pseudo" data-name="Pseudo" data-type="text/markdown" data-t8n="instant" data-twine-position="0,0">
+</script>
+<script type="text/twine" data-role="passage" data-id="Pseudo" data-name="Pseudo" data-type="text/markdown" data-t8n="dissolve" data-twine-position="0,0">
 A definite article indicates that its noun is a particular one (or ones) identifiable to the listener. It may be something that the speaker has already mentioned, or it may be something uniquely specified. The definite article in English, for both singular and plural nouns, is the.
 
 *The children know the fastest way home.*
@@ -67,6 +68,9 @@ The cabbage white butterfly lays its eggs on members of the Brassica genus.
 [Remove lowercase vowels][3]
 
 &lt;&lt;nobr&gt;&gt;
+&lt;&lt;click "general"&gt;&gt;
+Hey! You clicked "general"!
+&lt;&lt;/click&gt;&gt;
 &lt;&lt;click ?1&gt;&gt;
 &lt;&lt;replace "the"&gt;&gt;**the**&lt;&lt;/replace&gt;&gt;
 &lt;&lt;replace "Children"&gt;&gt;<span class="shudder">Children</span>&lt;&lt;/replace&gt;&gt;
@@ -85,5 +89,5 @@ The cabbage white butterfly lays its eggs on members of the Brassica genus.
 &lt;&lt;remove "u"&gt;&gt;
 &lt;&lt;/click&gt;&gt;
 &lt;&lt;/nobr&gt;&gt;
-</div>
-</div>
+</script>
+</tw-storydata>

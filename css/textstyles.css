@@ -54,6 +54,11 @@ blink
 
 /*** Secondary text styles, for general use by Twine authors ***/
 
+tw-align
+{
+	display:block;
+}
+
 .outline
 {
 	color: white;
