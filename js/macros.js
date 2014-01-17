@@ -81,7 +81,7 @@ function($, Story, Utils, WordArray, MacroInstance, HookMacroInstance, Scope) {
 			try {
 				this.setScope(this.args);
 			} catch (e) {
-				return this.error("invalid macro scope: " + this.rawArgs + " " + e);
+				return this.error("invalid macro scope: " + this.rawArgs + " (" + e + ")");
 			}
 
 			// Designate this as a hook macro.
@@ -125,7 +125,7 @@ function($, Story, Utils, WordArray, MacroInstance, HookMacroInstance, Scope) {
 	function enchantmentEventFn() {
 		var elem = $(this),
 			story = Utils.storyElement;
-
+		
 		// Trigger the hook macros that refer to this enchantment.
 		Utils.$(Utils.selectors.hookMacroInstance, story).each(function () {
 			var instance = $(this).data("instance");

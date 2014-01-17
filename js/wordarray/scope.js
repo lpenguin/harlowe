@@ -6,11 +6,16 @@ define(['jquery', 'story', 'utils', 'wordarray'], function($, Story, Utils, Word
 		hooks/pseudo-hooks of its contents.
 	*/
 
-	var Scope = $.extend(Object.create(WordArray), {
-
-		// enchant: select the matching hooks, or create pseudo-hooks around matching words,
-		// and apply a class to those hooks.
-		// Pseudo-hooks are cleaned up in engine.updateEnchantments()
+	var Scope = Utils.create(WordArray, {		
+		/**
+			Select the matching hooks, or create pseudo-hooks around matching words,
+			and apply a class to those hooks.
+			
+			@method enchant
+			@param {String} className class to add
+			@param {jQuery} top The passage element in which this is being performed.
+			@return {String} description
+		*/
 		enchant: function (className, top) {
 			var i, j, selector, type;
 
@@ -42,7 +47,10 @@ define(['jquery', 'story', 'utils', 'wordarray'], function($, Story, Utils, Word
 			return this;
 		},
 
-		// unhook: removes the hook spans around each hook.
+		/**
+			Removes the hook spans around each hook.
+			@method unhook
+		*/
 		unhook: function () {
 			this.hooks && this.hooks.children().unwrap();
 		}

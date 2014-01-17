@@ -60,7 +60,7 @@ define(['jquery', 'story', 'script', 'macros', 'macroinstance', 'engine', 'utils
 			if (result) {
 				prepend ? this.el.prepend(result) : this.el.append(result);
 				Utils.transitionIn(result, "fade-in");
-				Engine.updateEnchantments();
+				Engine.updateEnchantments(this.top);
 			}
 			return !!result;
 		}
@@ -406,7 +406,7 @@ define(['jquery', 'story', 'script', 'macros', 'macroinstance', 'engine', 'utils
 		hooked: true,
 		fn: function () {
 			this.reducedScope().replace(Engine.render(this.contents), this.transitionSelector());
-			Engine.updateEnchantments();
+			Engine.updateEnchantments(this.top);
 		},
 		version: {
 			major: 0,
@@ -421,7 +421,7 @@ define(['jquery', 'story', 'script', 'macros', 'macroinstance', 'engine', 'utils
 		hooked: true,
 		fn: function () {
 			this.reducedScope().append(Engine.render(this.contents), this.transitionSelector());
-			Engine.updateEnchantments();
+			Engine.updateEnchantments(this.top);
 		},
 		version: {
 			major: 0,
@@ -436,7 +436,7 @@ define(['jquery', 'story', 'script', 'macros', 'macroinstance', 'engine', 'utils
 		hooked: true,
 		fn: function () {
 			this.reducedScope().prepend(Engine.render(this.contents), this.transitionSelector());
-			Engine.updateEnchantments();
+			Engine.updateEnchantments(this.top);
 		},
 		version: {
 			major: 0,

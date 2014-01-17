@@ -82,8 +82,13 @@ define([], function() {
 	
 	// Hooks (inline)
 	// - name: the name of the hook.
+	// Classes:
+	// .link: Is a hook-link.
 	('tw-hook', 'name')
-	('tw-pseudo-hook') // Pseudo-hooks (inline)
+	// Pseudo-hooks (inline)
+	// Classes:
+	// .link: Is a hook-link.
+	('tw-pseudo-hook')
 	('tw-transition-container')	// Transition container (inline)
 	);
 	

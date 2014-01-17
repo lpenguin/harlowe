@@ -126,6 +126,12 @@ define(['jquery', 'utils'], function ($, Utils) {
 		last: function () {
 			return this.reduce(this.contents[this.contents.length - 1]);
 		},
+		
+		// All the selectors, space-separated
+		// Commonly used just to retrieve the first and only selector.
+		get selector() {
+			return this.selectors.join(' ');
+		},
 
 		// Return a copy of this WordArray, but with all but the given jQuery removed from contents.
 		reduce: function (elem) {
@@ -159,38 +165,26 @@ define(['jquery', 'utils'], function ($, Utils) {
 				type = Utils.scopeType(word);
 
 				switch (type) {
-				case "wordarray":
-					{
+					case "wordarray":
 						this.contents.concat(word.contents);
 						break;
-					}
-				case "jquery":
-					{
+					case "jquery":
 						word.each(forEachjQuery);
 						break;
-					}
-				case "jquery string":
-					{
+					case "jquery string":
 						// Remove $(" and ") from the string. 
 						Utils.jQueryStringTojQuery(word).each(forEachjQuery);
 						break;
-					}
-				case "wordarray string":
-					{
+					case "wordarray string":
 						// Remove quote marks.
 						this.contents = findCharSpans(word.slice(1, -1), top);
 						break;
-					}
-				case "hook string":
-					{
+					case "hook string":
 						Utils.hookTojQuery(word, top).each(forEachjQuery);
 						break;
-					}
-				default:
-					{
+					default:
 						invalid += 1;
 						break;
-					}
 				}
 			}
 			if ((this.selectors.length - 1) === invalid) {
@@ -201,7 +195,7 @@ define(['jquery', 'utils'], function ($, Utils) {
 
 		create: function (selectorstring, top) {
 			var ret = Object.create(this);
-			ret.selectors = [].concat(selectorstring);
+			ret.selectors = Array.prototype.concat(selectorstring);
 			ret.refresh(top);
 			return ret;
 		},

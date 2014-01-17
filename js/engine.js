@@ -8,8 +8,6 @@ define(['jquery', 'twinemarked', 'story', 'utils', 'state', 'macros', 'script'],
 	*/
 
 	var Engine = {
-		// Advance the game state back
-
 		/**
 			Moves the game state backward one. If there is no previous state, this does nothing.
 
@@ -62,8 +60,10 @@ define(['jquery', 'twinemarked', 'story', 'utils', 'state', 'macros', 'script'],
 			html.on('click.passage-link', Utils.selectors.internalLink+'[passage-id]', function (e) {
 				var next = Story.getPassageID($(this).attr('passage-id'));
 
-				if (next)
-					Engine.goToPassage(next);
+				if (next) {
+					// TODO: stretchtext
+					Engine.goToPassage(next,false);
+				}
 
 				e.preventDefault();
 			});
@@ -104,6 +104,7 @@ define(['jquery', 'twinemarked', 'story', 'utils', 'state', 'macros', 'script'],
 
 			@method createPassageElement
 			@private
+			@return {jQuery} the element
 		*/
 		createPassageElement: function () {
 			var container, back, fwd, sidebar;
@@ -117,14 +118,10 @@ define(['jquery', 'twinemarked', 'story', 'utils', 'state', 'macros', 'script'],
 			fwd = $('<tw-icon class="redo" title="Redo">&#8631;</tw-redo>').click(Engine.goForward);
 
 			if (State.pastLength() <= 1) {
-				back.css({
-					visibility: "hidden"
-				});
+				back.css("visibility", "hidden");
 			}
 			if (!State.futureLength()) {
-				fwd.css({
-					visibility: "hidden"
-				});
+				fwd.css("visibility", "hidden");
 			}
 			sidebar.append(back).append(fwd);
 
@@ -165,9 +162,9 @@ define(['jquery', 'twinemarked', 'story', 'utils', 'state', 'macros', 'script'],
 
 			// Create new passage
 
-			newPassage = Engine.createPassageElement().append(Engine.render(Utils.convertEntity(passageData.html()), void 0, el));
+			newPassage = Engine.createPassageElement().append(Engine.render(Utils.convertEntity(passageData.html())));
 			el.append(newPassage);
-			Engine.updateEnchantments(el);
+			Engine.updateEnchantments(newPassage);
 
 			// Transition in
 			if (t8n) {
@@ -183,7 +180,7 @@ define(['jquery', 'twinemarked', 'story', 'utils', 'state', 'macros', 'script'],
 			@private
 			@param {String} source		source text to render
 			@return {Array} Two entries: the HTML to render, and all Macros 
-		**/
+		*/
 		renderMacros: function (source) {
 			var macroInstances = [],
 				macroCount = 0,
@@ -249,9 +246,9 @@ define(['jquery', 'twinemarked', 'story', 'utils', 'state', 'macros', 'script'],
 
 			@method render
 			@param {string} source The code to render - HTML entities must be unescaped
-			@param {MacroInstance} context Macro instance which triggered this rendering.
-			@param {jQuery} top the topmost DOM level into which this will be rendered (usually "tw-passage"). Undefined if this is the top.
-			@return HTML source
+			@param {MacroInstance} [context] Macro instance which triggered this rendering.
+			@param {jQuery} [top] the topmost DOM level into which this will be rendered (usually "tw-passage"). Undefined if this is the top.
+			@return {jQuery} The rendered passage.
 		*/
 		render: function (source, context, top) {
 			var html, temp, macroInstances;
@@ -308,6 +305,7 @@ define(['jquery', 'twinemarked', 'story', 'utils', 'state', 'macros', 'script'],
 			try {
 				source = Marked(source);
 			} catch (e) {
+				Utils.impossible("In Engine.render(): Marked crashed");
 				temp = Engine.renderMacros("<p>"+Utils.regexStrings.macroOpen + "rendering-error " +
 					e + Utils.regexStrings.macroClose+"</p>");
 				source = temp[0];
@@ -317,7 +315,7 @@ define(['jquery', 'twinemarked', 'story', 'utils', 'state', 'macros', 'script'],
 			// Render the HTML
 
 			html = $(source);
-			
+
 			// Render macro instances
 			// (Naming this closure for stacktrace visibility)
 
@@ -329,8 +327,7 @@ define(['jquery', 'twinemarked', 'story', 'utils', 'state', 'macros', 'script'],
 
 			// If one <p> tag encloses all the HTML, unwrap it.
 			// Note: this must occur at the end
-
-			if (html.length == 1 && html.get(0).tagName == 'P')
+			if (html.length == 1 && html.get(0).tagName.toUpperCase() == 'P')
 				html = html.contents();
 
 			return html;

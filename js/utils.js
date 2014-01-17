@@ -42,7 +42,7 @@ define(['jquery', 'customelements'], function($) {
 			without preventing the object from being extended.
 
 			@method lockProperties
-			@param {Object} obj		object to lock
+			@param {Object} obj		Object to lock
 		*/
 
 		lockProperty: function (obj, prop, value) {
@@ -55,10 +55,42 @@ define(['jquery', 'customelements'], function($) {
 		},
 
 		/**
-			A faster way to extend an object than $.extend({}, ...).
+			Object.create variant that takes a set of properties
+			instead of a set of property descriptors.
+			Properties are set non-enumerable.
+			
+			@method create
+			@param {Object} proto	The prototype of the returned object.
+			@param {Object} props	The properties to add to the returned object.
+			@return {Object} created object
+		*/
+		
+		create: function(proto, props) {
+			var i, prop, keys, propDesc;
+			
+			if (!props) {
+				return Object.create(proto);
+			}
+			keys = Object.keys(props),
+			propDesc = {};
+			
+			for (i = 0; i < keys.length; i++) {
+				prop = keys[i];
+
+				propDesc[prop] = {
+					value: props[prop],
+					writable: 1,
+					configurable: 1
+				};
+			};
+			return Object.defineProperties(Object.create(proto), propDesc);
+		},
+		
+		/**
+			A faster way to clone an object than $.extend({}, ...).
 
 			@method clone
-			@param {Object} obj	object to extend
+			@param {Object} obj	object to clone
 			@return {Object} cloned object
 		*/
 
@@ -112,7 +144,6 @@ define(['jquery', 'customelements'], function($) {
 			@param val		value to examine
 			@return {String} description
 		*/
-
 		scopeType: function (val) {
 			var r;
 
@@ -147,7 +178,7 @@ define(['jquery', 'customelements'], function($) {
 				return "undefined";
 			}
 		},
-
+		
 		/**
 			For speed, convert common entities quickly, and convert others with jQuery.
 
@@ -227,13 +258,13 @@ define(['jquery', 'customelements'], function($) {
 			Convert a hook index string into a jQuery object.
 
 			@method hookTojQuery
-			@param {String} c		hook index
-			@param {Element} top	
+			@param {String} c		Hook index (such as "?cupboard")
+			@param {Element} top	Passage element parent
 			@return jQuery object
 		*/
 
 		hookTojQuery: function (c, top) {
-			return Utils.$(Utils.hookToSelector(c.slice(1)), top)
+			return Utils.$(Utils.hookToSelector(c.slice(1) /* slice off the ? sigil */), top)
 		},
 
 		/**
@@ -449,6 +480,10 @@ define(['jquery', 'customelements'], function($) {
 		$: function (str, context) {
 			return $(str, context).not(".transition-out, .transition-out *");
 		},
+		
+		/*
+			Logging utilities
+		*/
 		
 		/**
 			Internal logging function. Currently a wrapper for console.log.

@@ -20,7 +20,7 @@ define(['jquery', 'story', 'utils', 'wordarray', 'engine'], function($, Story, U
 		@static
 	*/
 	MacroInstance = {
-
+		
 		/**
 			Factory method for MacroInstance.
 			
@@ -32,35 +32,40 @@ define(['jquery', 'story', 'utils', 'wordarray', 'engine'], function($, Story, U
 			@return {Object} The new MacroInstance.
 		*/
 		create: function (code, name, startIndex, endIndex) {
-			var selfClosing,
-				macro = Object.create(this);
-
-			macro.name = name;
-			macro.desc = MacroInstance.getMacroData(name);
-			macro.startIndex = startIndex;
-			macro.endIndex = endIndex;
-			selfClosing = macro.desc && macro.desc.selfClosing;
-			
-			// call is the entire macro invocation, rawArgs is all arguments,
-			// contents is what's between a <<macro>> and <</macro>> call
-			macro.call = code.slice(startIndex, endIndex);
-			macro.contents = (selfClosing ? "" : macro.call.replace(/^(?:[^>]|>(?!>))*>>/i, '').replace(/<<(?:[^>]|>(?!>))*>>$/i,
-				''));
-			macro.rawArgs = macro.call.replace(macroTagFront, '').replace(/\s*>>[^]*/, '').trim();
-
-			// tokenize arguments
-			// e.g. 1 "two three" 'four five' "six \" seven" 'eight \' nine'
-			// becomes [1, "two three", "four five", 'six " seven', "eight ' nine"]
-			macro.args = Utils.splitUnquoted(macro.rawArgs);
-
-			// Only to be used for apply()ing to desc.fn or another function.
-			// Removes opening and closing quotes from args
-			macro.applyArgs = macro.args.map(function (e) {
-				return e.replace(/^(['"])([^]*)\1$/, function (a, b, c) {
-					return c;
+			var desc = MacroInstance.getMacroData(name),
+				selfClosing = desc && desc.selfClosing,
+				// call is the entire macro invocation, rawArgs is all arguments,
+				// contents is what's between a <<macro>> and <</macro>> call
+				call = code.slice(startIndex, endIndex),
+				contents = (selfClosing ? "" : call.replace(/^(?:[^>]|>(?!>))*>>/i, '').replace(/<<(?:[^>]|>(?!>))*>>$/i,'')),
+				rawArgs = call.replace(macroTagFront, '').replace(/\s*>>[^]*/, '').trim(),
+				// tokenize arguments
+				// e.g. 1 "two three" 'four five' "six \" seven" 'eight \' nine'
+				// becomes [1, "two three", "four five", 'six " seven', "eight ' nine"]
+				args = Utils.splitUnquoted(rawArgs),
+				// Only to be used for apply()ing to desc.fn or another function.
+				// Removes opening and closing quotes from args
+				applyArgs = args.map(function (e) {
+					return e.replace(/^(['"])([^]*)\1$/, function (a, b, c) {
+						return c;
+					});
 				});
+			
+			return Utils.create(this, {
+				name: name,
+				desc: desc,
+				startIndex: startIndex,
+				endIndex: endIndex,
+				selfClosing: selfClosing,
+				call: call,
+				contents: contents,
+				rawArgs: rawArgs,
+				args: args,
+				applyArgs: applyArgs,
+				el: null,
+				context: null,
+				top: null,
 			});
-			return macro;
 		},
 
 		/**
