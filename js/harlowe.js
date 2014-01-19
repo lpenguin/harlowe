@@ -3,6 +3,7 @@ require.config({
 		// External libraries
 		jquery: './lib/jquery',
 		marked: './lib/marked',
+		lzstring: './lib/lzstring',
 		// WordArray and subclasses
 		wordarray: './wordarray/wordarray',
 		scope: './wordarray/scope',

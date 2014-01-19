@@ -108,14 +108,14 @@ define(['jquery', 'twinemarked', 'story', 'utils', 'state', 'macros', 'script'],
 		*/
 		createPassageElement: function () {
 			var container, back, fwd, sidebar;
-			container = $(
-				'<tw-passage><tw-sidebar><tw-icon class="permalink" title="Permanent link to this passage">&sect;</tw-icon></tw-sidebar></tw-passage>'
-			),
+			container = $('<tw-passage><tw-sidebar>'),
 			sidebar = container.children(Utils.selectors.sidebar);
 
+			// Permalink
+			sidebar.append('<tw-icon class="permalink" title="Permanent link to this passage"><a href="#' + State.save() + '">&sect;');
 			// Apart from the Permalink, the sidebar buttons consist of Undo (Back) and Redo (Forward) buttons.
-			back = $('<tw-icon class="undo" title="Undo">&#8630;</tw-undo>').click(Engine.goBack);
-			fwd = $('<tw-icon class="redo" title="Redo">&#8631;</tw-redo>').click(Engine.goForward);
+			back = $('<tw-icon class="undo" title="Undo">&#8630;').click(Engine.goBack);
+			fwd = $('<tw-icon class="redo" title="Redo">&#8631;').click(Engine.goForward);
 
 			if (State.pastLength() <= 0) {
 				back.css("visibility", "hidden");

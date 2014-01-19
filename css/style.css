@@ -133,6 +133,11 @@ tw-icon:hover
 	opacity: 0.3;
 }
 
+tw-icon > a {
+	text-decoration: none;
+	color: inherit;
+}
+
 /*** Inner passage formatting ***/
 
 .enchantment-hover

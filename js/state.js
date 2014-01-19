@@ -1,4 +1,4 @@
-define(['story', 'utils'], function(Story, Utils) {
+define(['story', 'utils', 'lzstring'], function(Story, Utils, LZString) {
 	"use strict";
 	/*
 		State
@@ -220,9 +220,9 @@ define(['story', 'utils'], function(Story, Utils) {
 		},
 		
 		// Serialiser
-		saveString: function() {			
-			try {
-				return window.btoa(window.unescape(window.encodeURIComponent(JSON.stringify({ t: timeline, r: recent }))));
+		save: function() {			
+			try {			
+				return LZString.compressToBase64(JSON.stringify({ t: timeline, r: recent }));
 			} catch(e) {
 				Utils.impossible("State.saveString", "failed to serialise!");
 				return "";
@@ -230,7 +230,7 @@ define(['story', 'utils'], function(Story, Utils) {
 		},
 		
 		// Deserialiser
-		loadString: function(string) {
+		load: function(string) {
 			var serialObject,
 				restorePrototypes = function(arr) {
 					var i, ret = [];
@@ -241,7 +241,7 @@ define(['story', 'utils'], function(Story, Utils) {
 				};
 			
 			try {
-				serialObject = JSON.parse(window.decodeURIComponent(window.escape(window.atob(string))));
+				serialObject = JSON.parse(LZString.decompressFromBase64(string));
 			} catch(e) {
 				// Since this could be human input error, this isn't impossible()
 				// TODO: what to do instead?
