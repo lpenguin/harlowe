@@ -30,7 +30,7 @@ define(['jquery', 'twinemarked', 'story', 'utils', 'state', 'macros', 'script'],
 			//TODO: get the stretch value from state
 
 			if (State.fastForward()) {
-				showPassage(State.passage);
+				Engine.showPassage(State.passage);
 			}
 		},
 
@@ -117,10 +117,10 @@ define(['jquery', 'twinemarked', 'story', 'utils', 'state', 'macros', 'script'],
 			back = $('<tw-icon class="undo" title="Undo">&#8630;</tw-undo>').click(Engine.goBack);
 			fwd = $('<tw-icon class="redo" title="Redo">&#8631;</tw-redo>').click(Engine.goForward);
 
-			if (State.pastLength() <= 1) {
+			if (State.pastLength() <= 0) {
 				back.css("visibility", "hidden");
 			}
-			if (!State.futureLength()) {
+			if (State.futureLength() <= 0) {
 				fwd.css("visibility", "hidden");
 			}
 			sidebar.append(back).append(fwd);
@@ -145,7 +145,7 @@ define(['jquery', 'twinemarked', 'story', 'utils', 'state', 'macros', 'script'],
 				oldPassages = Utils.$(el.children(Utils.passageSelector));
 
 			if (!passageData) {
-				Utils.impossible("In Engine.showPassage(): no passage with id \""+id+"\"");
+				Utils.impossible("Engine.showPassage()","no passage with id \""+id+"\"");
 				return;
 			}
 
@@ -305,7 +305,7 @@ define(['jquery', 'twinemarked', 'story', 'utils', 'state', 'macros', 'script'],
 			try {
 				source = Marked(source);
 			} catch (e) {
-				Utils.impossible("In Engine.render(): Marked crashed");
+				Utils.impossible("Engine.render()","Marked crashed");
 				temp = Engine.renderMacros("<p>"+Utils.regexStrings.macroOpen + "rendering-error " +
 					e + Utils.regexStrings.macroClose+"</p>");
 				source = temp[0];

@@ -57,15 +57,15 @@ define(['jquery', 'customelements'], function($) {
 		/**
 			Object.create variant that takes a set of properties
 			instead of a set of property descriptors.
-			Properties are set non-enumerable.
 			
 			@method create
 			@param {Object} proto	The prototype of the returned object.
 			@param {Object} props	The properties to add to the returned object.
+			@param {Boolean} [enumerable]	Whether the properties must be enumerable.
 			@return {Object} created object
 		*/
 		
-		create: function(proto, props) {
+		create: function(proto, props, enumerable) {
 			var i, prop, keys, propDesc;
 			
 			if (!props) {
@@ -80,7 +80,8 @@ define(['jquery', 'customelements'], function($) {
 				propDesc[prop] = {
 					value: props[prop],
 					writable: 1,
-					configurable: 1
+					configurable: 1,
+					enumerable: enumerable
 				};
 			};
 			return Object.defineProperties(Object.create(proto), propDesc);
@@ -504,8 +505,8 @@ define(['jquery', 'customelements'], function($) {
 			@param data			line to log
 		*/
 		
-		impossible: function (data) {
-			return Utils.log("/!\\ " + data);
+		impossible: function (where, data) {
+			return Utils.log("/!\\ " + where + "(): " + data);
 		},
 		
 		/*

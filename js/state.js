@@ -4,51 +4,56 @@ define(['story', 'utils'], function(Story, Utils) {
 		State
 		Singleton controlling the running game state.
 		
-		Internal object type: StateInstance
+		Internal object type: Moment
 	*/
 
 	// Prototype object for states remembered by the game.
-	var StateInstance = {
-		// Variables
-		variables: {},
-
+	var Moment = {
 		// Current passage ID
 		passage: "",
+		
+		// Variables
+		variables: null,
 
-		// Make a new state
-		create: function (v, p) {
-			var ret = Object.create(StateInstance);
-			ret.variables = (v ? Utils.clone(v) : {});
+		/**
+			Make a new Moment that comes temporally after this.
+			This is usually a fresh Moment, but the State deserialiser
+			must re-create prior sessions' Moments.
+			Thus, pre-set variables may be supplied to this method.
+			
+			@method create
+			@param {String} p The ID of the passage that the player is at in this moment.
+			@param {Object} [v]	Variables to include in this moment.
+			@returns {Moment} created object
+		*/
+		create: function (p, v) {
+			var ret = Object.create(Moment);
+			// Variables are stored as deltas of the previous state's variables.
+			// This is implemented using JS's prototype chain :o
 			ret.passage = p || "";
+			ret.variables = Utils.create(this.variables, v, true);
 			return ret;
 		}
-	};
-
-	// The present, after or while the current passage is executing.
-	// This is pushed into recent when going forward.
-	var present = StateInstance.create();
-
-	// The game state at the point the current passage began execution.
-	// This is pushed into the past when going forward,
-	// pushed into the future when going backward,
-	// or used to serialise the game state.
-	// (Revisiting the passage should thus cause it to behave identically to
-	// the original visit.)
-	var recent = StateInstance.create();
-
+	}
+	
 	// Stack of previous states.
-	var past = [];
-
-	// Stack of states wound back from.
-	var future = [];
-
-	/*
-		Values specific to the current passage, which
-		are reset by changePassage();
-	*/
-
-	// Passage-specific hook macros.
-	var hookMacros = {};
+	// This includes both the past (moments the player has created) as well as the future (moments
+	// the player has undone).
+	// Count begins at 0 (the game start).
+	var timeline = [ ];
+	
+	// Index to the game state just when the current passage was entered.
+	// This represents where the player is within the timeline.
+	// Everything beyond this index is the future. Everything before and including is the past.
+	// It usually equals timeline.length-1, except when the player undos.
+	var recent = -1;
+	
+	// The present - the resultant game state after the current passage executed.
+	// This is a 'potential moment' - a moment that could become the newest to enter the timeline.
+	// This is pushed onto the timeline (becoming "recent") when going forward,
+	// and discarded when going backward.
+	// Its passage ID should equal that of recent. When a new passage is visited, 
+	var present = Moment.create();
 
 	/*
 		The current game's state.
@@ -70,12 +75,12 @@ define(['story', 'utils'], function(Story, Utils) {
 
 		// Is there an undo cache?
 		pastLength: function () {
-			return past.length;
+			return recent;
 		},
 
 		// Is there a redo cache?
 		futureLength: function () {
-			return future.length;
+			return (timeline.length - 1) - recent;
 		},
 
 		// Did we ever visit this passage, given its name?
@@ -89,17 +94,14 @@ define(['story', 'utils'], function(Story, Utils) {
 		// Did we ever visit this passage, given its id?
 		// Return the number of times visited.
 		passageIDVisited: function (id) {
-			var ret;
+			var i, ret = 0;
 
 			if (!Story.passageWithID(id)) {
 				return 0;
 			}
-
-			ret = +(id === present.passage);
-
-			past.forEach(function (state) {
-				ret += +(id === state.passage);
-			});
+			for (i = 0; i <= recent; i++) {
+				ret += +(id === timeline[i].passage);
+			};
 
 			return ret;
 		},
@@ -113,7 +115,7 @@ define(['story', 'utils'], function(Story, Utils) {
 
 		// Return how long ago this passage has been visited.
 		passageIDLastVisited: function (id) {
-			var ret, i;
+			var i;
 
 			if (!Story.passageWithID(id)) {
 				return Infinity;
@@ -123,9 +125,9 @@ define(['story', 'utils'], function(Story, Utils) {
 				return 0;
 			}
 
-			for (i = 0; i < past.length; i--) {
-				if (past[i].passage === id) {
-					return past.length - i;
+			for (i = recent; i > 0; i--) {
+				if (timeline[i].passage === id) {
+					return (recent-i) + 1;
 				}
 			}
 
@@ -133,17 +135,17 @@ define(['story', 'utils'], function(Story, Utils) {
 		},
 		
 		// Returns the ID of the previous passage visited.
-		previousPassage: function() {
-			return past[0].passage;
+		previousPassage: function () {
+			return timeline[recent].passage;
 		},
 
 		// Return an array of names of all previously visited passages
 		pastPassageNames: function () {
-			var ret = [Story.getPassageName(present.passage)];
+			var i, ret = [Story.getPassageName(present.passage)];
 
-			past.forEach(function (e) {
-				ret.unshift(Story.getPassageName(e.passage));
-			});
+			for (i = recent; i > 0; i--) {
+				ret.unshift(Story.getPassageName(timeline[i].passage));
+			};
 
 			return ret;
 		},
@@ -151,17 +153,25 @@ define(['story', 'utils'], function(Story, Utils) {
 		/*
 			Movers/shakers
 		*/
+		
+		// Create a new present after altering the state
+		newPresent: function(newPassageID) {
+			present = (timeline[recent] || Moment).create(newPassageID);
+		},
 
-		// Push the current state to the past, and create a new state.
+		// Push the present state to the timeline, and create a new state.
 		play: function (newPassageID) {
-			// Push recent into the past.
-			var pst = present;
-			past.push(recent);
-			// Create a new recent from present.
+			if (!present) {
+				Utils.impossible("State.play","present is undefined!");
+			}
+			// Assign the passage ID
 			present.passage = newPassageID;
-			recent = StateInstance.create(pst.variables, newPassageID);
-			// Clear the future
-			future = [];
+			// Clear the future, and add the present to the timeline
+			timeline = timeline.slice(0,recent+1).concat(present);
+			recent += 1;
+			
+			// Create a new present
+			this.newPresent(newPassageID);
 		},
 
 		// Rewind the state
@@ -180,13 +190,13 @@ define(['story', 'utils'], function(Story, Utils) {
 					steps = arg;
 				}
 			}
-			for (; steps > 0 && past.length > 0; steps--) {
+			for (; steps > 0 && recent >= 0; steps--) {
 				moved = true;
-				future.push(recent);
-				present = past.pop();
-				recent = Utils.clone(present);
+				recent -= 1;
 			}
-
+			if (moved) {
+				this.newPresent(timeline[recent].passage);
+			}
 			return moved;
 		},
 
@@ -199,17 +209,54 @@ define(['story', 'utils'], function(Story, Utils) {
 			if (typeof arg === "number") {
 				steps = arg;
 			}
-			for (; steps > 0 && future.length > 0; steps--) {
+			for (; steps > 0 && timeline.length > 0; steps--) {
 				moved = true;
-				past.push(recent);
-				present = future.pop();
-				recent = Utils.clone(present);
+				recent += 1;
 			}
-
+			if (moved) {
+				this.newPresent(timeline[recent].passage);
+			}
 			return moved;
-		}
+		},
+		
+		// Serialiser
+		saveString: function() {			
+			try {
+				return window.btoa(window.unescape(window.encodeURIComponent(JSON.stringify({ t: timeline, r: recent }))));
+			} catch(e) {
+				Utils.impossible("State.saveString", "failed to serialise!");
+				return "";
+			}
+		},
+		
+		// Deserialiser
+		loadString: function(string) {
+			var serialObject,
+				restorePrototypes = function(arr) {
+					var i, ret = [];
+					for (i = 0; i < arr.length; i+=1) {
+						ret.push((ret[i-1] || Moment).create(arr[i].passage, arr[i].variables));
+					}
+					return ret;
+				};
+			
+			try {
+				serialObject = JSON.parse(window.decodeURIComponent(window.escape(window.atob(string))));
+			} catch(e) {
+				// Since this could be human input error, this isn't impossible()
+				// TODO: what to do instead?
+				return;
+			}
+			if (!Array.isArray(serialObject.t)) {
+				// Same problem as above
+				return;
+			}
+			recent = serialObject.r;
+			// Restore the prototype chain			
+			timeline = restorePrototypes(serialObject.t);
+		},
 	};
 	Utils.log("State module ready!");
-	Object.seal(StateInstance);
+	Object.seal(Moment);
 	return Object.freeze(State);
 });
