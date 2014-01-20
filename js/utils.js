@@ -1,9 +1,14 @@
 define(['jquery', 'customelements'], function($) {
 	"use strict";
 
-	// Used by HTMLEntityConvert
-	var p = $('<p>');
-
+	// Used by HTMLEntityConvert and transitionTimes
+	var p = $('<p>'),
+		// Used to cache t8n animation times
+		t8nAnimationTimes = {
+			"transition-in": Object.create(null),
+			"transition-out": Object.create(null)
+		};
+	
 	/**
 		A static class with helper methods used throughout Harlowe.
 
@@ -444,7 +449,7 @@ define(['jquery', 'customelements'], function($) {
 			//.one("animationend webkitAnimationEnd MSAnimationEnd oAnimationEnd", function(){ oldElem.remove(); });
 			// but in the event of CSS being off, these events won't trigger - whereas the below method will simply occur immedately.
 
-			delay = Utils.cssTimeUnit(el.css("animation-duration")) + Utils.cssTimeUnit(el.css("animation-delay"));
+			delay = Utils.transitionTime(transIndex, "transition-out");
 			
 			!delay ? onComplete() : window.setTimeout(onComplete, delay);
 		},
@@ -465,9 +470,27 @@ define(['jquery', 'customelements'], function($) {
 				el.removeClass("transition-in");
 			};
 			el.attr("data-t8n", transIndex).addClass("transition-in");
-			delay = Utils.cssTimeUnit(el.css("animation-duration")) + Utils.cssTimeUnit(el.css("animation-delay"));
+			delay = Utils.transitionTime(transIndex, "transition-in");
 			
 			!delay ? onComplete() : window.setTimeout(onComplete, delay);
+		},
+		
+		/**
+			Caches the CSS time (duration + delay) for a particular transition,
+			to save on costly $css() lookups.
+		
+			@method transitionTime
+			@param (String) transIndex		Transition to use		
+			@param {Number} Length of the transition in milliseconds
+		*/
+		transitionTime: function(transIndex, className) {
+			var p;
+			if (!t8nAnimationTimes[className][transIndex]) {
+				p = $('<p>').appendTo(document.body).attr("data-t8n", transIndex).addClass(className);
+				t8nAnimationTimes[className][transIndex] = Utils.cssTimeUnit(p.css("animation-duration")) + Utils.cssTimeUnit(p.css("animation-delay"));
+				p.remove();
+			}
+			return t8nAnimationTimes[className][transIndex];
 		},
 
 		/**
