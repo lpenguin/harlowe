@@ -8,10 +8,15 @@ define([], function() {
 		
 		Browsers which do not support this will create HTMLUnknownElement elements. Thus, extending the prototypes of these elements isn't currently feasible (without a polyfill).
 	*/
-	if (!document.register) {
+	if (!document.registerElement) {
 		return;
 	}
 	var CustomElements = {};
+	/*
+		This is technically useless at the moment - not registering a custom element that has a conformant name
+		(i.e. features a hyphen anywhere after the first character) will just mean that element uses HTMLElement.prototype.
+		Nevertheless, this lays ground if the polyfill route is taken, and documents the custom elements used in Harlowe.
+	*/
 	(function register(name) {
 		var el, props = [].slice.call(arguments,1),
 			proto = Object.create(HTMLElement.prototype),
@@ -22,10 +27,10 @@ define([], function() {
 		});
 		Object.defineProperties(proto,propDef);
 		// Register the element!
-		el = document.register(name, proto);
+		el = document.registerElement(name, { prototype: proto });
 		CustomElements[name] = el;
 		return register;
-	} // No semicolon
+	} // No semicolon - chained calls follow
 	
 	/*
 		Elements created by Twine 2's IDE

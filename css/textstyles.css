@@ -59,63 +59,63 @@ tw-align
 	display:block;
 }
 
-.outline
+x-outline
 {
 	color: white;
 	text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
 }
 
-.shadow
+x-shadow
 {
 	text-shadow: 0.08em 0.08em 0.08em #000;
 }
 
-.condense
+x-condense
 {
 	letter-spacing: -0.08em;
 }
 
-.expand
+x-expand
 {
 	letter-spacing: 0.1em;
 }
 
-.blur
+x-blur
 {
 	color:transparent;
 	text-shadow: 0em 0em 0.08em #000;
 }
 
-.blurrier
+x-blurrier
 {
 	color:transparent;
 	text-shadow: 0em 0em 0.2em #000;
 }
 
-.blurrier::selection {
+x-blurrier::selection {
 	background-color:transparent;
 	color:transparent;
 }
 
-.blurrier::-moz-selection {
+x-blurrier::-moz-selection {
 	background-color:transparent;
 	color:transparent;
 }
 
-.smear
+x-smear
 {
 	color:transparent;
 	text-shadow: 0em 0em 0.02em rgba(0,0,0,0.75), -0.2em 0em 0.5em rgba(0,0,0,0.5), 0.2em 0em 0.5em rgba(0,0,0,0.5);
 }
 
-.mirror
+x-mirror
 {
 	display:inline-block;
 	transform: scaleX(-1);
 	-webkit-transform: scaleX(-1);
 }
 
-.upside-down
+x-upside-down
 {
 	display:inline-block;
 	transform: scaleY(-1);
@@ -124,21 +124,21 @@ tw-align
 
 /* Animated effects follow */
 
-.fade-in-out
+x-fade-in-out
 {
 	text-decoration: none;
 	animation: fade-in-out 2s ease-in-out infinite alternate;
 	-webkit-animation: fade-in-out 2s ease-in-out infinite alternate;
 }
 
-.rumble 
+x-rumble 
 {
 	-webkit-animation: rumble linear 0.1s 0s infinite;
 	animation: rumble linear 0.1s 0s infinite;
 	display:inline-block;
 }
 
-.shudder 
+x-shudder 
 {
 	-webkit-animation: shudder linear 0.1s 0s infinite;
 	animation: shudder linear 0.1s 0s infinite;
@@ -147,7 +147,7 @@ tw-align
 
 /* Insertion effects */
 
-.shudder-in
+x-shudder-in
 {
     animation: shudder-in 1s ease-out;
     -webkit-animation: shudder-in 1s ease-out;
