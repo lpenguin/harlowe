@@ -7,7 +7,8 @@ require.config({
 		// Utils
 		utils: './utils/utils',
 		selectors: './utils/selectors',
-		regexstrings: './utils/regexStrings',
+		regexstrings: './utils/regexstrings',
+		customelements: './utils/customelements',
 		// WordArray and subclasses
 		wordarray: './wordarray/wordarray',
 		scope: './wordarray/scope',
