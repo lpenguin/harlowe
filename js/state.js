@@ -31,6 +31,8 @@ define(['story', 'utils', 'lzstring'], function(Story, Utils, LZString) {
 			// Variables are stored as deltas of the previous state's variables.
 			// This is implemented using JS's prototype chain :o
 			ret.passage = p || "";
+			// For the first moment, this becomes a call to Object.create(null),
+			// keeping the prototype chain clean.
 			ret.variables = Utils.create(this.variables, v, true);
 			return ret;
 		}
@@ -52,7 +54,7 @@ define(['story', 'utils', 'lzstring'], function(Story, Utils, LZString) {
 	// This is a 'potential moment' - a moment that could become the newest to enter the timeline.
 	// This is pushed onto the timeline (becoming "recent") when going forward,
 	// and discarded when going backward.
-	// Its passage ID should equal that of recent. When a new passage is visited, 
+	// Its passage ID should equal that of recent.
 	var present = Moment.create();
 
 	/*
@@ -74,12 +76,12 @@ define(['story', 'utils', 'lzstring'], function(Story, Utils, LZString) {
 		},
 
 		// Is there an undo cache?
-		pastLength: function () {
+		get pastLength() {
 			return recent;
 		},
 
 		// Is there a redo cache?
-		futureLength: function () {
+		get futureLength() {
 			return (timeline.length - 1) - recent;
 		},
 
@@ -219,41 +221,105 @@ define(['story', 'utils', 'lzstring'], function(Story, Utils, LZString) {
 			return moved;
 		},
 		
-		// Serialiser
-		save: function() {			
-			try {			
-				return LZString.compressToBase64(JSON.stringify({ t: timeline, r: recent }));
-			} catch(e) {
-				Utils.impossible("State.saveString", "failed to serialise!");
-				return "";
+		/*
+			A smaller alternative to an LZString compressed JSON.stringify()
+			-First line: comma-separated variable names array
+			-Then, for each Moment:
+				- passage name + newline,
+				- then for each variable, index into variable names array : variable data JSON, then newline.
+				- then, newline.
+			-Then, present passage.
+			Note: this currently doesn't record the future (the redo cache).
+		*/
+		save: function() {
+			var i, ret = "", error = 0,
+				variableKeys = [],
+				futuremostVariables = timeline[timeline.length-1].variables;
+			// Assemble variableKeys
+			// Intentionally unguarded for-in, thanks to Object.create(null)
+			for (i in futuremostVariables) {
+				variableKeys.push(i);
+			};
+			// Intentional array->string coercion
+			// ASSUMPTION: variable names cannot contain commas or newlines.
+			ret += variableKeys + '\n';
+			// Only record the past
+			timeline.slice(0,recent+1).forEach(function(t) {
+				var key, keys = Object.keys(t.variables), i = 0;
+				// Add the passage name
+				ret += t.passage + '\n';
+				while(i++ < keys.length) {
+					// Only get the own variables for this moment.
+					key = keys[i];
+					ret += variableKeys.indexOf(key) + ":";
+					try {
+						ret += JSON.stringify(t.variables[key]) + '\n';
+					} catch(e) {
+						error += 1;
+						ret += 'null\n';
+					}
+				};
+				ret += '\n';
+			});
+			if (error) {
+				Utils.impossible("State.save", "failed to serialise " + error + " variable" + (error>1 ? "s" : "") + "!\n"+e);
 			}
+			ret += "\n" + recent + "\n" + present.passage;
+			// Compress the string
+			return LZString.compressToBase64(ret);
 		},
 		
 		// Deserialiser
 		load: function(string) {
-			var serialObject,
-				restorePrototypes = function(arr) {
-					var i, ret = [];
-					for (i = 0; i < arr.length; i+=1) {
-						ret.push((ret[i-1] || Moment).create(arr[i].passage, arr[i].variables));
-					}
-					return ret;
-				};
+			var // RegExp matches,
+				momentMatch, variableMatch, tempMatch,
+				// Temps
+				variableTemp, lastPushedObject, variableKeys,
+				newTimeline = [],
+				newRecent = -1,
+				newPresentPassage = "",
+				variableRE,
+				momentRE = /\n(.+)\n(.(?:.|\n(?!\n))*)?/g;
 			
-			try {
-				serialObject = JSON.parse(LZString.decompressFromBase64(string));
-			} catch(e) {
-				// Since this could be human input error, this isn't impossible()
+			// Decompress the string
+			if (!(string = LZString.decompressFromBase64(string)) {
+				//Failed to load - exit in disgrace.
+				// Since this could be human input error, this isn't really "impossible"
 				// TODO: what to do instead?
-				return;
+				Utils.impossible("State.load", "couldn't decompress!");
+				return false;
 			}
-			if (!Array.isArray(serialObject.t)) {
-				// Same problem as above
-				return;
+			// Now read it
+			try {
+				variableKeys = string.match(/^.*/)[0].split(',');
+				// Read the value of recent and presentPassage
+				tempMatch = string.match(/\n\n(\d+)\n(.*)$/);
+				newRecent = +tempMatch[1];
+				newPresentPassage = tempMatch[2];
+				// Read each of the Moments
+				while (momentMatch = momentRE.exec(string)) {
+					variableTemp = {};
+					// A fresh regexp for each moment
+					variableRE = /(\d+):(.*)/g;
+					// Read the variables
+					while (variableMatch = variableRE.exec(momentMatch[2])) {
+						// Restore the variable name from the key
+						variableTemp[variableKeys[variableMatch[1]]] = JSON.parse(variableMatch[2]);
+					}
+					// Push into newTimeline, restoring the prototype chain
+					newTimeline.push(lastPushedObject =
+						(lastPushedObject || Moment).create(momentMatch[1], variableTemp));
+				}
+			} catch(e) {
+				// Same as above regarding this not being "impossible"
+				Utils.impossible("State.load", "couldn't parse!");
+				return false;
 			}
-			recent = serialObject.r;
-			// Restore the prototype chain			
-			timeline = restorePrototypes(serialObject.t);
+			recent = newRecent;
+			timeline = newTimeline;
+			this.newPresent(newPresentPassage);
+			Utils.log("Loaded a game state (" + timeline.length-1 + " moments)"); 
+			return true;
 		},
 	};
 	Utils.log("State module ready!");

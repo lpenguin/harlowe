@@ -12,9 +12,8 @@ require.config({
 		hookmacroinstance: './macroinstance/hookmacroinstance',
 	}
 });
-require(['jquery', 'story', 'engine', 'utils', 'macros', 'macrolib'], function ($, Story, Engine, Utils, Macros) {
+require(['jquery', 'story', 'state', 'engine', 'utils', 'macros', 'macrolib'], function ($, Story, State, Engine, Utils, Macros) {
 	"use strict";
-	
 	// Used to execute custom scripts
 	function _eval(text) {
 		return eval(text + '');
@@ -64,8 +63,15 @@ require(['jquery', 'story', 'engine', 'utils', 'macros', 'macrolib'], function (
 			// In the future, pre-processing may occur.
 			$(document.head).after('<style data-title="Story stylesheet ' + (i + 1) + '">' + $(this).html());
 		});
-
-		// Show first passage!
-		Engine.goToPassage(Story.startPassage);
+		
+		// Load the hash if it's present
+		if (window.location.hash) {
+			State.load(window.location.hash);
+			Engine.showPassage(State.passage);
+		}
+		else {
+			// Show first passage!
+			Engine.goToPassage(Story.startPassage);
+		}
 	});
 });

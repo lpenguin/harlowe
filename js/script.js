@@ -100,6 +100,9 @@ define(['jquery', 'story', 'state', 'utils', 'engine', 'wordarray'], function ($
 
 		// Choose one argument, up to 16. Can be used as such: <<display either( "pantry", "larder", "cupboard" )>>
 		either = function () {
+			if (Array.isArray(arguments[0]) && arguments.length == 1) {
+				return either.apply(this,arguments[0]);
+			}
 			return arguments[~~(Math.random() * arguments.length)];
 		},
 
@@ -112,7 +115,7 @@ define(['jquery', 'story', 'state', 'utils', 'engine', 'wordarray'], function ($
 		visited = function (name) {
 			var ret, i;
 			if (arguments.length > 1) {
-				for (i = 0, ret = State.pastLength(); i < arguments.length; i++) {
+				for (i = 0, ret = State.pastLength; i < arguments.length; i++) {
 					ret = Math.min(ret, visited(arguments[i]));
 				}
 				return ret;
