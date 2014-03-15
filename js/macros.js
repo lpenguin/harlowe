@@ -1,5 +1,5 @@
-define(['jquery', 'story', 'utils', 'wordarray', 'macroinstance', 'hookmacroinstance', 'scope'],
-function($, Story, Utils, WordArray, MacroInstance, HookMacroInstance, Scope) {
+define(['jquery', 'story', 'utils', 'regexstrings', 'wordarray', 'macroinstance', 'hookmacroinstance', 'scope'],
+function($, Story, Utils, RegexStrings, WordArray, MacroInstance, HookMacroInstance, Scope) {
 	"use strict";
 	/*
 		Macros
@@ -127,7 +127,7 @@ function($, Story, Utils, WordArray, MacroInstance, HookMacroInstance, Scope) {
 			story = Utils.storyElement;
 		
 		// Trigger the hook macros that refer to this enchantment.
-		Utils.$(Utils.selectors.hookMacroInstance, story).each(function () {
+		Utils.$(Selectors.hookMacroInstance, story).each(function () {
 			var instance = $(this).data("instance");
 
 			if (instance.scope && instance.scope.hooks && instance.scope.hooks.is(elem)) {
@@ -237,7 +237,7 @@ function($, Story, Utils, WordArray, MacroInstance, HookMacroInstance, Scope) {
 		// macroname is a regex string specifying a particular name; if absent, all are found.
 		// Callback function's argument is a macro instance.
 		matchMacroTag: function (html, macroname, callback) {
-			var re = Utils.regexStrings,
+			var re = RegexStrings,
 				macroRE = new RegExp(re.macroOpen + "\\s*(" + (macroname || re.macroName) +
 					")" + re.notMacroClose + re.macroClose, 'ig'),
 				macro, endMacroRE, foundMacro, foundEndMacro, nesting,

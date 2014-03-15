@@ -4,6 +4,10 @@ require.config({
 		jquery: './lib/jquery',
 		marked: './lib/marked',
 		lzstring: './lib/lzstring',
+		// Utils
+		utils: './utils/utils',
+		selectors: './utils/selectors',
+		regexstrings: './utils/regexStrings',
 		// WordArray and subclasses
 		wordarray: './wordarray/wordarray',
 		scope: './wordarray/scope',
@@ -12,7 +16,7 @@ require.config({
 		hookmacroinstance: './macroinstance/hookmacroinstance',
 	}
 });
-require(['jquery', 'story', 'state', 'engine', 'utils', 'macros', 'macrolib'], function ($, Story, State, Engine, Utils, Macros) {
+require(['jquery', 'story', 'state', 'engine', 'utils', 'selectors', 'regexstrings', 'macros', 'macrolib'], function ($, Story, State, Engine, Utils, Selectors, RegexStrings, Macros) {
 	"use strict";
 	// Used to execute custom scripts
 	function _eval(text) {
@@ -20,10 +24,10 @@ require(['jquery', 'story', 'state', 'engine', 'utils', 'macros', 'macrolib'], f
 	}
 	
 	$(document).ready(function() {
-		var header = $(Utils.selectors.storyData),
+		var header = $(Selectors.storyData),
 			options,
-			script = $(Utils.selectors.script),
-			stylesheet = $(Utils.selectors.stylesheet),
+			script = $(Selectors.script),
+			stylesheet = $(Selectors.stylesheet),
 			start;
 
 		if (header.length == 0) {
@@ -35,7 +39,7 @@ require(['jquery', 'story', 'state', 'engine', 'utils', 'macros', 'macrolib'], f
 		options = header.attr('options');
 
 		if (options) {
-			options.replace(new RegExp("\\b(" + Utils.regexStrings.anyLetter + "+)\\b"), function(a, b) {
+			options.replace(new RegExp("\\b(" + RegexStrings.anyLetter + "+)\\b"), function(a, b) {
 				Story.options[b] = true;
 			});
 		}

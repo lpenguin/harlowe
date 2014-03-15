@@ -1,4 +1,4 @@
-define(['jquery', 'story', 'state', 'utils', 'engine', 'wordarray'], function ($, Story, State, Utils, Engine, WordArray) {
+define(['jquery', 'story', 'state', 'utils', 'regexstrings', 'engine', 'wordarray'], function ($, Story, State, Utils, RegexStrings, Engine, WordArray) {
 	"use strict";
 	/*
 		Script
@@ -204,14 +204,14 @@ define(['jquery', 'story', 'state', 'utils', 'engine', 'wordarray'], function ($
 			var re, find, found = [];
 			
 			function alter(expr, from, to) {
-				return expr.replace(new RegExp(from + Utils.regexStrings.unquoted, "gi"), to);
+				return expr.replace(new RegExp(from + RegexStrings.unquoted, "gi"), to);
 			}
 			
 			if (typeof expr === "string") {
 				expr = expr.trim();
 				
 				// Find all the variables referenced in the expression, and set them to 0 if undefined.
-				re = new RegExp(Utils.regexStrings.variable, "gi");
+				re = new RegExp(RegexStrings.variable, "gi");
 				
 				while (find = re.exec(expr)) {
 					// Prepend the expression with a defaulter for this variable.
@@ -225,7 +225,7 @@ define(['jquery', 'story', 'state', 'utils', 'engine', 'wordarray'], function ($
 				
 				// Phrase "set $x to 2" as "state.variables.x = 2"
 				// and "set $x[4] to 2" as "state.variables.x[4] = 2"
-				expr = alter(expr, Utils.regexStrings.variable, " State.variables.$1 ");
+				expr = alter(expr, RegexStrings.variable, " State.variables.$1 ");
 				// If not a setter, no unintended assignments allowed
 				if (!setter) {
 					expr = alter(expr, "\\b=\\b", " === ");

@@ -54,7 +54,7 @@ define(['jquery', 'utils'], function ($, Utils) {
 	*/
 	function findCharSpans(selector, top) {
 		// Recursive call
-		return _findCharSpans(selector, Utils.$(Utils.selectors.charSpan, top), true);
+		return _findCharSpans(selector, Utils.$(Selectors.charSpan, top), true);
 	}
 
 	//Gets the char value of a charspan element
@@ -155,7 +155,7 @@ define(['jquery', 'utils'], function ($, Utils) {
 
 			// Turn each matched element in the jQuery into a separate word.
 			function forEachjQuery() {
-				other.contents.push($(this).find(Utils.selectors.charSpan));
+				other.contents.push($(this).find(Selectors.charSpan));
 			}
 
 			this.contents = [];

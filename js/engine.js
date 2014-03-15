@@ -1,4 +1,4 @@
-define(['jquery', 'twinemarked', 'story', 'utils', 'state', 'macros', 'script'], function ($, Marked, Story, Utils, State, Macros, Script) {
+define(['jquery', 'twinemarked', 'story', 'utils', 'selectors', 'regexstrings', 'state', 'macros', 'script'], function ($, Marked, Story, Utils, Selectors, RegexStrings, State, Macros, Script) {
 	"use strict";
 
 	/**
@@ -57,7 +57,7 @@ define(['jquery', 'twinemarked', 'story', 'utils', 'state', 'macros', 'script'],
 			
 			// Install handler for links
 
-			html.on('click.passage-link', Utils.selectors.internalLink+'[passage-id]', function (e) {
+			html.on('click.passage-link', Selectors.internalLink+'[passage-id]', function (e) {
 				var next = Story.getPassageID($(this).attr('passage-id'));
 
 				if (next) {
@@ -85,11 +85,11 @@ define(['jquery', 'twinemarked', 'story', 'utils', 'state', 'macros', 'script'],
 		*/
 		updateEnchantments: function (top) {
 			// Remove the old enchantments
-			Utils.$(Utils.selectors.pseudoHook, top).children().unwrap();
-			Utils.$(Utils.selectors.hook, top).attr("class", "");
+			Utils.$(Selectors.pseudoHook, top).children().unwrap();
+			Utils.$(Selectors.hook, top).attr("class", "");
 
 			// Perform actions for each scoping macro's scope.
-			Utils.$(Utils.selectors.hookMacroInstance, top).each(function () {
+			Utils.$(Selectors.hookMacroInstance, top).each(function () {
 				var instance = $(this).data("instance");
 				if (instance) {
 					// Refresh the scope, and enchant it.
@@ -109,7 +109,7 @@ define(['jquery', 'twinemarked', 'story', 'utils', 'state', 'macros', 'script'],
 		createPassageElement: function () {
 			var container, back, fwd, sidebar;
 			container = $('<tw-passage><tw-sidebar>'),
-			sidebar = container.children(Utils.selectors.sidebar);
+			sidebar = container.children(Selectors.sidebar);
 
 			// Permalink
 			sidebar.append('<tw-icon class="permalink" title="Permanent link to this passage"><a href="#' + State.save() + '">&sect;');
@@ -306,8 +306,8 @@ define(['jquery', 'twinemarked', 'story', 'utils', 'state', 'macros', 'script'],
 				source = Marked(source);
 			} catch (e) {
 				Utils.impossible("Engine.render()","Marked crashed");
-				temp = Engine.renderMacros("<p>"+Utils.regexStrings.macroOpen + "rendering-error " +
-					e + Utils.regexStrings.macroClose+"</p>");
+				temp = Engine.renderMacros("<p>"+RegexStrings.macroOpen + "rendering-error " +
+					e + RegexStrings.macroClose+"</p>");
 				source = temp[0];
 				macroInstances = temp[1];
 			}
@@ -319,7 +319,7 @@ define(['jquery', 'twinemarked', 'story', 'utils', 'state', 'macros', 'script'],
 			// Render macro instances
 			// (Naming this closure for stacktrace visibility)
 
-			Utils.$(Utils.selectors.macroInstance, html).each(function renderMacroInstances() {
+			Utils.$(Selectors.macroInstance, html).each(function renderMacroInstances() {
 				var count = this.getAttribute("count");
 				this.removeAttribute("hidden");
 				macroInstances[count].run($(this), context, html.add(top));

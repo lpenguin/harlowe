@@ -1,4 +1,4 @@
-define(['jquery', 'story', 'utils', 'wordarray'], function($, Story, Utils, WordArray) {
+define(['jquery', 'story', 'utils', 'selectors', 'wordarray'], function($, Story, Utils, Selectors, WordArray) {
 	"use strict";
 	/*
 		Scope

@@ -1,4 +1,4 @@
-define(['jquery', 'utils'], function($, Utils) {
+define(['jquery', 'utils', 'selectors'], function($, Utils, Selectors) {
 	"use strict";
 	/*
 		Story
@@ -25,15 +25,16 @@ define(['jquery', 'utils'], function($, Utils) {
 		startPassage: "",
 
 		// Get a passage, given a name
+		// This should only be called by story code handling objects - internally, passages are referenced by ID.
 		passageNamed: function (name) {
-			var passage = $(Utils.selectors.storyData + " > " + Utils.selectors.passageData +'[data-name="' + name + '"]');
+			var passage = $(Selectors.storyData + " > " + Selectors.passageData +'[data-name="' + name + '"]');
 			
 			return !!passage.length && passage;
 		},
 
 		// Get a passage, given an ID
 		passageWithID: function (id) {
-			var passage = $(Utils.selectors.storyData + " > " + Utils.selectors.passageData +'[data-id="' + id + '"]');
+			var passage = $(Selectors.storyData + " > " + Selectors.passageData +'[data-id="' + id + '"]');
 
 			return !!passage.length && passage;
 		},
@@ -53,7 +54,7 @@ define(['jquery', 'utils'], function($, Utils) {
 		}
 	};
 
-	Utils.log("Story module ready! (" + $(Utils.selectors.passageData).length + " passages)");
+	Utils.log("Story module ready! (" + $(Selectors.passageData).length + " passages)");
 	
 	// Story is finally frozen by Harlowe.js
 	return Object.seal(Story);

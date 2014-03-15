@@ -1,4 +1,4 @@
-define(['jquery', 'story', 'utils', 'wordarray', 'engine'], function($, Story, Utils, WordArray, Engine) {
+define(['jquery', 'story', 'utils', 'regexstrings', 'wordarray', 'engine'], function($, Story, Utils, RegexStrings, WordArray, Engine) {
 	"use strict";
 	/**
 		MacroInstance
@@ -9,7 +9,7 @@ define(['jquery', 'story', 'utils', 'wordarray', 'engine'], function($, Story, U
 
 	var MacroInstance,
 		// Precompile a regex
-		macroTagFront = new RegExp("^<<\\s*" + Utils.regexStrings.macroName + "\\s*");
+		macroTagFront = new RegExp("^<<\\s*" + RegexStrings.macroName + "\\s*");
 	
 	/**
 		The prototype object for MacroInstances, the object type used by matchMacroTag

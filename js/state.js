@@ -282,7 +282,7 @@ define(['story', 'utils', 'lzstring'], function(Story, Utils, LZString) {
 				momentRE = /\n(.+)\n(.(?:.|\n(?!\n))*)?/g;
 			
 			// Decompress the string
-			if (!(string = LZString.decompressFromBase64(string)) {
+			if (!(string = LZString.decompressFromBase64(string))) {
 				//Failed to load - exit in disgrace.
 				// Since this could be human input error, this isn't really "impossible"
 				// TODO: what to do instead?

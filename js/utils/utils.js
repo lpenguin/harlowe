@@ -1,4 +1,4 @@
-define(['jquery', 'customelements'], function($) {
+define(['jquery', 'selectors', 'regexstrings', 'customelements'], function($, Selectors, RegexStrings) {
 	"use strict";
 
 	// Used by HTMLEntityConvert and transitionTimes
@@ -140,7 +140,7 @@ define(['jquery', 'customelements'], function($) {
 		*/
 
 		splitUnquoted: function (str, split) {
-			return str.split(new RegExp((split || " ") + Utils.regexStrings.unquoted));
+			return str.split(new RegExp((split || " ") + RegexStrings.unquoted));
 		},
 
 		/**
@@ -257,7 +257,7 @@ define(['jquery', 'customelements'], function($) {
 
 		hookToSelector: function (c) {
 			c = c.replace(/"/g, "&quot;");
-			return Utils.selectors.hook+'[name="' + c + '"]';
+			return Selectors.hook+'[name="' + c + '"]';
 		},
 
 		/**
@@ -374,7 +374,7 @@ define(['jquery', 'customelements'], function($) {
 		*/
 
 		closestHookSpan: function (elems) {
-			var ret = elems.closest(Utils.selectors.hook + "," + Utils.selectors.pseudoHook);
+			var ret = elems.closest(Selectors.hook + "," + Selectors.pseudoHook);
 			return (ret.length ? ret : elems);
 		},
 
@@ -535,62 +535,12 @@ define(['jquery', 'customelements'], function($) {
 		/*
 			Constants
 		*/
-
-		// Selectors
-		
-		selectors: {
-			passage: "tw-passage",
-			story: "tw-story",
-			sidebar: "tw-sidebar",
-			charSpan: "tw-char, br",
-			internalLink: "tw-link",
-			brokenLink: "tw-broken-link",
-			hook: "tw-hook",
-			pseudoHook: "tw-pseudo-hook",
-			macroInstance: "tw-macro",
-			hookMacroInstance: ".hook-macro",
-			script: "[data-role=script]",
-			stylesheet: "[data-role=stylesheet]",
-			storyData: "tw-storydata",
-			passageData: "[data-role=passage]"
-		},
-
 		// Default value for variables affected with <<set>>
 		defaultValue: 0,
 
 		// Story element
-		storyElement: $("tw-story"),
-
-		// Components for regexps
-
-		regexStrings: {
-
-			// Handles Unicode ranges not covered by \w. Copied from TiddlyWiki5 source - may need updating.
-			
-			upperLetter: "[A-Z\u00c0-\u00de\u0150\u0170]",
-			lowerLetter: "[a-z0-9_\\-\u00df-\u00ff\u0151\u0171]",
-			anyLetter: "[\\w\\-\u00c0-\u00de\u00df-\u00ff\u0150\u0170\u0151\u0171]",
-			anyLetterStrict: "[\\w\u00c0-\u00de\u00df-\u00ff\u0150\u0170\u0151\u0171]",
-			
-			// Macro syntax components
-			
-			macroOpen: "<<",
-			macroName: "[\\w\\-\\?\\!]+",
-			notMacroClose: "(?:[^>]|>(?!>))*",
-			macroClose: ">>",
-
-			// Regex suffix that, when applied, causes the preceding match to only apply when not inside a quoted
-			// string. This accounts for both single- and double-quotes, and escaped quote characters.
-
-			unquoted: "(?=(?:[^\"'\\\\]*(?:\\\\.|'(?:[^'\\\\]*\\\\.)*[^'\\\\]*'|\"(?:[^\"\\\\]*\\\\.)*[^\"\\\\]*\"))*[^'\"]*$)"
-		}
+		storyElement: $("tw-story")
 	};
-		
-	// Variable syntax component
-	// Should handle normal variables, plus array indexing. Disallows all-digit variable names.
-	Utils.regexStrings.variable = "\\$((?:" + Utils.regexStrings.anyLetter.replace("\\-", "\\.") + "*"
-		+ Utils.regexStrings.anyLetter.replace("\\w\\-", "a-zA-Z\\.") + "+"
-		+ Utils.regexStrings.anyLetter.replace("\\-", "\\.") + "*" + "|\\[[^\\]]+\\])+)";
 	
 	Utils.log("Utils module ready!");
 	
