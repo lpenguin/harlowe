@@ -7,9 +7,7 @@ define(['jquery', 'story', 'state', 'utils', 'regexstrings', 'engine', 'wordarra
 		Everything in here is exposed to authors via <<script>>, etc.
 	*/
 
-	// The calling macro's top reference - set by every _eval() call.
-	var _top,
-
+	var 
 		// Filter out NaN and Infinities, throwing an error instead.
 		// This is only applied to functions that can create non-numerics,
 		// namely log, sqrt, etc.
@@ -137,18 +135,6 @@ define(['jquery', 'story', 'state', 'utils', 'regexstrings', 'engine', 'wordarra
 		},
 
 		/*
-			Wrappers for WordArray
-		*/
-
-		Text = function (a) {
-			return WordArray.create('"' + a + '"', _top);
-		},
-
-		Hook = function (a) {
-			return WordArray.create('?' + a, _top);
-		},
-
-		/*
 			Wrappers for Window
 		*/
 
@@ -167,28 +153,53 @@ define(['jquery', 'story', 'state', 'utils', 'regexstrings', 'engine', 'wordarra
 		gotoURL = window.location.assign,
 		pageURL = function () {
 			return window.location.href;
-		},
-
-		/*
-			eval() the script in the context of this module.
-		*/
-
-		// Filter the call through this function so that 'this' points to
-		// the calling <<script>> element.
-		_eval = function (text, top) {
-			_top = top;
-			// This specifically has to be a "direct eval()" - calling eval() "indirectly"
-			// makes it run in global scope.
-			return eval(text + '');
 		};
-
-	/* Undefine previous helpers */
-	mathFilter = void 0;
-
-	Utils.log("Script module ready!");
 	
-	return Object.freeze({
+	var Script = $.extend(Object.create(null), {
 
+		/**
+			Creates a new macroscript execution context, in which certain key variables like "top"
+			and "it" are bound to certain values.
+			@method context
+			@param {jQuery} top The top context in which WordArrays apply
+			@return {Object} A context object with an eval method.
+		*/
+		context: function (top) {
+		
+			/*
+				Wrappers for WordArray
+			*/
+
+			var Text = function (a) {
+					return WordArray.create('"' + a + '"', top);
+				},
+				Hook = function (a) {
+					return WordArray.create('?' + a, top);
+				};
+			
+			return {
+				evalExpression: function (/* variadic */) {
+					// This specifically has to be a "direct eval()" - calling eval() "indirectly"
+					// makes it run in global scope.
+					// That means no bind(), unfortunately.
+					return eval(
+						Array.apply(null, arguments).map(function(s) {
+							return Script.convertOperators(s,false);
+						}).join()
+					);
+				}.bind(this),
+				
+				evalStatement: function (/* variadic */) {
+					return eval(
+						Array.apply(null, arguments).map(function(s) {
+							return Script.convertOperators(s,true);
+						}).join(' ')
+					);
+				}
+				.bind(this),
+			};
+		},
+	
 		/**
 			This implements a small handful of more authorly JS operators for <<set>> and <<print>>.
 			<<set hp to 3>> --> <<set hp = 3>>
@@ -241,15 +252,12 @@ define(['jquery', 'story', 'state', 'utils', 'regexstrings', 'engine', 'wordarra
 				expr = alter(expr, "\\bnot\\b", " ! ");
 			}
 			return expr;
-		},
-		
-		eval: function () {
-			var self = this;
-			// Convert jQuery into WordArray
-			if (self && self.jquery) {
-				self = WordArray.create(self.find(Utils.charSpanSelector));
-			}
-			return _eval.apply(self, arguments);
 		}
 	});
+	
+	/* Undefine previous helpers */
+	mathFilter = void 0;
+
+	Utils.log("Script module ready!");
+	return Object.freeze(Script);
 });

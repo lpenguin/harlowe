@@ -83,15 +83,16 @@ define(['jquery', 'story', 'script', 'macros', 'macroinstance', 'engine', 'utils
 			if (!(/to|(?:[+\-\%\&\|\^\/\*]|<<|>>)?=/.test(rawTo))) {
 				return this.error("second argument '" + rawTo + "' is not 'to', '+=' or similar.");
 			}
-			// Convert the variable (with 'set' true)
-			variable = Script.convertOperators(variable);
-			// Convert the operator
-			to = Script.convertOperators(rawTo, true);
-			// Convert the value
-			value = Script.convertOperators(this.rawArgs.slice(this.rawArgs.indexOf(rawTo) + rawTo.length));
 
 			try {
-				Script.eval(variable + to + value, this.top);
+				Script.context(this.top).evalStatement(
+					// the variable
+					variable,
+					// the operator
+					rawTo,
+					// the value
+					this.rawArgs.slice(this.rawArgs.indexOf(rawTo) + rawTo.length)
+				);
 				this.clear();
 			} catch (e) {
 				this.error(e.message);
@@ -111,8 +112,7 @@ define(['jquery', 'story', 'script', 'macros', 'macroinstance', 'engine', 'utils
 		selfClosing: true,
 		fn: function () {
 			try {
-				var args = Script.convertOperators(this.rawArgs);
-				Script.eval(args, this.top);
+				Script.context(this.top).evalExpression(this.rawArgs);
 			} catch (e) {
 				this.error(e.message);
 			}
@@ -130,8 +130,7 @@ define(['jquery', 'story', 'script', 'macros', 'macroinstance', 'engine', 'utils
 		selfClosing: true,
 		fn: function () {
 			try {
-				var args = Script.convertOperators(this.rawArgs);
-				this.render(Script.eval(args, this.top));
+				this.render(Script.context(this.top).evalExpression(this.rawArgs));
 			} catch (e) {
 				this.error(e.message);
 			}
@@ -145,7 +144,6 @@ define(['jquery', 'story', 'script', 'macros', 'macroinstance', 'engine', 'utils
 
 	// <<nobr>> ... <</nobr>>
 	// Remove line breaks from contained passage text.
-	// Suggested by @mcclure111.
 	// Manual line breaks can be inserted with <br>.
 	Macros.add("nobr", {
 		fn: function () {
@@ -164,10 +162,13 @@ define(['jquery', 'story', 'script', 'macros', 'macroinstance', 'engine', 'utils
 	// contents: JS to execute.
 	Macros.add("script", {
 		fn: function () {
+			// Coerce the element into a WordArray
+			var el = WordArray.create(this.el.find(Utils.charSpanSelector));
+			
 			try {
 				// Eval this in the context of the script object,
 				// where the Twinescript API is.
-				Script.eval.call(this.el, this.contents, this.top);
+				Script.context(this.top).evalStatement.call(el, this.contents);
 				this.clear();
 			} catch (e) {
 				this.error(e.message);
@@ -224,7 +225,7 @@ define(['jquery', 'story', 'script', 'macros', 'macroinstance', 'engine', 'utils
 			// Now, run through them all until you find a true arg.
 			for (i = 0; i < args.length; i += 1) {
 				try {
-					var result = Script.eval(Script.convertOperators(args[i]), this.top);
+					var result = Script.context(this.top).evalExpression(args[i]);
 					if (result) {
 						this.render(contents[i]);
 						return;
@@ -255,8 +256,7 @@ define(['jquery', 'story', 'script', 'macros', 'macroinstance', 'engine', 'utils
 		selfClosing: true,
 		fn: function () {
 			try {
-				var args = Script.convertOperators(this.rawArgs),
-					name = Script.eval(args, this.top) + '';
+				var name = Script.context(this.top).evalStatement(this.rawArgs);
 				// Test for existence
 				if (!Story.passageNamed(name)) {
 					this.error('Can\'t <<display>> passage "' + name + '"', true);

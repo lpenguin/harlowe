@@ -40,7 +40,7 @@ require(['jquery', 'story', 'state', 'engine', 'utils', 'selectors', 'regexstrin
 		options = header.attr('options');
 
 		if (options) {
-			options.replace(new RegExp("\\b(" + RegexStrings.anyLetter + "+)\\b"), function(a, b) {
+			options.split(/\s/).forEach(function(b) {
 				Story.options[b] = true;
 			});
 		}

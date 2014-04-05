@@ -226,7 +226,7 @@ define(['jquery', 'twinemarked', 'story', 'utils', 'selectors', 'regexstrings', 
 			} else {
 				// Is it a code link?
 				try {
-					passage = Script.eval(Script.convertOperators(passage));
+					passage = Script.context().evalExpression(passage);
 					Story.passageNamed(passage) && (visited = (State.passageNameVisited(passage)));
 				} catch(e) { /* pass */ }
 				
@@ -301,14 +301,17 @@ define(['jquery', 'twinemarked', 'story', 'utils', 'selectors', 'regexstrings', 
 			// Finally, do Markdown
 			// (This must come last due to the charspan generation inhibiting any further matches.)
 
-			try {
-				source = Marked(source);
-			} catch (e) {
-				Utils.impossible("Engine.render()","Marked crashed");
-				temp = Engine.renderMacros("<p>"+RegexStrings.macroOpen + "rendering-error " +
-					e + RegexStrings.macroClose+"</p>");
-				source = temp[0];
-				macroInstances = temp[1];
+			// Let's not bother if this source solely held macros.
+			if (source.trim()) {
+				try {
+					source = Marked(source);
+				} catch (e) {
+					Utils.impossible("Engine.render()","Marked crashed");
+					temp = Engine.renderMacros("<p>"+RegexStrings.macroOpen + "rendering-error " +
+						e + RegexStrings.macroClose+"</p>");
+					source = temp[0];
+					macroInstances = temp[1];
+				}
 			}
 
 			// Render the HTML
