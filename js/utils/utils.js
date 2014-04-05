@@ -323,6 +323,10 @@ define(['jquery', 'selectors', 'regexstrings', 'customelements'], function($, Se
 		*/
 
 		charSpanify: function (text) {
+			if (typeof text !== "string") {
+				Utils.impossible("charSpanify received a non-string");
+				return text;
+			}
 			return text.replace(/&[#\w]+;|./g, Utils.charToSpan);
 		},
 
@@ -514,7 +518,6 @@ define(['jquery', 'selectors', 'regexstrings', 'customelements'], function($, Se
 			
 			@method log
 			@param data			line to log
-			@param Number [severity] How severe the error is.
 		*/
 		
 		log: function (data) {
@@ -522,14 +525,14 @@ define(['jquery', 'selectors', 'regexstrings', 'customelements'], function($, Se
 		},
 		
 		/**
-			Internal error logging function. Currently a wrapper for console.log.
+			Internal error logging function. Currently a wrapper for console.warn.
 
 			@method log
 			@param data			line to log
 		*/
 		
 		impossible: function (where, data) {
-			return Utils.log("/!\\ " + where + "(): " + data);
+			return console.warn(where + "(): " + data);
 		},
 		
 		/*

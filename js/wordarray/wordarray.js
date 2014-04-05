@@ -1,4 +1,4 @@
-define(['jquery', 'utils'], function ($, Utils) {
+define(['jquery', 'utils', 'selectors'], function ($, Utils, Selectors) {
 	"use strict";
 	/* 
 	   WordArray
@@ -10,28 +10,47 @@ define(['jquery', 'utils'], function ($, Utils) {
 
 	// Modifier: "prepend", "append", "replace"
 	function modifyWordArray(word, modifier, t8n) {
-		// Convert word to a jQuery of spanified HTML
-		if (word.wordarray && word.contents.length[0]) {
-			word = word.contents[0];
-		} else if (typeof word === "string") {
-			word = $(Utils.charSpanify(word));
-		} else if (!word.jquery) {
+		// Inner function, convert()
+		// Convert a string or WordArray to a jQuery of spanified HTML,
+		// ready to supplant another word in the DOM. Otherwise, leave it.
+		(modifyWordArray.convert = modifyWordArray.convert || function(word) {
+			if (word.wordarray && word.contents.length[0]) {
+				return word.contents[0];
+			} else if (typeof word === "string") {
+				return $(Utils.charSpanify(word));
+			}
+			return word;
+		})
+		
+		if (typeof word !== "function" && !word.jquery) {
 			return this;
 		}
+		word = modifyWordArray.convert(word)
 
-		if (word.length) {
+		// Functions should be considered words of indefinite length.
+		// Only continue if it definitely isn't zero-length.
+		if (typeof word === "function" || word.length) {
 			// Replace the words
 			this.contents = this.contents.map(function (e) {
-				var w;
+				var w, thisWord;
+				
+				// If the word is a function, run that function anew for this replacement.
+				// Each replacement gets a fresh call.
+				if (typeof word === "function") {
+					thisWord = modifyWordArray.convert(word());
+				} else {
+					thisWord = word;
+				}
+				
 				// Check that the word is a jQuery
 
 				if (e && e.jquery) {
 					// Waste not...
-					if (modifier === "replace" && e.text() === word) {
+					if (modifier === "replace" && e.text() === thisWord) {
 						return this;
 					}
 					// Insert a copy of the replacement word
-					w = word.clone();
+					w = thisWord.clone();
 					// Peform transition-in
 					if (modifier === "replace") {
 						Utils.transitionReplace(e, w, t8n || "dissolve", modifier === "append");

@@ -1,5 +1,5 @@
-define(['jquery', 'story', 'utils', 'regexstrings', 'wordarray', 'macroinstance', 'hookmacroinstance', 'scope'],
-function($, Story, Utils, RegexStrings, WordArray, MacroInstance, HookMacroInstance, Scope) {
+define(['jquery', 'story', 'utils', 'selectors', 'regexstrings', 'wordarray', 'macroinstance', 'hookmacroinstance', 'scope'],
+function($, Story, Utils, Selectors, RegexStrings, WordArray, MacroInstance, HookMacroInstance, Scope) {
 	"use strict";
 	/*
 		Macros
@@ -19,7 +19,7 @@ function($, Story, Utils, RegexStrings, WordArray, MacroInstance, HookMacroInsta
 			- selfClosing: boolean, determines if the macro tag has contents. If false, then all subsequent code
 				up until a closing tag ("<<endmacro>>" or <</macro>>") or until the end of the passage,
 				will be captured by this.contents.
-			- version: a map { major: Number, minor: Number, revision: number }.
+			- version: a map { major: Number, minor: Number, revision: Number }.
 			- hooked: boolean, denotes that this is a hook macro.
 			- deferred: boolean, denotes that the hook macro is "deferred" - it will not immediately execute. Currently unused.
 			- enchantment: a map whose presence denotes that the hook macro is an "enchantment" - its contents will not immediately
@@ -74,6 +74,7 @@ function($, Story, Utils, RegexStrings, WordArray, MacroInstance, HookMacroInsta
 		}
 
 		// For deferred macros, only run this once.
+		// this.ready is a 
 		if (!this.ready) {
 			deferred && (this.ready = true);
 
@@ -103,8 +104,7 @@ function($, Story, Utils, RegexStrings, WordArray, MacroInstance, HookMacroInsta
 		// If an inner function was given, run that.
 		if (innerFn && typeof innerFn === "function") {
 			innerFn.apply(this, this.applyArgs);
-		} else
-		{
+		} else {
 			// Default behaviour: simply parse the inner contents.
 			if (!rerender || rerender === "replace") {
 				Utils.transitionOut(this.el.children(), "fade-in")
@@ -212,10 +212,10 @@ function($, Story, Utils, RegexStrings, WordArray, MacroInstance, HookMacroInsta
 
 			// Type checking
 			if (!Utils.stringOrArray(name)) {
-				return loaderError("Argument " + 1 + errorMsg);
+				return loaderError("Argument 1" + errorMsg);
 			}
 			if (!Utils.stringOrArray(main)) {
-				return loaderError("Argument " + 3 + errorMsg);
+				return loaderError("Argument 3" + errorMsg);
 			}
 			// Get the main macro's data
 			mfunc = Macros.get(main);

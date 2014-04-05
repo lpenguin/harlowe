@@ -162,7 +162,7 @@ define(['jquery', 'twinemarked', 'story', 'utils', 'selectors', 'regexstrings', 
 
 			// Create new passage
 
-			newPassage = Engine.createPassageElement().append(Engine.render(Utils.convertEntity(passageData.html())));
+			newPassage = Engine.createPassageElement().append(Engine.render(passageData.text()));
 			el.append(newPassage);
 			Engine.updateEnchantments(newPassage);
 
@@ -170,7 +170,6 @@ define(['jquery', 'twinemarked', 'story', 'utils', 'selectors', 'regexstrings', 
 			if (t8n) {
 				Utils.transitionIn(newPassage, t8n);
 			}
-			// TODO: HTML5 history
 		},
 
 		/**

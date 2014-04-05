@@ -405,7 +405,7 @@ define(['jquery', 'story', 'script', 'macros', 'macroinstance', 'engine', 'utils
 	Macros.add("replace", {
 		hooked: true,
 		fn: function () {
-			this.reducedScope().replace(Engine.render(this.contents), this.transitionSelector());
+			this.reducedScope().replace(Engine.render.bind(null, this.contents), this.transitionSelector());
 			Engine.updateEnchantments(this.top);
 		},
 		version: {
@@ -420,7 +420,7 @@ define(['jquery', 'story', 'script', 'macros', 'macroinstance', 'engine', 'utils
 	Macros.add("append", {
 		hooked: true,
 		fn: function () {
-			this.reducedScope().append(Engine.render(this.contents), this.transitionSelector());
+			this.reducedScope().append(Engine.render.bind(null, this.contents), this.transitionSelector());
 			Engine.updateEnchantments(this.top);
 		},
 		version: {
@@ -435,7 +435,7 @@ define(['jquery', 'story', 'script', 'macros', 'macroinstance', 'engine', 'utils
 	Macros.add("prepend", {
 		hooked: true,
 		fn: function () {
-			this.reducedScope().prepend(Engine.render(this.contents), this.transitionSelector());
+			this.reducedScope().prepend(Engine.render.bind(null, this.contents), this.transitionSelector());
 			Engine.updateEnchantments(this.top);
 		},
 		version: {

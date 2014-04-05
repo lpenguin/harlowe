@@ -1,52 +1,63 @@
-<tw-storydata data-role="twinestory" storyname="Tester" startnode="start" creator="Leon" creator-version="2.0a" options="debug">
+<tw-storydata data-role="twinestory" storyname="Tester" startnode="start" creator="Leon" creator-version="2.0a" options="opaquelinks undo redo debug">
 <script type="text/twine" data-role="passage" data-id="start" data-name="start" data-type="text/markdown" data-twine-position="0,0">
 * [[Hook test->One Two]]
 * [[Pseudo-hook test->Pseudo]]
 * [[Time macro test->Clocks]]
+* [[Random test->Random]]
 
-&lt;&lt;set $red to "ocks"&gt;&gt;
+<<set $red to "ocks">>
 </script>
-
+<script type="text/twine" data-role="passage" data-id="random" data-name="Random" data-t8n="fade-in" data-type="text/markdown" data-twine-position="0,0">
+||||||||||||||||
+||||||||||||||||
+||||||||||||||||
+||||||||||||||||
+||||||||||||||||
+||||||||||||||||
+||||||||||||||||
+||||||||||||||||
+<<replace "|">><<print either("╱","╲")>><</replace>>
+</script>
 <script type="text/twine" data-role="passage" data-id="onetwo" data-name="One Two" data-t8n="fade-in" data-type="text/markdown" data-twine-position="0,0">
 #One macro, two different hooks.
 One [bunny][1], two [bunnies][1].
-&lt;&lt;click ?1&gt;&gt;\
-&lt;&lt;replace ?1&gt;&gt;sheep&lt;&lt;/replace&gt;&gt;
-&lt;&lt;/click&gt;&gt;
+<<click ?1>>
+<<replace ?1>>sheep<</replace>>
+<</click>>
 
 #A hook that enchants a second hook.
 One [bunny][2], two [bunnies][3].
-&lt;&lt;click ?2&gt;&gt;\
-&lt;&lt;replace ?2&gt;&gt;sheep&lt;&lt;/replace&gt;&gt;
-&lt;&lt;click-replace ?3&gt;&gt;sheep&lt;&lt;/click-replace&gt;&gt;
-&lt;&lt;/click&gt;&gt;
+<<click ?2>>
+<<replace ?2>>sheep<</replace>>
+<<click-replace ?3>>sheep<</click-replace>>
+<</click>>
 
 #A hook that replaces a different hook.
 One [bunny][4], two [bunnies][5].
-&lt;&lt;click ?4&gt;&gt;\
-&lt;&lt;replace ?5&gt;&gt;sheep&lt;&lt;/replace&gt;&gt;
-&lt;&lt;/click&gt;&gt;
-&lt;&lt;click ?5&gt;&gt;\
-&lt;&lt;replace ?4&gt;&gt;sheep&lt;&lt;/replace&gt;&gt;
-&lt;&lt;/click&gt;&gt;
+<<click ?4>>
+<<replace ?5>>sheep<</replace>>
+<</click>>
+<<click ?5>>
+<<replace ?4>>sheep<</replace>>
+<</click>>
 </script>
-<script type="text/twine" data-role="passage" data-id="Clocks" data-name="Clocks" data-t8n="pulse" data-type="text/markdown" data-twine-position="0,0">
+<script type="text/twine" data-role="passage" data-id="Clocks" data-name="Clocks" data-t8n="fade-in-fast" data-type="text/markdown" data-twine-position="0,0">
 A [red clock][1]. A [blue clock][2].
 A [green clock][3].
 A [white clock][4].
-&lt;&lt;time 1s&gt;&gt;
-&lt;&lt;replace ?1&gt;&gt;blue clock&lt;&lt;/replace&gt;&gt;
-&lt;&lt;/time&gt;&gt;&lt;&lt;time 1500ms&gt;&gt;
-&lt;&lt;append ?2&gt;&gt; and a red clock&lt;&lt;/append&gt;&gt;
-&lt;&lt;/time&gt;&gt;
+<<time 1s>>
+<<replace ?1>>blue clock<</replace>>
+<</time>><<time 1500ms>>
+<<append ?2>> and a red clock<</append>>
+<</time>>
 
-&lt;&lt;time 0.8s 0.7s "Invalid parameter that should be ignored" 0.6s 0.5s 0.4s&gt;&gt;
-&lt;&lt;append ?3&gt;&gt;...tick&lt;&lt;/append&gt;&gt;
-&lt;&lt;/time&gt;&gt;
+<<time 0.8s 0.7s "Invalid parameter that should be ignored" 0.6s 0.5s 0.4s>>
+<<append ?3>>...tick<</append>>
+<</time>>
 
-&lt;&lt;timed-append ?4 1s&gt;&gt; with red hands&lt;&lt;/timed-append&gt;&gt;
+<<timed-append ?4 1s>> with red hands<</timed-append>>
 </script>
-<script type="text/twine" data-role="passage" data-id="Pseudo" data-name="Pseudo" data-type="text/markdown" data-t8n="dissolve" data-twine-position="0,0">
+<script type="text/twine" data-role="passage" data-id="Pseudo" data-name="Pseudo" data-type="text/markdown" data-t8n="fade-in-slow" data-twine-position="0,0">
 A definite article indicates that its noun is a particular one (or ones) identifiable to the listener. It may be something that the speaker has already mentioned, or it may be something uniquely specified. The definite article in English, for both singular and plural nouns, is the.
 
 *The children know the fastest way home.*
@@ -67,27 +78,27 @@ The cabbage white butterfly lays its eggs on members of the Brassica genus.
 [Add "?" to each "in"][2]
 [Remove lowercase vowels][3]
 
-&lt;&lt;nobr&gt;&gt;
-&lt;&lt;click "general"&gt;&gt;
+<<nobr>>
+<<click "general">>
 Hey! You clicked "general"!
-&lt;&lt;/click&gt;&gt;
-&lt;&lt;click ?1&gt;&gt;
-&lt;&lt;replace "the"&gt;&gt;**the**&lt;&lt;/replace&gt;&gt;
-&lt;&lt;replace "Children"&gt;&gt;<span class="shudder">Children</span>&lt;&lt;/replace&gt;&gt;
-&lt;&lt;replace "children"&gt;&gt;<span class="shudder">children</span>&lt;&lt;/replace&gt;&gt;
-&lt;&lt;/click&gt;&gt;
+<</click>>
+<<click ?1>>
+<<replace "the">>**the**<</replace>>
+<<replace "Children">><span class="shudder">Children</span><</replace>>
+<<replace "children">><span class="shudder">children</span><</replace>>
+<</click>>
 
-&lt;&lt;click ?2&gt;&gt;
-&lt;&lt;append "in"&gt;&gt;?&lt;&lt;/append&gt;&gt;
-&lt;&lt;/click&gt;&gt;
+<<click ?2>>
+<<append "in">>?<</append>>
+<</click>>
 
-&lt;&lt;click ?3&gt;&gt;
-&lt;&lt;remove "a"&gt;&gt;
-&lt;&lt;remove "e"&gt;&gt;
-&lt;&lt;remove "i"&gt;&gt;
-&lt;&lt;remove "o"&gt;&gt;
-&lt;&lt;remove "u"&gt;&gt;
-&lt;&lt;/click&gt;&gt;
-&lt;&lt;/nobr&gt;&gt;
+<<click ?3>>
+<<remove "a">>
+<<remove "e">>
+<<remove "i">>
+<<remove "o">>
+<<remove "u">>
+<</click>>
+<</nobr>>
 </script>
 </tw-storydata>
