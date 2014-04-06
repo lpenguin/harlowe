@@ -1,12 +1,34 @@
 define(['jquery', 'story', 'utils', 'selectors', 'wordarray'], function($, Story, Utils, Selectors, WordArray) {
 	"use strict";
-	/*
+	/**
 		Scope
 		An extension to WordArray that stores the containing 
 		hooks/pseudo-hooks of its contents.
+		
+		@class Scope
+		@extends WordArray
 	*/
 
-	var Scope = Utils.create(WordArray, {		
+	var Scope = Utils.create(WordArray, {	
+		/**
+			Unlike a mere WordArray, all selections of a Scope are
+			inside <tw-hook> or <tw-pseudo-hook> elements.
+			
+			While this.contents holds the individual charspans selected by the selector,
+			this.hooks holds the parent <tw-hook> or <tw-pseudo-hook> elements enclosing them.
+			
+			@property hooks
+			@type jQuery
+		*/
+		
+		/*
+			We can't actually define
+				hooks: null,
+			here, because Scope is frozen, and non-configurable properties "burn through"
+			the prototype chain, and prevent instances from overriding them
+			(unless Object.defineProperty() is used).
+		*/
+		
 		/**
 			Select the matching hooks, or create pseudo-hooks around matching words,
 			and apply a class to those hooks.
@@ -23,8 +45,10 @@ define(['jquery', 'story', 'utils', 'selectors', 'wordarray'], function($, Story
 
 			// Do all the selector(s).
 			for (i = 0; i < this.selectors.length; i += 1) {
+				
 				selector = this.selectors[i],
-				type = Utils.scopeType(selector);
+				type = WordArray.scopeType(selector);
+				
 				// Targeting actual hooks?
 				if (type === "hook string") {
 					this.hooks = this.hooks.add(Utils.hookTojQuery(selector, top));
@@ -42,17 +66,18 @@ define(['jquery', 'story', 'utils', 'selectors', 'wordarray'], function($, Story
 					};
 				}
 			}
-			// this.hooks is used by enchantmentEventFn()
 			(this.hooks && this.hooks.addClass(className));
 			return this;
 		},
 
 		/**
-			Removes the hook spans around each hook.
+			Removes the <tw-hook>s around each hook.
 			@method unhook
+			@return this
 		*/
 		unhook: function () {
 			this.hooks && this.hooks.children().unwrap();
+			return this;
 		}
 	});
 	

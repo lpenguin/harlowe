@@ -13,6 +13,7 @@ define(['jquery', 'selectors', 'regexstrings', 'customelements'], function($, Se
 		A static class with helper methods used throughout Harlowe.
 
 		@class Utils
+		@static
 	*/
 
 	var Utils = {
@@ -141,48 +142,6 @@ define(['jquery', 'selectors', 'regexstrings', 'customelements'], function($, Se
 
 		splitUnquoted: function (str, split) {
 			return str.split(new RegExp((split || " ") + RegexStrings.unquoted));
-		},
-
-		/**
-			Returns the type of a scope string or Twine-specific object.
-
-			@method scopeType
-			@param val		value to examine
-			@return {String} description
-		*/
-		scopeType: function (val) {
-			var r;
-
-			// Coerce empty string and null to undefined
-
-			if (!val) {
-				return "undefined";
-			} else if (typeof val === "object") {
-				if (val.wordarray)
-					return "wordarray";
-				else if (val.jquery)
-					return "jquery";
-			} else if (typeof val === "string") {
-				r = /\$\("([^"]*)"\)|\$\('([^']*)'\)|"((?:[^"\\]|\\.)*)"|'((?:[^'\\]|\\.)*)'|\?(\w*)/.exec(val);
-
-				if (r && r.length) {
-					// jQuery selector $("..."), $('...')
-
-					if (r[1] || r[2]) {
-						return "jquery string";
-					}
-					// Word selector "...", '...'
-					else if (r[3] || r[4]) {
-						return "wordarray string";
-					}
-					// Hook ?...
-					else if (r[5]) {
-						return "hook string";
-					};
-				}
-
-				return "undefined";
-			}
 		},
 		
 		/**

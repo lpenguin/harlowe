@@ -59,7 +59,7 @@ function($, Story, Utils, Selectors, RegexStrings, WordArray, MacroInstance, Hoo
 		@method getMacroData
 		@for MacroInstance
 		@param {String} Name of macro to get data for
-		@returns {Object} Macro definition object.
+		@return {Object} Macro definition object.
 	*/
 	Object.defineProperty(MacroInstance, "getMacroData", {
 		enumerable: 0,

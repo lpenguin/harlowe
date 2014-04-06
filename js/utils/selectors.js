@@ -4,7 +4,7 @@ define([], function() {
 		Static namespace containing CSS/jQuery selectors for Harlowe DOM elements
 		@class Selectors
 	*/
-	return {
+	return Object.freeze({
 		passage: "tw-passage",
 		story: "tw-story",
 		sidebar: "tw-sidebar",
@@ -19,5 +19,5 @@ define([], function() {
 		stylesheet: "[data-role=stylesheet]",
 		storyData: "tw-storydata",
 		passageData: "[data-role=passage]"
-	};
+	});
 });

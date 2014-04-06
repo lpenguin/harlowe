@@ -247,7 +247,7 @@ define(['jquery', 'twinemarked', 'story', 'utils', 'selectors', 'regexstrings', 
 			@method render
 			@param {string} source The code to render - HTML entities must be unescaped
 			@param {MacroInstance} [context] Macro instance which triggered this rendering.
-			@param {jQuery} [top] the topmost DOM level into which this will be rendered (usually "tw-passage"). Undefined if this is the top.
+			@param {jQuery} [top] the topmost DOM level into which this will be rendered (usually a <tw-passage>). Undefined if this is the document top.
 			@return {jQuery} The rendered passage.
 		*/
 		render: function (source, context, top) {

@@ -70,13 +70,13 @@ require(['jquery', 'story', 'state', 'engine', 'utils', 'selectors', 'regexstrin
 		});
 		
 		// Load the hash if it's present
-		if (window.location.hash) {
-			State.load(window.location.hash);
-			Engine.showPassage(State.passage);
+		if (window.location.hash && window.location.hash.indexOf("stories") == -1) {
+			if (State.load(window.location.hash)) {
+				Engine.showPassage(State.passage);
+				return;
+			}
 		}
-		else {
-			// Show first passage!
-			Engine.goToPassage(Story.startPassage);
-		}
+		// Show first passage!
+		Engine.goToPassage(Story.startPassage);
 	});
 });

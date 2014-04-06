@@ -1,14 +1,27 @@
 define(['jquery', 'utils', 'selectors'], function ($, Utils, Selectors) {
 	"use strict";
-	/* 
+	/**
 	   WordArray
 	   Object containing a sequential set of jQuery-wrapped charspans
 	   that correspond to a search term in the passage text.
+	   
+	   @class WordArray
 	*/
 
 	var WordArray;
 
-	// Modifier: "prepend", "append", "replace"
+	
+	/**
+		The generic WordArray modification function called by WordArray.replace,
+		WordArray.prepend, etc.
+		
+		@method modifyWordArray
+		@private
+		@param {String|Function} word The replacement word.
+		@param {String} modifier Either "replace", "prepend" or "append".
+		@param {String} t8n The CSS transition to use.
+		@return this
+	*/
 	function modifyWordArray(word, modifier, t8n) {
 		// Inner function, convert()
 		// Convert a string or WordArray to a jQuery of spanified HTML,
@@ -67,9 +80,16 @@ define(['jquery', 'utils', 'selectors'], function ($, Utils, Selectors) {
 		return this;
 	}
 
-	/*
-		Creates an array of jQuery objects containing the chars in the selector.
-		The selector is currently just a search string.
+	/**
+		Creates an Array of jQuery objects, queried from the given DOM,
+		which contain the chars in the selector.
+		The selector is currently just a text search string.
+		
+		@method findCharSpans
+		@private
+		@param {String} selector The search string.
+		@param {jQuery} top The DOM to search.
+		@return {Array} The results array.
 	*/
 	function findCharSpans(selector, top) {
 		// Recursive call
@@ -125,41 +145,82 @@ define(['jquery', 'utils', 'selectors'], function ($, Utils, Selectors) {
 
 	WordArray = {
 
-		// Used for duck-typing
+		/**
+			Used for duck-typing
+			@property wordarray
+			@type Boolean
+			@final
+		*/
 		wordarray: true,
 
-		// Number of selected words in the array
+		/**
+			 Number of selected words in the array
+			@property length
+			@type Number
+		*/
 		get length() {
 			return this.contents.length;
 		},
 
-		// An alias for use by macro invokers (e.g. <<print ?hook.count()>>)
+		/**
+			An alias for use by macro invokers (e.g. <<print ?hook.count()>>)
+			@property count
+			@type Number
+		*/
 		get count() {
 			return this.contents.length;
 		},
 
+		/**
+			Returns the first jQuery element in this WordArray.
+			@method first
+			@return {jQuery}
+		*/
 		first: function () {
 			return this.reduce(this.contents[0]);
 		},
-
+		
+		/**
+			Returns the last jQuery element in this WordArray.
+			@method last
+			@return {jQuery}
+		*/
 		last: function () {
 			return this.reduce(this.contents[this.contents.length - 1]);
 		},
 		
-		// All the selectors, space-separated
-		// Commonly used just to retrieve the first and only selector.
+		/**
+			All the selectors, space-separated.
+			Commonly used just to retrieve the first and only selector.
+
+			@property selector
+			@type String
+		*/
 		get selector() {
 			return this.selectors.join(' ');
 		},
 
-		// Return a copy of this WordArray, but with all but the given jQuery removed from contents.
+		/**
+			Return a copy of this WordArray, but with only the given jQuery as its contents.
+			TODO: should it throw an error if the given jQuery is not already in its contents?
+			
+			@method reduce
+			@param {jQuery} elem 
+			@return {jQuery}
+		*/
 		reduce: function (elem) {
 			var ret = Utils.clone(this);
 			ret.contents = [elem];
 			return ret;
 		},
 
-		// Get the text of the first element, or the n-th if index is specified.
+		/**
+			Get the text of the first element, or the n-th if index is specified.
+			
+			@method text
+			@param {Number} index 
+			@return {String} The text of the given element.
+		*/
 		text: function (index) {
 			if (this.contents.length) {
 				return this.contents[(+index) || 0].text();
@@ -167,7 +228,14 @@ define(['jquery', 'utils', 'selectors'], function ($, Utils, Selectors) {
 			return "";
 		},
 
-		// Updates this WordArray's contents to match its selector(s).
+		/**
+			Updates this WordArray's contents to match its selector(s).
+			This queries the given DOM for selected words.
+			
+			@method refresh
+			@param {jQuery} top The DOM in which to search. Usually the contents of one <tw-passage>.
+			@return this
+		*/
 		refresh: function (top) {
 			var other = this,
 				type, i, word, invalid;
@@ -181,7 +249,7 @@ define(['jquery', 'utils', 'selectors'], function ($, Utils, Selectors) {
 
 			for (i = 0; i < this.selectors.length; i += 1) {
 				word = this.selectors[i];
-				type = Utils.scopeType(word);
+				type = WordArray.scopeType(word);
 
 				switch (type) {
 					case "wordarray":
@@ -201,6 +269,9 @@ define(['jquery', 'utils', 'selectors'], function ($, Utils, Selectors) {
 					case "hook string":
 						Utils.hookTojQuery(word, top).each(forEachjQuery);
 						break;
+					case "it":
+						//TODO
+						break;
 					default:
 						invalid += 1;
 						break;
@@ -210,43 +281,135 @@ define(['jquery', 'utils', 'selectors'], function ($, Utils, Selectors) {
 				throw new TypeError("invalid WordArray selector" + (this.selectors.length ? "s" : "") + ": " + this.selectors.join(
 					" "));
 			}
+			return this;
 		},
+		
 
+		/**
+			Returns the type of a scope string or Twine-specific object.
+
+			@method scopeType
+			@static
+			@param val Value to examine
+			@return {String} Description
+		*/
+		scopeType: function (val) {
+			var r;
+
+			// Coerce empty string and null to undefined
+
+			if (!val) {
+				return "undefined";
+			} else if (typeof val === "object") {
+				if (val.wordarray)
+					return "wordarray";
+				else if (val.jquery)
+					return "jquery";
+			} else if (typeof val === "string") {
+				r = /\$\("([^"]*)"\)|\$\('([^']*)'\)|"((?:[^"\\]|\\.)*)"|'((?:[^'\\]|\\.)*)'|\?(\w*)|\bit\b/.exec(val);
+
+				if (r && r.length) {
+					// jQuery selector $("..."), $('...')
+
+					if (r[1] || r[2]) {
+						return "jquery string";
+					}
+					// Word selector "...", '...'
+					else if (r[3] || r[4]) {
+						return "wordarray string";
+					}
+					// Hook ?...
+					else if (r[5]) {
+						return "hook string";
+					}
+					// it selector
+					else if (r[6]) {
+						return "it";
+					}
+				}
+
+				return "undefined";
+			}
+		},
+		
+		/**
+			Creates a new object which inherits from this (i.e. is a WordArray instance).
+			
+			@method create
+			@param {String|Array} selectorstring A single string, or an array, of WordArray selectors.
+			@param {jQuery} top The DOM in which to search. Usually the contents of one <tw-passage>.
+			@return this
+		*/
 		create: function (selectorstring, top) {
 			var ret = Object.create(this);
+			// Array.prototype.concat turns selectorstring into an array, but ignores it
+			// if it's already an array.
 			ret.selectors = Array.prototype.concat(selectorstring);
 			ret.refresh(top);
 			return ret;
 		},
 
-		// replace(str): Takes a string, charSpans it, then
-		// replaces this WordArray's words with it.
-		// Note: unlike jQuery, this is an in-place modification.
+		/**
+			Takes a string, charSpans it, then
+			replaces this WordArray's words with it.
+			Note: unlike jQuery, this is an in-place modification.
+			
+			@method replace
+			@param {String} word The word to replace the WordArray's words with.
+			@param {String} t8n The CSS transition to use.
+			@return this
+		*/
 		replace: function (word, t8n) {
 			return modifyWordArray.call(this, word, "replace", t8n);
 		},
 
-		// append(str): appends instead of replaces.
+		/**
+			Appends instead of replaces.
+			
+			@method append
+			@param {String} word The word to replace the WordArray's words with.
+			@param {String} t8n The CSS transition to use.
+			@return this
+		*/
 		append: function (word, t8n) {
 			return modifyWordArray.call(this, word, "append", t8n);
 		},
 
-		// prepend(str): prepends instead of replaces.
+		/**
+			Prepends instead of replaces.
+			
+			@method append
+			@param {String} word The word to replace the WordArray's words with.
+			@param {String} t8n The CSS transition to use.
+			@return this
+		*/
 		prepend: function (word, t8n) {
 			return modifyWordArray.call(this, word, "prepend", t8n);
 		},
 
-		// remove(): removes the chars from the DOM.
-		remove: function () {
+		/**
+			Removes all the words from the DOM.
+			
+			@method remove
+			@param {String} [t8n] The CSS transition to use. Defaults to "dissolve".
+			@return this
+		*/
+		remove: function (t8n) {
 			this.contents.forEach(function (e) {
 				e.length > 1 && (e = e.wrapAll('<tw-transition-container>'));
-				Utils.transitionOut(e, "dissolve");
+				Utils.transitionOut(e, t8n || "dissolve");
 			});
 			this.contents = [];
 			return this;
 		},
 
-		// style: alters the style attribute of all chars
+		/**
+			Alters the style attribute of all chars.
+			
+			@method style
+			@param {String} style The CSS styles to apply.
+			@return this
+		*/
 		style: function (style) {
 			this.contents.forEach(function (e) {
 				e.attr("style", style);
