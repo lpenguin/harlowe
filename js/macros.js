@@ -1,9 +1,12 @@
 define(['jquery', 'story', 'utils', 'selectors', 'regexstrings', 'wordarray', 'macroinstance', 'hookmacroinstance', 'scope'],
 function($, Story, Utils, Selectors, RegexStrings, WordArray, MacroInstance, HookMacroInstance, Scope) {
 	"use strict";
-	/*
+	/**
 		Macros
-		Macro execution engine.
+		Macro execution engine. A singleton class.
+		
+		@class Macros
+		@static
 	*/
 
 	/*
@@ -50,8 +53,13 @@ function($, Story, Utils, Selectors, RegexStrings, WordArray, MacroInstance, Hoo
 		// Tracker of registered events and their class lists
 		enchantmentEventRegistry = {};
 
-	/*
+	/**
 		Connect Macros to MacroInstance
+		
+		@method getMacroData
+		@for MacroInstance
+		@param {String} Name of macro to get data for
+		@returns {Object} Macro definition object.
 	*/
 	Object.defineProperty(MacroInstance, "getMacroData", {
 		enumerable: 0,
@@ -61,8 +69,18 @@ function($, Story, Utils, Selectors, RegexStrings, WordArray, MacroInstance, Hoo
 		}
 	});
 
-	/*
+	/**
 		Common function of hook macros.
+		<<replace>>, <<append>> etc. use this as their fn. 
+		As such, it is called on a MacroInstance.
+		
+		"Deferred" hook macros await a trigger, such as a <<click>> or a <<timed>> duration,
+		before executing.
+		
+		@method hookMacroFn
+		@private
+		@param {Boolean} deferred Whether or not it is deferred
+		@param {Function} innerFn The function to perform on the macro's hooks.
 	*/
 	function hookMacroFn(deferred, innerFn) {
 		var rerender = this.desc && this.desc.enchantment && this.desc.enchantment.rerender;
@@ -113,15 +131,34 @@ function($, Story, Utils, Selectors, RegexStrings, WordArray, MacroInstance, Hoo
 		}
 	}
 
-	// Generate a unique wrapper for each macro,
-	// outside the scope of Macros.add.
+	/**
+		Generate a unique wrapper for each macro,
+		outside the scope of Macros.add.
+		
+		This binds deferred and innerFn, which otherwise wouldn't be passed
+		during the MacroInstance's call.
+		
+		@method newHookMacroFn
+		@private
+		@param {Boolean} deferred Whether or not it is deferred
+		@param {Function} innerFn The function to perform on the macro's hooks
+		@return {Function} An applied hook macro function.
+	*/
 	function newHookMacroFn(deferred, innerFn) {
 		return function hookMacroFnCall() {
 			return hookMacroFn.call(this, deferred, innerFn);
 		};
 	}
 
-	// Called when an enchantment's event is triggered. Sub-function of Macros.add()
+	/**
+		Called when an enchantment's event is triggered. 
+		This is called as a jQuery .on handler.
+		
+		Sub-function of Macros.add()
+		
+		@method enchantmentEventFn
+		@private
+	*/
 	function enchantmentEventFn() {
 		var elem = $(this),
 			story = Utils.storyElement;
@@ -136,15 +173,31 @@ function($, Story, Utils, Selectors, RegexStrings, WordArray, MacroInstance, Hoo
 		});
 	}
 
-	// Report an error when a user-loaded macro fails. Sub-function of Macros.add() and Macros.supplement().
+	/**
+		Report an error when a user-loaded macro fails. Sub-function of Macros.add() and Macros.supplement().
+		
+		@method loaderError
+		@private
+		@param {String} text The text error to display.
+	*/
 	function loaderError(text) {
 		// TODO: Instead of a basic alert, display a notification banner somewhere.
 		window.alert(text);
 		return true;
 	}
 
-	// Register an enchantment without creating multiple event handlers for the same event.
-	// Sub-function of Macros.add()
+	/**
+		Register an enchantment without creating multiple event handlers for the same event.
+		Enchantments are triggered by DOM events assigned with jQuery's .on().
+		The enchantment registry keeps track of which events have which handlers.
+		
+		Sub-function of Macros.add()
+		
+		@method registerEnchantmentEvent
+		@private
+		@param {String} name Name of the enchantment. This is used for jQuery event namespacing.
+		@param {String} newList Comma-separated list of DOM selectors (hence, a compound selector) for this macro to apply to.
+	*/
 	function registerEnchantmentEvent(name, newList) {
 		// Get the currently stored event class lists
 		var list = enchantmentEventRegistry[name] || "",
@@ -164,20 +217,35 @@ function($, Story, Utils, Selectors, RegexStrings, WordArray, MacroInstance, Hoo
 	*/
 	Macros = {
 
-		// Get a macro.
+		/**
+			Retrieve a macro definition.
+			
+			@method get
+			@param {String} Name of the macro definition to get
+			@return Macro definition object, or false
+		*/
 		get: function (e) {
 			return macroRegistry.hasOwnProperty(e) && macroRegistry[e];
 		},
 
-		// Register a new macro.
-		// name: a string, or an array holding multiple strings.
+		/**
+			Register a new macro.
+			If an array of names is given, an identical macro is created under each name.
+			
+			@method add
+			@param name A String, or an Array holding multiple strings.
+			@param {Object} desc A macro definition object.
+			@return this
+		*/
 		add: function (name, desc) {
 			var fn;
 			if (!Utils.stringOrArray(name)) {
-				return loaderError("Argument 1 of Macros.add isn't an array or a string.");
+				loaderError("Argument 1 of Macros.add isn't an array or a string.");
+				return this;
 			}
 			if (!(desc && typeof desc === "object" && ((desc.fn && typeof desc.fn === "function") || desc.hooked))) {
-				return loaderError("Argument 2 of Macros.add (\"" + name + "\") isn't a valid or complete descriptor.");
+				loaderError("Argument 2 of Macros.add (\"" + name + "\") isn't a valid or complete descriptor.");
+				return this;
 			}
 			// Hook macro? Use a hookMacroFn for its function.
 			if (desc.hooked) {
@@ -200,11 +268,17 @@ function($, Story, Utils, Selectors, RegexStrings, WordArray, MacroInstance, Hoo
 			} else {
 				Utils.lockProperty(macroRegistry, name + "", desc);
 			}
+			return this;
 		},
 
-		// Register a macro that appears internally in another macro (i.e <<endif>> for <<if>>)
-		// name: a string, or an array holding multiple names.
-		// main: a string or an array.
+		/**
+			Register a macro that appears internally in another macro (i.e <<endif>> for <<if>>)
+			@method supplement
+			@param name A String, or an Array holding multiple strings.
+			@param {Object} desc A macro definition object. Its fn and version will be overridden.
+			@param {String} main Name of the macro that these supplement.
+			@return this
+		*/
 		supplement: function (name, desc, main) {
 			var mfunc,
 				errorMsg = " of Macros.supplement isn't an array or a string.",
@@ -212,10 +286,12 @@ function($, Story, Utils, Selectors, RegexStrings, WordArray, MacroInstance, Hoo
 
 			// Type checking
 			if (!Utils.stringOrArray(name)) {
-				return loaderError("Argument 1" + errorMsg);
+				loaderError("Argument 1" + errorMsg);
+				return this;
 			}
 			if (!Utils.stringOrArray(main)) {
-				return loaderError("Argument 3" + errorMsg);
+				loaderError("Argument 3" + errorMsg);
+				return this;
 			}
 			// Get the main macro's data
 			mfunc = Macros.get(main);
@@ -231,11 +307,21 @@ function($, Story, Utils, Selectors, RegexStrings, WordArray, MacroInstance, Hoo
 				desc.version = mfunc.version;
 			}
 			Macros.add(name, desc);
+			return this;
 		},
 
-		// Performs a function for each macro instance found in the HTML.
-		// macroname is a regex string specifying a particular name; if absent, all are found.
-		// Callback function's argument is a macro instance.
+		/**
+			Performs a function for each macro instance found in a string.
+			This searches for both self-closing and enclosing macros,
+			and determines where a macro instantiation begins or ends.
+			Callback function's argument is a macro instance.
+			
+			@method matchMacroTag
+			@param {String} html The Twine code to search for macro tags in.
+			@param {String} macroname A regex string specifying a particular name; if absent, all are found.
+			@param {Function} callback A function that takes a MacroInstance.
+			@return this
+		*/
 		matchMacroTag: function (html, macroname, callback) {
 			var re = RegexStrings,
 				macroRE = new RegExp(re.macroOpen + "\\s*(" + (macroname || re.macroName) +
@@ -284,10 +370,8 @@ function($, Story, Utils, Selectors, RegexStrings, WordArray, MacroInstance, Hoo
 					macroRE.lastIndex = endIndex;
 				}
 			} while (foundMacro);
-		},
-
-		// Stub function to be replaced by macrolib's render()
-		render: $.noop
+			return this;
+		}
 	};
 
 	// This replaces unknown or incorrect macros.

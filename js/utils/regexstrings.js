@@ -15,7 +15,7 @@ define([], function() {
 		// Macro syntax components
 		
 		macroOpen: "<<",
-		macroName: "[\\w\\-\\?\\!]+",
+		macroName: "(?!end)[\\w\\-\\?\\!]+",
 		notMacroClose: "(?:[^>]|>(?!>))*",
 		macroClose: ">>",
 

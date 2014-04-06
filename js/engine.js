@@ -2,11 +2,153 @@ define(['jquery', 'twinemarked', 'story', 'utils', 'selectors', 'regexstrings', 
 	"use strict";
 
 	/**
-	 A singleton class responsible for rendering passages to the DOM.
+		A singleton class responsible for rendering passages to the DOM.
 
-	 @class Engine
+		@class Engine
+		@static
 	*/
 
+	/**
+		Creates the HTML structure of the <tw-passage>. Sub-function of showPassage().
+
+		@method createPassageElement
+		@private
+		@return {jQuery} the element
+	*/
+	function createPassageElement () {
+		var container, back, fwd, sidebar;
+		container = $('<tw-passage><tw-sidebar>'),
+		sidebar = container.children(Selectors.sidebar);
+
+		// Permalink
+		sidebar.append('<tw-icon class="permalink" title="Permanent link to this passage"><a href="#' + State.save() + '">&sect;');
+		// Apart from the Permalink, the sidebar buttons consist of Undo (Back) and Redo (Forward) buttons.
+		back = $('<tw-icon class="undo" title="Undo">&#8630;</tw-icon>').click(Engine.goBack);
+		fwd = $('<tw-icon class="redo" title="Redo">&#8631;</tw-icon>').click(Engine.goForward);
+
+		if (State.pastLength <= 0) {
+			back.css("visibility", "hidden");
+		}
+		if (State.futureLength <= 0) {
+			fwd.css("visibility", "hidden");
+		}
+		sidebar.append(back).append(fwd);
+
+		return container;
+	}
+	
+	/**
+		Shows a passage by transitioning the old passage(s) out, and then adds the new passages.
+
+		@method showPassage
+		@private
+		@param {String} id
+		@param {Boolean} stretch Is stretchtext
+		@param {jQuery} el The DOM parent element to append to
+	*/
+	function showPassage (id, stretch, el) {
+		var newPassage, // Passage element to create
+			t8n, // Transition ID
+			el = el || Utils.storyElement,
+			passageData = Story.passageWithID(id),
+			oldPassages = Utils.$(el.children(Utils.passageSelector));
+
+		if (!passageData) {
+			Utils.impossible("Engine.showPassage","no passage with id \""+id+"\"");
+			return;
+		}
+
+		$(window).scrollTop(oldPassages.offset());
+
+		// Load the default transition if none specified
+
+		t8n = passageData.attr("data-t8n") || "dissolve";
+
+		// Transition out
+
+		if (!stretch && t8n) {
+			Utils.transitionOut(oldPassages, t8n);
+		}
+		// Create new passage
+
+		newPassage = createPassageElement().append(Engine.render(passageData.text()));
+		el.append(newPassage);
+		Engine.updateEnchantments(newPassage);
+
+		// Transition in
+		if (t8n) {
+			Utils.transitionIn(newPassage, t8n);
+		}
+	}
+	
+	/**
+		Renders macros to HTML. Called by render().
+
+		@method renderMacros
+		@private
+		@param {String} source		source text to render
+		@return {Array} Two entries: the HTML to render, and all Macros 
+	*/
+	function renderMacros (source) {
+		var macroInstances = [],
+			macroCount = 0,
+			newhtml = "",
+			index = 0;
+
+		Macros.matchMacroTag(source, null, function (m) {
+			// A macro by that name doesn't exist
+
+			if (!m.desc)
+				m.desc = Macros.get("unknown");
+
+			// Contain the macro in a hidden span.
+
+			newhtml += source.slice(index, m.startIndex) + '<tw-macro count="' + macroCount + '" name="' + m.name +
+				'" hidden></tw-macro>';
+			macroInstances.push(m);
+			macroCount += 1;
+			index = m.endIndex;
+		});
+
+		newhtml += source.slice(index);
+		return [newhtml, macroInstances];
+	}
+	
+	/**
+		Makes a passage link. Sub-function of render().
+		Passage links can be either passage names, or Twine
+		code (e.g. "red" + $val).
+		TODO: Figure out how external links fit into this.
+		TODO: All link code is executed before all macro code. Fix this.
+
+		@method renderLink
+		@private
+		@param {String} [text] Text to display as link
+		@param {jQuery} passage Passage to link to
+		@return HTML string
+	*/
+	function renderLink (text, passage) {
+		var visited = -1;
+
+		if (Story.passageNamed(passage)) {
+			visited = (State.passageNameVisited(passage));
+		} else {
+			// Is it a code link?
+			try {
+				passage = Script.context().evalExpression(passage);
+				Story.passageNamed(passage) && (visited = (State.passageNameVisited(passage)));
+			} catch(e) { /* pass */ }
+			
+			// Not an internal link?
+			if (!~visited) {
+				return '<tw-broken-link passage-id="' + passage + '">' + (text || passage) + '</tw-broken-link>';
+			}
+		}
+
+		return '<tw-link class="link ' + (visited ? 'visited" ' : '" ') + (Story.options.opaquelinks ? '' :
+			'title="' + passage + '"') + ' passage-id="' + passage + '">' + (text || passage) + '</tw-link>';
+	}
+	
 	var Engine = {
 		/**
 			Moves the game state backward one. If there is no previous state, this does nothing.
@@ -17,7 +159,7 @@ define(['jquery', 'twinemarked', 'story', 'utils', 'selectors', 'regexstrings', 
 			//TODO: get the stretch value from state
 
 			if (State.rewind()) {
-				Engine.showPassage(State.passage);
+				showPassage(State.passage);
 			}
 		},
 
@@ -30,7 +172,7 @@ define(['jquery', 'twinemarked', 'story', 'utils', 'selectors', 'regexstrings', 
 			//TODO: get the stretch value from state
 
 			if (State.fastForward()) {
-				Engine.showPassage(State.passage);
+				showPassage(State.passage);
 			}
 		},
 
@@ -44,7 +186,7 @@ define(['jquery', 'twinemarked', 'story', 'utils', 'selectors', 'regexstrings', 
 		goToPassage: function (id, stretch) {
 			// Update the state.
 			State.play(id);
-			Engine.showPassage(id, stretch);
+			showPassage(id, stretch);
 		},
 
 		/**
@@ -100,147 +242,6 @@ define(['jquery', 'twinemarked', 'story', 'utils', 'selectors', 'regexstrings', 
 		},
 
 		/**
-			Creates the HTML structure of the passage <section>. Sub-function of showPassage().
-
-			@method createPassageElement
-			@private
-			@return {jQuery} the element
-		*/
-		createPassageElement: function () {
-			var container, back, fwd, sidebar;
-			container = $('<tw-passage><tw-sidebar>'),
-			sidebar = container.children(Selectors.sidebar);
-
-			// Permalink
-			sidebar.append('<tw-icon class="permalink" title="Permanent link to this passage"><a href="#' + State.save() + '">&sect;');
-			// Apart from the Permalink, the sidebar buttons consist of Undo (Back) and Redo (Forward) buttons.
-			back = $('<tw-icon class="undo" title="Undo">&#8630;</tw-icon>').click(Engine.goBack);
-			fwd = $('<tw-icon class="redo" title="Redo">&#8631;</tw-icon>').click(Engine.goForward);
-
-			if (State.pastLength <= 0) {
-				back.css("visibility", "hidden");
-			}
-			if (State.futureLength <= 0) {
-				fwd.css("visibility", "hidden");
-			}
-			sidebar.append(back).append(fwd);
-
-			return container;
-		},
-
-		/**
-			Shows a passage by transitioning the old passage(s) out, and then adds the new passages.
-
-			@method showPassage
-			@private
-			@param {String} id
-			@param {Boolean} stretch Is stretchtext
-			@param {jQuery} el The DOM parent element to append to
-		*/
-		showPassage: function (id, stretch, el) {
-			var newPassage, // Passage element to create
-				t8n, // Transition ID
-				el = el || Utils.storyElement,
-				passageData = Story.passageWithID(id),
-				oldPassages = Utils.$(el.children(Utils.passageSelector));
-
-			if (!passageData) {
-				Utils.impossible("Engine.showPassage","no passage with id \""+id+"\"");
-				return;
-			}
-
-			$(window).scrollTop(oldPassages.offset());
-
-			// Load the default transition if none specified
-
-			t8n = passageData.attr("data-t8n") || "dissolve";
-
-			// Transition out
-
-			if (!stretch && t8n)
-				Utils.transitionOut(oldPassages, t8n);
-
-			// Create new passage
-
-			newPassage = Engine.createPassageElement().append(Engine.render(passageData.text()));
-			el.append(newPassage);
-			Engine.updateEnchantments(newPassage);
-
-			// Transition in
-			if (t8n) {
-				Utils.transitionIn(newPassage, t8n);
-			}
-		},
-
-		/**
-			Renders macros to HTML. Called by render().
-
-			@method renderMacros
-			@private
-			@param {String} source		source text to render
-			@return {Array} Two entries: the HTML to render, and all Macros 
-		*/
-		renderMacros: function (source) {
-			var macroInstances = [],
-				macroCount = 0,
-				newhtml = "",
-				index = 0;
-
-			Macros.matchMacroTag(source, null, function (m) {
-				// A macro by that name doesn't exist
-
-				if (!m.desc)
-					m.desc = Macros.get("unknown");
-
-				// Contain the macro in a hidden span.
-
-				newhtml += source.slice(index, m.startIndex) + '<tw-macro count="' + macroCount + '" name="' + m.name +
-					'" hidden></tw-macro>';
-				macroInstances.push(m);
-				macroCount += 1;
-				index = m.endIndex;
-			});
-
-			newhtml += source.slice(index);
-			return [newhtml, macroInstances];
-		},
-
-		/**
-			Makes a passage link. Sub-function of render().
-			Passage links can be either passage names, or Twine
-			code (e.g. "red" + $val).
-			TODO: Figure out how external links fit into this.
-			TODO: All link code is executed before all macro code. Fix this.
-
-			@method renderLink
-			@private
-			@param {String} [text] Text to display as link
-			@param {jQuery} passage Passage to link to
-			@return HTML string
-		*/
-		renderLink: function (text, passage) {
-			var visited = -1;
-
-			if (Story.passageNamed(passage)) {
-				visited = (State.passageNameVisited(passage));
-			} else {
-				// Is it a code link?
-				try {
-					passage = Script.context().evalExpression(passage);
-					Story.passageNamed(passage) && (visited = (State.passageNameVisited(passage)));
-				} catch(e) { /* pass */ }
-				
-				// Not an internal link?
-				if (!~visited) {
-					return '<tw-broken-link passage-id="' + passage + '">' + (text || passage) + '</tw-broken-link>';
-				}
-			}
-
-			return '<tw-link class="link ' + (visited ? 'visited" ' : '" ') + (Story.options.opaquelinks ? '' :
-				'title="' + passage + '"') + ' passage-id="' + passage + '">' + (text || passage) + '</tw-link>';
-		},
-
-		/**
 			The top-level rendering method.
 
 			@method render
@@ -266,7 +267,7 @@ define(['jquery', 'twinemarked', 'story', 'utils', 'selectors', 'regexstrings', 
 
 			source += "";
 			source = source.replace(/\[\[([^\|\]]*?)\|([^\|\]]*)?\]\]/g, function (match, text, passage) {
-				return Engine.renderLink(text, passage);
+				return renderLink(text, passage);
 			});
 
 			/*
@@ -283,18 +284,18 @@ define(['jquery', 'twinemarked', 'story', 'utils', 'selectors', 'regexstrings', 
 			source = source.replace(/\[\[(?:([^\]]*)\->|([^\]]*?)<\-)([^\]]*)\]\]/g, function (match, p1, p2, p3) {
 				// if right-arrow ->, then p1 is text, p2 is "", p3 is link.
 				// If left-arrow <-, then p1 is "", p2 is link, p3 is text.
-				return Engine.renderLink(p2 ? p3 : p1, p1 ? p3 : p2);
+				return renderLink(p2 ? p3 : p1, p1 ? p3 : p2);
 			});
 
 			// [[link]] format
 
 			source = source.replace(/\[\[([^\|\]]*?)\]\]/g, function (match, p1) {
-				return Engine.renderLink(void 0, p1);
+				return renderLink(void 0, p1);
 			});
 
 			// macros
 
-			temp = Engine.renderMacros(source);
+			temp = renderMacros(source);
 			source = temp[0];
 			macroInstances = temp[1];
 
@@ -307,7 +308,7 @@ define(['jquery', 'twinemarked', 'story', 'utils', 'selectors', 'regexstrings', 
 					source = Marked(source);
 				} catch (e) {
 					Utils.impossible("Engine.render()","Marked crashed");
-					temp = Engine.renderMacros("<p>"+RegexStrings.macroOpen + "rendering-error " +
+					temp = renderMacros("<p>"+RegexStrings.macroOpen + "rendering-error " +
 						e + RegexStrings.macroClose+"</p>");
 					source = temp[0];
 					macroInstances = temp[1];
