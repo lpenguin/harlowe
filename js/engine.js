@@ -135,7 +135,7 @@ define(['jquery', 'twinemarked', 'story', 'utils', 'selectors', 'regexstrings', 
 		} else {
 			// Is it a code link?
 			try {
-				passage = Script.context().evalExpression(passage);
+				passage = Script.environ().evalExpression(passage);
 				Story.passageNamed(passage) && (visited = (State.passageNameVisited(passage)));
 			} catch(e) { /* pass */ }
 			
@@ -253,6 +253,15 @@ define(['jquery', 'twinemarked', 'story', 'utils', 'selectors', 'regexstrings', 
 		render: function (source, context, top) {
 			var html, temp, macroInstances;
 			
+			// If a non-string is passed into here, there's really nothing to do.
+			if (typeof source !== "string") {
+				Utils.impossible("Engine.render", "source was not a string");
+				return $();
+			}
+			
+			// First, replace Private Use 0 (used to escape </script> tags) with the greater-than sign
+			source = source.replace(/\ue000/g, "<");
+			
 			// The following syntax depends on access to the story data to perform,
 			// so it must occur outside of Marked.
 
@@ -265,7 +274,7 @@ define(['jquery', 'twinemarked', 'story', 'utils', 'selectors', 'regexstrings', 
 				Possible bug: doesn't check for '\' preceding the first '['
 			*/
 
-			source += "";
+
 			source = source.replace(/\[\[([^\|\]]*?)\|([^\|\]]*)?\]\]/g, function (match, text, passage) {
 				return renderLink(text, passage);
 			});

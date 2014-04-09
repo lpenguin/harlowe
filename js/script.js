@@ -155,16 +155,16 @@ define(['jquery', 'story', 'state', 'utils', 'regexstrings', 'engine', 'wordarra
 			return window.location.href;
 		};
 	
-	var Script = $.extend(Object.create(null), {
+	var Script = {
 
 		/**
-			Creates a new macroscript execution context, in which certain key variables like "top"
+			Creates a new macroscript execution environment, in which certain key variables like "top"
 			and "it" are bound to certain values.
-			@method context
-			@param {jQuery} top The top context in which WordArrays apply
-			@return {Object} A context object with an eval method.
+			@method environ
+			@param {jQuery} top The DOM context for WordArray.create
+			@return {Object} An environ object with eval methods.
 		*/
-		context: function (top) {
+		environ: function (top) {
 		
 			/*
 				Wrappers for WordArray
@@ -253,7 +253,7 @@ define(['jquery', 'story', 'state', 'utils', 'regexstrings', 'engine', 'wordarra
 			}
 			return expr;
 		}
-	});
+	};
 	
 	/* Undefine previous helpers */
 	mathFilter = void 0;

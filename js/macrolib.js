@@ -1,4 +1,4 @@
-define(['jquery', 'story', 'script', 'macros', 'macroinstance', 'engine', 'utils'], function($, Story, Script, Macros, MacroInstance, Engine, Utils) {
+define(['jquery', 'story', 'script', 'macros', 'wordarray', 'macroinstance', 'engine', 'utils'], function($, Story, Script, Macros, WordArray, MacroInstance, Engine, Utils) {
 	"use strict";
 	/*
 		MacroLib
@@ -85,7 +85,7 @@ define(['jquery', 'story', 'script', 'macros', 'macroinstance', 'engine', 'utils
 			}
 
 			try {
-				Script.context(this.top).evalStatement(
+				Script.environ(this.top).evalStatement(
 					// the variable
 					variable,
 					// the operator
@@ -112,7 +112,7 @@ define(['jquery', 'story', 'script', 'macros', 'macroinstance', 'engine', 'utils
 		selfClosing: true,
 		fn: function () {
 			try {
-				Script.context(this.top).evalExpression(this.rawArgs);
+				Script.environ(this.top).evalExpression(this.rawArgs);
 			} catch (e) {
 				this.error(e.message);
 			}
@@ -130,7 +130,7 @@ define(['jquery', 'story', 'script', 'macros', 'macroinstance', 'engine', 'utils
 		selfClosing: true,
 		fn: function () {
 			try {
-				this.render(Script.context(this.top).evalExpression(this.rawArgs));
+				this.render(Script.environ(this.top).evalExpression(this.rawArgs));
 			} catch (e) {
 				this.error(e.message);
 			}
@@ -168,7 +168,7 @@ define(['jquery', 'story', 'script', 'macros', 'macroinstance', 'engine', 'utils
 			try {
 				// Eval this in the context of the script object,
 				// where the Twinescript API is.
-				Script.context(this.top).evalStatement.call(el, this.contents);
+				Script.environ(this.top).evalStatement.call(el, this.contents);
 				this.clear();
 			} catch (e) {
 				this.error(e.message);
@@ -225,7 +225,7 @@ define(['jquery', 'story', 'script', 'macros', 'macroinstance', 'engine', 'utils
 			// Now, run through them all until you find a true arg.
 			for (i = 0; i < args.length; i += 1) {
 				try {
-					var result = Script.context(this.top).evalExpression(args[i]);
+					var result = Script.environ(this.top).evalExpression(args[i]);
 					if (result) {
 						this.render(contents[i]);
 						return;
@@ -256,7 +256,7 @@ define(['jquery', 'story', 'script', 'macros', 'macroinstance', 'engine', 'utils
 		selfClosing: true,
 		fn: function () {
 			try {
-				var name = Script.context(this.top).evalStatement(this.rawArgs);
+				var name = Script.environ(this.top).evalStatement(this.rawArgs);
 				// Test for existence
 				if (!Story.passageNamed(name)) {
 					this.error('Can\'t <<display>> passage "' + name + '"', true);
