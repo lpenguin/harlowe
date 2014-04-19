@@ -168,7 +168,7 @@ define(['jquery', 'story', 'script', 'macros', 'wordarray', 'macroinstance', 'en
 			try {
 				// Eval this in the context of the script object,
 				// where the Twinescript API is.
-				Script.environ(this.top).evalStatement.call(el, this.contents);
+				Script.environ(this.top).evalJavascript.call(el, this.contents);
 				this.clear();
 			} catch (e) {
 				this.error(e.message);
@@ -182,7 +182,7 @@ define(['jquery', 'story', 'script', 'macros', 'wordarray', 'macroinstance', 'en
 	});
 
 	// <<style>> ... <</style>>
-	// Insert the enclosed raw CSS into a <script> tag that exists for the
+	// Insert the enclosed raw CSS into a <style> tag that exists for the
 	// duration of the current passage only.
 	// contents: raw CSS.
 	Macros.add("style", {

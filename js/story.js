@@ -27,14 +27,14 @@ define(['jquery', 'utils', 'selectors'], function($, Utils, Selectors) {
 		// Get a passage, given a name
 		// This should only be called by story code handling objects - internally, passages are referenced by ID.
 		passageNamed: function (name) {
-			var passage = $(Selectors.storyData + " > " + Selectors.passageData +'[data-name="' + name + '"]');
+			var passage = $(Selectors.storyData + " > " + Selectors.passageData +'[name="' + name + '"]');
 			
 			return !!passage.length && passage;
 		},
 
 		// Get a passage, given an ID
 		passageWithID: function (id) {
-			var passage = $(Selectors.storyData + " > " + Selectors.passageData +'[data-id="' + id + '"]');
+			var passage = $(Selectors.storyData + " > " + Selectors.passageData +'[pid="' + id + '"]');
 
 			return !!passage.length && passage;
 		},
@@ -43,14 +43,14 @@ define(['jquery', 'utils', 'selectors'], function($, Utils, Selectors) {
 		getPassageName: function (id) {
 			var p = this.passageWithID(id);
 			
-			return p ? p.attr("data-name") : "";
+			return p ? p.attr("name") : "";
 		},
 
 		// Get the ID of a passage, given its name
 		getPassageID: function (name) {
 			var p = this.passageNamed(name);
 			
-			return p ? p.attr("data-id") : ""
+			return p ? p.attr("pid") : ""
 		}
 	};
 

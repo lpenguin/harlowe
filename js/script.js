@@ -197,6 +197,11 @@ define(['jquery', 'story', 'state', 'utils', 'regexstrings', 'engine', 'wordarra
 					);
 				}
 				.bind(this),
+				
+				evalJavascript: function(/* variadic */) {
+					return eval(Array.apply(null, arguments).join(''))
+				}
+				.bind(this)
 			};
 		},
 	

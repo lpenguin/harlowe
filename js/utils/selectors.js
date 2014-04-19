@@ -18,6 +18,6 @@ define([], function() {
 		script: "[data-role=script]",
 		stylesheet: "[data-role=stylesheet]",
 		storyData: "tw-storydata",
-		passageData: "[data-role=passage]"
+		passageData: "tw-passagedata"
 	});
 });
