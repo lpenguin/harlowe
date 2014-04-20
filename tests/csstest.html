@@ -1,0 +1,101 @@
+<tw-storydata name="CSS test" startnode="2" creator="Twine" creator-version="2.0p2"><style role="stylesheet" id="twine-user-stylesheet" type="text/twine-css"></style><script role="script" id="twine-user-script" type="text/twine-javascript"></script><tw-passagedata pid="1" name="Text styles" position="257.5,298.5">*italic*
+**bold**
+&lt;mark&gt;marker&lt;/mark&gt;
+&lt;ins&gt;correction fluid&lt;/ins&gt;
+&lt;del&gt;deleted text&lt;/del&gt;
+-----
+&lt;x-outline&gt;outline&lt;/x-outline&gt;
+&lt;x-shadow&gt;shadow&lt;/x-shadow&gt;
+&lt;x-condense&gt;condense&lt;/x-condense&gt;
+&lt;x-expand&gt;expand&lt;/x-expand&gt;
+&lt;x-blur&gt;blur&lt;/x-blur&gt;
+&lt;x-blurrier&gt;blurrier&lt;/x-blurrier&gt;
+&lt;x-smear&gt;smear&lt;/x-smear&gt;
+&lt;x-mirror&gt;mirror&lt;/x-mirror&gt;
+&lt;x-upside-down&gt;upside-down&lt;/x-upside-down&gt;
+-----
+&lt;blink&gt;blink&lt;/blink&gt;
+&lt;x-fade-in-out&gt;fade in-out&lt;/x-fade-in-out&gt;
+&lt;x-rumble&gt;rumble&lt;/x-rumble&gt;
+&lt;x-shudder&gt;shudder&lt;/x-shudder&gt;
+-----
+#Header 1
+##Header 2
+###Header 3
+####Header 4
+#####Header 5
+</tw-passagedata><tw-passagedata pid="2" name="Start" position="444.5,223.5">* [[Text styles]]
+* [[Debug mode styles]]
+</tw-passagedata><tw-passagedata pid="3" name="Debug mode styles" position="594.5,371.5">Click the Debug icon to turn the highlighting on and off.
+Hover over the macros to examine them.
+
+####Passage links:
+[[Blue Link|waterfall]]
+[[Blue Link|tower]]
+[[Blue Link|conservatory]]
+[[Broken Link|basement]]
+
+####Invalid macro:
+&lt;&lt;clowns vehicle = &quot;Unicycle&quot; &gt;&gt;
+
+####Display and Display error:
+&lt;&lt;display &quot;displayed&quot; &gt;&gt;
+&lt;&lt;display &quot;basement&quot; &gt;&gt;
+
+####Self-referential Display error:
+&lt;&lt;display &quot;one&quot; &gt;&gt;
+
+####Set and Print:
+&lt;&lt;set $red = &quot;Crimson&quot; &gt;&gt; &lt;&lt;set $blue = &quot;Indigo&quot; &gt;&gt; &lt;&lt;set $green = &quot;Emerald&quot; &gt;&gt;
+You have a &lt;&lt;print $blue&gt;&gt; Brooch and &lt;&lt;print random(2,8) &gt;&gt; &lt;&lt;print $green + &quot;s&quot; &gt;&gt;.
+
+####Print error:
+Square root of -1 is &lt;&lt;print sqrt(-1)&gt;&gt;.
+You visited the basement &lt;&lt;print visited(&quot;basement&quot;)&gt;&gt; times.
+
+####If:
+&lt;&lt;if true&gt;&gt;
+&#x27;if&#x27; is functional!
+&lt;&lt;set $red to &quot;Crimson&quot; &gt;&gt;
+&lt;&lt;display &quot;displayed&quot; &gt;&gt;
+&lt;&lt;/if&gt;&gt;
+
+####False If:
+&lt;&lt;if false is true&gt;&gt;
+false &#x27;if&#x27;
+&lt;&lt;/if&gt;&gt;
+
+####False If, True Else:
+&lt;&lt;if false is true&gt;&gt;
+&#x27;if&#x27; is functional!
+&lt;&lt;else if true&gt;&gt;
+&#x27;else if&#x27; is functional!
+&lt;&lt;else&gt;&gt;
+&#x27;else&#x27; is functional!
+&lt;&lt;/if&gt;&gt;
+
+####Nested If:
+&lt;&lt;if $red is &quot;Crimson&quot;&gt;&gt;
+&lt;&lt;if $blue is not &quot;Cyan&quot;&gt;&gt;
+Nested &#x27;if&#x27; is functional!
+&lt;&lt;/if&gt;&gt;
+&lt;&lt;if $blue is not &quot;Indigo&quot;&gt;&gt;
+ERROR
+&lt;&lt;/if&gt;&gt;
+&lt;&lt;/if&gt;&gt;
+
+####Script and Style:
+&lt;&lt;script&gt;&gt;
+document.title = &quot;Twine 2 debug mode demo 1&quot;
+&lt;&lt;/script&gt;&gt;&lt;&lt;style&gt;&gt;
+b { background-color: PapayaWhip; }
+&lt;&lt;/style&gt;&gt;
+
+####Hooks, Click and Replace:
+[This][1] is a hook.
+&lt;&lt;click ?1&gt;&gt;Suddenly, the tunnel collapses...&lt;&lt;/click&gt;&gt;
+[This][2] is another hook[.][3]
+&lt;&lt;click ?2&gt;&gt;\
+&lt;&lt;replace ?3&gt;&gt; (as is this one).&lt;&lt;/replace&gt;&gt;
+&lt;&lt;/click&gt;&gt;</tw-passagedata><tw-passagedata pid="4" name="tower" position="744.5,521.5">This is the &#x27;tower&#x27; passage.</tw-passagedata><tw-passagedata pid="5" name="conservatory" position="894.5,521.5">This is the &#x27;conservatory&#x27; passage.</tw-passagedata><tw-passagedata pid="6" name="basement" position="1044.5,521.5">This is the &#x27;basement&#x27; passage.</tw-passagedata><tw-passagedata pid="7" name="waterfall" position="752.5,396.5">This is the &#x27;waterfall&#x27; passage.</tw-passagedata></tw-storydata>
+
