@@ -49,6 +49,7 @@ define(['jquery', 'twinemarked', 'story', 'utils', 'selectors', 'regexstrings', 
 	function showPassage (id, stretch, el) {
 		var newPassage, // Passage element to create
 			t8n, // Transition ID
+			passageCode,
 			el = el || Utils.storyElement,
 			passageData = Story.passageWithID(id),
 			oldPassages = Utils.$(el.children(Utils.passageSelector));
@@ -70,8 +71,8 @@ define(['jquery', 'twinemarked', 'story', 'utils', 'selectors', 'regexstrings', 
 			Utils.transitionOut(oldPassages, t8n);
 		}
 		// Create new passage
-
-		newPassage = createPassageElement().append(Engine.render(passageData.text()));
+		passageCode = Utils.unescape(passageData.html());
+		newPassage = createPassageElement().append(Engine.render(passageCode));
 		el.append(newPassage);
 		Engine.updateEnchantments(newPassage);
 
@@ -112,41 +113,6 @@ define(['jquery', 'twinemarked', 'story', 'utils', 'selectors', 'regexstrings', 
 
 		newhtml += source.slice(index);
 		return [newhtml, macroInstances];
-	}
-	
-	/**
-		Makes a passage link. Sub-function of render().
-		Passage links can be either passage names, or Twine
-		code (e.g. "red" + $val).
-		TODO: Figure out how external links fit into this.
-		TODO: All link code is executed before all macro code. Fix this.
-
-		@method renderLink
-		@private
-		@param {String} [text] Text to display as link
-		@param {jQuery} passage Passage to link to
-		@return HTML string
-	*/
-	function renderLink (text, passage) {
-		var visited = -1;
-
-		if (Story.passageNamed(passage)) {
-			visited = (State.passageNameVisited(passage));
-		} else {
-			// Is it a code link?
-			try {
-				passage = Script.environ().evalExpression(passage);
-				Story.passageNamed(passage) && (visited = (State.passageNameVisited(passage)));
-			} catch(e) { /* pass */ }
-			
-			// Not an internal link?
-			if (!~visited) {
-				return '<tw-broken-link passage-id="' + passage + '">' + (text || passage) + '</tw-broken-link>';
-			}
-		}
-
-		return '<tw-link class="link ' + (visited ? 'visited" ' : '" ') + (Story.options.opaquelinks ? '' :
-			'title="' + passage + '"') + ' passage-id="' + passage + '">' + (text || passage) + '</tw-link>';
 	}
 	
 	var Engine = {
@@ -200,7 +166,7 @@ define(['jquery', 'twinemarked', 'story', 'utils', 'selectors', 'regexstrings', 
 			// Install handler for links
 
 			html.on('click.passage-link', Selectors.internalLink+'[passage-id]', function (e) {
-				var next = Story.getPassageID($(this).attr('passage-id'));
+				var next = $(this).attr('passage-id');
 
 				if (next) {
 					// TODO: stretchtext
@@ -258,49 +224,6 @@ define(['jquery', 'twinemarked', 'story', 'utils', 'selectors', 'regexstrings', 
 				Utils.impossible("Engine.render", "source was not a string");
 				return $();
 			}
-			
-			// First, replace Private Use 0 (used to escape </script> tags) with the greater-than sign
-			source = source.replace(/\ue000/g, "<");
-			
-			// The following syntax depends on access to the story data to perform,
-			// so it must occur outside of Marked.
-
-			// replace [[ ]] with twine links
-
-			/* 
-				Format 1:
-				[[display text|link]] format
-				Twine 1 / TiddlyWiki / reverse MediaWiki link syntax.
-				Possible bug: doesn't check for '\' preceding the first '['
-			*/
-
-
-			source = source.replace(/\[\[([^\|\]]*?)\|([^\|\]]*)?\]\]/g, function (match, text, passage) {
-				return renderLink(text, passage);
-			});
-
-			/*
-				Format 2:
-				[[display text->link]] format
-				[[link<-display text]] format
-				
-				Leon note: This, in my mind, looks more intuitive w/r/t remembering the type of the arguments.
-				The arrow always points to the passage name.
-				Passage names, of course, can't contain < or > signs.
-				This regex will interpret the rightmost '->' and the leftmost '<-' as the divider.
-			*/
-
-			source = source.replace(/\[\[(?:([^\]]*)\->|([^\]]*?)<\-)([^\]]*)\]\]/g, function (match, p1, p2, p3) {
-				// if right-arrow ->, then p1 is text, p2 is "", p3 is link.
-				// If left-arrow <-, then p1 is "", p2 is link, p3 is text.
-				return renderLink(p2 ? p3 : p1, p1 ? p3 : p2);
-			});
-
-			// [[link]] format
-
-			source = source.replace(/\[\[([^\|\]]*?)\]\]/g, function (match, p1) {
-				return renderLink(void 0, p1);
-			});
 
 			// macros
 
@@ -328,13 +251,54 @@ define(['jquery', 'twinemarked', 'story', 'utils', 'selectors', 'regexstrings', 
 
 			html = $(source);
 
-			// Render macro instances
+			// Execute macros and update links
 			// (Naming this closure for stacktrace visibility)
 
-			Utils.$(Selectors.macroInstance, html).each(function renderMacroInstances() {
-				var count = this.getAttribute("count");
-				this.removeAttribute("hidden");
-				macroInstances[count].run($(this), context, html.add(top));
+			$(Selectors.macroInstance + ", " + Selectors.internalLink, html).each(function runMacroInstances () {
+				var passage,
+					text,
+					visited,
+					count,
+					el = $(this).removeAttr("larva");
+				
+				switch(this.tagName.toLowerCase()) {
+					case "tw-macro":
+					{
+						count = this.getAttribute("count");
+						this.removeAttribute("hidden");
+						macroInstances[count].run($(this), context, html.add(top));
+						break;
+					}
+					case "tw-link":
+					{
+						passage = Utils.unescape(el.attr("passage-expr"));
+						text = el.text();
+						visited = -1;
+						
+						if (Story.passageNamed(passage)) {
+							visited = (State.passageNameVisited(passage));
+						} else {
+							// Is it a code link?
+							try {
+								passage = Script.environ().evalExpression(passage);
+								Story.passageNamed(passage) && (visited = (State.passageNameVisited(passage)));
+							} catch(e) { /* pass */ }
+							
+							// Not an internal link?
+							if (!~visited) {
+								el.replaceWith('<tw-broken-link passage-id="' + passage + '">' + (text || passage) + '</tw-broken-link>');
+							}
+						}
+						el.removeAttr("passage-expr").attr("passage-id", Story.getPassageID(passage));
+						if (visited) {
+							el.addClass("visited");
+						}
+						if (Story.options.opaquelinks) {
+							el.attr("title",passage);
+						}
+						break;
+					}
+				}
 			});
 
 			// If one <p> tag encloses all the HTML, unwrap it.

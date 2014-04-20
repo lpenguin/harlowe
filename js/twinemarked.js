@@ -3,7 +3,6 @@ define(['marked', 'story', 'utils'], function(Marked, Story, Utils) {
 	/*
 		TwineMarked
 		This module simply patches Marked with Twine's syntax changes.
-		Note for release: when syntax is finalised, hand-patch Marked.js itself instead of running this.
 		
 		Current list of MD deviations:
 		. Marked.options.gfm
@@ -21,6 +20,43 @@ define(['marked', 'story', 'utils'], function(Marked, Story, Utils) {
 		+ Text chars are wrapped in <tw-char>s
 		+ Code spans are currently exempted.
 		+ New text-align syntax
+		
+		
+		A reminder of the setFunc and setRule API I added to Marked:
+		
+		Lexer.setRule = function(name, regex, inParagraph)
+		- name: {String} the name of the rule; its key
+		- regex: {RegExp} the pattern to match. Must begin with ^.
+		- inParagraph: {Boolean} whether to include it in Marked's paragraph regex
+		
+		Lexer.setFunc = function(name, func)
+		- name: {String} the name of the rule; its key
+		- func: the callback to use:
+			func(cap, top, src)
+			- this: Lexer instance, notably with a tokens Array property.
+			- cap: {Array} a match object for the found token
+			- top: {Boolean} whether or not this is top-level, not within another element
+			- src: {String} the source text
+			This must push a token object to this.tokens, that a matching Parser.setFunc
+			callback will consume.
+		
+		InlineLexer.setRule = function(name, regex, end)
+		- name: {String} the name of the rule; its key
+		- regex: {RegExp} the pattern to match. Must begin with ^.
+		
+		InlineLexer.setFunc = function(name, func)
+		- name: {String} the name of the rule; its key
+		- func: the callback to use:
+			func(cap, top, src)
+			- this: InlineLexer instance.
+			- cap: {Array} a match object for the found token
+			- src: {String} the source text
+			
+		Parser.setFunc = function(name, func)
+		- name: {String} the name of the rule; its key
+		- func: the callback to use:
+			func()
+			- this: Parser instance
 	*/
 
 	Marked.setOptions({
@@ -50,6 +86,58 @@ define(['marked', 'story', 'utils'], function(Marked, Story, Utils) {
 	Marked.Lexer.setRule("paragraph",
 		/^((?:[^\n]+\n?(?!hr|align|heading|blockquote|tag|def))+)\n?/);
 	
+	
+	/*
+		Link syntax
+	*/
+	window.marked=Marked;
+	function renderLink (text, passage) {
+		return '<tw-link class="link" passage-expr="' + Marked.escape(passage) + '">' + (text || passage) + '</tw-link>';
+	}
+	
+	/*
+		Simple links
+		[[link]]
+	*/
+	
+	Marked.InlineLexer.setRule("simpleLink", /^\[\[([^\|\]]*?)\]\]/);
+	Marked.InlineLexer.setFunc("simpleLink", function (cap) {
+		return renderLink(void 0, cap[1]);
+	});
+	
+	/*
+		Format 1:
+		[[display text|link]] format
+		Twine 1 / TiddlyWiki / reverse MediaWiki link syntax.
+		Possible bug: doesn't check for '\' preceding the first '['
+	*/
+	
+	Marked.InlineLexer.setRule("legacyLink", /^\[\[([^\|\]]*?)\|([^\|\]]*)?\]\]/);
+	Marked.InlineLexer.setFunc("legacyLink", function (cap) {
+		return renderLink(cap[1], cap[2]);
+	});
+		
+	/*
+		Format 2:
+		[[display text->link]] format
+		[[link<-display text]] format
+		
+		Leon note: This, in my mind, looks more intuitive w/r/t remembering the type of the arguments.
+		The arrow always points to the passage name.
+		Passage names, of course, can't contain < or > signs.
+		This regex will interpret the rightmost '->' and the leftmost '<-' as the divider.
+	*/
+	
+	Marked.InlineLexer.setRule("passageLink", /^\[\[(?:([^\]]*)\->|([^\]]*?)<\-)([^\]]*)\]\]/);
+	
+	Marked.InlineLexer.setFunc("passageLink", function (cap) {
+		var p1 = cap[1],
+			p2 = cap[2],
+			p3 = cap[3];
+		return renderLink(p2 ? p3 : p1, p1 ? p3 : p2);
+	});
+	
+	
 	/*
 		Text align syntax
 		
@@ -62,7 +150,7 @@ define(['marked', 'story', 'utils'], function(Marked, Story, Utils) {
 	*/
 	
 	Marked.Lexer.setRule("align", /^ *(==+>|<=+|=+><=+|<==+>)(?:\n|$)/, true);
-	Marked.Lexer.setFunc("align", function(cap) {
+	Marked.Lexer.setFunc("align", function (cap) {
 		var align,
 			arrow = cap[1],
 			centerIndex = arrow.indexOf("><");
@@ -88,7 +176,7 @@ define(['marked', 'story', 'utils'], function(Marked, Story, Utils) {
 		});
 	});
 	
-	Marked.Parser.setFunc("align", function() {
+	Marked.Parser.setFunc("align", function () {
 		var style = '',
 			body = '',
 			center = "text-align: center; max-width:50%; ",

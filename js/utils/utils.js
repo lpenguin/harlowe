@@ -3,6 +3,11 @@ define(['jquery', 'selectors', 'regexstrings', 'customelements'], function($, Se
 
 	// Used by HTMLEntityConvert and transitionTimes
 	var p = $('<p>'),
+		// Used by lockProperties
+		lockDesc = {
+			configurable: 0,
+			writable: 0			
+		},
 		// Used to cache t8n animation times
 		t8nAnimationTimes = {
 			"transition-in": Object.create(null),
@@ -33,10 +38,7 @@ define(['jquery', 'selectors', 'regexstrings', 'customelements'], function($, Se
 			for (i = 0; i < keys.length; i++) {
 				prop = keys[i];
 
-				propDesc[prop] = {
-					configurable: 0,
-					writable: 0
-				};
+				propDesc[prop] = lockDesc;
 			};
 
 			return Object.defineProperties(obj, propDesc);
@@ -52,10 +54,9 @@ define(['jquery', 'selectors', 'regexstrings', 'customelements'], function($, Se
 		*/
 
 		lockProperty: function (obj, prop, value) {
-			var propDesc = {
-				configurable: 0,
-				writable: 0
-			};
+			// Object.defineProperty does walk the prototype chain
+			// when reading a property descriptor dict.
+			var propDesc = Object.create(lockDesc);
 			value && (propDesc.value = value);
 			Object.defineProperty(obj, prop, propDesc);
 		},
@@ -145,14 +146,16 @@ define(['jquery', 'selectors', 'regexstrings', 'customelements'], function($, Se
 		},
 		
 		/**
+			Unescape HTML entities.
 			For speed, convert common entities quickly, and convert others with jQuery.
 
-			@method convertEntity
-			@param {String} text		text to convert
-			return {String} converted entity
+			@method unescape
+			@param {String} text Text to convert
+			@return {String} converted text
 		*/
 
-		convertEntity: function (text) {
+		unescape: function (text) {
+			var ret;
 			if (text.length <= 1)
 				return text;
 
@@ -172,8 +175,24 @@ define(['jquery', 'selectors', 'regexstrings', 'customelements'], function($, Se
 				case "&zwnj;":
 					return String.fromCharCode(8204);
 				default:
-					return p.html(text).text();
+					ret = p.html(text).text();
+					p.empty();
+					return ret;
 			}
+		},
+		
+		/**
+			HTML-escape a string.
+			
+			@method escape
+			@param {String} text Text to escape
+			@return {String} converted text
+		*/
+		
+		escape: function(text) {
+			var ret = p.text(text).html();
+			p.empty();
+			return ret;
 		},
 
 		/**
@@ -255,7 +274,7 @@ define(['jquery', 'selectors', 'regexstrings', 'customelements'], function($, Se
 		charToSpan: function (c) {
 			// Use single-quotes if the char is a double-quote.
 			var quot = (c === "&#39;" ? '"' : "'"),
-				value = Utils.convertEntity(c);
+				value = Utils.unescape(c);
 
 			switch(value) {
 				case ' ': {

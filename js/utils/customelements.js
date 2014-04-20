@@ -43,7 +43,7 @@ define([], function() {
 	// - creator-version: version number of the creator application. Metadata only.
 	// - options: space-separated runtime options.
 	('tw-storydata', 'storyname', 'startnode', 'creator', 'creator-version', 'options') 
-	// The passagedata elements must remain <script>s, unfortunately...
+	('tw-passagedata', 'name', 'pid', 'position') 
 	('tw-story') // Stories (block)
 	
 	/*
@@ -55,7 +55,7 @@ define([], function() {
 	// - passage-id: ID of the destination passage.
 	// Classes:
 	// .link: CSS hook for all links
-	('tw-link', 'passage-id')
+	('tw-link', 'passage-id', 'passage-expr')
 	// Broken link
 	('tw-broken-link')
 	
