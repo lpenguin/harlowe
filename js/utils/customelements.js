@@ -95,6 +95,7 @@ define([], function() {
 	// .link: Is a hook-link.
 	('tw-pseudo-hook')
 	('tw-transition-container')	// Transition container (inline)
+	('tw-temp-container') // Temporary misc. container
 	);
 	
 	return Object.freeze(CustomElements);

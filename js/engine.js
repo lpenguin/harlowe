@@ -1,4 +1,4 @@
-define(['jquery', 'twinemarked', 'story', 'utils', 'selectors', 'regexstrings', 'state', 'macros', 'script'], function ($, Marked, Story, Utils, Selectors, RegexStrings, State, Macros, Script) {
+define(['jquery', 'twinemarked', 'story', 'utils', 'selectors', 'regexstrings', 'state', 'macros', 'script'], function ($, TwineMarked, Story, Utils, Selectors, RegexStrings, State, Macros, Script) {
 	"use strict";
 
 	/**
@@ -99,8 +99,9 @@ define(['jquery', 'twinemarked', 'story', 'utils', 'selectors', 'regexstrings', 
 		Macros.matchMacroTag(source, null, function (m) {
 			// A macro by that name doesn't exist
 
-			if (!m.desc)
+			if (!m.desc) {
 				m.desc = Macros.get("unknown");
+			}
 
 			// Contain the macro in a hidden span.
 
@@ -213,7 +214,8 @@ define(['jquery', 'twinemarked', 'story', 'utils', 'selectors', 'regexstrings', 
 			@method render
 			@param {string} source The code to render - HTML entities must be unescaped
 			@param {MacroInstance} [context] Macro instance which triggered this rendering.
-			@param {jQuery} [top] the topmost DOM level into which this will be rendered (usually a <tw-passage>). Undefined if this is the document top.
+			@param {jQuery} [top] the topmost DOM level into which this will be rendered
+			(usually a <tw-passage>). Undefined if this is the document top.
 			@return {jQuery} The rendered passage.
 		*/
 		render: function (source, context, top) {
@@ -231,44 +233,61 @@ define(['jquery', 'twinemarked', 'story', 'utils', 'selectors', 'regexstrings', 
 			source = temp[0];
 			macroInstances = temp[1];
 
-			// Finally, do Markdown
-			// (This must come last due to the charspan generation inhibiting any further matches.)
-
+			// Do Markdown
+			
 			// Let's not bother if this source solely held macros.
 			if (source.trim()) {
 				try {
-					source = Marked(source);
+					source = TwineMarked.render(source);
 				} catch (e) {
-					Utils.impossible("Engine.render()","Marked crashed");
+					Utils.impossible("Engine.render()","TwineMarked crashed");
 					temp = renderMacros("<p>"+RegexStrings.macroOpen + "rendering-error " +
 						e + RegexStrings.macroClose+"</p>");
 					source = temp[0];
 					macroInstances = temp[1];
 				}
 			}
-
+			
 			// Render the HTML
-
-			html = $(source);
-
-			// Execute macros and update links
-			// (Naming this closure for stacktrace visibility)
-
-			$(Selectors.macroInstance + ", " + Selectors.internalLink, html).each(function runMacroInstances () {
+			/*
+				Important: various Twine macros perform DOM operations on this pre-inserted jQuery set of
+				rendered elements, but assume that all the elements have a parent item, so that e.g.
+				.insertBefore() can be performed on them. Also, and perhaps more saliently, the next
+				block uses .find() to select <tw-macro> elements etc., which assumes that no <tw-macro>
+				elements are present at the jQuery object's "root level".
+				
+				So, a <tw-temp-container> is temporarily used to house the entire rendered HTML
+				before it's inserted at the end of this function.
+			*/
+			html = $('<tw-temp-container>' + source);
+			
+			/*
+				Execute macros immediately
+			*/
+			html.find(Selectors.macroInstance + ", " + Selectors.internalLink).each(function runMacroInstances () {
 				var passage,
 					text,
 					visited,
 					count,
-					el = $(this).removeAttr("larva");
-				
+					el = $(this);
+
 				switch(this.tagName.toLowerCase()) {
 					case "tw-macro":
 					{
 						count = this.getAttribute("count");
 						this.removeAttribute("hidden");
-						macroInstances[count].run($(this), context, html.add(top));
+						/*
+							To provide the macros with a sufficient top,
+							unwrap the <tw-temp-container>, and add the 'top' for this
+							rendered fragment.
+						*/
+						macroInstances[count].run(el, context, html.contents().add(top));
 						break;
 					}
+					/*
+						To consider: there should perchance exist "lazy links" whose passage-exprs are not
+						evaluated into passage-ids until the moment they are clicked.
+					*/
 					case "tw-link":
 					{
 						passage = Utils.unescape(el.attr("passage-expr"));
@@ -300,13 +319,8 @@ define(['jquery', 'twinemarked', 'story', 'utils', 'selectors', 'regexstrings', 
 					}
 				}
 			});
-
-			// If one <p> tag encloses all the HTML, unwrap it.
-			// Note: this must occur at the end
-			if (html.length == 1 && html.get(0).tagName.toUpperCase() == 'P')
-				html = html.contents();
-
-			return html;
+			// Unwrap the aforementioned <tw-temp-container>.
+			return html.contents();
 		}
 	};
 	

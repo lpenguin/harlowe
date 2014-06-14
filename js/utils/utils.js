@@ -1,4 +1,4 @@
-define(['jquery', 'selectors', 'regexstrings', 'customelements'], function($, Selectors, RegexStrings) {
+define(['jquery', 'twinemarked', 'selectors', 'regexstrings', 'customelements'], function($, TwineMarked, Selectors, RegexStrings) {
 	"use strict";
 
 	// Used by HTMLEntityConvert and transitionTimes
@@ -25,9 +25,12 @@ define(['jquery', 'selectors', 'regexstrings', 'customelements'], function($, Se
 		/**
 			Make object properties immutable and impossible to delete,
 			without preventing the object from being extended.
+			
+			Does not do a 'deep' lock - object properties may, in themselves, be modified.
 
 			@method lockProperties
-			@param {Object} obj		object to lock
+			@param {Object} obj		Object to lock
+			@return The locked object
 		*/
 
 		lockProperties: function (obj) {
@@ -46,11 +49,12 @@ define(['jquery', 'selectors', 'regexstrings', 'customelements'], function($, Se
 
 		/**
 			Locks a particular property of an object.
-			Make object properties immutable and impossible to delete,
-			without preventing the object from being extended.
 
-			@method lockProperties
-			@param {Object} obj		Object to lock
+			@method lockProperty
+			@param {Object} obj		Object
+			@param {String} prop	Property to lock
+			@param {String} value	A value to set the property to
+			@return The affected object
 		*/
 
 		lockProperty: function (obj, prop, value) {
@@ -59,6 +63,7 @@ define(['jquery', 'selectors', 'regexstrings', 'customelements'], function($, Se
 			var propDesc = Object.create(lockDesc);
 			value && (propDesc.value = value);
 			Object.defineProperty(obj, prop, propDesc);
+			return obj;
 		},
 
 		/**
@@ -105,7 +110,7 @@ define(['jquery', 'selectors', 'regexstrings', 'customelements'], function($, Se
 		clone: function (obj) {
 			var i,
 				ret = Object.create(Object.getPrototypeOf(obj)),
-				keys = Object.keys(obj),
+				keys = Object.getOwnPropertyNames(obj),
 				prop;
 
 			for (i = 0; i < keys.length; i++) {
@@ -143,56 +148,6 @@ define(['jquery', 'selectors', 'regexstrings', 'customelements'], function($, Se
 
 		splitUnquoted: function (str, split) {
 			return str.split(new RegExp((split || " ") + RegexStrings.unquoted));
-		},
-		
-		/**
-			Unescape HTML entities.
-			For speed, convert common entities quickly, and convert others with jQuery.
-
-			@method unescape
-			@param {String} text Text to convert
-			@return {String} converted text
-		*/
-
-		unescape: function (text) {
-			var ret;
-			if (text.length <= 1)
-				return text;
-
-			switch (text) {
-				case "&lt;":
-					return '<';
-				case "&gt;":
-					return '>';
-				case "&amp;":
-					return '&';
-				case "&quot;":
-					return '"';
-				case "&#39;":
-					return "'";
-				case "&nbsp;":
-					return String.fromCharCode(160);
-				case "&zwnj;":
-					return String.fromCharCode(8204);
-				default:
-					ret = p.html(text).text();
-					p.empty();
-					return ret;
-			}
-		},
-		
-		/**
-			HTML-escape a string.
-			
-			@method escape
-			@param {String} text Text to escape
-			@return {String} converted text
-		*/
-		
-		escape: function(text) {
-			var ret = p.text(text).html();
-			p.empty();
-			return ret;
 		},
 
 		/**
@@ -248,7 +203,7 @@ define(['jquery', 'selectors', 'regexstrings', 'customelements'], function($, Se
 		*/
 
 		hookTojQuery: function (c, top) {
-			return Utils.$(Utils.hookToSelector(c.slice(1) /* slice off the ? sigil */), top)
+			return Utils.findAndFilter(top, Utils.hookToSelector(c.slice(1) /* slice off the ? sigil */))
 		},
 
 		/**
@@ -261,51 +216,6 @@ define(['jquery', 'selectors', 'regexstrings', 'customelements'], function($, Se
 
 		jQueryStringTojQuery: function (word) {
 			return $(word.replace(/^\$\(["']|["']\)$/, ''));
-		},
-
-		/**
-			Takes a string containing a character or HTML entity, and wraps it into a
-			<tw-char> tag, converting the entity if it is one.
-
-			@method charToSpan
-			@param {String} chararctr
-		*/
-
-		charToSpan: function (c) {
-			// Use single-quotes if the char is a double-quote.
-			var quot = (c === "&#39;" ? '"' : "'"),
-				value = Utils.unescape(c);
-
-			switch(value) {
-				case ' ': {
-					value = "space";
-					break;
-				}
-				case '\t': {
-					value = "tab";
-					break;
-				}
-			}
-			return "<tw-char value=" +
-				quot + value + quot + ">" +
-				c + "</tw-char>";
-		},
-
-		/**
-			Converts an entire string into individual characters, each enclosed
-			by a <tw-char>.
-
-			@method charToSpan
-			@param {String} source string
-			@return {String} HTML source
-		*/
-
-		charSpanify: function (text) {
-			if (typeof text !== "string") {
-				Utils.impossible("charSpanify received a non-string");
-				return text;
-			}
-			return text.replace(/&[#\w]+;|./g, Utils.charToSpan);
 		},
 
 		/**
@@ -346,7 +256,21 @@ define(['jquery', 'selectors', 'regexstrings', 'customelements'], function($, Se
 
 		/*
 			Element utilities
+		*/		
+	
+		/**
+			Quick utility function that calls .filter(q).add(q).find(q)
+
+			@method findAndFilter
+			@private
+			@param q jQuery to search, or initialising string/element for $()
+			@param {String} selector Query string
+			@return {jQuery} jQuery result
 		*/
+		findAndFilter: function (q, selector) {
+			q = q || document.documentElement;
+			return $(q).filter(selector).add(q.find(selector));
+		},
 
 		/**
 			Find the closest enclosing hook span(s) for the passed jQuery object, if any.
@@ -364,9 +288,10 @@ define(['jquery', 'selectors', 'regexstrings', 'customelements'], function($, Se
 			Replaces oldElem with newElem while transitioning between both.
 
 			@method transitionReplace
-			@param oldElem 		a jQuery object currently in the DOM or DOM structure
+			@param oldElem 		a jQuery object currently in the DOM or a DOM structure
 			@param newElem			an unattached jQuery object to attach
 			@param transIndex		transition to use
+			@return this
 		*/
 
 		transitionReplace: function (oldElem, newElem, transIndex) {
@@ -408,6 +333,7 @@ define(['jquery', 'selectors', 'regexstrings', 'customelements'], function($, Se
 					container2a.unwrap().children().first().unwrap();
 				});
 			}
+			return this;
 		},
 
 		/**
@@ -417,6 +343,7 @@ define(['jquery', 'selectors', 'regexstrings', 'customelements'], function($, Se
 			@param {jQuery} el			element to transition out
 			@param (String) transIndex		transition to use			
 			@param {Function} onComplete	function to call when completed
+			@return this
 		*/
 
 		transitionOut: function (el, transIndex, onComplete) {
@@ -434,6 +361,7 @@ define(['jquery', 'selectors', 'regexstrings', 'customelements'], function($, Se
 			delay = Utils.transitionTime(transIndex, "transition-out");
 			
 			!delay ? onComplete() : window.setTimeout(onComplete, delay);
+			return this;
 		},
 
 		/**
@@ -443,6 +371,7 @@ define(['jquery', 'selectors', 'regexstrings', 'customelements'], function($, Se
 			@param {jQuery} el			element to transition out
 			@param (String) transIndex		transition to use		
 			@param {Function} onComplete	function to call when completed
+			@return this
 		*/
 
 		transitionIn: function (el, transIndex, onComplete) {
@@ -455,6 +384,7 @@ define(['jquery', 'selectors', 'regexstrings', 'customelements'], function($, Se
 			delay = Utils.transitionTime(transIndex, "transition-in");
 			
 			!delay ? onComplete() : window.setTimeout(onComplete, delay);
+			return this;
 		},
 		
 		/**
@@ -463,7 +393,8 @@ define(['jquery', 'selectors', 'regexstrings', 'customelements'], function($, Se
 		
 			@method transitionTime
 			@param (String) transIndex		Transition to use		
-			@param {Number} Length of the transition in milliseconds
+			@param {String} className	Either "transition-in" or "transition-out"
+			@return this
 		*/
 		transitionTime: function(transIndex, className) {
 			var p;
@@ -496,10 +427,12 @@ define(['jquery', 'selectors', 'regexstrings', 'customelements'], function($, Se
 			
 			@method log
 			@param data			line to log
+			@return this
 		*/
 		
 		log: function (data) {
-			return console.log(data);
+			console.log(data);
+			return this;
 		},
 		
 		/**
@@ -507,10 +440,12 @@ define(['jquery', 'selectors', 'regexstrings', 'customelements'], function($, Se
 
 			@method log
 			@param data			line to log
+			@return this
 		*/
 		
 		impossible: function (where, data) {
-			return console.warn(where + "(): " + data);
+			console.warn(where + "(): " + data);
+			return this;
 		},
 		
 		/*
@@ -522,6 +457,8 @@ define(['jquery', 'selectors', 'regexstrings', 'customelements'], function($, Se
 		// Story element
 		storyElement: $("tw-story")
 	};
+	
+	$.extend(Utils, TwineMarked.utils);
 	
 	Utils.log("Utils module ready!");
 	

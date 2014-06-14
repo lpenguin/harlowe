@@ -338,7 +338,8 @@ function($, Story, Utils, Selectors, RegexStrings, WordArray, MacroInstance, Hoo
 					// If macro is not self-closing, search for endtag
 					// and capture entire contents.
 					if (desc && !desc.selfClosing) {
-						endMacroRE = new RegExp(macroRE.source + "|" + re.macroOpen + "((?:\\/|end)" + foundMacro[1] + ")(?!" + re.macroName+")" + re.notMacroClose +
+						endMacroRE = new RegExp(macroRE.source + "|" + re.macroOpen
+							+ "((?:\\/|end)" + foundMacro[1] + ")(?!" + re.macroName+")" + re.notMacroClose +
 							re.macroClose, "g");
 						endMacroRE.lastIndex = endIndex;
 						nesting = 0;
@@ -364,7 +365,7 @@ function($, Story, Utils, Selectors, RegexStrings, WordArray, MacroInstance, Hoo
 						} while (foundEndMacro);
 					}
 					macro = (desc.hooked ? HookMacroInstance : MacroInstance)
-						.create(html, foundMacro[1], foundMacro.index, endIndex);
+						.create(Macros.get(foundMacro[1]), foundMacro, html.slice(foundMacro.index, endIndex));
 					// Run the callback
 					callback(macro);
 					macroRE.lastIndex = endIndex;

@@ -12,33 +12,42 @@ define(['jquery', 'utils', 'selectors'], function ($, Utils, Selectors) {
 
 	
 	/**
+		Convert a string or WordArray to a jQuery of spanified HTML,
+		ready to supplant another word in the DOM. Otherwise, leave it.
+		@method wordTojQuery
+		@private
+		@param {String|WordArray} word The word to convert.
+		@return {jQuery} the converted word.
+	*/
+	function wordTojQuery(word) {
+		if (word.wordarray && word.contents.length[0]) {
+			return word.contents[0];
+		} else if (typeof word === "string") {
+			return $(Utils.charSpanify(word));
+		}
+		return word;
+	}
+		
+	/**
 		The generic WordArray modification function called by WordArray.replace,
 		WordArray.prepend, etc.
 		
+		If passed a function as the 'word', it is run once for each replacement
+		and is expected to provide a string.
+		
 		@method modifyWordArray
 		@private
-		@param {String|Function} word The replacement word.
+		@param {String|Function|WordArray|jQuery} word The replacement word.
 		@param {String} modifier Either "replace", "prepend" or "append".
 		@param {String} t8n The CSS transition to use.
 		@return this
 	*/
 	function modifyWordArray(word, modifier, t8n) {
-		// Inner function, convert()
-		// Convert a string or WordArray to a jQuery of spanified HTML,
-		// ready to supplant another word in the DOM. Otherwise, leave it.
-		(modifyWordArray.convert = modifyWordArray.convert || function(word) {
-			if (word.wordarray && word.contents.length[0]) {
-				return word.contents[0];
-			} else if (typeof word === "string") {
-				return $(Utils.charSpanify(word));
-			}
-			return word;
-		})
-		
+
 		if (typeof word !== "function" && !word.jquery) {
 			return this;
 		}
-		word = modifyWordArray.convert(word)
+		word = wordTojQuery(word)
 
 		// Functions should be considered words of indefinite length.
 		// Only continue if it definitely isn't zero-length.
@@ -50,13 +59,12 @@ define(['jquery', 'utils', 'selectors'], function ($, Utils, Selectors) {
 				// If the word is a function, run that function anew for this replacement.
 				// Each replacement gets a fresh call.
 				if (typeof word === "function") {
-					thisWord = modifyWordArray.convert(word());
+					thisWord = wordTojQuery(word());
 				} else {
 					thisWord = word;
 				}
 				
 				// Check that the word is a jQuery
-
 				if (e && e.jquery) {
 					// Waste not...
 					if (modifier === "replace" && e.text() === thisWord) {
@@ -89,14 +97,23 @@ define(['jquery', 'utils', 'selectors'], function ($, Utils, Selectors) {
 		@private
 		@param {String} selector The search string.
 		@param {jQuery} top The DOM to search.
-		@return {Array} The results array.
+		@return {Array} An array of jQuery objects.
 	*/
 	function findCharSpans(selector, top) {
 		// Recursive call
-		return _findCharSpans(selector, Utils.$(Selectors.charSpan, top), true);
+		return _findCharSpans(selector, Utils.findAndFilter(top, Selectors.charSpan), true);
 	}
 
-	//Gets the char value of a charspan element
+	/**
+		Gets the value of a charSpan element.
+		Needed because <br> elements are also considered charspans, but lack a 'value' attribute.
+		@method _findCharSpans
+		@private
+		@param {String} selector The search string.
+		@param {jQuery} chars The charspans to search.
+		@param {Boolean} fulltext Whether this is the full text. If true, then
+		the recursive call results are put nto an array instead of a jQuery collection.
+	*/
 	function _elementGetChar(elem) {
 		return (elem.tagName === "br" ? "\n" : elem.getAttribute("value"));
 	}
@@ -242,7 +259,7 @@ define(['jquery', 'utils', 'selectors'], function ($, Utils, Selectors) {
 
 			// Turn each matched element in the jQuery into a separate word.
 			function forEachjQuery() {
-				other.contents.push($(this).find(Selectors.charSpan));
+				other.contents.push(Utils.findAndFilter(this,Selectors.charSpan));
 			}
 
 			this.contents = [];
@@ -283,7 +300,6 @@ define(['jquery', 'utils', 'selectors'], function ($, Utils, Selectors) {
 			}
 			return this;
 		},
-		
 
 		/**
 			Returns the type of a scope string or Twine-specific object.

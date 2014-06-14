@@ -9,7 +9,7 @@ define(['jquery', 'story', 'utils', 'regexstrings', 'wordarray', 'engine'], func
 
 	var MacroInstance,
 		// Precompile a regex
-		macroTagFront = new RegExp("^<<\\s*" + RegexStrings.macroName + "\\s*");
+		macroTagFront = new RegExp("^" + RegexStrings.macroOpen + "\\s*" + RegexStrings.macroName + "\\s*");
 	
 	/**
 		The prototype object for MacroInstances, the object type used by matchMacroTag
@@ -25,18 +25,13 @@ define(['jquery', 'story', 'utils', 'regexstrings', 'wordarray', 'engine'], func
 			Factory method for MacroInstance.
 			
 			@method create
-			@param {String} code The twine code containing the macro invocation.
-			@param {String} name The macro's name; used to look up its data.
-			@param {Number} startIndex The index, inside code, where this macro's invocation begins.
-			@param {Number} endIndex The index, inside code, where this macro's invocation begins.
+			@param {Macro} desc The macro definition object for this instance.
+			@param {Array} match A RegExp match array of the macro invocation inside some Twine code
+			@param {String} call The full invocation, including start tag, contents, and end tag.
 			@return {Object} The new MacroInstance.
 		*/
-		create: function (code, name, startIndex, endIndex) {
-			var desc = MacroInstance.getMacroData(name),
-				selfClosing = desc && desc.selfClosing,
-				// call is the entire macro invocation, rawArgs is all arguments,
-				// contents is what's between a <<macro>> and <</macro>> call
-				call = code.slice(startIndex, endIndex),
+		create: function (desc, match, call) {
+			var selfClosing = desc && desc.selfClosing,
 				contents = (selfClosing ? "" : call.replace(/^(?:[^>]|>(?!>))*>>/i, '').replace(/<<(?:[^>]|>(?!>))*>>$/i,'')),
 				rawArgs = call.replace(macroTagFront, '').replace(/\s*>>[^]*/, '').trim(),
 				// tokenize arguments
@@ -50,12 +45,11 @@ define(['jquery', 'story', 'utils', 'regexstrings', 'wordarray', 'engine'], func
 						return c;
 					});
 				});
-			
 			return Utils.create(this, {
-				name: name,
+				name: match[1],
 				desc: desc,
-				startIndex: startIndex,
-				endIndex: endIndex,
+				startIndex: match.index,
+				endIndex: match.index + call.length,
 				selfClosing: selfClosing,
 				call: call,
 				contents: contents,
@@ -69,7 +63,7 @@ define(['jquery', 'story', 'utils', 'regexstrings', 'wordarray', 'engine'], func
 		},
 
 		/**
-			This is called by renderMacro() just before the macro is executed
+			This is called by run() just before the macro is executed
 			@method init
 		*/
 		init: function () {

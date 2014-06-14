@@ -2,7 +2,6 @@ require.config({
 	paths: {
 		// External libraries
 		jquery: './lib/jquery',
-		marked: './lib/marked',
 		lzstring: './lib/lzstring',
 		// Utils
 		utils: './utils/utils',
@@ -17,7 +16,8 @@ require.config({
 		hookmacroinstance: './macroinstance/hookmacroinstance',
 	}
 });
-require(['jquery', 'story', 'state', 'engine', 'utils', 'selectors', 'regexstrings', 'macros', 'macrolib'], function ($, Story, State, Engine, Utils, Selectors, RegexStrings, Macros) {
+require(['jquery', 'twinemarked', 'story', 'state', 'engine', 'utils', 'selectors', 'regexstrings', 'macros', 'macrolib'],
+		function ($, TwineMarked, Story, State, Engine, Utils, Selectors, RegexStrings, Macros) {
 	"use strict";
 	// Used to execute custom scripts
 	function _eval(text) {
@@ -43,6 +43,7 @@ require(['jquery', 'story', 'state', 'engine', 'utils', 'selectors', 'regexstrin
 			options.split(/\s/).forEach(function(b) {
 				Story.options[b] = true;
 			});
+			TwineMarked.options = Story.options;
 		}
 		Story.startPassage = header.attr('startnode');
 		Object.freeze(Story);
