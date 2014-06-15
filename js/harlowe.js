@@ -16,8 +16,8 @@ require.config({
 		hookmacroinstance: './macroinstance/hookmacroinstance',
 	}
 });
-require(['jquery', 'twinemarked', 'story', 'state', 'engine', 'utils', 'selectors', 'regexstrings', 'macros', 'macrolib'],
-		function ($, TwineMarked, Story, State, Engine, Utils, Selectors, RegexStrings, Macros) {
+require(['jquery', 'twinemarked', 'story', 'state', 'engine', 'utils', 'selectors', 'macros', 'macrolib'],
+		function ($, TwineMarked, Story, State, Engine, Utils, Selectors, Macros) {
 	"use strict";
 	// Used to execute custom scripts
 	function _eval(text) {

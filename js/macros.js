@@ -1,5 +1,5 @@
-define(['jquery', 'story', 'utils', 'selectors', 'regexstrings', 'wordarray', 'macroinstance', 'hookmacroinstance', 'scope'],
-function($, Story, Utils, Selectors, RegexStrings, WordArray, MacroInstance, HookMacroInstance, Scope) {
+define(['jquery', 'story', 'utils', 'selectors', 'twinemarked', 'wordarray', 'macroinstance', 'hookmacroinstance', 'scope'],
+function($, Story, Utils, Selectors, TwineMarked, WordArray, MacroInstance, HookMacroInstance, Scope) {
 	"use strict";
 	/**
 		Macros
@@ -323,9 +323,9 @@ function($, Story, Utils, Selectors, RegexStrings, WordArray, MacroInstance, Hoo
 			@return this
 		*/
 		matchMacroTag: function (html, macroname, callback) {
-			var re = RegexStrings,
-				macroRE = new RegExp(re.macroOpen + "\\s*(" + (macroname || re.macroName) +
-					")" + re.notMacroClose + re.macroClose, 'ig'),
+			var re = TwineMarked.RegExpStrings,
+				macroRE = new RegExp(re.macroOpener + "\\s*(" + (macroname || re.macroName) +
+					")" + re.macroParams + re.macroCloser, 'ig'),
 				macro, endMacroRE, foundMacro, foundEndMacro, nesting,
 				endIndex, desc;
 			// Search through html for macro tags
@@ -338,9 +338,9 @@ function($, Story, Utils, Selectors, RegexStrings, WordArray, MacroInstance, Hoo
 					// If macro is not self-closing, search for endtag
 					// and capture entire contents.
 					if (desc && !desc.selfClosing) {
-						endMacroRE = new RegExp(macroRE.source + "|" + re.macroOpen
-							+ "((?:\\/|end)" + foundMacro[1] + ")(?!" + re.macroName+")" + re.notMacroClose +
-							re.macroClose, "g");
+						endMacroRE = new RegExp(macroRE.source + "|" + re.macroOpener
+							+ "((?:\\/|end)" + foundMacro[1] + ")(?!" + re.macroName+")" + re.macroParams +
+							re.macroCloser, "g");
 						endMacroRE.lastIndex = endIndex;
 						nesting = 0;
 						do {

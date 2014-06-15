@@ -1,4 +1,4 @@
-define(['jquery', 'twinemarked', 'selectors', 'regexstrings', 'customelements'], function($, TwineMarked, Selectors, RegexStrings) {
+define(['jquery', 'twinemarked', 'selectors', 'customelements'], function($, TwineMarked, Selectors) {
 	"use strict";
 
 	// Used by HTMLEntityConvert and transitionTimes
@@ -147,7 +147,7 @@ define(['jquery', 'twinemarked', 'selectors', 'regexstrings', 'customelements'],
 		*/
 
 		splitUnquoted: function (str, split) {
-			return str.split(new RegExp((split || " ") + RegexStrings.unquoted));
+			return str.split(new RegExp((split || " ") + TwineMarked.RegExpStrings.unquoted));
 		},
 
 		/**
@@ -268,8 +268,8 @@ define(['jquery', 'twinemarked', 'selectors', 'regexstrings', 'customelements'],
 			@return {jQuery} jQuery result
 		*/
 		findAndFilter: function (q, selector) {
-			q = q || document.documentElement;
-			return $(q).filter(selector).add(q.find(selector));
+			q = $(q || document.documentElement);
+			return q.filter(selector).add(q.find(selector));
 		},
 
 		/**
@@ -424,28 +424,26 @@ define(['jquery', 'twinemarked', 'selectors', 'regexstrings', 'customelements'],
 		
 		/**
 			Internal logging function. Currently a wrapper for console.log.
+			This should be used for basic event logging.
 			
 			@method log
 			@param data			line to log
-			@return this
 		*/
 		
 		log: function (data) {
 			console.log(data);
-			return this;
 		},
 		
 		/**
-			Internal error logging function. Currently a wrapper for console.warn.
-
-			@method log
+			Internal error logging function. Currently a wrapper for console.error.
+			This should be used for engine errors beyond the story author's control.
+			
+			@method impossible
 			@param data			line to log
-			@return this
 		*/
 		
 		impossible: function (where, data) {
-			console.warn(where + "(): " + data);
-			return this;
+			console.error(where + "(): " + data);
 		},
 		
 		/*
@@ -458,7 +456,7 @@ define(['jquery', 'twinemarked', 'selectors', 'regexstrings', 'customelements'],
 		storyElement: $("tw-story")
 	};
 	
-	$.extend(Utils, TwineMarked.utils);
+	$.extend(Utils, TwineMarked.Utils);
 	
 	Utils.log("Utils module ready!");
 	

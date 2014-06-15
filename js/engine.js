@@ -1,6 +1,6 @@
-define(['jquery', 'twinemarked', 'story', 'utils', 'selectors', 'regexstrings', 'state', 'macros', 'script'], function ($, TwineMarked, Story, Utils, Selectors, RegexStrings, State, Macros, Script) {
+define(['jquery', 'twinemarked', 'story', 'utils', 'selectors', 'state', 'macros', 'script'], function ($, TwineMarked, Story, Utils, Selectors, State, Macros, Script) {
 	"use strict";
-
+	
 	/**
 		A singleton class responsible for rendering passages to the DOM.
 
@@ -241,8 +241,8 @@ define(['jquery', 'twinemarked', 'story', 'utils', 'selectors', 'regexstrings', 
 					source = TwineMarked.render(source);
 				} catch (e) {
 					Utils.impossible("Engine.render()","TwineMarked crashed");
-					temp = renderMacros("<p>"+RegexStrings.macroOpen + "rendering-error " +
-						e + RegexStrings.macroClose+"</p>");
+					temp = renderMacros("<p>"+TwineMarked.RegExpStrings.macroOpener + "rendering-error " +
+						e + TwineMarked.RegExpStrings.macroCloser + "</p>");
 					source = temp[0];
 					macroInstances = temp[1];
 				}

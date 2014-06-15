@@ -1,4 +1,4 @@
-define(['jquery', 'story', 'utils', 'regexstrings', 'wordarray', 'engine'], function($, Story, Utils, RegexStrings, WordArray, Engine) {
+define(['jquery', 'story', 'utils', 'twinemarked', 'wordarray', 'engine'], function($, Story, Utils, TwineMarked, WordArray, Engine) {
 	"use strict";
 	/**
 		MacroInstance
@@ -9,7 +9,7 @@ define(['jquery', 'story', 'utils', 'regexstrings', 'wordarray', 'engine'], func
 
 	var MacroInstance,
 		// Precompile a regex
-		macroTagFront = new RegExp("^" + RegexStrings.macroOpen + "\\s*" + RegexStrings.macroName + "\\s*");
+		macroTagFront = new RegExp("^" + TwineMarked.RegExpStrings.macroOpener + "\\s*" + TwineMarked.RegExpStrings.macroName + "\\s*");
 	
 	/**
 		The prototype object for MacroInstances, the object type used by matchMacroTag
@@ -45,6 +45,7 @@ define(['jquery', 'story', 'utils', 'regexstrings', 'wordarray', 'engine'], func
 						return c;
 					});
 				});
+			
 			return Utils.create(this, {
 				name: match[1],
 				desc: desc,

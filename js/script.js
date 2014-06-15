@@ -1,4 +1,4 @@
-define(['jquery', 'story', 'state', 'utils', 'regexstrings', 'engine', 'wordarray'], function ($, Story, State, Utils, RegexStrings, Engine, WordArray) {
+define(['jquery', 'story', 'state', 'utils', 'twinemarked', 'engine', 'wordarray'], function ($, Story, State, Utils, TwineMarked, Engine, WordArray) {
 	"use strict";
 	/*
 		Script
@@ -211,23 +211,25 @@ define(['jquery', 'story', 'state', 'utils', 'regexstrings', 'engine', 'wordarra
 			<<if hp is 3>> --> <<if hp === 3>>
 			<<if hp is not 3>> --> <<if hp != 3>>
 			<<if not defeated>> --> <<if ! defeated>>
+			
 			@method convertOperators
 			@param {String} expr The expression to convert.
 			@param {Boolean} [setter] Whether it is or isn't a setter, which disallows '='
 			@return {String} The converted expression.
 		*/
 		convertOperators: function (expr, setter) {
-			var re, find, found = [];
+			var re, find, found = [],
+				rs = TwineMarked.RegExpStrings;
 			
 			function alter(expr, from, to) {
-				return expr.replace(new RegExp(from + RegexStrings.unquoted, "gi"), to);
+				return expr.replace(new RegExp(from + rs.unquoted, "gi"), to);
 			}
 			
 			if (typeof expr === "string") {
 				expr = expr.trim();
 				
 				// Find all the variables referenced in the expression, and set them to 0 if undefined.
-				re = new RegExp(RegexStrings.variable, "gi");
+				re = new RegExp(rs.variable, "gi");
 				
 				while (find = re.exec(expr)) {
 					// Prepend the expression with a defaulter for this variable.
@@ -241,7 +243,7 @@ define(['jquery', 'story', 'state', 'utils', 'regexstrings', 'engine', 'wordarra
 				
 				// Phrase "set $x to 2" as "state.variables.x = 2"
 				// and "set $x[4] to 2" as "state.variables.x[4] = 2"
-				expr = alter(expr, RegexStrings.variable, " State.variables.$1 ");
+				expr = alter(expr, rs.variable, " State.variables.$1 ");
 				// If not a setter, no unintended assignments allowed
 				if (!setter) {
 					expr = alter(expr, "\\b=\\b", " === ");
