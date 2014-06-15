@@ -95,7 +95,9 @@
 		var ws = "\\s*",
 			
 			eol = "(?=\\n+|$)",
-		
+			
+			anyLetter = "[\\w\\-\u00c0-\u00de\u00df-\u00ff\u0150\u0170\u0151\u0171]",
+			
 			bullet = "(?:[*+-]|\\d+\\.)",
 			
 			hr = "( *[-*_]){3,} *" + eol,
@@ -116,8 +118,8 @@
 			
 			macro = {
 				opener:            "<<",
-				name:              "(?!end)[\\w\\-\\?\\!]+",
-				params:            "(?:[^>]|>(?!>))*",
+				name:              "(" + anyLetter.replace("]","\\?\\!\\/]") + "+)",
+				params:            "((?:[^>]|>(?!>))*)",
 				closer:            ">>"
 			},
 			
@@ -125,8 +127,6 @@
 				name:              "\\w[\\w\\-]*",
 				attrs:             "(?:\"[^\"]*\"|'[^']*'|[^'\">])*?"
 			},
-			
-			anyLetter = "[\\w\\-\u00c0-\u00de\u00df-\u00ff\u0150\u0170\u0151\u0171]",
 
 			// Regex suffix that, when applied, causes the preceding match to only apply when not inside a quoted
 			// string. This accounts for both single- and double-quotes, and escaped quote characters.
@@ -221,6 +221,11 @@
 					use legacyText here to disambiguate.
 				*/
 				passageLink.opener + passageLink.legacyText + passageLink.closer,
+			
+			macro: macro.opener
+				+ "(" + macro.name
+				+ ")(" + macro.params
+				+ ")" + macro.closer,
 			
 			macroOpener:      macro.opener,
 			macroCloser:      macro.closer,
@@ -410,8 +415,9 @@
 				If the token has non-empty innerText, lex the innerText
 				and append to its children array.
 			*/
+			var children = null;
 			if (data && data.innerText) {
-				data.children = lex(data.innerText,
+				children = lex(data.innerText,
 					match[0].indexOf(data.innerText) + current.pos)
 			}
 			
@@ -420,7 +426,7 @@
 				start: current.pos,
 				end: current.pos + match[0].length,
 				text: match[0],
-				children: null
+				children: children
 			}, data));
 		}
 		
@@ -463,15 +469,19 @@
 			@for TwineMarked
 		*/
 		function lex(src, initpos) {
-			var done, rname, rule, match, ret, lastrule = "", text = "";
+			var done, rname, rule, match, i,
+				lastrule = "",
+				text = "",
+				ruleskeys = Object.keys(rules);
 			
 			unshiftState(initpos);
 			
 			while(src) {
 				done = false;
 				// Run through all the rules in turn
-				for (rname in rules) {
-					if (!rules.hasOwnProperty(rname) || rname == "text") {
+				for (i = 0; i < ruleskeys.length; i++) {
+					rname = ruleskeys[i];
+					if (rname == "text") {
 						continue;
 					}
 					rule = rules[rname];
@@ -649,6 +659,20 @@
 					});
 				}
 			},
+			/*
+				Currently, Harlowe handles macros separately, removing their tags
+				from the source before handing it to TwineMarked. Thus, this is not
+				used by Harlowe.
+			*/
+			macro: {
+				match: r("macro"),
+				fn: function(match) {
+					push("macro", match, {
+						name: match[1],
+						params: match[2]
+					});
+				}
+			},
 			escapedLine: {
 				match: r("escapedLine"),
 				fn: pusher("escapedLine")
@@ -740,6 +764,11 @@
 					}());
 					break;
 				}
+				case "macro": {
+					out += '<tw-macro hidden name="' + token.name.replace('"','&quot;')
+						+ '" params="' + token.params.replace('"','&quot;') + '"></tw-macro>';
+					break;
+				}
 				case "heading": {
 					makeTag('h' + token.depth)
 					break;
@@ -756,9 +785,6 @@
 				case "comment": {
 					break;
 				}
-				/*
-					Inline
-				*/
 				case "url": {
 					out += '<a class="link" href="' + token.text + '">' + charSpanify(token.text) + '</a>';
 					break;

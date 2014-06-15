@@ -322,31 +322,32 @@ function($, Story, Utils, Selectors, TwineMarked, WordArray, MacroInstance, Hook
 			@param {Function} callback A function that takes a MacroInstance.
 			@return this
 		*/
-		matchMacroTag: function (html, macroname, callback) {
+		matchMacroTag: function (html, macroName, callback) {
 			var re = TwineMarked.RegExpStrings,
-				macroRE = new RegExp(re.macroOpener + "\\s*(" + (macroname || re.macroName) +
-					")" + re.macroParams + re.macroCloser, 'ig'),
+				macroRE = new RegExp(re.macroOpener + "\\s*" + (macroName && "("+macroName+")" || re.macroName)
+					+ re.macroParams + re.macroCloser, 'ig'),
 				macro, endMacroRE, foundMacro, foundEndMacro, nesting,
 				endIndex, desc;
 			// Search through html for macro tags
 			do {
 				foundMacro = macroRE.exec(html);
 				if (foundMacro !== null) {
+					macroName = macroName || foundMacro[1];
 					endIndex = macroRE.lastIndex;
-					desc = this.get(foundMacro[1]);
+					desc = this.get(macroName);
 
 					// If macro is not self-closing, search for endtag
 					// and capture entire contents.
 					if (desc && !desc.selfClosing) {
 						endMacroRE = new RegExp(macroRE.source + "|" + re.macroOpener
-							+ "((?:\\/|end)" + foundMacro[1] + ")(?!" + re.macroName+")" + re.macroParams +
+							+ "((?:\\/|end)" + macroName + ")" + re.macroParams +
 							re.macroCloser, "g");
 						endMacroRE.lastIndex = endIndex;
 						nesting = 0;
 						do {
 							foundEndMacro = endMacroRE.exec(html);
 							if (foundEndMacro !== null) {
-								if (foundEndMacro[2]) {
+								if (foundEndMacro[3]) {
 									// Found <</macro>>
 									if (nesting) {
 										nesting -= 1;
@@ -356,7 +357,7 @@ function($, Story, Utils, Selectors, TwineMarked, WordArray, MacroInstance, Hook
 									}
 								}
 								// Found nested <<macro>>
-								else if (foundEndMacro[1] && foundEndMacro[1] === foundMacro[1]) {
+								else if (foundEndMacro[1] && foundEndMacro[1] === macroName) {
 									nesting += 1;
 								}
 							} else {
@@ -365,7 +366,7 @@ function($, Story, Utils, Selectors, TwineMarked, WordArray, MacroInstance, Hook
 						} while (foundEndMacro);
 					}
 					macro = (desc.hooked ? HookMacroInstance : MacroInstance)
-						.create(Macros.get(foundMacro[1]), foundMacro, html.slice(foundMacro.index, endIndex));
+						.create(desc, foundMacro, html.slice(foundMacro.index, endIndex));
 					// Run the callback
 					callback(macro);
 					macroRE.lastIndex = endIndex;
