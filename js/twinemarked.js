@@ -79,17 +79,17 @@
 				right = (Array.isArray(pair) && pair[1]) || left;
 			
 			return escape(left) + "([^]*?)" + escape(right) + 
-					/*
-						This function checks if the right-terminator is a sole repeating symbol,
-						then returns the symbol wrapped in '(?!' ')', or "" if not.
-					*/
-					(function fn(str) {
-						var s = str.split("").reduce(function(a, b){ return a === b && a });
-						
-						return s && notBefore(escape(s));
-					}(right))
-					// Join with any additional pairs
-					+ (rest != null ? "|" + stylerSyntax.apply(0, Array.apply(0,arguments).slice(1)) : "");
+				/*
+					This function checks if the right-terminator is a sole repeating symbol,
+					then returns the symbol wrapped in '(?!' ')', or "" if not.
+				*/
+				(function fn(str) {
+					var s = str.split("").reduce(function(a, b){ return a === b && a });
+					
+					return s && notBefore(escape(s));
+				}(right))
+				// Join with any additional pairs
+				+ (rest != null ? "|" + stylerSyntax.apply(0, Array.apply(0,arguments).slice(1)) : "");
 		}
 		
 		var ws = "\\s*",
@@ -98,12 +98,38 @@
 			
 			anyLetter = "[\\w\\-\u00c0-\u00de\u00df-\u00ff\u0150\u0170\u0151\u0171]",
 			
-			bullet = "(?:[*+-]|\\d+\\.)",
+			/*
+				Markdown lists changes:
+				
+				* Only the * can be used for bullets (to prevent ambiguity with printed numbers: -2 or +2)
+				* Multiples of the bullet must be used for nested lists: **, instead of whitespace.
+				* Numbered lists must use 0. instead of actual numbers. 
+				
+				In the field, lists are structurally not that useful in Twine, except for pure
+				presentational purposes: putting a bullet-point before a line.
+			*/
+			bullet = "(?:\\*)",
 			
+			bulleted = "\\s*(" + bullet + "+)([^\\n]*)" + eol,
+			
+			numberPoint = "(?:0\\.)",
+			
+			numbered = "\\s*(" + numberPoint + "+)([^\\n]*)" + eol,
+			
+			/*
+				FIXME: The {3,} selector currently enables a string of four ---- to be
+				parsed as 1 - of text followed by --- hr.
+			*/
 			hr = "( *[-*_]){3,} *" + eol,
 			
+			/*
+				Markdown setext headers conflict with the hr syntax, and are thus gone.
+			*/
 			heading = ws + "(#{1,6})" + ws + "([^\\n]+?)" + ws + "#*" + ws + eol,
 			
+			/*
+				New text alignment syntax.
+			*/
 			align = " *(==+>|<=+|=+><=+|<==+>) *" + eol,
 			
 			passageLink = {
@@ -151,13 +177,13 @@
 			
 			tag:         "<\\/?" + tag.name + tag.attrs + ">",
 			
-			url:         "((?:https?|mailto|javascript|ftp|data):\\/\\/[^\\s<]+[^<.,:;\"')\\]\\s])",
+			url:         "(" + either("https?","mailto","javascript","ftp","data") + ":\\/\\/[^\\s<]+[^<.,:;\"')\\]\\s])",
 			
 			hr:          hr,
 			bullet:      bullet,
 			heading:     heading,
 			align:       align,
-
+			
 			strong:      stylerSyntax("__", "**"),
 			em:          stylerSyntax("_",  "*"),
 			del:         stylerSyntax("~~"),
@@ -167,9 +193,8 @@
 			
 			code:        "(`+)\\s*([^]*?[^`])\\s*\\1(?!`)",
 			
-			list:        "( *)(" + bullet + ") [^]+?(?:\\n{2,}(?! )(?!\\1" + bullet + " ))" + eol,
-			
-			item:        "( *)(" + bullet + ") [^\\n]*(?:\\n(?!\\1" + bullet + " )[^\\n]*)*",
+			bulleted:    bulleted,
+			numbered:    numbered,
 			
 			hook:        "\\[(" + notChars("]") + ")\\]" + ws + "\\[(" + notChars("]") + ")\\]",
 			
@@ -369,37 +394,20 @@
 		return obj;
 	}
 	
-	/**
+	/*
 		Returns an object representing a lexer's inner state, methods to permute
 		that state, and methods to query that state.
 		
 		Lexers augment this returned object's rules property.
-		
-		@class LexerInnerState
-		@for TwineMarked
 	*/
 	function LexerInnerState() {
 		var rules = {},
-			states = [],
 			/*
 				States are objects with a tokens:Array and a pos:Number.
 				When the lexer is called (normally or recursively), a new
-				state is shifted onto the stack.
+				state is shifted onto this stack.
 			*/
-			unshiftState = function unshiftState(pos) {
-				states.unshift({
-					tokens: [],
-					pos: pos || 0
-				});
-				current = states[0];
-			},
-			shiftState = function shiftState() {
-				var ret = states.shift();
-				current = states[0];
-				return ret;
-			},
-			// current is a shorthand for states[0]
-			current;
+			states = [];
 		
 		/**
 			Creates a token and puts it in the current tokens array.
@@ -418,13 +426,13 @@
 			var children = null;
 			if (data && data.innerText) {
 				children = lex(data.innerText,
-					match[0].indexOf(data.innerText) + current.pos)
+					match[0].indexOf(data.innerText) + states[0].pos)
 			}
 			
-			current.tokens.push(merge({
+			states[0].tokens.push(merge({
 				type: type,
-				start: current.pos,
-				end: current.pos + match[0].length,
+				start: states[0].pos,
+				end: states[0].pos + match[0].length,
 				text: match[0],
 				children: children
 			}, data));
@@ -459,14 +467,11 @@
 			};
 		}
 		
-		/**
+		/*
 			The main method of the lexer. Returns an array of tokens for the passed text.
 			The src is consumed gradually, and rules are repeatedly matched to the
 			start of the src. If no rule matches, a default "text" token is gradually
 			built up, to be pushed when a rule finally matches.
-			
-			@method lex
-			@for TwineMarked
 		*/
 		function lex(src, initpos) {
 			var done, rname, rule, match, i,
@@ -474,7 +479,10 @@
 				text = "",
 				ruleskeys = Object.keys(rules);
 			
-			unshiftState(initpos);
+			states.unshift({
+				tokens: [],
+				pos: initpos || 0
+			});
 			
 			while(src) {
 				done = false;
@@ -495,13 +503,13 @@
 						// First, push the current run of slurped text.
 						if (text) {
 							rules['text'].fn([text]);
-							current.pos += text.length;
+							states[0].pos += text.length;
 							text = "";
 						}
 						// Now handle the matched rule
 						rule.fn(match);
 						// Increment the position in the src
-						current.pos += match[0].length;
+						states[0].pos += match[0].length;
 						src = src.slice(match[0].length);
 						// Finished matching a rule - resume
 						lastrule = rname;
@@ -520,7 +528,7 @@
 			if (text) {
 				push("text", [text]);
 			}
-			return shiftState().tokens;
+			return states.shift().tokens;
 		}
 			
 		return {
@@ -606,13 +614,25 @@
 				block: true,
 				fn: pusher("hr")
 			},
-			list: {
-				match: r("list"),
-				fn: null
+			bulleted: {
+				match: r("bulleted"),
+				block: true,
+				fn: function(match) {
+					push("bulleted", match, {
+						depth: match[1].length,
+						innerText: match[2]
+					});
+				}
 			},
-			item: {
-				match: r("item"),
-				fn: null
+			numbered: {
+				match: r("numbered"),
+				block: true,
+				fn: function(match) {
+					push("numbered", match, {
+						depth: match[1].length / 2,
+						innerText: match[2]
+					});
+				}
 			},
 			paragraph: {
 				match: r("paragraph"),
@@ -693,149 +713,178 @@
 		return state;
 	}
 	
-	/**
+	/*
 		Create the lexer object
 	*/
 	Lexer = Rules(LexerInnerState());
 	
-	/**
+	/*
 		The render method takes the syntax tree from the lexer and returns a string of HTML.
-		
-		@method render
-		@for TwineMarked
 	*/
-	render = function render(tokens) {
-		var token, len, temp,
-			i = 0,
-			out = '';
+	render = (function() {
+		/*
+			Inside this closure, a number of functions are stashed,
+			so that each recursive call need not recreate them.
+		*/
 		
-		function makeTag(type) {
-			out += '<' + type + '>' + render(token.children) + '</' + type + '>';
+		/*
+			This makes a basic enclosing HTML tag with no attributes, given the tag name,
+			and renders the contained text.
+		*/
+		function renderTag(token, tagName) {
+			return '<' + tagName + '>' + render(token.children) + '</' + tagName + '>';
 		}
 		
+		/*
+			This makes a standard passage link.
+		*/
 		function renderLink(text, passage) {
 			return '<tw-link class="link" passage-expr="' + escape(passage) + '">' + (text || passage) + '</tw-link>';
 		}
 		
-		if (!tokens) {
-			return out;
-		}
-		len = tokens.length;
-		for(; i < len; i += 1) {
-			token = tokens[i];
-			switch(token.type) {
-				/*
-					Blocks
-				*/
-				case "align": {
-					out += (function() {
-						var style = '',
-							body = '',
-							center = "text-align: center; max-width:50%; ",
-							align = token.align,
-							j = (i += 1);
+		/*
+			The actual rendering function.
+		*/
+		return function render(tokens) {
+			var token, lastToken, len, temp, tagName,
+				i = 0,
+				out = '';
+			
+			if (!tokens) {
+				return out;
+			}
+			len = tokens.length;
+			for(; i < len; i += 1) {
+				token = tokens[i];
+				switch(token.type) {
+					case "numbered": 
+					case "bulleted": {
+						// Run through the tokens, consuming all consecutive list items
+						tagName = (token.type === "numbered" ? "ol" : "ul");
+						out += "<" + tagName + ">";
 						
-						if (token.align === "left") {
-							return '';
-						}
-						
-						while(i < len && tokens[i] && tokens[i].type !== 'align') {
+						while(i < len && tokens[i] && tokens[i].type === token.type) {
+							out += renderTag(tokens[i], "li");
 							i += 1;
+							// If a <br> follows a listitem, ignore it.
+							if (tokens[i] && tokens[i].type === "br") {
+								i+=1;
+							}
 						}
-						
-						body += render(tokens.slice(j, i));
-						
-						switch(align) {
-							case "center":
-								style += center + "margin:auto;";
-								break;
-							case "justify":
-							case "right":
-								style += "text-align:" + align + ";";
-								break;
-							default:
-								if (+align) {
-									style += center + "margin-left: " + align + "%;";
-								}
-						}
-						
-						return '<tw-align ' + (style ? ('style="' + style + '"') : '') + '>'
-							+ body + '</tw-align>\n';
-					}());
-					break;
-				}
-				case "macro": {
-					out += '<tw-macro hidden name="' + token.name.replace('"','&quot;')
-						+ '" params="' + token.params.replace('"','&quot;') + '"></tw-macro>';
-					break;
-				}
-				case "heading": {
-					makeTag('h' + token.depth)
-					break;
-				}
-				case "br":
-				case "hr": {
-					out += '<' + token.type + '>';
-					break;
-				}
-				case "paragraph": {
-					makeTag("p");
-					break;
-				}
-				case "comment": {
-					break;
-				}
-				case "url": {
-					out += '<a class="link" href="' + token.text + '">' + charSpanify(token.text) + '</a>';
-					break;
-				}
-				case "tag": {
-					out += token.text;
-					break;
-				}
-				case "del":
-				case "strong":
-				case "em": {
-					makeTag(token.type);
-					break;
-				}
-				case "bold": {
-					makeTag("b");
-					break;
-				}
-				case "italic": {
-					makeTag("i");
-					break;
-				}
-				case "italic": {
-					makeTag("i");
-					break;
-				}
-				case "twineLink": {
-					out += renderLink(render(token.children) || undefined, token.passage);
-					break;
-				}
-				case "hook": {
-					out += '<tw-hook name="' + token.hookName + '"'
-						// Debug mode: show the hook destination as a title.
-						+ (options.debug ? ' title="Hook: ?' + token.hookName + '"' : '') + '>'
-						// If a hook is empty, fill it with a zero-width space,
-						// so that it can still be used as a scope.
-						+ (render(token.children) || charSpanify("&zwnj;")) + '</tw-hook>';
-					break;
-				}
-				/*
-					Base case
-				*/
-				case "text":
-				default: {
-					out += token.children ? render(token.children) : charSpanify(token.text);
-					break;
+						out += "</" + tagName + ">";
+						break;
+					}
+					case "align": {
+						// This closure exists solely for localising the variables within
+						out += (function() {
+							var style = '',
+								body = '',
+								center = "text-align: center; max-width:50%; ",
+								align = token.align,
+								j = (i += 1);
+							
+							if (token.align === "left") {
+								return '';
+							}
+							
+							while(i < len && tokens[i] && tokens[i].type !== "align") {
+								i += 1;
+							}
+							
+							body += render(tokens.slice(j, i));
+							
+							switch(align) {
+								case "center":
+									style += center + "margin:auto;";
+									break;
+								case "justify":
+								case "right":
+									style += "text-align:" + align + ";";
+									break;
+								default:
+									if (+align) {
+										style += center + "margin-left: " + align + "%;";
+									}
+							}
+							
+							return '<tw-align ' + (style ? ('style="' + style + '"') : '') + '>'
+								+ body + '</tw-align>\n';
+						}());
+						break;
+					}
+					case "macro": {
+						out += '<tw-macro hidden name="' + token.name.replace('"','&quot;')
+							+ '" params="' + token.params.replace('"','&quot;') + '"></tw-macro>';
+						break;
+					}
+					case "heading": {
+						out += renderTag(token, 'h' + token.depth)
+						break;
+					}
+					case "br":
+					case "hr": {
+						out += '<' + token.type + '>';
+						break;
+					}
+					case "bulleted": {
+						out += renderTag(token, 'li');
+						break;
+					}
+					case "paragraph": {
+						out += renderTag(token, "p");
+						break;
+					}
+					case "comment": {
+						break;
+					}
+					case "url": {
+						out += '<a class="link" href="' + token.text + '">' + charSpanify(token.text) + '</a>';
+						break;
+					}
+					case "tag": {
+						out += token.text;
+						break;
+					}
+					case "del":
+					case "strong":
+					case "em": {
+						out += renderTag(token, token.type);
+						break;
+					}
+					case "bold": {
+						out += renderTag(token, "b");
+						break;
+					}
+					case "italic": {
+						out += renderTag(token, "i");
+						break;
+					}
+					case "twineLink": {
+						out += renderLink(render(token.children) || undefined, token.passage);
+						break;
+					}
+					case "hook": {
+						out += '<tw-hook name="' + token.hookName + '"'
+							// Debug mode: show the hook destination as a title.
+							+ (options.debug ? ' title="Hook: ?' + token.hookName + '"' : '') + '>'
+							// If a hook is empty, fill it with a zero-width space,
+							// so that it can still be used as a scope.
+							+ (render(token.children) || charSpanify("&zwnj;")) + '</tw-hook>';
+						break;
+					}
+					/*
+						Base case
+					*/
+					case "text":
+					default: {
+						out += token.children ? render(token.children) : charSpanify(token.text);
+						break;
+					}
 				}
 			}
+			return out;
 		}
-		return out;
-	}
+	}());
 	
 	/**
 		Export the TwineMarked module.
@@ -879,9 +928,7 @@
 			Export these utility functions, too, so that Utils need not redefine them.
 			They're pretty uniquely tied to the Twine code parsing field.
 			
-			@class Utils
-			@for TwineMarked
-			@static
+			@property {Object} Utils
 		*/
 		Utils: {
 			unescape: unescape,
@@ -890,17 +937,18 @@
 			charToSpan: charToSpan
 		},
 		
-		/*
-			Export the RegExpStrings
+		/**
+			Export the RegExpStrings.
+			
+			@property {RegExpStrings} RegExpStrings
 		*/
 		RegExpStrings: RegExpStrings
 	});
-	
-	if(typeof this.exports === 'object') {
+	if(typeof exports === 'object') {
 		module.exports = TwineMarked;
 	}
-	else if(typeof this.define === 'function' && this.define.amd) {
-		define(function () {
+	else if(typeof define === 'function' && define.amd) {
+		define("twinemarked",[],function () {
 			return TwineMarked;
 		});
 	}
