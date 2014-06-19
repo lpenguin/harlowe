@@ -1,7 +1,6 @@
 define(['jquery', 'story', 'script', 'macros', 'wordarray', 'macroinstance', 'engine', 'utils'], function($, Story, Script, Macros, WordArray, MacroInstance, Engine, Utils) {
 	"use strict";
 	/*
-		MacroLib
 		Twine macro standard library.
 		Modifies the Macros module only. Exports nothing.
 	*/
@@ -51,6 +50,7 @@ define(['jquery', 'story', 'script', 'macros', 'wordarray', 'macroinstance', 'en
 			Render a section of Twine code into the macro's element, without replacing
 			the existing content.
 			@method render
+			@for MacroInstance
 			@param {String} code The Twine code to render.
 			@param {Boolean} prepend Whether to prepend or append the code.
 			@return {Boolean} Whether any content was actually inserted.

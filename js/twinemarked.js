@@ -12,14 +12,10 @@
 	
 	var RegExpStrings, Lexer, TwineMarked, render, options = {};
 
-	/**
+	/*
 		The RegExpStrings are the raw strings used by the lexer to match tokens.
 		
 		These are exported so that Harlowe can use them consistently.
-		
-		@class RegExpStrings
-		@for TwineMarked
-		@static
 	*/
 	RegExpStrings = (function RegExpStrings() {
 		
@@ -940,7 +936,7 @@
 		/**
 			Export the RegExpStrings.
 			
-			@property {RegExpStrings} RegExpStrings
+			@property {Object} RegExpStrings
 		*/
 		RegExpStrings: RegExpStrings
 	});

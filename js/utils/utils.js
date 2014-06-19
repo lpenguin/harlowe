@@ -169,9 +169,9 @@ define(['jquery', 'twinemarked', 'selectors', 'customelements'], function($, Twi
 			Convert a HTML classlist attribute (e.g. class="magic link") into 
 			a CSS class selector chain (".magic.link").
 
-			@method classListToSelector
-			@param {String} list	chain to convert
-			@return {String} classlist string
+			@method selectorToClassList
+			@param {String} c	classlist attribute
+			@return {String} selector chain
 		*/
 
 		selectorToClassList: function (c) {
@@ -427,7 +427,7 @@ define(['jquery', 'twinemarked', 'selectors', 'customelements'], function($, Twi
 			This should be used for basic event logging.
 			
 			@method log
-			@param data			line to log
+			@param data	line to log
 		*/
 		
 		log: function (data) {
@@ -439,7 +439,7 @@ define(['jquery', 'twinemarked', 'selectors', 'customelements'], function($, Twi
 			This should be used for engine errors beyond the story author's control.
 			
 			@method impossible
-			@param data			line to log
+			@param data	line to log
 		*/
 		
 		impossible: function (where, data) {

@@ -1,10 +1,12 @@
 define(['jquery', 'story', 'state', 'utils', 'twinemarked', 'engine', 'wordarray'], function ($, Story, State, Utils, TwineMarked, Engine, WordArray) {
 	"use strict";
-	/*
+	/**
 		Script
 		Special eval() scope in which script-based macros are evaluated.
 		
-		Everything in here is exposed to authors via <<script>>, etc.
+		Everything in here is exposed to authors via script macros, etc.
+		
+		@class Script
 	*/
 
 	var 

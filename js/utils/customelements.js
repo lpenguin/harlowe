@@ -1,6 +1,6 @@
 define([], function() {
 
-	/**
+	/*
 		Custom Elements
 		
 		This uses the draft Web Components specification (http://www.w3.org/TR/custom-elements/)

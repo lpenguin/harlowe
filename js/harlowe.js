@@ -19,6 +19,12 @@ require.config({
 require(['jquery', 'twinemarked', 'story', 'state', 'engine', 'utils', 'selectors', 'macros', 'macrolib'],
 		function ($, TwineMarked, Story, State, Engine, Utils, Selectors, Macros) {
 	"use strict";
+	/**
+		Harlowe, the default story format for Twine 2.
+		@module Harlowe
+		@main Harlowe
+	*/
+	
 	// Used to execute custom scripts
 	function _eval(text) {
 		return eval(text + '');

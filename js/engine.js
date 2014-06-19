@@ -240,9 +240,9 @@ define(['jquery', 'twinemarked', 'story', 'utils', 'selectors', 'state', 'macros
 				try {
 					source = TwineMarked.render(source);
 				} catch (e) {
-					Utils.impossible("Engine.render()","TwineMarked crashed");
+					Utils.impossible("Engine.render","TwineMarked crashed");
 					temp = renderMacros("<p>"+TwineMarked.RegExpStrings.macroOpener + "rendering-error " +
-						e + TwineMarked.RegExpStrings.macroCloser + "</p>");
+						e.stack + TwineMarked.RegExpStrings.macroCloser + "</p>");
 					source = temp[0];
 					macroInstances = temp[1];
 				}

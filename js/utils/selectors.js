@@ -1,8 +1,7 @@
 define([], function() {
 	"use strict";
-	/**
+	/*
 		Static namespace containing CSS/jQuery selectors for Harlowe DOM elements
-		@class Selectors
 	*/
 	return Object.freeze({
 		passage: "tw-passage",

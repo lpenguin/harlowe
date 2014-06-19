@@ -4,7 +4,7 @@ define(['jquery', 'story', 'utils', 'twinemarked', 'wordarray', 'engine'], funct
 		MacroInstance
 		Object representing a single macro instantiation.
 		
-		@module MacroInstance
+		@class MacroInstance
 	*/
 
 	var MacroInstance,
@@ -17,7 +17,6 @@ define(['jquery', 'story', 'utils', 'twinemarked', 'wordarray', 'engine'], funct
 		This contains utility functions that any macro function can call on.
 		
 		@class MacroInstance
-		@static
 	*/
 	MacroInstance = {
 		
@@ -64,7 +63,9 @@ define(['jquery', 'story', 'utils', 'twinemarked', 'wordarray', 'engine'], funct
 		},
 
 		/**
-			This is called by run() just before the macro is executed
+			This is called by run() just before the macro is executed.
+			Currently performs debug mode setup actions.
+			
 			@method init
 		*/
 		init: function () {

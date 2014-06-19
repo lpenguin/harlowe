@@ -1,18 +1,32 @@
 define(['story', 'utils', 'lzstring'], function(Story, Utils, LZString) {
 	"use strict";
-	/*
+	/**
 		State
 		Singleton controlling the running game state.
 		
-		Internal object type: Moment
+		@class State
+		@static
 	*/
 
-	// Prototype object for states remembered by the game.
+	/**
+		Prototype object for states remembered by the game.
+		
+		@class Moment
+		@for State
+	*/
 	var Moment = {
-		// Current passage ID
+		/**
+			Current passage ID
+			@property {String} passage
+			@for Moment
+		*/
 		passage: "",
 		
-		// Variables
+		/**
+			Variables
+			@property {Object} variables
+			@for Moment
+		*/
 		variables: null,
 
 		/**
@@ -22,6 +36,7 @@ define(['story', 'utils', 'lzstring'], function(Story, Utils, LZString) {
 			Thus, pre-set variables may be supplied to this method.
 			
 			@method create
+			@for Moment
 			@param {String} p The ID of the passage that the player is at in this moment.
 			@param {Object} [v]	Variables to include in this moment.
 			@returns {Moment} created object
@@ -65,36 +80,64 @@ define(['story', 'utils', 'lzstring'], function(Story, Utils, LZString) {
 			Getters/setters
 		*/
 
-		// Get the current passage ID.
-		// Used by <<set>> and other state-altering macros.
+		/**
+			Get the current passage ID.
+			Used by <<set>> and other state-altering macros.
+			
+			@property {String} passage
+			@for State
+		*/
 		get passage() {
 			return present.passage;
 		},
-
+		
+		/**
+			Get the current variables.
+			
+			@property {Array} variables
+		*/
 		get variables() {
 			return present.variables;
 		},
 
-		// Is there an undo cache?
+		/**
+			Is there an undo cache?
+			@property {Number} pastLength
+		*/
 		get pastLength() {
 			return recent;
 		},
 
-		// Is there a redo cache?
+		/**
+			Is there a redo cache?
+			@property {Number} futureLength
+		*/
 		get futureLength() {
 			return (timeline.length - 1) - recent;
 		},
 
-		// Did we ever visit this passage, given its name?
-		// Return the number of times visited.
+		/**
+			Did we ever visit this passage, given its name?
+			Return the number of times visited.
+			
+			@method passageNameVisited
+			@param {String} name Name of the passage.
+			@return {Boolean} Whether it was visited.
+		*/
 		passageNameVisited: function (name) {
 			var id = Story.getPassageID(name);
 
 			return this.passageIDVisited(id);
 		},
 
-		// Did we ever visit this passage, given its id?
-		// Return the number of times visited.
+		/**
+			Did we ever visit this passage, given its id?
+			Return the number of times visited.
+			
+			@method passageIDVisited
+			@param {String} id ID of the passage.
+			@return {Boolean} Whether it was visited.
+		*/
 		passageIDVisited: function (id) {
 			var i, ret = 0;
 
@@ -108,14 +151,26 @@ define(['story', 'utils', 'lzstring'], function(Story, Utils, LZString) {
 			return ret;
 		},
 
-		// Return how long ago this named passage has been visited.
+		/**
+			Return how long ago this named passage has been visited.
+			
+			@method passageNameLastVisited
+			@param {String} name Name of the passage.
+			@return {Number} How many turns ago it was visited.
+		*/
 		passageNameLastVisited: function (name) {
 			var id = Story.getPassageID(name);
 
 			return this.passageIDLastVisited(id);
 		},
 
-		// Return how long ago this passage has been visited.
+		/**
+			Return how long ago this passage has been visited.
+			
+			@method passageIDLastVisited
+			@param {String} id ID of the passage.
+			@return {Number} How many turns ago it was visited.
+		*/
 		passageIDLastVisited: function (id) {
 			var i;
 
@@ -136,12 +191,22 @@ define(['story', 'utils', 'lzstring'], function(Story, Utils, LZString) {
 			return Infinity;
 		},
 		
-		// Returns the ID of the previous passage visited.
+		/**
+			Returns the ID of the previous passage visited.
+			@method previousPassage
+			@return {String} ID of the previous passage.
+		*/
 		previousPassage: function () {
 			return timeline[recent].passage;
 		},
 
-		// Return an array of names of all previously visited passages
+		/**
+			Return an array of names of all previously visited passages, in the order
+			they were visited. This may include doubles.
+			
+			@method previousPassage
+			@return {Array} Array of previously visited passages.
+		*/
 		pastPassageNames: function () {
 			var i, ret = [Story.getPassageName(present.passage)];
 
@@ -156,12 +221,20 @@ define(['story', 'utils', 'lzstring'], function(Story, Utils, LZString) {
 			Movers/shakers
 		*/
 		
-		// Create a new present after altering the state
+		/**
+			Create a new present after altering the state
+			@method newPresent
+			@param {String} newPassageID The ID of the passage the player is now currently at.
+		*/
 		newPresent: function(newPassageID) {
 			present = (timeline[recent] || Moment).create(newPassageID);
 		},
 
-		// Push the present state to the timeline, and create a new state.
+		/**
+			Push the present state to the timeline, and create a new state.
+			@method play
+			@param {String} newPassageID The ID of the passage the player is now currently at.
+		*/
 		play: function (newPassageID) {
 			if (!present) {
 				Utils.impossible("State.play","present is undefined!");
@@ -176,8 +249,13 @@ define(['story', 'utils', 'lzstring'], function(Story, Utils, LZString) {
 			this.newPresent(newPassageID);
 		},
 
-		// Rewind the state
-		// arg: either a string (passage id) or a number of steps to rewind.
+		/**
+			Rewind the state. This will fail if the player is at the first moment.
+			
+			@method rewind
+			@param {String|Number} arg Either a string (passage id) or a number of steps to rewind.
+			@return {Boolean} Whether the rewind was actually performed.
+		*/
 		rewind: function (arg) {
 			var steps = 1,
 				moved = false;
@@ -202,8 +280,14 @@ define(['story', 'utils', 'lzstring'], function(Story, Utils, LZString) {
 			return moved;
 		},
 
-		// Undo the rewinding of a state
-		// Currently only accepts numbers.
+		/**
+			Undo the rewinding of a state. Fails if no moments are in the future to be redone.
+			Currently only accepts numbers.
+			
+			@method  fastForward
+			@param {Number} arg The number of turns to move forward.
+			@return {Boolean} Whether the fast-forward was actually performed.
+		*/
 		fastForward: function (arg) {
 			var steps = 1,
 				moved = false;
@@ -221,7 +305,7 @@ define(['story', 'utils', 'lzstring'], function(Story, Utils, LZString) {
 			return moved;
 		},
 		
-		/*
+		/**
 			A smaller alternative to an LZString compressed JSON.stringify()
 			-First line: comma-separated variable names array
 			-Then, for each Moment:
@@ -230,6 +314,9 @@ define(['story', 'utils', 'lzstring'], function(Story, Utils, LZString) {
 				- then, newline.
 			-Then, present passage.
 			Note: this currently doesn't record the future (the redo cache).
+			
+			@method save
+			@return {String} Serialised string representing the game state.
 		*/
 		save: function() {
 			var i, ret = "", error = 0,
@@ -269,7 +356,13 @@ define(['story', 'utils', 'lzstring'], function(Story, Utils, LZString) {
 			return LZString.compressToBase64(ret);
 		},
 		
-		// Deserialiser
+		/**
+			Deserialises a saved string into the current state, overwriting it.
+			
+			@method load
+			@param {String} string The saved game state to load.
+			@return {Boolean} Whether or not the load succeded.
+		*/
 		load: function(string) {
 			var // RegExp matches,
 				momentMatch, variableMatch, tempMatch,

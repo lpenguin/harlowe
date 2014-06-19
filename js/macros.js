@@ -2,51 +2,16 @@ define(['jquery', 'story', 'utils', 'selectors', 'twinemarked', 'wordarray', 'ma
 function($, Story, Utils, Selectors, TwineMarked, WordArray, MacroInstance, HookMacroInstance, Scope) {
 	"use strict";
 	/**
-		Macros
-		Macro execution engine. A singleton class.
+		This contains a registry of macro definitions, methods to add to that registry, and a function to find macro tags
+		in Twine code. (The latter is planned to be replaced by TwineMarked at some future point.)
+		
+		The registration methods also come equipped with default behaviour for hook macro functions, and register
+		any enchantment events that the macro definition defines.
 		
 		@class Macros
 		@static
 	*/
-
-	/*
-
-	MACRO API:
-
-	For end users:
-	* Macros.get(name) : get a registered macro function.
-	* Macros.add(descriptor): register a new macro.
-		descriptor is a map of the following:
-			- fn: the function to execute when the macro runs. It may be absent for hook macros. 'this' is the MacroInstance running it.
-			- name: a string, or an array of strings serving as 'alias' names.
-			- selfClosing: boolean, determines if the macro tag has contents. If false, then all subsequent code
-				up until a closing tag ("<<endmacro>>" or <</macro>>") or until the end of the passage,
-				will be captured by this.contents.
-			- version: a map { major: Number, minor: Number, revision: Number }.
-			- hooked: boolean, denotes that this is a hook macro.
-			- deferred: boolean, denotes that the hook macro is "deferred" - it will not immediately execute. Currently unused.
-			- enchantment: a map whose presence denotes that the hook macro is an "enchantment" - its contents will not immediately
-				be rendered until a denoted event is performed on its hook(s).
-				The map contains the following:
-				- event: the DOM event that triggers the rendering of this macro's contents.
-				- classList: the list of classes to 'enchant' the hook with, to denote that it is ready for the player to
-				trigger an event on it.
-				- rerender: a string determining whether to clear the span before rendering into it ("replace", default),
-				append the rendering to its current contents ("append") or prepend it ("prepend").
-				- once: whether or not the enchanted DOM elements can trigger this macro multiple times.
-				- filterFn: a function to determines whether to apply the enchantment class to said hook. First arg is the
-				jQuery to test.
-			
-	* Macros.supplement(name, selfClosing, main) : register a macro which has no code, but is used as a sub-tag in another macro.
-		main: name of the 'parent' macro.
-		
-	For other modules:
-	* Macros.matchMacroTag(html, callback(e)) : perform a function for each valid macro call in the HTML.
-		html: a string of escaped HTML.
-		e: a MacroInstance object matching a macro invocation in the HTML.
-
-	*/
-
+	
 	var Macros,
 		// Private collection of registered macros.
 		macroRegistry = {},
@@ -54,7 +19,7 @@ function($, Story, Utils, Selectors, TwineMarked, WordArray, MacroInstance, Hook
 		enchantmentEventRegistry = {};
 
 	/**
-		Connect Macros to MacroInstance
+		Obtain the definition of the macro that this is an instance of.
 		
 		@method getMacroData
 		@for MacroInstance
@@ -78,6 +43,7 @@ function($, Story, Utils, Selectors, TwineMarked, WordArray, MacroInstance, Hook
 		before executing.
 		
 		@method hookMacroFn
+		@for Macros
 		@private
 		@param {Boolean} deferred Whether or not it is deferred
 		@param {Function} innerFn The function to perform on the macro's hooks.
@@ -92,7 +58,8 @@ function($, Story, Utils, Selectors, TwineMarked, WordArray, MacroInstance, Hook
 		}
 
 		// For deferred macros, only run this once.
-		// this.ready is a 
+		// this.ready is an expando property on this macro instance, used solely to track
+		// whether the scope has been set up yet.
 		if (!this.ready) {
 			deferred && (this.ready = true);
 
@@ -218,7 +185,7 @@ function($, Story, Utils, Selectors, TwineMarked, WordArray, MacroInstance, Hook
 	Macros = {
 
 		/**
-			Retrieve a macro definition.
+			Retrieve a registered macro definition by name.
 			
 			@method get
 			@param {String} Name of the macro definition to get
@@ -231,11 +198,34 @@ function($, Story, Utils, Selectors, TwineMarked, WordArray, MacroInstance, Hook
 		/**
 			Register a new macro.
 			If an array of names is given, an identical macro is created under each name.
-			
+				
 			@method add
-			@param name A String, or an Array holding multiple strings.
+			@param {String|Array} name A String, or an Array holding multiple strings.
 			@param {Object} desc A macro definition object.
 			@return this
+		*/
+		/*
+			Macro definition objects may have the following fields:
+				- fn: the function to execute when the macro runs. It may be absent for hook macros. 'this' is the MacroInstance running it.
+				- name: a String, or an array of strings serving as 'alias' names.
+				- selfClosing: Boolean, determines if the macro tag has contents. If false, then all subsequent code
+					up until a closing tag ("<<endmacro>>" or <</macro>>") or until the end of the passage,
+					will be captured by this.contents.
+				- version: an Object { major: Number, minor: Number, revision: Number }.
+				- hooked: Boolean, denotes that this is a hook macro.
+				- deferred: Boolean, denotes that the hook macro is "deferred" - it will not immediately execute. Currently unused, 
+					as the 'enchantment' field also serves this purpose.
+				- enchantment: an Object whose presence denotes that the hook macro is an "enchantment" - its contents will not immediately
+					be rendered until a denoted event is performed on its hook(s).
+					The object contains the following:
+					- event: the DOM event that triggers the rendering of this macro's contents.
+					- classList: the list of classes to 'enchant' the hook with, to denote that it is ready for the player to
+					trigger an event on it.
+					- rerender: a String determining whether to clear the span before rendering into it ("replace", default),
+					append the rendering to its current contents ("append") or prepend it ("prepend").
+					- once: Boolean whether or not the enchanted DOM elements can trigger this macro multiple times.
+					- filterFn: a Function to determines whether to apply the enchantment class to said hook. First arg is the
+				jQuery to test.
 		*/
 		add: function (name, desc) {
 			var fn;
@@ -273,6 +263,8 @@ function($, Story, Utils, Selectors, TwineMarked, WordArray, MacroInstance, Hook
 
 		/**
 			Register a macro that appears internally in another macro (i.e <<endif>> for <<if>>)
+			and has no code of its own.
+			
 			@method supplement
 			@param name A String, or an Array holding multiple strings.
 			@param {Object} desc A macro definition object. Its fn and version will be overridden.
