@@ -1,4 +1,5 @@
-define(['jquery', 'twinemarked', 'story', 'utils', 'selectors', 'state', 'macros', 'script'], function ($, TwineMarked, Story, Utils, Selectors, State, Macros, Script) {
+define(['jquery', 'twinemarked', 'renderer', 'story', 'utils', 'selectors', 'state', 'macros', 'script', 'macroinstance', 'hookmacroinstance'], 
+function ($, TwineMarked, Renderer, Story, Utils, Selectors, State, Macros, Script, MacroInstance, HookMacroInstance) {
 	"use strict";
 	
 	/**
@@ -19,7 +20,7 @@ define(['jquery', 'twinemarked', 'story', 'utils', 'selectors', 'state', 'macros
 		var container, back, fwd, sidebar;
 		container = $('<tw-passage><tw-sidebar>'),
 		sidebar = container.children(Selectors.sidebar);
-
+		
 		// Permalink
 		sidebar.append('<tw-icon class="permalink" title="Permanent link to this passage"><a href="#' + State.save() + '">&sect;');
 		// Apart from the Permalink, the sidebar buttons consist of Undo (Back) and Redo (Forward) buttons.
@@ -82,43 +83,9 @@ define(['jquery', 'twinemarked', 'story', 'utils', 'selectors', 'state', 'macros
 		}
 	}
 	
-	/**
-		Renders macros to HTML. Called by render().
-
-		@method renderMacros
-		@private
-		@param {String} source		source text to render
-		@return {Array} Two entries: the HTML to render, and all Macros 
-	*/
-	function renderMacros (source) {
-		var macroInstances = [],
-			macroCount = 0,
-			newhtml = "",
-			index = 0;
-
-		Macros.matchMacroTag(source, null, function (m) {
-			// A macro by that name doesn't exist
-
-			if (!m.desc) {
-				m.desc = Macros.get("unknown");
-			}
-
-			// Contain the macro in a hidden span.
-
-			newhtml += source.slice(index, m.startIndex) + '<tw-macro count="' + macroCount + '" name="' + m.name +
-				'" hidden></tw-macro>';
-			macroInstances.push(m);
-			macroCount += 1;
-			index = m.endIndex;
-		});
-
-		newhtml += source.slice(index);
-		return [newhtml, macroInstances];
-	}
-	
 	var Engine = {
 		/**
-			Moves the game state backward one. If there is no previous state, this does nothing.
+			Moves the game state backward one turn. If there is no previous state, this does nothing.
 
 			@method goBack
 		*/
@@ -131,7 +98,7 @@ define(['jquery', 'twinemarked', 'story', 'utils', 'selectors', 'state', 'macros
 		},
 
 		/**
-			Moves the game state forward one after a previous goBack().
+			Moves the game state forward one turn, after a previous goBack().
 
 			@method goForward
 		*/
@@ -227,24 +194,17 @@ define(['jquery', 'twinemarked', 'story', 'utils', 'selectors', 'state', 'macros
 				return $();
 			}
 
-			// macros
-
-			temp = renderMacros(source);
-			source = temp[0];
-			macroInstances = temp[1];
-
-			// Do Markdown
-			
+			/*
+				Do Markdown
+			*/
 			// Let's not bother if this source solely held macros.
 			if (source.trim()) {
 				try {
-					source = TwineMarked.render(source);
+					source = Renderer.render(TwineMarked.lex(source));
 				} catch (e) {
-					Utils.impossible("Engine.render","TwineMarked crashed");
-					temp = renderMacros("<p>"+TwineMarked.RegExpStrings.macroOpener + "rendering-error " +
-						e.stack + TwineMarked.RegExpStrings.macroCloser + "</p>");
-					source = temp[0];
-					macroInstances = temp[1];
+					Utils.impossible("Engine.render","Renderer crashed");
+					
+					source = "<tw-macro name='rendering-error'>" + e.stack + "</tw-macro>";
 				}
 			}
 			
@@ -265,23 +225,31 @@ define(['jquery', 'twinemarked', 'story', 'utils', 'selectors', 'state', 'macros
 				Execute macros immediately
 			*/
 			html.find(Selectors.macroInstance + ", " + Selectors.internalLink).each(function runMacroInstances () {
-				var passage,
+				var el = $(this),
+					// The following vars are used by the tw-link case
+					passage,
 					text,
 					visited,
-					count,
-					el = $(this);
+					// The following vars are used by the tw-macro case
+					desc,
+					name,
+					call;
 
 				switch(this.tagName.toLowerCase()) {
 					case "tw-macro":
 					{
-						count = this.getAttribute("count");
-						this.removeAttribute("hidden");
-						/*
-							To provide the macros with a sufficient top,
-							unwrap the <tw-temp-container>, and add the 'top' for this
-							rendered fragment.
-						*/
-						macroInstances[count].run(el, context, html.contents().add(top));
+						call = el.attr("call");
+						name = el.attr("name");
+						desc = Macros.get(name);
+						
+						el.removeAttr("call");
+						(desc.hooked ? HookMacroInstance : MacroInstance).create(name, desc, call).run(el, context, 
+							/*
+								To provide the macros with a sufficient top,
+								unwrap the <tw-temp-container>, and add the 'top' for this
+								rendered fragment.
+							*/
+							html.contents().add(top));
 						break;
 					}
 					/*

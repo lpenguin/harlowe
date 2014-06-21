@@ -23,7 +23,7 @@ function($, Story, Utils, WordArray, MacroInstance, Scope) {
 
 		/**
 			Enchants the scope, applying the macro's enchantment's classes
-			to the 
+			to the matched elements.
 			
 			@method enchantScope
 		*/

@@ -10,7 +10,7 @@
 (function () {
 	"use strict";
 	
-	var RegExpStrings, Lexer, TwineMarked, render, options = {};
+	var RegExpStrings, Lexer, TwineMarked, options = {};
 
 	/*
 		The RegExpStrings are the raw strings used by the lexer to match tokens.
@@ -32,6 +32,19 @@
 				return str;
 			}
 			return (str+"").replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, "\\$&");
+		}
+		
+		/*
+			Matches a string of non-nesting characters enclosed by open character and another character,
+			but potentially containing the close-character escaped with /
+			
+			For instance, <This is \> an example>.
+		*/
+		function enclosed(o, c) {
+			o = escape(o);
+			c = c ? escape(c) : o;
+
+			return o + "(?:" + notChars( c + "\\" ) + "\\.)" + "*" + notChars( c + "\\" ) + c;
 		}
 		
 		/*
@@ -94,6 +107,11 @@
 			
 			anyLetter = "[\\w\\-\u00c0-\u00de\u00df-\u00ff\u0150\u0170\u0151\u0171]",
 			
+			// Regex suffix that, when applied, causes the preceding match to only apply when not inside a quoted
+			// string. This accounts for both single- and double-quotes, and escaped quote characters.
+
+			unquoted = before(either( notChars("'\"\\") + either( "\\.", enclosed("'"), enclosed('"'))) + "*" + notChars("'\\") + "$"),
+			
 			/*
 				Markdown lists changes:
 				
@@ -140,20 +158,15 @@
 			
 			macro = {
 				opener:            "<<",
-				name:              "(" + anyLetter.replace("]","\\?\\!\\/]") + "+)",
-				params:            "((?:[^>]|>(?!>))*)",
+				name:              anyLetter.replace("]","\\?\\!\\/]") + "+",
+				params:            "(?:[^>]|>(?!>))*",
 				closer:            ">>"
 			},
 			
 			tag = {
 				name:              "\\w[\\w\\-]*",
 				attrs:             "(?:\"[^\"]*\"|'[^']*'|[^'\">])*?"
-			},
-
-			// Regex suffix that, when applied, causes the preceding match to only apply when not inside a quoted
-			// string. This accounts for both single- and double-quotes, and escaped quote characters.
-
-			unquoted = "(?=(?:[^\"'\\\\]*(?:\\\\.|'(?:[^'\\\\]*\\\\.)*[^'\\\\]*'|\"(?:[^\"\\\\]*\\\\.)*[^\"\\\\]*\"))*[^'\"]*$)";
+			};
 			
 		/*
 			Return the RegExpStrings object.
@@ -272,107 +285,6 @@
 		};
 	}());
 	
-	/**
-		Unescape HTML entities.
-		For speed, convert common entities quickly, and convert others with jQuery.
-
-		@method unescape
-		@for Utils
-		@param {String} text Text to convert
-		@return {String} converted text
-	*/
-	function unescape(text) {
-		var ret;
-		if (text.length <= 1)
-			return text;
-
-		switch (text) {
-			case "&lt;":
-				return '<';
-			case "&gt;":
-				return '>';
-			case "&amp;":
-				return '&';
-			case "&quot;":
-				return '"';
-			case "&#39;":
-				return "'";
-			case "&nbsp;":
-				return String.fromCharCode(160);
-			case "&zwnj;":
-				return String.fromCharCode(8204);
-			default:
-				ret = document.createElement('p');
-				ret.innerHTML = text;
-				return ret.textContent;
-		}
-	}
-
-	/**
-		HTML-escape a string.
-		
-		@method escape
-		@for Utils
-		@param {String} text Text to escape
-		@return {String} converted text
-	*/
-	function escape(text) {
-		var ret = document.createElement('p');
-		ret.textContent = text;
-		return ret.innerHTML;
-	}
-
-	/**
-		Takes a string containing a character or HTML entity, and wraps it into a
-		<tw-char> tag, converting the entity if it is one.
-
-		@method charToSpan
-		@for Utils
-		@param {String} character
-		@return {String} Resultant HTML
-	*/
-	function charToSpan(c) {
-		// Use single-quotes if the char is a double-quote.
-		var quot = (c === "&#39;" ? '"' : "'"),
-			value = unescape(c);
-		switch(value) {
-			case ' ': {
-				value = "space";
-				break;
-			}
-			case '\t': {
-				value = "tab";
-				break;
-			}
-		}
-		return "<tw-char value=" +
-			quot + value + quot + ">" +
-			c + "</tw-char>";
-	}
-
-	/**
-		Converts an entire string into individual characters, each enclosed
-		by a <tw-char>.
-
-		@method charSpanify
-		@for Utils
-		@param {String} text Source string
-		@return {String} Resultant HTML
-	*/
-	function charSpanify(text) {
-		if (typeof text !== "string") {
-			throw Error("charSpanify received a non-string");
-		}
-		return text.replace(/&[#\w]+;|./g, charToSpan);
-	}
-	
-	/*
-		For use by Array#reduceRight.
-		Finds the rightmost non-empty subgroup in match - designed
-		for regexes that should only have 1 non-empty subgroup.
-	*/
-	function rightmostMatch(a, b, index) { return a || (index ? b : "") }
-	
 	/*
 		Equivalent to ES6 Object.assign()
 	*/
@@ -455,7 +367,7 @@
 		*/
 		function textPusher(type) {
 			return function(match) {
-				var innerText = match.reduceRight(rightmostMatch, "");
+				var innerText = match.reduceRight(function(a, b, index) { return a || (index ? b : "") }, "");
 				
 				push(type, match, {
 					innerText: innerText
@@ -675,14 +587,10 @@
 					});
 				}
 			},
-			/*
-				Currently, Harlowe handles macros separately, removing their tags
-				from the source before handing it to TwineMarked. Thus, this is not
-				used by Harlowe.
-			*/
 			macro: {
 				match: r("macro"),
 				fn: function(match) {
+	console.log(match);
 					push("macro", match, {
 						name: match[1],
 						params: match[2]
@@ -714,174 +622,6 @@
 	*/
 	Lexer = Rules(LexerInnerState());
 	
-	/*
-		The render method takes the syntax tree from the lexer and returns a string of HTML.
-	*/
-	render = (function() {
-		/*
-			Inside this closure, a number of functions are stashed,
-			so that each recursive call need not recreate them.
-		*/
-		
-		/*
-			This makes a basic enclosing HTML tag with no attributes, given the tag name,
-			and renders the contained text.
-		*/
-		function renderTag(token, tagName) {
-			return '<' + tagName + '>' + render(token.children) + '</' + tagName + '>';
-		}
-		
-		/*
-			This makes a standard passage link.
-		*/
-		function renderLink(text, passage) {
-			return '<tw-link class="link" passage-expr="' + escape(passage) + '">' + (text || passage) + '</tw-link>';
-		}
-		
-		/*
-			The actual rendering function.
-		*/
-		return function render(tokens) {
-			var token, lastToken, len, temp, tagName,
-				i = 0,
-				out = '';
-			
-			if (!tokens) {
-				return out;
-			}
-			len = tokens.length;
-			for(; i < len; i += 1) {
-				token = tokens[i];
-				switch(token.type) {
-					case "numbered": 
-					case "bulleted": {
-						// Run through the tokens, consuming all consecutive list items
-						tagName = (token.type === "numbered" ? "ol" : "ul");
-						out += "<" + tagName + ">";
-						
-						while(i < len && tokens[i] && tokens[i].type === token.type) {
-							out += renderTag(tokens[i], "li");
-							i += 1;
-							// If a <br> follows a listitem, ignore it.
-							if (tokens[i] && tokens[i].type === "br") {
-								i+=1;
-							}
-						}
-						out += "</" + tagName + ">";
-						break;
-					}
-					case "align": {
-						// This closure exists solely for localising the variables within
-						out += (function() {
-							var style = '',
-								body = '',
-								center = "text-align: center; max-width:50%; ",
-								align = token.align,
-								j = (i += 1);
-							
-							if (token.align === "left") {
-								return '';
-							}
-							
-							while(i < len && tokens[i] && tokens[i].type !== "align") {
-								i += 1;
-							}
-							
-							body += render(tokens.slice(j, i));
-							
-							switch(align) {
-								case "center":
-									style += center + "margin:auto;";
-									break;
-								case "justify":
-								case "right":
-									style += "text-align:" + align + ";";
-									break;
-								default:
-									if (+align) {
-										style += center + "margin-left: " + align + "%;";
-									}
-							}
-							
-							return '<tw-align ' + (style ? ('style="' + style + '"') : '') + '>'
-								+ body + '</tw-align>\n';
-						}());
-						break;
-					}
-					case "macro": {
-						out += '<tw-macro hidden name="' + token.name.replace('"','&quot;')
-							+ '" params="' + token.params.replace('"','&quot;') + '"></tw-macro>';
-						break;
-					}
-					case "heading": {
-						out += renderTag(token, 'h' + token.depth)
-						break;
-					}
-					case "br":
-					case "hr": {
-						out += '<' + token.type + '>';
-						break;
-					}
-					case "bulleted": {
-						out += renderTag(token, 'li');
-						break;
-					}
-					case "paragraph": {
-						out += renderTag(token, "p");
-						break;
-					}
-					case "comment": {
-						break;
-					}
-					case "url": {
-						out += '<a class="link" href="' + token.text + '">' + charSpanify(token.text) + '</a>';
-						break;
-					}
-					case "tag": {
-						out += token.text;
-						break;
-					}
-					case "del":
-					case "strong":
-					case "em": {
-						out += renderTag(token, token.type);
-						break;
-					}
-					case "bold": {
-						out += renderTag(token, "b");
-						break;
-					}
-					case "italic": {
-						out += renderTag(token, "i");
-						break;
-					}
-					case "twineLink": {
-						out += renderLink(render(token.children) || undefined, token.passage);
-						break;
-					}
-					case "hook": {
-						out += '<tw-hook name="' + token.hookName + '"'
-							// Debug mode: show the hook destination as a title.
-							+ (options.debug ? ' title="Hook: ?' + token.hookName + '"' : '') + '>'
-							// If a hook is empty, fill it with a zero-width space,
-							// so that it can still be used as a scope.
-							+ (render(token.children) || charSpanify("&zwnj;")) + '</tw-hook>';
-						break;
-					}
-					/*
-						Base case
-					*/
-					case "text":
-					default: {
-						out += token.children ? render(token.children) : charSpanify(token.text);
-						break;
-					}
-				}
-			}
-			return out;
-		}
-	}());
-	
 	/**
 		Export the TwineMarked module.
 		
@@ -891,16 +631,6 @@
 		@static
 	*/
 	TwineMarked = Object.freeze({
-	
-		/**
-			TwineMarked accepts the same story options that Harlowe does.
-			Currently it only makes use of { debug }.
-			
-			@property options
-			@type Object
-		*/
-		set options(o) { options = o; },
-		get options() { return options },
 		
 		/**
 			@method lex
@@ -908,30 +638,6 @@
 			@return {Array} Tree structure of 
 		*/
 		lex: Lexer.lex,
-		
-		/**
-			The primary use of TwineMarked is to render Twine code directly into a HTML string.
-			
-			@method render
-			@param {String} src String source to render. 
-			@return {String} Rendered HTML code.
-		*/
-		render: function(src) {
-			return render(Lexer.lex(src));
-		},
-		
-		/**
-			Export these utility functions, too, so that Utils need not redefine them.
-			They're pretty uniquely tied to the Twine code parsing field.
-			
-			@property {Object} Utils
-		*/
-		Utils: {
-			unescape: unescape,
-			escape: escape,
-			charSpanify: charSpanify,
-			charToSpan: charToSpan
-		},
 		
 		/**
 			Export the RegExpStrings.

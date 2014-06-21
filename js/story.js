@@ -1,14 +1,9 @@
 define(['jquery', 'utils', 'selectors'], function($, Utils, Selectors) {
 	"use strict";
 	/**
-		Module governing data concerning the stort and its structure.
+		Singleton object governing data concerning the stort and its structure.
 		@class Story
 		@static
-	*/
-
-	/*
-		Story options:
-
 	*/
 
 	var Story = {
@@ -91,6 +86,6 @@ define(['jquery', 'utils', 'selectors'], function($, Utils, Selectors) {
 
 	Utils.log("Story module ready! (" + $(Selectors.passageData).length + " passages)");
 	
-	// Story is finally frozen by Harlowe.js
+	// Story is finally frozen by Harlowe.js, when startPassage is finally set.
 	return Object.seal(Story);
 });

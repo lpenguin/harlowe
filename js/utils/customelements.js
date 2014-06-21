@@ -6,7 +6,8 @@ define([], function() {
 		This uses the draft Web Components specification (http://www.w3.org/TR/custom-elements/)
 		and the document.register() function to define new semantic HTML elements for use in Twine 2.
 		
-		Browsers which do not support this will create HTMLUnknownElement elements. Thus, extending the prototypes of these elements isn't currently feasible (without a polyfill).
+		Browsers which do not support this will create HTMLUnknownElement elements.
+		Thus, extending the prototypes of these elements isn't currently feasible (without a polyfill).
 	*/
 	if (!document.registerElement) {
 		return;
@@ -17,11 +18,14 @@ define([], function() {
 		(i.e. features a hyphen anywhere after the first character) will just mean that element uses HTMLElement.prototype.
 		Nevertheless, this lays ground if the polyfill route is taken, and documents the custom elements used in Harlowe.
 	*/
-	(function register(name) {
-		var el, props = [].slice.call(arguments,1),
+	(function register(name /* variadic */) {
+		var el, props = Array.apply(0, arguments),
 			proto = Object.create(HTMLElement.prototype),
 			propDef = {};
-		// Load up the prototype with the passed properties
+		/*
+			Load up the prototype with the passed properties
+			while making them non-configurable, non-writable etc.
+		*/
 		props.forEach(function(p) {
 			propDef[p] = { value: null };
 		});

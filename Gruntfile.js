@@ -1,7 +1,7 @@
 module.exports = function (grunt) {
 	"use strict";
 	var testFile = 'tests/hooktest.html',
-		testTitle = 'My Unreasonably Long Story Title That Is Used For Testing',
+		testTitle = 'Harlowe Test',
 		
 		// Source files
 		sourceHTML = ['template.html'],
@@ -134,8 +134,8 @@ module.exports = function (grunt) {
 	grunt.loadNpmTasks('grunt-text-replace');
 
 	grunt.registerTask('default', [ 'replace:test']);
-	grunt.registerTask('build', [ /*'jshint',*/ /*'yuidoc',*/ 'requirejs', 'cssmin', 'replace:build']);
-	grunt.registerTask('runtime', [ 'requirejs', 'cssmin', 'replace:runtime']);
+	grunt.registerTask('build', [ /*'jshint',*/ 'yuidoc', 'requirejs', 'cssmin', 'replace:build']);
+	grunt.registerTask('runtime', [ 'requirejs', 'yuidoc', 'cssmin', 'replace:runtime']);
 	grunt.registerTask('release', [
 		'clean', 'yuidoc'
 	]);

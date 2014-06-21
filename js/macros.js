@@ -1,9 +1,8 @@
-define(['jquery', 'story', 'utils', 'selectors', 'twinemarked', 'wordarray', 'macroinstance', 'hookmacroinstance', 'scope'],
-function($, Story, Utils, Selectors, TwineMarked, WordArray, MacroInstance, HookMacroInstance, Scope) {
+define(['jquery', 'story', 'utils', 'selectors', 'renderer', 'wordarray', 'macroinstance', 'hookmacroinstance', 'scope'],
+function($, Story, Utils, Selectors, Renderer, WordArray, MacroInstance, HookMacroInstance, Scope) {
 	"use strict";
 	/**
-		This contains a registry of macro definitions, methods to add to that registry, and a function to find macro tags
-		in Twine code. (The latter is planned to be replaced by TwineMarked at some future point.)
+		This contains a registry of macro definitions, and methods to add to that registry.
 		
 		The registration methods also come equipped with default behaviour for hook macro functions, and register
 		any enchantment events that the macro definition defines.
@@ -192,7 +191,7 @@ function($, Story, Utils, Selectors, TwineMarked, WordArray, MacroInstance, Hook
 			@return Macro definition object, or false
 		*/
 		get: function (e) {
-			return macroRegistry.hasOwnProperty(e) && macroRegistry[e];
+			return (macroRegistry.hasOwnProperty(e) && macroRegistry[e]) || macroRegistry["unknown"];
 		},
 
 		/**
@@ -237,6 +236,10 @@ function($, Story, Utils, Selectors, TwineMarked, WordArray, MacroInstance, Hook
 				loaderError("Argument 2 of Macros.add (\"" + name + "\") isn't a valid or complete descriptor.");
 				return this;
 			}
+			// If this isn't self-closing, tell the Renderer it's an enclosing macro.
+			if (!desc.selfClosing) {
+				Renderer.enclosingMacros.push(name);
+			}
 			// Hook macro? Use a hookMacroFn for its function.
 			if (desc.hooked) {
 				// Enchantment macro? Register the enchantment's event.
@@ -262,7 +265,7 @@ function($, Story, Utils, Selectors, TwineMarked, WordArray, MacroInstance, Hook
 		},
 
 		/**
-			Register a macro that appears internally in another macro (i.e <<endif>> for <<if>>)
+			Register a macro that appears internally in another macro (i.e <<else>> for <<if>>)
 			and has no code of its own.
 			
 			@method supplement
@@ -299,71 +302,6 @@ function($, Story, Utils, Selectors, TwineMarked, WordArray, MacroInstance, Hook
 				desc.version = mfunc.version;
 			}
 			Macros.add(name, desc);
-			return this;
-		},
-
-		/**
-			Performs a function for each macro instance found in a string.
-			This searches for both self-closing and enclosing macros,
-			and determines where a macro instantiation begins or ends.
-			Callback function's argument is a macro instance.
-			
-			@method matchMacroTag
-			@param {String} html The Twine code to search for macro tags in.
-			@param {String} macroname A regex string specifying a particular name; if absent, all are found.
-			@param {Function} callback A function that takes a MacroInstance.
-			@return this
-		*/
-		matchMacroTag: function (html, macroName, callback) {
-			var re = TwineMarked.RegExpStrings,
-				macroRE = new RegExp(re.macroOpener + "\\s*" + (macroName && "("+macroName+")" || re.macroName)
-					+ re.macroParams + re.macroCloser, 'ig'),
-				macro, endMacroRE, foundMacro, foundEndMacro, nesting,
-				endIndex, desc;
-			// Search through html for macro tags
-			do {
-				foundMacro = macroRE.exec(html);
-				if (foundMacro !== null) {
-					macroName = macroName || foundMacro[1];
-					endIndex = macroRE.lastIndex;
-					desc = this.get(macroName);
-
-					// If macro is not self-closing, search for endtag
-					// and capture entire contents.
-					if (desc && !desc.selfClosing) {
-						endMacroRE = new RegExp(macroRE.source + "|" + re.macroOpener
-							+ "((?:\\/|end)" + macroName + ")" + re.macroParams +
-							re.macroCloser, "g");
-						endMacroRE.lastIndex = endIndex;
-						nesting = 0;
-						do {
-							foundEndMacro = endMacroRE.exec(html);
-							if (foundEndMacro !== null) {
-								if (foundEndMacro[3]) {
-									// Found <</macro>>
-									if (nesting) {
-										nesting -= 1;
-									} else {
-										endIndex = endMacroRE.lastIndex;
-										break;
-									}
-								}
-								// Found nested <<macro>>
-								else if (foundEndMacro[1] && foundEndMacro[1] === macroName) {
-									nesting += 1;
-								}
-							} else {
-								endIndex = html.length; // No end found, assume rest of passage.
-							}
-						} while (foundEndMacro);
-					}
-					macro = (desc.hooked ? HookMacroInstance : MacroInstance)
-						.create(desc, foundMacro, html.slice(foundMacro.index, endIndex));
-					// Run the callback
-					callback(macro);
-					macroRE.lastIndex = endIndex;
-				}
-			} while (foundMacro);
 			return this;
 		}
 	};

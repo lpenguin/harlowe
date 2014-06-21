@@ -16,8 +16,8 @@ require.config({
 		hookmacroinstance: './macroinstance/hookmacroinstance',
 	}
 });
-require(['jquery', 'twinemarked', 'story', 'state', 'engine', 'utils', 'selectors', 'macros', 'macrolib'],
-		function ($, TwineMarked, Story, State, Engine, Utils, Selectors, Macros) {
+require(['jquery', 'renderer', 'story', 'state', 'engine', 'utils', 'selectors', 'macros', 'macrolib'],
+		function ($, Renderer, Story, State, Engine, Utils, Selectors, Macros) {
 	"use strict";
 	/**
 		Harlowe, the default story format for Twine 2.
@@ -47,12 +47,10 @@ require(['jquery', 'twinemarked', 'story', 'state', 'engine', 'utils', 'selector
 
 		if (options) {
 			options.split(/\s/).forEach(function(b) {
-				Story.options[b] = true;
+				Renderer.options[b] = Story.options[b] = true;
 			});
-			TwineMarked.options = Story.options;
 		}
 		Story.startPassage = header.attr('startnode');
-		Object.freeze(Story);
 
 		// Init game engine
 

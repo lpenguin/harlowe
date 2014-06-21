@@ -29,7 +29,7 @@ define(['jquery', 'story', 'utils', 'twinemarked', 'wordarray', 'engine'], funct
 			@param {String} call The full invocation, including start tag, contents, and end tag.
 			@return {Object} The new MacroInstance.
 		*/
-		create: function (desc, match, call) {
+		create: function (name, desc, call) {
 			var selfClosing = desc && desc.selfClosing,
 				contents = (selfClosing ? "" : call.replace(/^(?:[^>]|>(?!>))*>>/i, '').replace(/<<(?:[^>]|>(?!>))*>>$/i,'')),
 				rawArgs = call.replace(macroTagFront, '').replace(/\s*>>[^]*/, '').trim(),
@@ -46,10 +46,8 @@ define(['jquery', 'story', 'utils', 'twinemarked', 'wordarray', 'engine'], funct
 				});
 			
 			return Utils.create(this, {
-				name: match[1],
+				name: name,
 				desc: desc,
-				startIndex: match.index,
-				endIndex: match.index + call.length,
 				selfClosing: selfClosing,
 				call: call,
 				contents: contents,
@@ -91,6 +89,7 @@ define(['jquery', 'story', 'utils', 'twinemarked', 'wordarray', 'engine'], funct
 					this.desc.fn.apply(this, this.applyArgs);
 				} catch (e) {
 					this.error("The <<" + this.name + ">> macro's Javascript has a problem:" + e.message, true);
+					throw e
 				}
 			} else {
 				span.addClass('error').html('No macro named ' + this.name);

@@ -1,4 +1,4 @@
-define(['jquery', 'twinemarked', 'selectors', 'customelements'], function($, TwineMarked, Selectors) {
+define(['jquery', 'twinemarked', 'renderer', 'selectors', 'customelements'], function($, TwineMarked, Renderer, Selectors) {
 	"use strict";
 
 	// Used by HTMLEntityConvert and transitionTimes
@@ -396,6 +396,7 @@ define(['jquery', 'twinemarked', 'selectors', 'customelements'], function($, Twi
 			@param {String} className	Either "transition-in" or "transition-out"
 			@return this
 		*/
+		
 		transitionTime: function(transIndex, className) {
 			var p;
 			if (!t8nAnimationTimes[className][transIndex]) {
@@ -449,14 +450,25 @@ define(['jquery', 'twinemarked', 'selectors', 'customelements'], function($, Twi
 		/*
 			Constants
 		*/
-		// Default value for variables affected with <<set>>
+		
+		/**
+			Default value for variables affected with <<set>>
+			@property defaultValue
+			@static
+		*/
+		
 		defaultValue: 0,
 
-		// Story element
+		/**
+			Story element
+			@property storyElement
+			@static
+		*/
+		
 		storyElement: $("tw-story")
 	};
 	
-	$.extend(Utils, TwineMarked.Utils);
+	$.extend(Utils, Renderer.Utils);
 	
 	Utils.log("Utils module ready!");
 	

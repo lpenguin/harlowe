@@ -1,4 +1,4 @@
-define(['jquery', 'story', 'script', 'macros', 'wordarray', 'macroinstance', 'engine', 'utils'], function($, Story, Script, Macros, WordArray, MacroInstance, Engine, Utils) {
+define(['jquery', 'twinemarked', 'story', 'script', 'macros', 'wordarray', 'macroinstance', 'engine', 'utils'], function($, TwineMarked, Story, Script, Macros, WordArray, MacroInstance, Engine, Utils) {
 	"use strict";
 	/*
 		Twine macro standard library.
@@ -205,33 +205,56 @@ define(['jquery', 'story', 'script', 'macros', 'wordarray', 'macroinstance', 'en
 	// rawArgs: expression to determine whether to display.
 	Macros.add("if", {
 		fn: function () {
-			var code = this.contents,
-				args = [this.rawArgs],
-				contents = [],
+			var tokens = TwineMarked.lex(this.contents),
+				/*
+					expressions and contents handle the data for each
+					if-block - expressions holding each expression, and
+					contents each contained code. (Ideally these would be
+					a single array housing instances of a tuple-like data structure.)
+				*/
+				expressions = [this.rawArgs],
+				contents = [''],
 				lastIndex = 0,
 				i;
 
 			// Search for <<else>>s, collect sets of contents
-			Macros.matchMacroTag(code, "else|elseif", function (m) {
-				contents.push(code.slice(lastIndex, m.startIndex));
-				// Strip "if" from <<else if>>
-				var expr = m.rawArgs.replace(/^\s*if\b/, '');
-				expr = expr || "true";
-				args.push(expr);
-				lastIndex = m.startIndex;
+			tokens.forEach(function(token) {
+				var expr;
+				if (token.type === "macro" && token.name.slice(0,4) === "else") {
+					/*
+						A new if-block has been found: push a new string.
+					*/
+					contents.push('');
+					/*
+						Pull off the "if" in "else if", which is counted
+						as a parameter due to the space (unlike "elseif").
+					*/
+					expr = token.params ? token.params.replace(/^\s*if\b/,'')
+						// A blank <<else>> defaults to true
+						: "true";
+					/*
+						Push the guarding expression for this new if-block.
+					*/
+					expressions.push(expr);
+				}
+				else {
+					/*
+						Put this token's code into the current if-block's contents.
+					*/
+					contents[contents.length-1] += token.text;
+				}
 			});
-			contents.push(code.slice(lastIndex));
-
-			// Now, run through them all until you find a true arg.
-			for (i = 0; i < args.length; i += 1) {
+			
+			// Now, run through them all, in order, until you find a true expression.
+			for (i = 0; i < expressions.length; i += 1) {
 				try {
-					var result = Script.environ(this.top).evalExpression(args[i]);
+					var result = Script.environ(this.top).evalExpression(expressions[i]);
 					if (result) {
 						this.render(contents[i]);
 						return;
 					}
 				} catch (e) {
-					this.error('<<' + (i == 0 ? 'if' : 'else if') + '>> error: ' + e.message.message, true);
+					this.error('<<' + (i == 0 ? 'if' : 'else if') + '>> error: ' + e.message, true);
 					return;
 				}
 			}
