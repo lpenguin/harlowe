@@ -75,8 +75,6 @@ define(['jquery', 'twinemarked', 'story', 'script', 'macros', 'wordarray', 'macr
 	Macros.add("set", {
 		selfClosing: true,
 		fn: function (variable, rawTo) {
-			var to, value;
-
 			if (!rawTo) {
 				return this.error("too few arguments.");
 			}
@@ -188,7 +186,7 @@ define(['jquery', 'twinemarked', 'story', 'script', 'macros', 'wordarray', 'macr
 	Macros.add("style", {
 		fn: function () {
 			var selector = 'style#macro';
-			if ($(selector).length == 0) {
+			if (!$(selector).length) {
 				$(document.head).append($('<style id="macro">'));
 			}
 			$(selector).text(this.contents);
@@ -214,7 +212,6 @@ define(['jquery', 'twinemarked', 'story', 'script', 'macros', 'wordarray', 'macr
 				*/
 				expressions = [this.rawArgs],
 				contents = [''],
-				lastIndex = 0,
 				i;
 
 			// Search for <<else>>s, collect sets of contents
@@ -254,7 +251,7 @@ define(['jquery', 'twinemarked', 'story', 'script', 'macros', 'wordarray', 'macr
 						return;
 					}
 				} catch (e) {
-					this.error('<<' + (i == 0 ? 'if' : 'else if') + '>> error: ' + e.message, true);
+					this.error('<<' + (!i ? 'if' : 'else if') + '>> error: ' + e.message, true);
 					return;
 				}
 			}
@@ -513,6 +510,6 @@ define(['jquery', 'twinemarked', 'story', 'script', 'macros', 'wordarray', 'macr
 				revision: 0
 			}
 		});
-	};
+	}
 	Utils.log("Macrolib module ready!");
 });

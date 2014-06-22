@@ -16,8 +16,8 @@ require.config({
 		hookmacroinstance: './macroinstance/hookmacroinstance',
 	}
 });
-require(['jquery', 'renderer', 'story', 'state', 'engine', 'utils', 'selectors', 'macros', 'macrolib'],
-		function ($, Renderer, Story, State, Engine, Utils, Selectors, Macros) {
+require(['jquery', 'renderer', 'story', 'state', 'engine', 'utils', 'selectors', 'macrolib'],
+		function ($, Renderer, Story, State, Engine, Utils, Selectors) {
 	"use strict";
 	/**
 		Harlowe, the default story format for Twine 2.
@@ -34,10 +34,9 @@ require(['jquery', 'renderer', 'story', 'state', 'engine', 'utils', 'selectors',
 		var header = $(Selectors.storyData),
 			options,
 			script = $(Selectors.script),
-			stylesheet = $(Selectors.stylesheet),
-			start;
+			stylesheet = $(Selectors.stylesheet);
 
-		if (header.length == 0) {
+		if (header.length === 0) {
 			return;
 		}
 
@@ -75,7 +74,7 @@ require(['jquery', 'renderer', 'story', 'state', 'engine', 'utils', 'selectors',
 		});
 		
 		// Load the hash if it's present
-		if (window.location.hash && window.location.hash.indexOf("stories") == -1) {
+		if (window.location.hash && window.location.hash.indexOf("stories") === -1) {
 			if (State.load(window.location.hash)) {
 				Engine.showPassage(State.passage);
 				return;

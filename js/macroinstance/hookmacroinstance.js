@@ -89,7 +89,7 @@ function($, Story, Utils, WordArray, MacroInstance, Scope) {
 					break;
 				}
 				keyword = tmp;
-			};
+			}
 			return keyword || "all";
 		},
 
@@ -115,7 +115,7 @@ function($, Story, Utils, WordArray, MacroInstance, Scope) {
 					break;
 				}
 				keyword = tmp;
-			};
+			}
 			return keyword || "dissolve";
 		},
 

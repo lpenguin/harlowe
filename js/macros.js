@@ -1,5 +1,5 @@
-define(['jquery', 'story', 'utils', 'selectors', 'renderer', 'wordarray', 'macroinstance', 'hookmacroinstance', 'scope'],
-function($, Story, Utils, Selectors, Renderer, WordArray, MacroInstance, HookMacroInstance, Scope) {
+define(['jquery', 'story', 'utils', 'selectors', 'renderer', 'wordarray', 'macroinstance'],
+function($, Story, Utils, Selectors, Renderer, WordArray, MacroInstance) {
 	"use strict";
 	/**
 		This contains a registry of macro definitions, and methods to add to that registry.
@@ -29,7 +29,7 @@ function($, Story, Utils, Selectors, Renderer, WordArray, MacroInstance, HookMac
 		enumerable: 0,
 		configurable: 0,
 		value: function (i) {
-			return macroRegistry[i]
+			return macroRegistry[i];
 		}
 	});
 
@@ -91,7 +91,7 @@ function($, Story, Utils, Selectors, Renderer, WordArray, MacroInstance, HookMac
 		} else {
 			// Default behaviour: simply parse the inner contents.
 			if (!rerender || rerender === "replace") {
-				Utils.transitionOut(this.el.children(), "fade-in")
+				Utils.transitionOut(this.el.children(), "fade-in");
 			}
 			this.render(this.contents, rerender === "prepend");
 		}
@@ -191,7 +191,7 @@ function($, Story, Utils, Selectors, Renderer, WordArray, MacroInstance, HookMac
 			@return Macro definition object, or false
 		*/
 		get: function (e) {
-			return (macroRegistry.hasOwnProperty(e) && macroRegistry[e]) || macroRegistry["unknown"];
+			return (macroRegistry.hasOwnProperty(e) && macroRegistry[e]) || macroRegistry.unknown;
 		},
 
 		/**
@@ -227,7 +227,6 @@ function($, Story, Utils, Selectors, Renderer, WordArray, MacroInstance, HookMac
 				jQuery to test.
 		*/
 		add: function (name, desc) {
-			var fn;
 			if (!Utils.stringOrArray(name)) {
 				loaderError("Argument 1 of Macros.add isn't an array or a string.");
 				return this;
@@ -276,8 +275,7 @@ function($, Story, Utils, Selectors, Renderer, WordArray, MacroInstance, HookMac
 		*/
 		supplement: function (name, desc, main) {
 			var mfunc,
-				errorMsg = " of Macros.supplement isn't an array or a string.",
-				selfClosing = desc.selfClosing;
+				errorMsg = " of Macros.supplement isn't an array or a string.";
 
 			// Type checking
 			if (!Utils.stringOrArray(name)) {

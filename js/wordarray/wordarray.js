@@ -1,11 +1,11 @@
 define(['jquery', 'utils', 'selectors'], function ($, Utils, Selectors) {
 	"use strict";
 	/**
-	   WordArray
-	   Object containing a sequential set of jQuery-wrapped charspans
-	   that correspond to a search term in the passage text.
-	   
-	   @class WordArray
+		WordArray
+		Object containing a sequential set of jQuery-wrapped charspans
+		that correspond to a search term in the passage text.
+		
+		@class WordArray
 	*/
 
 	var WordArray;
@@ -47,7 +47,7 @@ define(['jquery', 'utils', 'selectors'], function ($, Utils, Selectors) {
 		if (typeof word !== "function" && !word.jquery) {
 			return this;
 		}
-		word = wordTojQuery(word)
+		word = wordTojQuery(word);
 
 		// Functions should be considered words of indefinite length.
 		// Only continue if it definitely isn't zero-length.
@@ -80,7 +80,7 @@ define(['jquery', 'utils', 'selectors'], function ($, Utils, Selectors) {
 						Utils.transitionIn(w, t8n || "dissolve");
 					}
 				} else {
-					// TODO: Error message
+					Utils.impossible("Engine.modifyWordArray", "this.contents contained the non-jQuery object, " + e);
 				}
 			});
 		}
@@ -119,7 +119,7 @@ define(['jquery', 'utils', 'selectors'], function ($, Utils, Selectors) {
 	}
 
 	function _findCharSpans(selector, chars, fulltext) {
-		var selector, temp, query, el1, el2, i,
+		var temp, query, el1, el2, i,
 			ret = (fulltext ? [] : $());
 
 		// Coerce to string
@@ -158,7 +158,7 @@ define(['jquery', 'utils', 'selectors'], function ($, Utils, Selectors) {
 			}
 		}
 		return (ret.length > 0 || fulltext ? ret : void 0);
-	};
+	}
 
 	WordArray = {
 
@@ -171,7 +171,7 @@ define(['jquery', 'utils', 'selectors'], function ($, Utils, Selectors) {
 		wordarray: true,
 
 		/**
-			 Number of selected words in the array
+			Number of selected words in the array
 			@property length
 			@type Number
 		*/
@@ -443,7 +443,7 @@ define(['jquery', 'utils', 'selectors'], function ($, Utils, Selectors) {
 			var i, a = arguments;
 			for (i = 0; i < this.contents.length; i++) {
 				this.contents[i][func](a);
-			};
+			}
 			return this;
 		};
 	});

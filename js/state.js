@@ -51,7 +51,7 @@ define(['story', 'utils', 'lzstring'], function(Story, Utils, LZString) {
 			ret.variables = Utils.create(this.variables, v, true);
 			return ret;
 		}
-	}
+	};
 	
 	// Stack of previous states.
 	// This includes both the past (moments the player has created) as well as the future (moments
@@ -146,7 +146,7 @@ define(['story', 'utils', 'lzstring'], function(Story, Utils, LZString) {
 			}
 			for (i = 0; i <= recent; i++) {
 				ret += +(id === timeline[i].passage);
-			};
+			}
 
 			return ret;
 		},
@@ -212,7 +212,7 @@ define(['story', 'utils', 'lzstring'], function(Story, Utils, LZString) {
 
 			for (i = recent; i > 0; i--) {
 				ret.unshift(Story.getPassageName(timeline[i].passage));
-			};
+			}
 
 			return ret;
 		},
@@ -262,7 +262,7 @@ define(['story', 'utils', 'lzstring'], function(Story, Utils, LZString) {
 
 			if (arg) {
 				if (typeof arg === "string") {
-					steps = passageIDLastVisited(arg);
+					steps = this.passageIDLastVisited(arg);
 					if (steps === Infinity) {
 						return;
 					}
@@ -326,7 +326,7 @@ define(['story', 'utils', 'lzstring'], function(Story, Utils, LZString) {
 			// Intentionally unguarded for-in, thanks to Object.create(null)
 			for (i in futuremostVariables) {
 				variableKeys.push(i);
-			};
+			}
 			// Intentional array->string coercion
 			// ASSUMPTION: variable names cannot contain commas or newlines.
 			ret += variableKeys + '\n';
@@ -345,11 +345,11 @@ define(['story', 'utils', 'lzstring'], function(Story, Utils, LZString) {
 						error += 1;
 						ret += 'null\n';
 					}
-				};
+				}
 				ret += '\n';
 			});
 			if (error) {
-				Utils.impossible("State.save", "failed to serialise " + error + " variable" + (error>1 ? "s" : "") + "!\n"+e);
+				Utils.impossible("State.save", "failed to serialise " + error + " variable" + (error>1 ? "s" : "") + "!\n");
 			}
 			ret += "\n" + recent + "\n" + present.passage;
 			// Compress the string
@@ -390,12 +390,12 @@ define(['story', 'utils', 'lzstring'], function(Story, Utils, LZString) {
 				newRecent = +tempMatch[1];
 				newPresentPassage = tempMatch[2];
 				// Read each of the Moments
-				while (momentMatch = momentRE.exec(string)) {
+				while ((momentMatch = momentRE.exec(string))) {
 					variableTemp = {};
 					// A fresh regexp for each moment
 					variableRE = /(\d+):(.*)/g;
 					// Read the variables
-					while (variableMatch = variableRE.exec(momentMatch[2])) {
+					while ((variableMatch = variableRE.exec(momentMatch[2]))) {
 						// Restore the variable name from the key
 						variableTemp[variableKeys[variableMatch[1]]] = JSON.parse(variableMatch[2]);
 					}

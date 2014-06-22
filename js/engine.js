@@ -51,10 +51,12 @@ function ($, TwineMarked, Renderer, Story, Utils, Selectors, State, Macros, Scri
 		var newPassage, // Passage element to create
 			t8n, // Transition ID
 			passageCode,
-			el = el || Utils.storyElement,
 			passageData = Story.passageWithID(id),
-			oldPassages = Utils.$(el.children(Utils.passageSelector));
-
+			oldPassages;
+		
+		el = el || Utils.storyElement;
+		oldPassages = Utils.$(el.children(Utils.passageSelector));
+		
 		if (!passageData) {
 			Utils.impossible("Engine.showPassage","no passage with id \""+id+"\"");
 			return;
@@ -131,9 +133,9 @@ function ($, TwineMarked, Renderer, Story, Utils, Selectors, State, Macros, Scri
 		init: function () {
 			var html = $(document.documentElement);
 			
-			// Install handler for links
+			// Install the handler for passage links.
 
-			html.on('click.passage-link', Selectors.internalLink+'[passage-id]', function (e) {
+			html.on('click.passage-link', Selectors.internalLink+'[passage-id]', function(e) {
 				var next = $(this).attr('passage-id');
 
 				if (next) {
@@ -144,10 +146,10 @@ function ($, TwineMarked, Renderer, Story, Utils, Selectors, State, Macros, Scri
 				e.preventDefault();
 			});
 
-			// If debug, add button
+			// If the debug option is on, add the debug button.
 
 			if (Story.options.debug) {
-				$(document.body).append($('<div class="debug-button">').click(function (e) {
+				$(document.body).append($('<div class="debug-button">').click(function() {
 					html.toggleClass('debug-mode');
 				}));
 			}
@@ -186,7 +188,7 @@ function ($, TwineMarked, Renderer, Story, Utils, Selectors, State, Macros, Scri
 			@return {jQuery} The rendered passage.
 		*/
 		render: function (source, context, top) {
-			var html, temp, macroInstances;
+			var html;
 			
 			// If a non-string is passed into here, there's really nothing to do.
 			if (typeof source !== "string") {
@@ -200,6 +202,7 @@ function ($, TwineMarked, Renderer, Story, Utils, Selectors, State, Macros, Scri
 			// Let's not bother if this source solely held macros.
 			if (source.trim()) {
 				try {
+			console.log(TwineMarked.lex(source));
 					source = Renderer.render(TwineMarked.lex(source));
 				} catch (e) {
 					Utils.impossible("Engine.render","Renderer crashed");
@@ -207,7 +210,6 @@ function ($, TwineMarked, Renderer, Story, Utils, Selectors, State, Macros, Scri
 					source = "<tw-macro name='rendering-error'>" + e.stack + "</tw-macro>";
 				}
 			}
-			
 			// Render the HTML
 			/*
 				Important: various Twine macros perform DOM operations on this pre-inserted jQuery set of

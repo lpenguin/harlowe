@@ -100,7 +100,7 @@ define(['jquery', 'story', 'state', 'utils', 'twinemarked', 'engine', 'wordarray
 
 		// Choose one argument, up to 16. Can be used as such: <<display either( "pantry", "larder", "cupboard" )>>
 		either = function () {
-			if (Array.isArray(arguments[0]) && arguments.length == 1) {
+			if (Array.isArray(arguments[0]) && arguments.length === 1) {
 				return either.apply(this,arguments[0]);
 			}
 			return arguments[~~(Math.random() * arguments.length)];
@@ -201,9 +201,14 @@ define(['jquery', 'story', 'state', 'utils', 'twinemarked', 'engine', 'wordarray
 				.bind(this),
 				
 				evalJavascript: function(/* variadic */) {
-					return eval(Array.apply(null, arguments).join(''))
+					return eval(Array.apply(null, arguments).join(''));
 				}
-				.bind(this)
+				.bind(this),
+				
+				lib: Utils.create(Script.lib, {
+					Text: Text,
+					Hook: Hook
+				})
 			};
 		},
 	
@@ -233,7 +238,7 @@ define(['jquery', 'story', 'state', 'utils', 'twinemarked', 'engine', 'wordarray
 				// Find all the variables referenced in the expression, and set them to 0 if undefined.
 				re = new RegExp(rs.variable, "gi");
 				
-				while (find = re.exec(expr)) {
+				while ((find = re.exec(expr))) {
 					// Prepend the expression with a defaulter for this variable.
 					// e.g. "$red == null && ($red = 0);"
 					if (!~found.indexOf(find[0])) {
@@ -261,6 +266,39 @@ define(['jquery', 'story', 'state', 'utils', 'twinemarked', 'engine', 'wordarray
 				expr = alter(expr, "\\bnot\\b", " ! ");
 			}
 			return expr;
+		},
+		
+		/**
+			For reference, all of the scope-bound functions defined here are exported.
+			@property lib
+		*/
+		lib: {
+			weekday:weekday,
+			monthday:monthday,
+			time:time,
+			date:date,
+			abs:abs,
+			sign:sign,
+			sin:sin,
+			cos:cos,
+			tan:tan,
+			floor:floor,
+			round:round,
+			pow:pow,
+			exp:exp,
+			sqrt:sqrt,
+			log10:log10,
+			log2:log2,
+			random:random,
+			previous:previous,
+			goto:goto,
+			alert:alert,
+			prompt:prompt,
+			confirm:confirm,
+			openURL:openURL,
+			reload:reload,
+			gotoURL:gotoURL,
+			pageURL:pageURL
 		}
 	};
 	

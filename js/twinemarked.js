@@ -6,11 +6,10 @@
 	
 	@module TwineMarked
 */
-;
-(function () {
+;(function () {
 	"use strict";
 	
-	var RegExpStrings, Lexer, TwineMarked, options = {};
+	var RegExpStrings, Lexer, TwineMarked;
 
 	/*
 		The RegExpStrings are the raw strings used by the lexer to match tokens.
@@ -51,17 +50,19 @@
 			A sugar REstring function for negative character sets.
 		*/
 		function notChars(/* variadic */) {
-			return "[^" + Array.apply(0, arguments).map(escape).join("") + "]*"
+			return "[^" + Array.apply(0, arguments).map(escape).join("") + "]*";
 		}
 		
 		/*
 			A sugar REstring function for matching a sequence of characters prior to a terminator.
 		*/
+		/*
 		function notTerminator(terminator) {
-			return terminator.length == 1
+			return terminator.length === 1
 				? notChars(terminator)
-				: "(?:[^" + terminator[0] + "]*|" + terminator[0] + "(?!" + terminator.slice(1) + "))"
+				: "(?:[^" + terminator[0] + "]*|" + terminator[0] + "(?!" + terminator.slice(1) + "))";
 		}
+		*/
 		
 		/*
 			Creates sugar functions which put multiple REstrings into parentheses, separated with |,
@@ -70,7 +71,7 @@
 		function makeWrapper(starter) {
 			return function(/* variadic */) {
 				return "(" + starter+Array.apply(0, arguments).join("|") + ")";
-			}
+			};
 		}
 		
 		var either = makeWrapper("?:"),
@@ -93,23 +94,28 @@
 					then returns the symbol wrapped in '(?!' ')', or "" if not.
 				*/
 				(function fn(str) {
-					var s = str.split("").reduce(function(a, b){ return a === b && a });
+					var s = str.split("").reduce(function(a, b){ return a === b && a; });
 					
 					return s && notBefore(escape(s));
 				}(right))
 				// Join with any additional pairs
-				+ (rest != null ? "|" + stylerSyntax.apply(0, Array.apply(0,arguments).slice(1)) : "");
+				+ (rest ? "|" + stylerSyntax.apply(0, Array.apply(0,arguments).slice(1)) : "");
 		}
 		
 		var ws = "\\s*",
 			
+			// Checks if text appears before line-breaks or end-of-input.
 			eol = "(?=\\n+|$)",
 			
-			anyLetter = "[\\w\\-\u00c0-\u00de\u00df-\u00ff\u0150\u0170\u0151\u0171]",
+			// Handles Unicode ranges not covered by \w. Copied from TiddlyWiki5 source - may need updating.
+			anyLetter       = "[\\w\\-\u00c0-\u00de\u00df-\u00ff\u0150\u0170\u0151\u0171]",
+			// Identical to the above, but excludes hyphens.
+			anyLetterStrict =    "[\\w\u00c0-\u00de\u00df-\u00ff\u0150\u0170\u0151\u0171]",
 			
-			// Regex suffix that, when applied, causes the preceding match to only apply when not inside a quoted
-			// string. This accounts for both single- and double-quotes, and escaped quote characters.
-
+			/*
+				This is a regex suffix that, when applied, causes the preceding match to only apply when not inside a quoted
+				string. This accounts for both single- and double-quotes, and escaped quote characters.
+			*/
 			unquoted = before(either( notChars("'\"\\") + either( "\\.", enclosed("'"), enclosed('"'))) + "*" + notChars("'\\") + "$"),
 			
 			/*
@@ -124,11 +130,11 @@
 			*/
 			bullet = "(?:\\*)",
 			
-			bulleted = "\\s*(" + bullet + "+)([^\\n]*)" + eol,
+			bulleted = ws + "(" + bullet + "+)([^\\n]*)" + eol,
 			
 			numberPoint = "(?:0\\.)",
 			
-			numbered = "\\s*(" + numberPoint + "+)([^\\n]*)" + eol,
+			numbered = ws + "(" + numberPoint + "+)([^\\n]*)" + eol,
 			
 			/*
 				FIXME: The {3,} selector currently enables a string of four ---- to be
@@ -144,7 +150,7 @@
 			/*
 				New text alignment syntax.
 			*/
-			align = " *(==+>|<=+|=+><=+|<==+>) *" + eol,
+			align = ws + "(==+>|<=+|=+><=+|<==+>)" + ws + eol,
 			
 			passageLink = {
 				opener:            "\\[\\[",
@@ -162,6 +168,11 @@
 				params:            "(?:[^>]|>(?!>))*",
 				closer:            ">>"
 			},
+			/*macro = {
+				opener:            "",
+				name:              "(" + anyLetter.replace("]","\\?\\!\\/]") + "+)",
+				params:            "\\(" + either("[^\)]", "\)" + unquoted) + ")*)\)"
+			}*/
 			
 			tag = {
 				name:              "\\w[\\w\\-]*",
@@ -173,12 +184,11 @@
 		*/
 		return {
 			
-			// Handles Unicode ranges not covered by \w. Copied from TiddlyWiki5 source - may need updating.
-			
 			upperLetter: "[A-Z\u00c0-\u00de\u0150\u0170]",
 			lowerLetter: "[a-z0-9_\\-\u00df-\u00ff\u0151\u0171]",
 			anyLetter:   anyLetter,
-			anyLetterStrict: "[\\w\u00c0-\u00de\u00df-\u00ff\u0150\u0170\u0151\u0171]",
+			anyLetterStrict: anyLetterStrict,
+			
 			unquoted:    unquoted,
 			escapedLine: "\\\\\\n",
 			
@@ -200,7 +210,7 @@
 			bold:        stylerSyntax("''"),
 			sup:         stylerSyntax("^^"),
 			
-			code:        "(`+)\\s*([^]*?[^`])\\s*\\1(?!`)",
+			code:        "(`+)" + ws + "([^]*?[^`])" + ws + "\\1(?!`)",
 			
 			bulleted:    bulleted,
 			numbered:    numbered,
@@ -308,7 +318,7 @@
 		
 		Lexers augment this returned object's rules property.
 	*/
-	function LexerInnerState() {
+	function lexerInnerState() {
 		var rules = {},
 			/*
 				States are objects with a tokens:Array and a pos:Number.
@@ -334,7 +344,7 @@
 			var children = null;
 			if (data && data.innerText) {
 				children = lex(data.innerText,
-					match[0].indexOf(data.innerText) + states[0].pos)
+					match[0].indexOf(data.innerText) + states[0].pos);
 			}
 			
 			states[0].tokens.push(merge({
@@ -367,7 +377,7 @@
 		*/
 		function textPusher(type) {
 			return function(match) {
-				var innerText = match.reduceRight(function(a, b, index) { return a || (index ? b : "") }, "");
+				var innerText = match.reduceRight(function(a, b, index) { return a || (index ? b : ""); }, "");
 				
 				push(type, match, {
 					innerText: innerText
@@ -397,7 +407,7 @@
 				// Run through all the rules in turn
 				for (i = 0; i < ruleskeys.length; i++) {
 					rname = ruleskeys[i];
-					if (rname == "text") {
+					if (rname === "text") {
 						continue;
 					}
 					rule = rules[rname];
@@ -407,10 +417,12 @@
 					}
 					if ((match = rule.match.exec(src)) &&
 							// match.block rules only apply at the start of new lines.
-							(!rule.block || !lastrule || lastrule === "br")) {
+							(!rule.block || !lastrule
+							|| lastrule === "br"
+							|| lastrule === "paragraph")) {
 						// First, push the current run of slurped text.
 						if (text) {
-							rules['text'].fn([text]);
+							rules.text.fn([text]);
 							states[0].pos += text.length;
 							text = "";
 						}
@@ -445,28 +457,27 @@
 			textPusher: textPusher,
 			lex: lex,
 			rules: rules
-		}
-	};
+		};
+	}
 	
 	/**
-		When passed a LexerInnerState object, it augments it with rules.
+		When passed a lexerInnerState object, it augments it with rules.
 		
-		@method Rules
+		@method rules
 		@private
 		@for TwineMarked
 	*/
-	function Rules(state) {
+	function rules(state) {
 		// TODO: reimplement backslash-escapes
 		var push = state.push,
 			pusher = state.pusher,
-			textPusher = state.textPusher,
-			lex = state.lex;
+			textPusher = state.textPusher;
 		
 		/*
 			A quick shorthand function to convert a RegExpStrings property into a RegExp.
 		*/
 		function r(index) {
-			return RegExp("^(?:" + RegExpStrings[index] + ")");
+			return new RegExp("^(?:" + RegExpStrings[index] + ")");
 		}
 
 		merge(state.rules, {
@@ -590,10 +601,17 @@
 			macro: {
 				match: r("macro"),
 				fn: function(match) {
-	console.log(match);
 					push("macro", match, {
 						name: match[1],
 						params: match[2]
+					});
+				}
+			},
+			code: {
+				match: r("code"),
+				fn: function(match) {
+					push("code", match, {
+						code: match[2]
 					});
 				}
 			},
@@ -610,7 +628,6 @@
 			bold:    { match:    r("bold"), fn: textPusher("bold") },
 			italic:  { match:  r("italic"), fn: textPusher("italic") },
 			del:     { match:     r("del"), fn: textPusher("del") },
-			code:    { match:    r("code"), fn: textPusher("code") },
 			// The text rule has no match RegExp
 			text:    { match:         null, fn:     pusher("text") }
 		});
@@ -620,7 +637,7 @@
 	/*
 		Create the lexer object
 	*/
-	Lexer = Rules(LexerInnerState());
+	Lexer = rules(lexerInnerState());
 	
 	/**
 		Export the TwineMarked module.
@@ -646,7 +663,7 @@
 		*/
 		RegExpStrings: RegExpStrings
 	});
-	if(typeof exports === 'object') {
+	if(typeof module === 'object') {
 		module.exports = TwineMarked;
 	}
 	else if(typeof define === 'function' && define.amd) {
@@ -657,6 +674,4 @@
 	else {
 		this.TwineMarked = TwineMarked;
 	}
-}).call(function () {
-	return this || (typeof window !== 'undefined' ? window : global);
-}());
+}).call(this || (typeof global !== 'undefined' ? global : window));

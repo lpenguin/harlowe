@@ -80,7 +80,7 @@ define(['jquery', 'utils', 'selectors'], function($, Utils, Selectors) {
 		getPassageID: function (name) {
 			var p = this.passageNamed(name);
 			
-			return p ? p.attr("pid") : ""
+			return p ? p.attr("pid") : "";
 		}
 	};
 

@@ -63,7 +63,7 @@ define(['jquery', 'story', 'utils', 'selectors', 'wordarray'], function($, Story
 							// Debug mode: show the pseudo-hook selector as a tooltip
 							+ (Story.options.debug ? "title='Pseudo-hook: " + selector + "'" : "") + "/>");
 						this.hooks = this.hooks.add(this.contents[j].parent());
-					};
+					}
 				}
 			}
 			(this.hooks && this.hooks.addClass(className));

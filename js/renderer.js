@@ -1,4 +1,4 @@
-define(['twinemarked'], function(TwineMarked) {
+define([], function() {
 	"use strict";
 	/**
 		The Renderer takes the syntax tree from TwineMarked and returns a HTML string.
@@ -96,7 +96,7 @@ define(['twinemarked'], function(TwineMarked) {
 	*/
 	function charSpanify(text) {
 		if (typeof text !== "string") {
-			throw Error("charSpanify received a non-string:" + text);
+			throw new Error("charSpanify received a non-string:" + text);
 		}
 		return text.replace(/&[#\w]+;|./g, charToSpan);
 	}
@@ -116,6 +116,14 @@ define(['twinemarked'], function(TwineMarked) {
 		return '<tw-link class="link" passage-expr="' + escape(passage) + '">' + (text || passage) + '</tw-link>';
 	}
 	
+	/*
+		Text constant used by align().
+	*/
+	var center = "text-align: center; max-width:50%; ";
+	
+	/*
+		The public Renderer object.
+	*/
 	var Renderer = {
 		
 		/**
@@ -151,7 +159,7 @@ define(['twinemarked'], function(TwineMarked) {
 			@return {String} The rendered HTML string.
 		*/
 		render: function render(tokens) {
-			var token, lastToken,
+			var token,
 				// Cache the tokens array length
 				len,
 				// Used as a temporary storage for strings to be appended to out
@@ -160,6 +168,9 @@ define(['twinemarked'], function(TwineMarked) {
 				tagName,
 				// Hoisted var, used by the macro case
 				macroNesting,
+				// Hoisted vars, used only by the align case
+				style, body, align, j,
+				
 				// This is the for-i loop variable. Speed concerns lead me to use
 				// a plain for-i loop for this renderer.
 				i = 0,
@@ -191,18 +202,21 @@ define(['twinemarked'], function(TwineMarked) {
 						break;
 					}
 					case "align": {
-						// This closure exists solely for localising the variables within
-						out += (function() {
-							var style = '',
-								body = '',
-								center = "text-align: center; max-width:50%; ",
-								align = token.align,
-								j = (i += 1);
+						while(token && token.type === "align") {
+							style = '';
+							body = '';
+							align = token.align;
+							j = (i += 1);
 							
-							if (token.align === "left") {
-								return '';
+							/*
+								Base case.
+							*/
+							if (align === "left") {
+								break;
 							}
-							
+							/*
+								Crankforward until the end tag is found.
+							*/
 							while(i < len && tokens[i] && tokens[i].type !== "align") {
 								i += 1;
 							}
@@ -223,9 +237,10 @@ define(['twinemarked'], function(TwineMarked) {
 									}
 							}
 							
-							return '<tw-align ' + (style ? ('style="' + style + '"') : '') + '>'
+							out += '<tw-align ' + (style ? ('style="' + style + '"') : '') + '>'
 								+ body + '</tw-align>\n';
-						}());
+							token = tokens[i];
+						}
 						break;
 					}
 					case "macro": {
@@ -280,7 +295,7 @@ define(['twinemarked'], function(TwineMarked) {
 						break;
 					}
 					case "heading": {
-						out += renderTag(token, 'h' + token.depth)
+						out += renderTag(token, 'h' + token.depth);
 						break;
 					}
 					case "br":
@@ -288,8 +303,8 @@ define(['twinemarked'], function(TwineMarked) {
 						out += '<' + token.type + '>';
 						break;
 					}
-					case "bulleted": {
-						out += renderTag(token, 'li');
+					case "code": {
+						out += '<pre>' + escape(token.code) + '</pre>';
 						break;
 					}
 					case "paragraph": {
@@ -337,8 +352,7 @@ define(['twinemarked'], function(TwineMarked) {
 					/*
 						Base case
 					*/
-					case "text":
-					default: {
+					case "text": {
 						out += token.children ? render(token.children) : charSpanify(token.text);
 						break;
 					}

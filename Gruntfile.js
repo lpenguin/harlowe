@@ -36,6 +36,31 @@ module.exports = function (grunt) {
 
 		jshint: {
 			all: jsFileList,
+			options: {
+				globals: {
+					require : true,
+					define  : true,
+					module  : true,
+					global  : true
+				},
+				// Enforcing options
+				eqeqeq   : true,
+				immed    : true,
+				latedef  : "nofunc",
+				nonew    : true,
+				undef    : true,
+				unused   : true,
+				strict   : true,
+				// Relaxing options
+				evil     : true,
+				expr     : true,
+				laxbreak : true,
+				validthis: true,
+				// Environments
+				browser  : true,
+				devel    : true,
+				jquery   : true
+			}
 		},
 
 		requirejs: {
@@ -133,8 +158,8 @@ module.exports = function (grunt) {
 	grunt.loadNpmTasks('grunt-contrib-cssmin');
 	grunt.loadNpmTasks('grunt-text-replace');
 
-	grunt.registerTask('default', [ 'replace:test']);
-	grunt.registerTask('build', [ /*'jshint',*/ 'yuidoc', 'requirejs', 'cssmin', 'replace:build']);
+	grunt.registerTask('default', [ 'jshint', 'replace:test']);
+	grunt.registerTask('build', [ 'jshint', 'yuidoc', 'requirejs', 'cssmin', 'replace:build']);
 	grunt.registerTask('runtime', [ 'requirejs', 'yuidoc', 'cssmin', 'replace:runtime']);
 	grunt.registerTask('release', [
 		'clean', 'yuidoc'

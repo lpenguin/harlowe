@@ -1,4 +1,4 @@
-define(['jquery', 'story', 'utils', 'twinemarked', 'wordarray', 'engine'], function($, Story, Utils, TwineMarked, WordArray, Engine) {
+define(['jquery', 'story', 'utils', 'twinemarked'], function($, Story, Utils, TwineMarked) {
 	"use strict";
 	/**
 		MacroInstance
@@ -89,7 +89,7 @@ define(['jquery', 'story', 'utils', 'twinemarked', 'wordarray', 'engine'], funct
 					this.desc.fn.apply(this, this.applyArgs);
 				} catch (e) {
 					this.error("The <<" + this.name + ">> macro's Javascript has a problem:" + e.message, true);
-					throw e
+					throw e;
 				}
 			} else {
 				span.addClass('error').html('No macro named ' + this.name);
