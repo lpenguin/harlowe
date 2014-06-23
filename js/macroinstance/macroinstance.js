@@ -7,9 +7,7 @@ define(['jquery', 'story', 'utils', 'twinemarked'], function($, Story, Utils, Tw
 		@class MacroInstance
 	*/
 
-	var MacroInstance,
-		// Precompile a regex
-		macroTagFront = new RegExp("^" + TwineMarked.RegExpStrings.macroOpener + "\\s*" + TwineMarked.RegExpStrings.macroName + "\\s*");
+	var MacroInstance;
 	
 	/**
 		The prototype object for MacroInstances, the object type used by matchMacroTag
@@ -29,10 +27,12 @@ define(['jquery', 'story', 'utils', 'twinemarked'], function($, Story, Utils, Tw
 			@param {String} call The full invocation, including start tag, contents, and end tag.
 			@return {Object} The new MacroInstance.
 		*/
-		create: function (name, desc, call) {
+		create: function (name, desc, call, contents) {
 			var selfClosing = desc && desc.selfClosing,
-				contents = (selfClosing ? "" : call.replace(/^(?:[^>]|>(?!>))*>>/i, '').replace(/<<(?:[^>]|>(?!>))*>>$/i,'')),
-				rawArgs = call.replace(macroTagFront, '').replace(/\s*>>[^]*/, '').trim(),
+				rawArgs = call
+					.replace(new RegExp("^" + TwineMarked.RegExpStrings.macroOpener),  '')
+					.replace(new RegExp(TwineMarked.RegExpStrings.macroCloser + "$"), '')
+					.trim(),
 				// tokenize arguments
 				// e.g. 1 "two three" 'four five' "six \" seven" 'eight \' nine'
 				// becomes [1, "two three", "four five", 'six " seven', "eight ' nine"]

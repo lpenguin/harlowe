@@ -22,13 +22,22 @@
 .debug-mode tw-macro[name="style"] { background-color: hsla(180,10%,75%,0.2) !important; }
 .debug-mode tw-macro[name="click"] { background-color: hsla(90,75%,50%,0.2) !important; }
 .debug-mode tw-macro[name="replace"],
-.debug-mode tw-macro[name="prepend"] ,
+.debug-mode tw-macro[name="prepend"],
 .debug-mode tw-macro[name="append"],
 .debug-mode tw-macro[name="remove"]  { background-color: hsla(20,75%,50%,0.2) !important; }
 
 /* Colours for other things */
 .debug-mode  tw-hook  { background-color: hsla(220,100%,50%,0.1) !important; }
 .debug-mode tw-pseudo-hook  { background-color: hsla(40,100%,50%,0.1) !important; }
+.debug-mode tw-align[style*="text-align: center"] {
+	background: linear-gradient(to right, hsla(14,100%,87%,0) 0%, hsla(14,100%,87%,0.25) 50%, hsla(14,100%,87%,0) 100%);
+}
+.debug-mode tw-align[style*="text-align: left"] {
+	background: linear-gradient(to right, hsla(14,100%,87%,0.25) 0%, hsla(14,100%,87%,0) 100%);
+}
+.debug-mode tw-align[style*="text-align: right"] {
+	background: linear-gradient(to right, hsla(14,100%,87%, 0) 0%, hsla(14,100%,87%,0.25) 100%);
+}
 
 .debug-mode tw-hook::before, .debug-mode tw-pseudo-hook::before
 {

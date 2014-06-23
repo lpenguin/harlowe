@@ -1,5 +1,5 @@
-define(['jquery', 'story', 'utils', 'selectors', 'renderer', 'wordarray', 'macroinstance'],
-function($, Story, Utils, Selectors, Renderer, WordArray, MacroInstance) {
+define(['jquery', 'story', 'utils', 'selectors', 'renderer', 'macroinstance', 'hookmacroinstance'],
+function($, Story, Utils, Selectors, Renderer, MacroInstance, HookMacroInstance) {
 	"use strict";
 	/**
 		This contains a registry of macro definitions, and methods to add to that registry.
@@ -301,6 +301,14 @@ function($, Story, Utils, Selectors, Renderer, WordArray, MacroInstance) {
 			}
 			Macros.add(name, desc);
 			return this;
+		},
+		
+		/**
+			Factory function for MacroInstances.
+		*/
+		instantiate: function(name, call, contents) {
+			var desc = Macros.get(name);
+			return (desc.hooked ? HookMacroInstance : MacroInstance).create(name, desc, call, contents);
 		}
 	};
 

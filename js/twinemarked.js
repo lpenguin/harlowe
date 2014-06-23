@@ -130,7 +130,7 @@
 			*/
 			bullet = "(?:\\*)",
 			
-			bulleted = ws + "(" + bullet + "+)([^\\n]*)" + eol,
+			bulleted = ws + "(" + bullet + "+)\\s+([^\\n]*)" + eol,
 			
 			numberPoint = "(?:0\\.)",
 			
@@ -140,7 +140,7 @@
 				FIXME: The {3,} selector currently enables a string of four ---- to be
 				parsed as 1 - of text followed by --- hr.
 			*/
-			hr = "( *[-*_]){3,} *" + eol,
+			hr = ws + "([-*_]){3,}" + ws + eol,
 			
 			/*
 				Markdown setext headers conflict with the hr syntax, and are thus gone.
@@ -163,22 +163,28 @@
 			},
 			
 			macro = {
-				opener:            "<<",
-				name:              anyLetter.replace("]","\\?\\!\\/]") + "+",
-				params:            "(?:[^>]|>(?!>))*",
-				closer:            ">>"
+				name:              "(" + anyLetter.replace("]","\\/]") + anyLetter + "*)(?=\\()",
+				opener:            "\\(",
+				closer:            "\\)"
 			},
-			/*macro = {
-				opener:            "",
-				name:              "(" + anyLetter.replace("]","\\?\\!\\/]") + "+)",
-				params:            "\\(" + either("[^\)]", "\)" + unquoted) + ")*)\)"
-			}*/
 			
 			tag = {
 				name:              "\\w[\\w\\-]*",
 				attrs:             "(?:\"[^\"]*\"|'[^']*'|[^'\">])*?"
-			};
+			},
 			
+			string = { 
+				// The empty strings
+				emptyDouble: '""(?!")',
+				emptySingle: "''(?!')",
+				// Javascript strings
+				single: "'" + either(notChars("\\'"),"\\\\.") + "+'",
+				double: '"' + either(notChars('\\"'),'\\\\.') + '+"',
+				// Python's triple-quoted strings.
+				tripleSingle: "'''" + either(notChars("\\'"),'\\\\.',"''(?!')") + "+'''",
+				tripleDouble: '"""' + either(notChars('\\"'),'\\\\.','""(?!")') + '+"""',
+			}
+			;
 		/*
 			Return the RegExpStrings object.
 		*/
@@ -192,6 +198,9 @@
 			unquoted:    unquoted,
 			escapedLine: "\\\\\\n",
 			
+			/*
+				Twine currently just uses HTML comment syntax for comments.
+			*/
 			comment:     "<!--[^]*?-->",
 			
 			tag:         "<\\/?" + tag.name + tag.attrs + ">",
@@ -266,15 +275,10 @@
 				*/
 				passageLink.opener + passageLink.legacyText + passageLink.closer,
 			
-			macro: macro.opener
-				+ "(" + macro.name
-				+ ")(" + macro.params
-				+ ")" + macro.closer,
-			
-			macroOpener:      macro.opener,
-			macroCloser:      macro.closer,
-			macroName:        macro.name,
-			macroParams:      macro.params,
+			macroOpener:
+				macro.name + macro.opener,
+				
+			macroCloser: macro.closer,
 			
 			paragraph:
 				/*
@@ -284,7 +288,10 @@
 				"\\n((?:[^\\n]+\\n?(?!"
 				+ notBefore(heading, align, hr)
 				+ "))+)\\n?",
-			
+				
+			/*
+				Macro code
+			*/
 			variable:
 				"\\$((?:" + anyLetter.replace("\\-", "\\.") + "*"
 				// Disallow -, but allow . property indexing
@@ -292,6 +299,21 @@
 				+ anyLetter.replace("\\-", "\\.") + "*"
 				// Array indexing syntax
 				+ "|\\[[^\\]]+\\])+)",
+			
+			number: '\\b(\\-?\\d+\\.?(?:[eE][+\\-]?\\d+)?|NaN)\\b',
+			
+			boolean: "(true|false|null|undefined)",
+			
+			string: 
+				"(" + either(
+					// Single strings					
+					string.tripleSingle,
+					string.tripleDouble,
+					string.emptySingle,
+					string.emptyDouble,
+					string.single,
+					string.double
+				) + ")"
 		};
 	}());
 	
@@ -304,7 +326,7 @@
 		for(; i < arguments.length; i++) {
 			target = arguments[i];
 			for(key in target) {
-				if(Object.prototype.hasOwnProperty.call(target, key)) {
+				if(Object.hasOwnProperty.call(target, key)) {
 					obj[key] = target[key];
 				}
 			}
@@ -337,14 +359,27 @@
 			@private
 		*/
 		function push(type, match, data) {
-			/*
-				If the token has non-empty innerText, lex the innerText
-				and append to its children array.
-			*/
 			var children = null;
-			if (data && data.innerText) {
-				children = lex(data.innerText,
-					match[0].indexOf(data.innerText) + states[0].pos);
+			
+			if (data) {
+				/*
+					If the token has non-empty innerText, lex the innerText
+					and append to its children array.
+				*/
+				if (data.innerText) {
+					children = lex(data.innerText,
+						states[0].pos + match[0].indexOf(data.innerText));
+				}
+				/*
+					The token may signify entering or exiting a macro.
+				*/
+				else if (data.openMacro) {
+					data.children = [];
+					states[0].inMacro += 1;
+				}
+				else if (data.closeMacro) {
+					states[0].inMacro -= 1;
+				}
 			}
 			
 			states[0].tokens.push(merge({
@@ -385,6 +420,58 @@
 			};
 		}
 		
+		/**
+			A post-processing routine that takes the token tree from lex(),
+			and turns sequences of macro tokens into trees rooted at openMacro tokens.
+			This is an in-place array transformation.
+			
+			This is a stop-gap measure and should be replaced by lex()
+			performing this transformation itself during its pass.
+			
+			@method nestMacroTokens
+			@private
+		*/
+		function nestMacroTokens(tokens) {
+			var i, token,
+				macroStack = [];
+			
+			for (i = 0; i < tokens.length; i+=1) {
+				token = tokens[i];
+				
+				if (macroStack[0]) {
+					/*
+						Remove the token from its position in the tokens array,
+						and make it a child of the nearest macro.
+					*/
+					macroStack[0].children.push(token);
+					tokens.splice(i,1);
+					i -= 1;
+					/*
+						Incorporate the child's text into the macro token's text.
+					*/
+					if (!token.openMacro) {
+						macroStack[0].text += token.text;
+						macroStack[0].end = token.end;
+					}
+				}
+				
+				if (token.openMacro) {
+					macroStack.unshift(token);
+				}
+				else if (token.closeMacro) {
+					token = macroStack.shift();
+					/*
+						Propagate the changes up the tree to the parent.
+					*/
+					if (macroStack[0]) {
+						macroStack[0].text += token.text;
+						macroStack[0].end = token.end;
+					}
+				}
+			}
+			return tokens;
+		}
+		
 		/*
 			The main method of the lexer. Returns an array of tokens for the passed text.
 			The src is consumed gradually, and rules are repeatedly matched to the
@@ -392,20 +479,21 @@
 			built up, to be pushed when a rule finally matches.
 		*/
 		function lex(src, initpos) {
-			var done, rname, rule, match, i,
+			var done, ret, rname, rule, match, i,
 				lastrule = "",
 				text = "",
 				ruleskeys = Object.keys(rules);
 			
 			states.unshift({
 				tokens: [],
-				pos: initpos || 0
+				pos: initpos || 0,
+				inMacro: 0
 			});
 			
 			while(src) {
 				done = false;
 				// Run through all the rules in turn
-				for (i = 0; i < ruleskeys.length; i++) {
+				for (i = 0; i < ruleskeys.length; i+=1) {
 					rname = ruleskeys[i];
 					if (rname === "text") {
 						continue;
@@ -417,20 +505,27 @@
 					}
 					if ((match = rule.match.exec(src)) &&
 							// match.block rules only apply at the start of new lines.
-							(!rule.block || !lastrule
-							|| lastrule === "br"
-							|| lastrule === "paragraph")) {
+							(!rule.block ||
+								(!lastrule
+								|| lastrule === "br"
+								|| lastrule === "paragraph")) &&
+							// within macros, only macro rules can be used.
+							(!states[0].inMacro || rule.macro)) {
+						
 						// First, push the current run of slurped text.
 						if (text) {
 							rules.text.fn([text]);
 							states[0].pos += text.length;
 							text = "";
 						}
+						
 						// Now handle the matched rule
 						rule.fn(match);
+						
 						// Increment the position in the src
 						states[0].pos += match[0].length;
 						src = src.slice(match[0].length);
+						
 						// Finished matching a rule - resume
 						lastrule = rname;
 						done = true;
@@ -448,7 +543,8 @@
 			if (text) {
 				push("text", [text]);
 			}
-			return states.shift().tokens;
+			ret = states.shift().tokens;
+			return nestMacroTokens(ret);
 		}
 			
 		return {
@@ -481,6 +577,9 @@
 		}
 
 		merge(state.rules, {
+			/*
+				First, the block rules.
+			*/
 			heading: {
 				match: r("heading"),
 				block: true,
@@ -558,6 +657,9 @@
 				block: true,
 				fn: textPusher("paragraph")
 			},
+			/*
+				Now, the inline macros.
+			*/
 			passageLink: {
 				match: r("passageLink"),
 				fn: function(match) {
@@ -598,15 +700,6 @@
 					});
 				}
 			},
-			macro: {
-				match: r("macro"),
-				fn: function(match) {
-					push("macro", match, {
-						name: match[1],
-						params: match[2]
-					});
-				}
-			},
 			code: {
 				match: r("code"),
 				fn: function(match) {
@@ -619,6 +712,9 @@
 				match: r("escapedLine"),
 				fn: pusher("escapedLine")
 			},
+			/*
+				Like GitHub-Flavoured Markdown, Twine preserves line breaks.
+			*/
 			br:      { match:        /^\n/, fn:     pusher("br") },
 			comment: { match: r("comment"), fn:     pusher("comment") },
 			tag:     { match:     r("tag"), fn:     pusher("tag") },
@@ -629,7 +725,34 @@
 			italic:  { match:  r("italic"), fn: textPusher("italic") },
 			del:     { match:     r("del"), fn: textPusher("del") },
 			// The text rule has no match RegExp
-			text:    { match:         null, fn:     pusher("text") }
+			text:    { match:         null, fn:     pusher("text") },
+			
+			/*
+				Now, macro code rules.
+			*/
+			macroOpener: {
+				match: r("macroOpener"),
+				macro: true,
+				fn: function(match) {
+					push("macro", match, {
+						name: match[1],
+						openMacro: true
+					});
+				}
+			},
+			macroCloser: {
+				match: r("macroCloser"),
+				macro: true,
+				fn: function(match) {
+					push("macroCloser", match, {
+						closeMacro: true
+					});
+				}
+			},
+			variable: { match:  r("variable"), macro: true, fn: pusher("variable") },
+			number:   { match:    r("number"), macro: true, fn: pusher("number") },
+			string:   { match:    r("string"), macro: true, fn: pusher("string") },
+			boolean:  { match:   r("boolean"), macro: true, fn: pusher("boolean") },
 		});
 		return state;
 	}
@@ -674,4 +797,5 @@
 	else {
 		this.TwineMarked = TwineMarked;
 	}
+	this.TwineMarked = TwineMarked;
 }).call(this || (typeof global !== 'undefined' ? global : window));

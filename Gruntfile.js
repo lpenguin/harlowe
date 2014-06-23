@@ -56,6 +56,7 @@ module.exports = function (grunt) {
 				expr     : true,
 				laxbreak : true,
 				validthis: true,
+				debug    : true,
 				// Environments
 				browser  : true,
 				devel    : true,

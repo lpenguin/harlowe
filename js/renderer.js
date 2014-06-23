@@ -118,6 +118,8 @@ define([], function() {
 	
 	/*
 		Text constant used by align().
+		The string "text-align: " is selected by the debugmode CSS, so the one space
+		must be present.
 	*/
 	var center = "text-align: center; max-width:50%; ";
 	
@@ -229,7 +231,7 @@ define([], function() {
 									break;
 								case "justify":
 								case "right":
-									style += "text-align:" + align + ";";
+									style += "text-align: " + align + ";";
 									break;
 								default:
 									if (+align) {
@@ -237,15 +239,16 @@ define([], function() {
 									}
 							}
 							
-							out += '<tw-align ' + (style ? ('style="' + style + '"') : '') + '>'
-								+ body + '</tw-align>\n';
+							out += '<tw-align ' + (style ? ('style="' + style + '"') : '')
+								+ (Renderer.options.debug ? ' title="' + token.text + '"' : "")
+								+ '>' + body + '</tw-align>\n';
 							token = tokens[i];
 						}
 						break;
 					}
 					case "macro": {
 						out += '<tw-macro name="' + token.name.replace(/"/g,'&quot;')
-							+ '" call="';
+							+ '" call="' + tokens[i].text.replace(/"/g,'&quot;');
 						temp = '';
 						
 						/*
@@ -258,10 +261,8 @@ define([], function() {
 								Crankforward until the end tag is found.
 							*/
 							macroNesting = 0;
-							while(i < len && tokens[i]) {
+							while(i++ < len && tokens[i]) {
 								
-								temp += tokens[i].text;
-								i += 1;
 								if (tokens[i].type === token.type) {
 									/*
 										Handle arbitrarily nested tags by increasing the nesting counter.
@@ -282,16 +283,11 @@ define([], function() {
 										}
 									}
 								}
+								temp += tokens[i].text;
 							}
-							temp += tokens[i].text;
+							temp = '" contents="' + temp.replace(/"/g,'&quot;');
 						}
-						else {
-							/*
-								If this is a self-closing macro tag, its call is simply the tag itself.
-							*/
-							temp += token.text;
-						}
-						out += temp.replace(/"/g,'&quot;') + '"></tw-macro>';
+						out += temp + '"></tw-macro>';
 						break;
 					}
 					case "heading": {
@@ -352,7 +348,7 @@ define([], function() {
 					/*
 						Base case
 					*/
-					case "text": {
+					default: {
 						out += token.children ? render(token.children) : charSpanify(token.text);
 						break;
 					}

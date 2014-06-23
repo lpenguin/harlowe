@@ -1,5 +1,5 @@
-define(['jquery', 'twinemarked', 'renderer', 'story', 'utils', 'selectors', 'state', 'macros', 'script', 'macroinstance', 'hookmacroinstance'], 
-function ($, TwineMarked, Renderer, Story, Utils, Selectors, State, Macros, Script, MacroInstance, HookMacroInstance) {
+define(['jquery', 'twinemarked', 'renderer', 'story', 'utils', 'selectors', 'state', 'macros', 'script'], 
+function ($, TwineMarked, Renderer, Story, Utils, Selectors, State, Macros, Script) {
 	"use strict";
 	
 	/**
@@ -202,7 +202,6 @@ function ($, TwineMarked, Renderer, Story, Utils, Selectors, State, Macros, Scri
 			// Let's not bother if this source solely held macros.
 			if (source.trim()) {
 				try {
-			console.log(TwineMarked.lex(source));
 					source = Renderer.render(TwineMarked.lex(source));
 				} catch (e) {
 					Utils.impossible("Engine.render","Renderer crashed");
@@ -228,24 +227,27 @@ function ($, TwineMarked, Renderer, Story, Utils, Selectors, State, Macros, Scri
 			*/
 			html.find(Selectors.macroInstance + ", " + Selectors.internalLink).each(function runMacroInstances () {
 				var el = $(this),
-					// The following vars are used by the tw-link case
+					// Hoisted vars, used by the tw-link case
 					passage,
 					text,
 					visited,
-					// The following vars are used by the tw-macro case
+					// Hoisted vars, used by the tw-macro case
 					desc,
 					name,
-					call;
+					call,
+					contents;
 
 				switch(this.tagName.toLowerCase()) {
 					case "tw-macro":
 					{
 						call = el.attr("call");
+						contents = el.attr("contents");
 						name = el.attr("name");
 						desc = Macros.get(name);
 						
-						el.removeAttr("call");
-						(desc.hooked ? HookMacroInstance : MacroInstance).create(name, desc, call).run(el, context, 
+						el.removeAttr("call").removeAttr("contents");
+						
+						Macros.instantiate(name, call, contents).run(el, context, 
 							/*
 								To provide the macros with a sufficient top,
 								unwrap the <tw-temp-container>, and add the 'top' for this
