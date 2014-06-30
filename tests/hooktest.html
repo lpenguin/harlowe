@@ -1,40 +1,43 @@
-<tw-storydata name="Hook test" startnode="1" creator="Twine" creator-version="2.0p2"><style role="stylesheet" id="twine-user-stylesheet" type="text/twine-css"></style><script role="script" id="twine-user-script" type="text/twine-javascript"></script><tw-passagedata pid="1" name="Start" position="472,182">* [[Hook test]]
-* [[Pseudo-hook test]]
-* [[Time macro test]]
-* [[Random test]]</tw-passagedata><tw-passagedata pid="2" name="Hook test" position="330,418">#One macro, two different hooks.
+<tw-storydata options="debug" name="Hook test" startnode="1" creator="Twine" creator-version="2.0p2"><style role="stylesheet" id="twine-user-stylesheet" type="text/twine-css"></style><script role="script" id="twine-user-script" type="text/twine-javascript"></script><tw-passagedata pid="1" name="Start" position="472,182">0. [[Hook test]]
+0. [[Pseudo-hook test]]
+0. [[Time macro test]]
+0. [[Random test]]
+</tw-passagedata>
+<tw-passagedata pid="9" name="Displayed" position="612,419">Frogs!!</tw-passagedata>
+<tw-passagedata pid="2" name="Hook test" position="330,418">#One macro, two different hooks.
 One [bunny][1], two [bunnies][1].
-&lt;&lt;click ?1&gt;&gt;
-&lt;&lt;replace ?1&gt;&gt;sheep&lt;&lt;/replace&gt;&gt;
-&lt;&lt;/click&gt;&gt;
+click-replace(?1)[sheep][a]
 
 #A hook that enchants a second hook.
 One [bunny][2], two [bunnies][3].
-&lt;&lt;click ?2&gt;&gt;
-&lt;&lt;replace ?2&gt;&gt;sheep&lt;&lt;/replace&gt;&gt;
-&lt;&lt;click-replace ?3&gt;&gt;sheep&lt;&lt;/click-replace&gt;&gt;
-&lt;&lt;/click&gt;&gt;
+click(?2)[
+replace(?2)[sheep][a]
+click-replace(?3)[sheep][a]
+][a]
 
 #A hook that replaces a different hook.
 One [bunny][4], two [bunnies][5].
-&lt;&lt;click ?4&gt;&gt;
-&lt;&lt;replace ?5&gt;&gt;sheep&lt;&lt;/replace&gt;&gt;
-&lt;&lt;/click&gt;&gt;
-&lt;&lt;click ?5&gt;&gt;
-&lt;&lt;replace ?4&gt;&gt;sheep&lt;&lt;/replace&gt;&gt;
-&lt;&lt;/click&gt;&gt;</tw-passagedata><tw-passagedata pid="3" name="Time macro test" position="471,420">A [red clock][1]. A [blue clock][2].
+click(?4)[
+replace(?5)[sheep][a]
+][a]
+click(?5)[
+replace(?4)[sheep][a]
+][a]
+</tw-passagedata><tw-passagedata pid="3" name="Time macro test" position="471,420">A [red clock][1]. A [blue clock][2].
 A [green clock][3].
 A [white clock][4].
-&lt;&lt;time 1s&gt;&gt;
-&lt;&lt;replace ?1&gt;&gt;blue clock&lt;&lt;/replace&gt;&gt;
-&lt;&lt;/time&gt;&gt;&lt;&lt;time 1500ms&gt;&gt;
-&lt;&lt;append ?2&gt;&gt; and a red clock&lt;&lt;/append&gt;&gt;
-&lt;&lt;/time&gt;&gt;
+time(1s)[
+replace(?1)[blue clock][a]
+][a]
+time(1500ms)[
+append(?2)[and a red clock][a]
+][a]
 
-&lt;&lt;time 0.8s 0.7s &quot;Invalid parameter that should be ignored&quot; 0.6s 0.5s 0.4s&gt;&gt;
-&lt;&lt;append ?3&gt;&gt;...tick&lt;&lt;/append&gt;&gt;
-&lt;&lt;/time&gt;&gt;
+time(0.8s, 0.7s, "Invalid parameter that should be ignored", 0.6s, 0.5s, 0.4s)[
+append(?3)[...tick][a]
+][a]
 
-&lt;&lt;timed-append ?4 1s&gt;&gt; with red hands&lt;&lt;/timed-append&gt;&gt;</tw-passagedata><tw-passagedata pid="4" name="Random test" position="780,418">||||||||||||||||
+timed-append(?4,1s)[with red hands][a]&gt;&gt;</tw-passagedata><tw-passagedata pid="4" name="Random test" position="780,418">||||||||||||||||
 ||||||||||||||||
 ||||||||||||||||
 ||||||||||||||||
@@ -42,17 +45,20 @@ A [white clock][4].
 ||||||||||||||||
 ||||||||||||||||
 ||||||||||||||||
-&lt;&lt;replace &quot;|&quot;&gt;&gt;&lt;&lt;print either(&quot;╱&quot;,&quot;╲&quot;)&gt;&gt;&lt;&lt;/replace&gt;&gt;</tw-passagedata><tw-passagedata pid="5" name="Pseudo-hook test" position="612,419">A definite article indicates that its noun is a particular one (or ones) identifiable to the listener. It may be something that the speaker has already mentioned, or it may be something uniquely specified. The definite article in English, for both singular and plural nouns, is the.
+<!-- &lt;&lt;replace &quot;|&quot;&gt;&gt;&lt;&lt;print either(&quot;╱&quot;,&quot;╲&quot;)&gt;&gt;&lt;&lt;/replace&gt;&gt; -->
+replace('|')[either("╱","╲")][c]
+</tw-passagedata>
+<tw-passagedata pid="5" name="Pseudo-hook test" position="612,419">A definite article indicates that its noun is a particular one (or ones) identifiable to the listener. It may be something that the speaker has already mentioned, or it may be something uniquely specified. The definite article in English, for both singular and plural nouns, is the.
 
-*The children know the fastest way home.*
+//The children know the fastest way home.//
 The sentence above refers to specific children and a specific way home; it contrasts with the much more general observation that:
-*Children know the fastest way home.*
+//Children know the fastest way home.//
 The latter sentence refers to children in general, perhaps all or most of them.
 
 Likewise,
-*Give me the book.*
+//Give me the book.//
 refers to a specific book whose identity is known or obvious to the listener; as such it has a markedly different meaning from
-*Give me a book.*
+//Give me a book.//
 which does not specify what book is to be given.
 
 The definite article can also be used in English to indicate a specific class among other classes:
@@ -71,7 +77,7 @@ Hey! You clicked &quot;general&quot;!
 &lt;&lt;replace &quot;Children&quot;&gt;&gt;&lt;span class=&quot;shudder&quot;&gt;Children&lt;/span&gt;&lt;&lt;/replace&gt;&gt;
 &lt;&lt;replace &quot;children&quot;&gt;&gt;&lt;span class=&quot;shudder&quot;&gt;children&lt;/span&gt;&lt;&lt;/replace&gt;&gt;
 &lt;&lt;/click&gt;&gt;
-&lt;click ?2&gt;&gt;
+&lt;&lt;click ?2&gt;&gt;
 &lt;&lt;append &quot;in&quot;&gt;&gt;?&lt;&lt;/append&gt;&gt;
 &lt;&lt;/click&gt;&gt;
 &lt;&lt;click ?3&gt;&gt;

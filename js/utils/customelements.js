@@ -18,10 +18,12 @@ define([], function() {
 		(i.e. features a hyphen anywhere after the first character) will just mean that element uses HTMLElement.prototype.
 		Nevertheless, this lays ground if the polyfill route is taken, and documents the custom elements used in Harlowe.
 	*/
-	(function register(name /* variadic */) {
-		var el, props = Array.apply(0, arguments),
+	(function register(name, props /* variadic */) {
+		var el,
 			proto = Object.create(HTMLElement.prototype),
 			propDef = {};
+		
+		props = [].slice.call(arguments,1);
 		/*
 			Load up the prototype with the passed properties
 			while making them non-configurable, non-writable etc.
@@ -63,15 +65,15 @@ define([], function() {
 	// Broken link
 	('tw-broken-link')
 	
-	// Macro instance (inline)
-	// - count: Which macro instance object to refer to during Engine's render().
+	// Expression instance (inline)
 	// - name: Used only by debugmode.css.
-	// - display: For a <<display>> macro, the name of the passage it's displaying.
+	// - type: Can be "hookRef", "variable" or "macro".
+	// - js: raw JS code to execute in order to evaluate this expr.
 	// Classes:
 	// .hook-macro: is a hook macro.
 	// .false-if: name is "if" but it evaluated to false.
 	// .error: a problem occurred while running.
-	('tw-macro', 'count', 'name') 
+	('tw-expression', 'type', 'name', 'title', 'js') 
 	('tw-sidebar') // Sidebar (block)
 	('tw-icon') // Sidebar button (block)
 	
@@ -91,9 +93,10 @@ define([], function() {
 	
 	// Hooks (inline)
 	// - name: the name of the hook.
+	// - code: the code that it should render, if it's not yet rendered.
 	// Classes:
 	// .link: Is a hook-link.
-	('tw-hook', 'name')
+	('tw-hook', 'name', 'code')
 	// Pseudo-hooks (inline)
 	// Classes:
 	// .link: Is a hook-link.

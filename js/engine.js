@@ -1,5 +1,5 @@
-define(['jquery', 'twinemarked', 'renderer', 'story', 'utils', 'selectors', 'state', 'macros', 'script'], 
-function ($, TwineMarked, Renderer, Story, Utils, Selectors, State, Macros, Script) {
+define(['jquery', 'twinemarked', 'renderer', 'story', 'utils', 'selectors', 'state', 'script'], 
+function ($, TwineMarked, Renderer, Story, Utils, Selectors, State, Script) {
 	"use strict";
 	
 	/**
@@ -85,7 +85,14 @@ function ($, TwineMarked, Renderer, Story, Utils, Selectors, State, Macros, Scri
 		}
 	}
 	
-	var Engine = {
+	var
+		/*
+			These two vars cache the previously rendered source text, and the syntax tree returned by
+			TwineMarked.lex from that.
+		*/
+		renderCacheKey,
+		renderCacheValue,
+		Engine = {
 		/**
 			Moves the game state backward one turn. If there is no previous state, this does nothing.
 
@@ -167,12 +174,12 @@ function ($, TwineMarked, Renderer, Story, Utils, Selectors, State, Macros, Scri
 			Utils.$(Selectors.hook, top).attr("class", "");
 
 			// Perform actions for each scoping macro's scope.
-			Utils.$(Selectors.hookMacroInstance, top).each(function () {
-				var instance = $(this).data("instance");
-				if (instance) {
+			Utils.$(Selectors.enchanter, top).each(function () {
+				var enchantment = $(this).data("enchantment");
+				if (enchantment) {
 					// Refresh the scope, and enchant it.
-					instance.refreshScope();
-					instance.enchantScope();
+					enchantment.refreshScope();
+					enchantment.enchantScope();
 				}
 			});
 		},
@@ -187,26 +194,29 @@ function ($, TwineMarked, Renderer, Story, Utils, Selectors, State, Macros, Scri
 			(usually a <tw-passage>). Undefined if this is the document top.
 			@return {jQuery} The rendered passage.
 		*/
-		render: function (source, context, top) {
-			var html;
+		render: function render(source, context, top) {
+			var ret, html;
 			
 			// If a non-string is passed into here, there's really nothing to do.
 			if (typeof source !== "string") {
-				Utils.impossible("Engine.render", "source was not a string");
+				Utils.impossible("Engine.render", "source was not a string, but " + typeof source);
 				return $();
 			}
-
-			/*
-				Do Markdown
-			*/
+			
 			// Let's not bother if this source solely held macros.
 			if (source.trim()) {
-				try {
-					source = Renderer.render(TwineMarked.lex(source));
-				} catch (e) {
-					Utils.impossible("Engine.render","Renderer crashed");
-					
-					source = "<tw-macro name='rendering-error'>" + e.stack + "</tw-macro>";
+				/*
+					A rudimentary caching mechanism to save on lexing:
+					if the previously rendered source is the same as this,
+					recall the HTML that was produced.
+				*/
+				if (source === renderCacheKey) {
+					html = renderCacheValue;
+				}
+				else {
+					html = Renderer.render(TwineMarked.lex(source));
+					renderCacheKey = source;
+					renderCacheValue = html;
 				}
 			}
 			// Render the HTML
@@ -220,47 +230,97 @@ function ($, TwineMarked, Renderer, Story, Utils, Selectors, State, Macros, Scri
 				So, a <tw-temp-container> is temporarily used to house the entire rendered HTML
 				before it's inserted at the end of this function.
 			*/
-			html = $('<tw-temp-container>' + source);
+			ret = $('<tw-temp-container>' + html);
 			
 			/*
-				Execute macros immediately
+				To provide the macros with a sufficient top,
+				unwrap the <tw-temp-container>, and add the 'top' for this
+				rendered fragment.
 			*/
-			html.find(Selectors.macroInstance + ", " + Selectors.internalLink).each(function runMacroInstances () {
+			top = ret.contents().add(top);
+			
+			/*
+				Execute expressions immediately
+			*/
+			ret.find(Selectors.hook + ","
+				+ Selectors.expression + ","
+				+ Selectors.internalLink).each(function doExpressions () {
 				var el = $(this),
 					// Hoisted vars, used by the tw-link case
 					passage,
 					text,
 					visited,
-					// Hoisted vars, used by the tw-macro case
-					desc,
-					name,
+					// Hoisted vars, used by the tw-expression case
 					call,
-					contents;
+					nextHook,
+					result;
 
 				switch(this.tagName.toLowerCase()) {
-					case "tw-macro":
+					case Selectors.hook:
 					{
-						call = el.attr("call");
-						contents = el.attr("contents");
-						name = el.attr("name");
-						desc = Macros.get(name);
-						
-						el.removeAttr("call").removeAttr("contents");
-						
-						Macros.instantiate(name, call, contents).run(el, context, 
-							/*
-								To provide the macros with a sufficient top,
-								unwrap the <tw-temp-container>, and add the 'top' for this
-								rendered fragment.
-							*/
-							html.contents().add(top));
+						if (el.attr('code')) {
+							el.append(Engine.render(el.attr('code'), context, top));
+							el.removeAttr('code');
+						}
 						break;
 					}
+					case Selectors.expression:
+					{
+						call = Utils.unescape(el.attr('js'));
+						el.removeAttr('js');
+						
+						/*
+							Check if any hook is connected to this expression's result.
+						*/
+						nextHook = el.next("tw-hook");
+						
+						/*
+							Execute the expression.
+							If this returns a falsy non-string non-zero, don't print it,
+							but regard it as a value to disable
+						*/
+						result = Script.environ(top).eval(call);
+						
+						/*
+							Apply the value to the hook.
+						*/
+						if (nextHook.length) {
+							/*
+								"Hook augmenter" functions have the signature
+								{jQuery} hook   The <tw-hook> node being applied to.
+								{jQuery} top    The home DOM of the <tw-hook>.
+								{Scope} [scope] The scoping macro's scope.
+							*/
+							if (typeof result === "function") {
+								result(nextHook, top);
+								break;
+							}
+							//TODO: implement hook cards.
+							else if (typeof result === "boolean"
+									|| result === null || result === undefined) {
+								if (!result) {
+									nextHook.removeAttr('code');
+								}
+								break;
+							}
+						}
+						if (typeof result === "string") {
+							/*
+								Transition the resulting Twine code into the expression's element.
+							*/
+							result = Engine.render(result + '', el, top);
+							if (result) {
+								el.append(result);
+							}
+						}
+						break;
+					}
+					
 					/*
-						To consider: there should perchance exist "lazy links" whose passage-exprs are not
+						TODO: there should perchance exist "lazy links" whose passage-exprs are not
 						evaluated into passage-ids until the moment they are clicked.
 					*/
-					case "tw-link":
+					case Selectors.internalLink:
 					{
 						passage = Utils.unescape(el.attr("passage-expr"));
 						text = el.text();
@@ -270,10 +330,10 @@ function ($, TwineMarked, Renderer, Story, Utils, Selectors, State, Macros, Scri
 							visited = (State.passageNameVisited(passage));
 						} else {
 							// Is it a code link?
-							try {
-								passage = Script.environ().evalExpression(passage);
+							//try {
+								passage = Script.environ().eval(passage);
 								Story.passageNamed(passage) && (visited = (State.passageNameVisited(passage)));
-							} catch(e) { /* pass */ }
+							//} catch(e) { /* pass */ }
 							
 							// Not an internal link?
 							if (!~visited) {
@@ -292,7 +352,7 @@ function ($, TwineMarked, Renderer, Story, Utils, Selectors, State, Macros, Scri
 				}
 			});
 			// Unwrap the aforementioned <tw-temp-container>.
-			return html.contents();
+			return ret.contents();
 		}
 	};
 	

@@ -194,7 +194,7 @@ define(['jquery', 'utils', 'selectors'], function ($, Utils, Selectors) {
 			@return {jQuery}
 		*/
 		first: function () {
-			return this.reduce(this.contents[0]);
+			return this.subset(this.contents[0]);
 		},
 		
 		/**
@@ -203,18 +203,7 @@ define(['jquery', 'utils', 'selectors'], function ($, Utils, Selectors) {
 			@return {jQuery}
 		*/
 		last: function () {
-			return this.reduce(this.contents[this.contents.length - 1]);
-		},
-		
-		/**
-			All the selectors, space-separated.
-			Commonly used just to retrieve the first and only selector.
-
-			@property selector
-			@type String
-		*/
-		get selector() {
-			return this.selectors.join(' ');
+			return this.subset(this.contents[this.contents.length - 1]);
 		},
 
 		/**
@@ -225,7 +214,7 @@ define(['jquery', 'utils', 'selectors'], function ($, Utils, Selectors) {
 			@param {jQuery} elem 
 			@return {jQuery}
 		*/
-		reduce: function (elem) {
+		subset: function (elem) {
 			var ret = Utils.clone(this);
 			ret.contents = [elem];
 			return ret;
@@ -267,27 +256,18 @@ define(['jquery', 'utils', 'selectors'], function ($, Utils, Selectors) {
 			for (i = 0; i < this.selectors.length; i += 1) {
 				word = this.selectors[i];
 				type = WordArray.scopeType(word);
-
 				switch (type) {
 					case "wordarray":
-						this.contents.concat(word.contents);
+						this.contents = this.contents.concat(word.contents);
 						break;
 					case "jquery":
 						word.each(forEachjQuery);
 						break;
-					case "jquery string":
-						// Remove $(" and ") from the string. 
-						Utils.jQueryStringTojQuery(word).each(forEachjQuery);
-						break;
 					case "wordarray string":
-						// Remove quote marks.
-						this.contents = findCharSpans(word.slice(1, -1), top);
+						this.contents = findCharSpans(word, top);
 						break;
-					case "hook string":
+					case "hookRef":
 						Utils.hookTojQuery(word, top).each(forEachjQuery);
-						break;
-					case "it":
-						//TODO
 						break;
 					default:
 						invalid += 1;
@@ -317,35 +297,22 @@ define(['jquery', 'utils', 'selectors'], function ($, Utils, Selectors) {
 			if (!val) {
 				return "undefined";
 			} else if (typeof val === "object") {
-				if (val.wordarray)
+				if (val.wordarray) {
 					return "wordarray";
-				else if (val.jquery)
+				}
+				else if (val.jquery) {
 					return "jquery";
+				}
 			} else if (typeof val === "string") {
-				r = /\$\("([^"]*)"\)|\$\('([^']*)'\)|"((?:[^"\\]|\\.)*)"|'((?:[^'\\]|\\.)*)'|\?(\w*)|\bit\b/.exec(val);
+				r = /\?(\w*)/.exec(val);
 
 				if (r && r.length) {
-					// jQuery selector $("..."), $('...')
-
-					if (r[1] || r[2]) {
-						return "jquery string";
-					}
-					// Word selector "...", '...'
-					else if (r[3] || r[4]) {
-						return "wordarray string";
-					}
-					// Hook ?...
-					else if (r[5]) {
-						return "hook string";
-					}
-					// it selector
-					else if (r[6]) {
-						return "it";
-					}
+					return "hookRef";
 				}
-
-				return "undefined";
+				// Assume it's a plain word selector
+				return "wordarray string";
 			}
+			return "undefined";
 		},
 		
 		/**
@@ -356,11 +323,16 @@ define(['jquery', 'utils', 'selectors'], function ($, Utils, Selectors) {
 			@param {jQuery} top The DOM in which to search. Usually the contents of one <tw-passage>.
 			@return this
 		*/
-		create: function (selectorstring, top) {
+		create: function (selectorString, top) {
 			var ret = Object.create(this);
-			// Array.prototype.concat turns selectorstring into an array, but ignores it
+			
+			// Array.prototype.concat turns selectorString into an array, but ignores it
 			// if it's already an array.
-			ret.selectors = Array.prototype.concat(selectorstring);
+			ret.selectors = Array.prototype.concat(selectorString);
+			
+			ret.selectors = ret.selectors.map(function(e) {
+				return (e.wordarray) ? e.selectors.join(',') : e;
+			});
 			ret.refresh(top);
 			return ret;
 		},

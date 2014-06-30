@@ -205,19 +205,7 @@ define(['jquery', 'twinemarked', 'renderer', 'selectors', 'customelements'], fun
 		hookTojQuery: function (c, top) {
 			return Utils.findAndFilter(top, Utils.hookToSelector(c.slice(1) /* slice off the ? sigil */))
 		},
-
-		/**
-			Convert "$('selector')" to a jQuery object.
-
-			@method jQueryStringTojQuery
-			@param {String} jQuery invocation
-			@return jQuery object
-		*/
-
-		jQueryStringTojQuery: function (word) {
-			return $(word.replace(/^\$\(["']|["']\)$/, ''));
-		},
-
+		
 		/**
 			Takes a string argument, expressed as a CSS time,
 			and returns the time in milliseconds that it equals.
@@ -254,6 +242,35 @@ define(['jquery', 'twinemarked', 'renderer', 'selectors', 'customelements'], fun
 			return 0;
 		},
 
+		/**
+			Search the given string to find any subset keywords ("first", "last", "this"),
+			then return those. If none found, return "all".
+			
+			@method subsetSelector
+			@param {String} str The string to test.
+			@return {String} the subset selector.
+		*/
+		subsetSelector: function (str) {
+			return (typeof str === "string" && 
+				(str === "this" && "this")
+				|| (str === "first" && "first")
+				|| (str === "last" && "last"))
+				|| "all";
+		},
+
+		/**
+			Search the given string to find any terms beginning with "t8n-",
+			and return it stripped of the "t8n-" prefix. If none found, default to "dissolve".
+			
+			@method transitionSelector
+			@param {String} str The string to test.
+			@return {String} The transition selector.
+		*/
+		transitionSelector: function (str) {
+			return (typeof str === "string" && (str.indexOf("t8n-") === 0) && str.slice(4))
+				|| "dissolve";
+		},
+		
 		/*
 			Element utilities
 		*/		

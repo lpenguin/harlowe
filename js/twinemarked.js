@@ -102,6 +102,99 @@
 				+ (rest ? "|" + stylerSyntax.apply(0, Array.apply(0,arguments).slice(1)) : "");
 		}
 		
+		/*
+			Converts the given REstring (assumed to be entirely [A-Za-z] characters)
+			into a case-insensitive version.
+		*/
+		function caseInsensitive(name) {
+			return name.replace(/(?:([A-Z])|([a-z]))/g, function(a, $1, $2) {
+				return "[" + ($1 || $2.toUpperCase())
+					+ ($2 || $1.toLowerCase()) + "]"; });
+		}
+		
+		
+		/*
+			This creates an object which has an exec() method like
+			RegExp objects, but tries to match recursively.
+			
+			{String}  s   REstring for the start tag.
+			{String} [m]  REstring for any tags within the match that
+			|             match with the end tag (e.g. "(" with ")")
+			{String}  e   REstring for the end tag.
+		*/
+		function RecursiveExpression(s, m, e) {
+			if (arguments.length === 2) {
+				e = m;
+				m = null;
+			}
+			return {
+				/*
+					Accepts a string, and tries to match it.
+					If a match is found, an array is returned with:
+						the complete matched string,
+						any substrings of the first start tag match,
+						then the string between the start tag and the end tag,
+						then any substrings of the final end tag match.
+					The array lacks index and input properties.
+				*/
+				exec: function exec(src) {
+					var start  =       new RegExp("^" + s),
+						nester = (m && new RegExp("^" + m)),
+						end    =       new RegExp("^" + e),
+						// Temp variable for tag match checks
+						startMatch = start.exec(src),
+						nesting = 0,
+						innerMatchText = "",
+						match,
+						out;
+					/*
+						Early exit: the start tag doesn't match.
+					*/
+					if (!startMatch) {
+						return "";
+					}					
+					src = src.slice(startMatch[0].length);
+					/*
+						Loop until the end tag matches without nesting.
+					*/
+					while(src) {
+						match = null;
+						// End tag was found: check if we're done.
+						if ((match = end.exec(src))) {
+							if (nesting > 0) {
+								nesting -= 1;
+							}
+							else {
+								// We're done - create the final return value.
+
+								// Assemble the fullmatch text
+								startMatch[0] += innerMatchText + match[0];
+								// Add the substrings of each type of match, in the right order.
+								out = startMatch.concat(innerMatchText, match.slice(1));
+								return out;
+							}
+						}
+						// Start tag was found again: 
+						else if ((match = start.exec(src)) || (nester && (match = nester.exec(src)))) {
+							nesting += 1;
+						}
+						
+						// Keep looping: move characters into the returning string.
+						if (match) {
+							innerMatchText += match[0];
+							src = src.slice(match[0].length);
+						}
+						else {
+							innerMatchText += src[0];
+							src = src.slice(1);
+						}
+					}
+					// The end tag wasn't found... no match.
+					return "";
+				}
+			};
+		}
+		
 		var ws = "\\s*",
 			
 			// Checks if text appears before line-breaks or end-of-input.
@@ -151,7 +244,7 @@
 				New text alignment syntax.
 			*/
 			align = ws + "(==+>|<=+|=+><=+|<==+>)" + ws + eol,
-			
+
 			passageLink = {
 				opener:            "\\[\\[",
 				text:              "(" + notChars("]") + ")",
@@ -183,7 +276,10 @@
 				// Python's triple-quoted strings.
 				tripleSingle: "'''" + either(notChars("\\'"),'\\\\.',"''(?!')") + "+'''",
 				tripleDouble: '"""' + either(notChars('\\"'),'\\\\.','""(?!")') + '+"""',
-			}
+			},
+			
+			// This includes NaN, but I wonder if it should.
+			number = '\\b(\\-?\\d+\\.?(?:[eE][+\\-]?\\d+)?|NaN)' + notBefore("m?s") + '\\b'
 			;
 		/*
 			Return the RegExpStrings object.
@@ -207,8 +303,9 @@
 			
 			url:         "(" + either("https?","mailto","javascript","ftp","data") + ":\\/\\/[^\\s<]+[^<.,:;\"')\\]\\s])",
 			
-			hr:          hr,
 			bullet:      bullet,
+			
+			hr:          hr,
 			heading:     heading,
 			align:       align,
 			
@@ -224,7 +321,11 @@
 			bulleted:    bulleted,
 			numbered:    numbered,
 			
-			hook:        "\\[(" + notChars("]") + ")\\]" + ws + "\\[(" + notChars("]") + ")\\]",
+			hook:
+				new RecursiveExpression(
+					"\\[",
+					"\\]" + ws + "\\[(" + notChars("]") + ")\\]"
+				),
 			
 			passageLink:
 				passageLink.opener
@@ -275,6 +376,13 @@
 				*/
 				passageLink.opener + passageLink.legacyText + passageLink.closer,
 			
+			macro:
+				new RecursiveExpression(
+					macro.name + macro.opener,
+					"\\(",
+					macro.closer
+				),
+			
 			macroOpener:
 				macro.name + macro.opener,
 				
@@ -288,10 +396,11 @@
 				"\\n((?:[^\\n]+\\n?(?!"
 				+ notBefore(heading, align, hr)
 				+ "))+)\\n?",
-				
+			
 			/*
 				Macro code
 			*/
+			
 			variable:
 				"\\$((?:" + anyLetter.replace("\\-", "\\.") + "*"
 				// Disallow -, but allow . property indexing
@@ -300,7 +409,18 @@
 				// Array indexing syntax
 				+ "|\\[[^\\]]+\\])+)",
 			
-			number: '\\b(\\-?\\d+\\.?(?:[eE][+\\-]?\\d+)?|NaN)\\b',
+			hookRef: "\\?(" + anyLetter + "+)\\b",
+			
+			/*
+				Artificial types (non-JS primitives)
+			*/
+			
+			cssTime: "\\b(\\d+)(m?s)\\b",
+			
+			/*
+				Natural types
+			*/
+			number: number,
 			
 			boolean: "(true|false|null|undefined)",
 			
@@ -313,7 +433,31 @@
 					string.emptyDouble,
 					string.single,
 					string.double
-				) + ")"
+				) + ")",
+			
+			/*
+				Macro operators
+			*/
+			
+			is: "\\b" + caseInsensitive("is") + notBefore(" not") + "\\b",
+			
+			to: "\\b" + either(caseInsensitive("to"), "=") + "\\b",
+			
+			and: "\\b" + either(caseInsensitive("and"), "&&") + "\\b",
+			
+			or: "\\b" + either(caseInsensitive("or"), "\\|\\|") + "\\b",
+			
+			not: "\\b" + either(caseInsensitive("not"), "!") + "\\b",
+			
+			isNot: "\\b" + either(caseInsensitive("is not"), "!==") + "\\b",
+			
+			grouping:
+				new RecursiveExpression(
+					"\\(",
+					"\\)"
+				),
+			
+			comma: "\\b,\\b",
 		};
 	}());
 	
@@ -368,18 +512,12 @@
 				*/
 				if (data.innerText) {
 					children = lex(data.innerText,
-						states[0].pos + match[0].indexOf(data.innerText));
+						states[0].pos + match[0].indexOf(data.innerText),
+						data.expression || states[0].inMacro);
 				}
 				/*
 					The token may signify entering or exiting a macro.
 				*/
-				else if (data.openMacro) {
-					data.children = [];
-					states[0].inMacro += 1;
-				}
-				else if (data.closeMacro) {
-					states[0].inMacro -= 1;
-				}
 			}
 			
 			states[0].tokens.push(merge({
@@ -407,16 +545,41 @@
 			Creates a function that pushes a token with innerText,
 			designed for styling rules like **strong** or //italic//.
 			
+			If given a second parameter, that is used as the property name
+			instead of "innerText"
+			
 			@method textPusher
 			@private
 		*/
-		function textPusher(type) {
+		function textPusher(type, name) {
+			name = name || "innerText";
 			return function(match) {
-				var innerText = match.reduceRight(function(a, b, index) { return a || (index ? b : ""); }, "");
+				/*
+					This function returns the rightmost non-zero array-indexed value.
+					It's designed for matches created from regexes that only have 1 group.
+				*/
+				var innerText = match.reduceRight(function(a, b, index) { return a || (index ? b : ""); }, ""),
+					data = {};
 				
-				push(type, match, {
-					innerText: innerText
-				});
+				data[name] = innerText;
+				
+				push(type, match, data);
+			};
+		}
+		
+		/**
+			Creates a function that pushes a token with a value,
+			designed for Twine code styling rules.
+			
+			When given a function as the 2nd parameter, then match is
+			passed to that function to determine the value of value.
+			
+			@method valuePusher
+			@private
+		*/
+		function valuePusher(type, fn) {
+			return function(match) {
+				push(type, match, { value: typeof fn === "function" ? fn(match) : fn });
 			};
 		}
 		
@@ -431,7 +594,7 @@
 			@method nestMacroTokens
 			@private
 		*/
-		function nestMacroTokens(tokens) {
+		void function nestMacroTokens(tokens) {
 			var i, token,
 				macroStack = [];
 			
@@ -470,7 +633,7 @@
 				}
 			}
 			return tokens;
-		}
+		};
 		
 		/*
 			The main method of the lexer. Returns an array of tokens for the passed text.
@@ -478,7 +641,7 @@
 			start of the src. If no rule matches, a default "text" token is gradually
 			built up, to be pushed when a rule finally matches.
 		*/
-		function lex(src, initpos) {
+		function lex(src, initpos, inMacro) {
 			var done, ret, rname, rule, match, i,
 				lastrule = "",
 				text = "",
@@ -487,7 +650,7 @@
 			states.unshift({
 				tokens: [],
 				pos: initpos || 0,
-				inMacro: 0
+				inMacro: !!inMacro
 			});
 			
 			while(src) {
@@ -509,8 +672,10 @@
 								(!lastrule
 								|| lastrule === "br"
 								|| lastrule === "paragraph")) &&
-							// within macros, only macro rules can be used.
-							(!states[0].inMacro || rule.macro)) {
+							// within macros, only macro rules and expressions can be used.
+							(!states[0].inMacro || rule.macro || rule.expression) &&
+							// outside macros, macro rules can't be used.
+							(!rule.macro || states[0].inMacro)) {
 						
 						// First, push the current run of slurped text.
 						if (text) {
@@ -544,13 +709,14 @@
 				push("text", [text]);
 			}
 			ret = states.shift().tokens;
-			return nestMacroTokens(ret);
+			return ret;
 		}
 			
 		return {
 			push: push,
 			pusher: pusher,
 			textPusher: textPusher,
+			valuePusher: valuePusher,
 			lex: lex,
 			rules: rules
 		};
@@ -567,13 +733,19 @@
 		// TODO: reimplement backslash-escapes
 		var push = state.push,
 			pusher = state.pusher,
-			textPusher = state.textPusher;
+			textPusher = state.textPusher,
+			valuePusher = state.valuePusher;
 		
 		/*
-			A quick shorthand function to convert a RegExpStrings property into a RegExp.
+			A quick shorthand function to convert a RegExpStrings property into a RegExp,
+			or to return it if it's a RecursiveExpression already.
 		*/
 		function r(index) {
-			return new RegExp("^(?:" + RegExpStrings[index] + ")");
+			var re = RegExpStrings[index];
+			if (typeof re !== "string") {
+				return re;
+			}
+			return new RegExp("^(?:" + re + ")");
 		}
 
 		merge(state.rules, {
@@ -696,7 +868,7 @@
 				fn: function(match) {
 					push("hook", match, {
 						innerText: match[1],
-						hookName: match[2]
+						name: match[2]
 					});
 				}
 			},
@@ -724,35 +896,54 @@
 			bold:    { match:    r("bold"), fn: textPusher("bold") },
 			italic:  { match:  r("italic"), fn: textPusher("italic") },
 			del:     { match:     r("del"), fn: textPusher("del") },
-			// The text rule has no match RegExp
-			text:    { match:         null, fn:     pusher("text") },
 			
 			/*
 				Now, macro code rules.
 			*/
-			macroOpener: {
-				match: r("macroOpener"),
-				macro: true,
+			macro: {
+				match: r("macro"),
+				expression: true,
 				fn: function(match) {
 					push("macro", match, {
 						name: match[1],
-						openMacro: true
+						innerText: match[2],
+						expression: true
 					});
 				}
 			},
-			macroCloser: {
-				match: r("macroCloser"),
+			cssTime: {
+				match: r("cssTime"),
 				macro: true,
-				fn: function(match) {
-					push("macroCloser", match, {
-						closeMacro: true
-					});
-				}
+				fn: valuePusher("cssTime", function(match) {
+					return +match[1]
+						* (match[2].toLowerCase() === "s" ? 1000 : 1);
+				})
 			},
-			variable: { match:  r("variable"), macro: true, fn: pusher("variable") },
-			number:   { match:    r("number"), macro: true, fn: pusher("number") },
+			number: {
+				match: r("number"),
+				macro: true,
+				fn: valuePusher("number", function(match) {
+					/*
+						This fixes accidental octal (by eliminating octal)
+					*/
+					return parseFloat(match[0]);
+				})
+			},
+			hookRef:  { match:   r("hookRef"), expression: true, fn: textPusher("hookRef", "name") },
+			variable: { match:  r("variable"), expression: true, fn: textPusher("variable", "name") },
 			string:   { match:    r("string"), macro: true, fn: pusher("string") },
 			boolean:  { match:   r("boolean"), macro: true, fn: pusher("boolean") },
+			is:       { match:        r("is"), macro: true, fn: pusher("is") },
+			to:       { match:        r("to"), macro: true, fn: pusher("to") },
+			or:       { match:        r("or"), macro: true, fn: pusher("or") },
+			and:      { match:       r("and"), macro: true, fn: pusher("and") },
+			not:      { match:       r("not"), macro: true, fn: pusher("not") },
+			isNot:    { match:     r("isNot"), macro: true, fn: pusher("isNot") },
+			grouping: { match:  r("grouping"), macro: true, fn: textPusher("grouping") },
+			comma:    { match:     r("comma"), macro: true, fn: pusher("comma") },
+			
+			// The text rule has no match RegExp
+			text:     { match:         null, fn:     pusher("text") },
 		});
 		return state;
 	}
@@ -797,5 +988,5 @@
 	else {
 		this.TwineMarked = TwineMarked;
 	}
-	this.TwineMarked = TwineMarked;
+window.TwineMarked = TwineMarked;
 }).call(this || (typeof global !== 'undefined' ? global : window));

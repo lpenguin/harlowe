@@ -48,13 +48,18 @@ define(['jquery', 'story', 'utils', 'selectors', 'wordarray'], function($, Story
 				
 				selector = this.selectors[i],
 				type = WordArray.scopeType(selector);
-				
+
 				// Targeting actual hooks?
-				if (type === "hook string") {
+				if (type === "wordarray") {
+					this.hooks = this.hooks.add(selector.contents);
+				}
+				else if (type === "jquery") {
+					this.hooks = this.hooks.add(selector);
+				}
+				else if (type === "hookRef") {
 					this.hooks = this.hooks.add(Utils.hookTojQuery(selector, top));
-				} else if (type === "jquery string") {
-					this.hooks = this.hooks.add(Utils.jQueryStringTojQuery(selector));
-				} else if (type === "wordarray string")
+				}
+				else if (type === "wordarray string")
 				// Pseudohooks
 				{
 					// Create pseudohooks around the Words
@@ -66,10 +71,27 @@ define(['jquery', 'story', 'utils', 'selectors', 'wordarray'], function($, Story
 					}
 				}
 			}
-			(this.hooks && this.hooks.addClass(className));
+			this.hooks && this.hooks.addClass(className);
 			return this;
 		},
-
+		
+		/**
+			Takes a subset selector, and returns a subset of this scope
+			reflecting that selector.
+			
+			@method selectSubset
+			@param {String} subsetSelector Currently either "first" or "last".
+		*/
+		selectSubset: function (subsetSelector) {
+			switch (subsetSelector) {
+				case "first":
+					return this.first();
+				case "last":
+					return this.last();
+				default:
+					return this;
+			}
+		},
 		/**
 			Removes the <tw-hook>s around each hook.
 			@method unhook

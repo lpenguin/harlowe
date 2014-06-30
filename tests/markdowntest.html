@@ -8,41 +8,11 @@ p {
 	background-color: #eef;
 }
 &lt;&lt;/style&gt;&gt;
-##Test: MD links.
+##Test: Plain links.
 
 http://www.qwantz.com/
-www.qwantz.com/apologies/
-[Dinosaur Comics](http://www.qwantz.com/ &quot;Rad&quot;)
-[Whispered Apologies](//www.qwantz.com/apologies/ &quot;Neat&quot;)
-[Not a link](not a link)
-[local link](local)
-[Reference link] [a]
-[Reference link][1]
-
- [a]: http://www.qwantz.com/ &quot;Fancy&quot;
-
-[1]: http://www.qwantz.com/apologies/ &quot;Great&quot;
-##Test: Numbered lists.
-
-	You look at the timer.
-	
-	26. Better get moving.
-	
-	* [[Escape]]
-	* [[Stay Here|test]]
-
-You look at the timer.
-
-26. Better get moving.
-
-* [[Escape]]
-* [[Stay Here|test]]
 
 ##Test: Cross-para emphasis
-
-	Walking along, calm as can be **Aaagh a bee!
-	
-	Get away, run!**
 
 Walking along, calm as can be **Aaagh a bee!
 
@@ -50,25 +20,13 @@ Get away, run!**
 
 ##Test: Cross-para HTML
 
-	The ant whispers: &lt;small&gt;I think the King left a crumb on his plate!
-	
-	Let&#x27;s go get it! &lt;/small&gt;You both dash off.
-
 The ant whispers: &lt;small&gt;I think the King left a crumb on his plate!
 
 Let&#x27;s go get it! &lt;/small&gt;You both dash off.
 
-	The ant whispers: &lt;mark&gt;I think the King left a crumb on his plate!
-	
-	Let&#x27;s go get it! &lt;/mark&gt;You both dash off.
-
 The ant whispers: &lt;mark&gt;I think the King left a crumb on his plate!
 
 Let&#x27;s go get it! &lt;/mark&gt;You both dash off.
-
-	The ant whispers: &lt;span class=&quot;rumble&quot;&gt;&lt;small&gt;I think the King left a crumb on his plate!
-	
-	Let&#x27;s go get it! &lt;/small&gt;&lt;/span&gt;You both dash off.
 
 The ant whispers: &lt;span class=&quot;rumble&quot;&gt;&lt;small&gt;I think the King left a crumb on his plate!
 
@@ -76,34 +34,21 @@ Let&#x27;s go get it! &lt;/small&gt;&lt;/span&gt;You both dash off.
 
 ##Test: emphasis and whitespace
 
-	To **tell you something I know nothing** about.
 To **tell you something I know nothing** about.
 
-	To** tell you something I know nothing** about.
 To** tell you something I know nothing** about.
 
-	To **tell you something I know nothing **about.
 To **tell you something I know nothing **about.
 
-	To** tell you something I know nothing **about.
 To** tell you something I know nothing **about.
 
-	To ** tell you something I know nothing ** about.
 To ** tell you something I know nothing ** about.
 
-##Test: horizontal rules vs. Setext
-
-	I come before you, to stand behind you,
-	To tell you something I know nothing about.
-	----
+##Test: horizontal rules
 
 I come before you, to stand behind you,
 To tell you something I know nothing about.
 ----
-
-	I come before you, to stand behind you,
-	To tell you something I know nothing about.
-	- - -
 	
 I come before you, to stand behind you,
 To tell you something I know nothing about.
@@ -111,9 +56,6 @@ To tell you something I know nothing about.
 
 ##Test: delete comments
 
-	&lt;!--
-	&lt;&lt;print &quot;This comment should be absent.&quot;&gt;&gt;
-	--&gt;
 &lt;!--
 &lt;&lt;print &quot;This comment should be absent.&quot;&gt;&gt;
 --&gt;
@@ -126,13 +68,10 @@ marked is very concise and still implements all markdown features. It is also no
 marked more or less passes the official markdown test suite in its entirety. This is important because a surprising number of markdown compilers cannot pass more than a few tests. It was very difficult to get marked as compliant as it is. It could have cut corners in several areas for the sake of performance, but did not in order to be exactly what you expect in terms of a markdown rendering. In fact, this is why marked could be considered at a disadvantage in the benchmarks above.
 
 ##Test: line breaks and near spaces. 
-	Line one.
-	Line two.
+
 Line one.
 Line two.
 
-	Line one.  
-	Line two.
 Line one.  
 Line two.
 
@@ -165,10 +104,6 @@ and six cents.
 
 ##Test: inline syntax in block HTML
 
-	&lt;div style=&quot;border: solid 2px tan;&quot;&gt;Let&#x27;s **make this happen!**
-	_Yippee!_
-	~~Deleted~~
-	http://www.qwantz.com/ &lt;/div&gt;
 &lt;div style=&quot;border: solid 2px tan;&quot;&gt;Let&#x27;s **make this happen!**
 _Yippee!_
 ~~Deleted~~
@@ -176,18 +111,6 @@ http://www.qwantz.com/ &lt;/div&gt;
 
 ##Test: block syntax in block HTML
 
-	&lt;div style=&quot;border: dashed 1px green;&quot;&gt;
-	* [[Good]]
-	* [[Great]]
-	* [[Rad]]
-	---
-	1. Orange
-	2. Peach
-	3. Mango
-	# H1
-	## H2
-	### H3
-	&lt;/div&gt;
 &lt;div style=&quot;border: dashed 5px green;&quot;&gt;
 * [[Good]]
 * [[Great]]
@@ -210,6 +133,7 @@ marked is very concise and still implements all markdown features. It is also no
 marked more or less passes the official markdown test suite in its entirety. This is important because a surprising number of markdown compilers cannot pass more than a few tests. It was very difficult to get marked as compliant as it is. It could have cut corners in several areas for the sake of performance, but did not in order to be exactly what you expect in terms of a markdown rendering. In fact, this is why marked could be considered at a disadvantage in the benchmarks above.&lt;/div&gt;
 
 ##Test: cross-para HTML tags in block HTML
+
 	&lt;div style=&quot;border: dashed 2px gold;&quot;&gt;The ant whispers:&lt;mark&gt; I think the King left a crumb on his plate!
 
 	Let&#x27;s go get it! &lt;/mark&gt;You both dash off.&lt;/div&gt;

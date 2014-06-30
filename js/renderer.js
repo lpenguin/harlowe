@@ -1,4 +1,4 @@
-define([], function() {
+define(['twineparser'], function(twineParser) {
 	"use strict";
 	/**
 		The Renderer takes the syntax tree from TwineMarked and returns a HTML string.
@@ -52,9 +52,9 @@ define([], function() {
 		@return {String} converted text
 	*/
 	function escape(text) {
-		var ret = document.createElement('p');
-		ret.textContent = text;
-		return ret.innerHTML;
+		return text.replace(/&/g, '&amp;')
+			.replace(/>/g, '&gt;'  ).replace(/</g, '&lt;' )
+			.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 	}
 
 	/**
@@ -115,7 +115,7 @@ define([], function() {
 	function renderLink(text, passage) {
 		return '<tw-link class="link" passage-expr="' + escape(passage) + '">' + (text || passage) + '</tw-link>';
 	}
-	
+
 	/*
 		Text constant used by align().
 		The string "text-align: " is selected by the debugmode CSS, so the one space
@@ -137,8 +137,6 @@ define([], function() {
 		*/
 		options: {},
 		
-		enclosingMacros: [],
-		
 		/**
 			Export these utility functions, so that Utils need not redefine them.
 			They're pretty uniquely tied to the Twine code parsing field.
@@ -153,7 +151,7 @@ define([], function() {
 		},
 		
 		/**
-			The main rendering method.
+			The recursive rendering method.
 			
 			@method render
 			@static
@@ -164,12 +162,8 @@ define([], function() {
 			var token,
 				// Cache the tokens array length
 				len,
-				// Used as a temporary storage for strings to be appended to out
-				temp,
 				// Hoisted var, used only by the numbered/bulleted case
 				tagName,
-				// Hoisted var, used by the macro case
-				macroNesting,
 				// Hoisted vars, used only by the align case
 				style, body, align, j,
 				
@@ -246,50 +240,6 @@ define([], function() {
 						}
 						break;
 					}
-					case "macro": {
-						out += '<tw-macro name="' + token.name.replace(/"/g,'&quot;')
-							+ '" call="' + tokens[i].text.replace(/"/g,'&quot;');
-						temp = '';
-						
-						/*
-							Certain macro tags come in tag/endtag pairs, and enclose code.
-							This code must not be inserted into the DOM, but rather attached to the
-							call attribute of the tw-macro element.
-						*/
-						if (Renderer.enclosingMacros.indexOf(token.name) > -1) {
-							/*
-								Crankforward until the end tag is found.
-							*/
-							macroNesting = 0;
-							while(i++ < len && tokens[i]) {
-								
-								if (tokens[i].type === token.type) {
-									/*
-										Handle arbitrarily nested tags by increasing the nesting counter.
-										If only there was a way to abstract this kind of low-level algorithm.
-									*/
-									if (tokens[i].name === token.name) {
-										macroNesting += 1;
-									}
-									/*
-										Only when the nesting level is 0 are we finished.
-									*/
-									else if (tokens[i].name.match("^(?:\\/|end)" + token.name + "$")) {
-										if (macroNesting) {
-											macroNesting -= 1;
-										}
-										else {
-											break;
-										}
-									}
-								}
-								temp += tokens[i].text;
-							}
-							temp = '" contents="' + temp.replace(/"/g,'&quot;');
-						}
-						out += temp + '"></tw-macro>';
-						break;
-					}
 					case "heading": {
 						out += renderTag(token, 'h' + token.depth);
 						break;
@@ -311,7 +261,7 @@ define([], function() {
 						break;
 					}
 					case "url": {
-						out += '<a class="link" href="' + token.text + '">' + charSpanify(token.text) + '</a>';
+						out += '<a class="link" href="' + escape(token.text) + '">' + charSpanify(token.text) + '</a>';
 						break;
 					}
 					case "tag": {
@@ -337,14 +287,45 @@ define([], function() {
 						break;
 					}
 					case "hook": {
-						out += '<tw-hook name="' + token.hookName + '"'
+						out += '<tw-hook name="' + token.name + '"'
 							// Debug mode: show the hook destination as a title.
-							+ (Renderer.options.debug ? ' title="Hook: ?' + token.hookName + '"' : '') + '>'
-							// If a hook is empty, fill it with a zero-width space,
-							// so that it can still be used as a scope.
-							+ (render(token.children) || charSpanify("&zwnj;")) + '</tw-hook>';
+							+ (Renderer.options.debug ? ' title="Hook: ?' + token.name + '"' : '')
+							+ ' code="' + escape(token.innerText) + '">'
+							// Insert a non-breaking space so that the hook can be selected
+							// and used in a Scope.
+							+'&#8203;'
+							+'</tw-hook>';
 						break;
 					}
+					/*
+						Expressions
+					*/
+					case "hookRef":
+					case "variable": 
+					case "macro": {
+						out += '<tw-expression type="' + token.type + '" name="' + token.name + '"'
+							// Debug mode: show the macro name as a title.
+							+ (Renderer.options.debug ? ' title="' + escape(token.text) + '"' : '')
+							+ ' js="' + escape(twineParser(token)) + '">'
+							+ '</tw-expression>';
+						break;
+					}
+					/*
+					case "is":
+					case "to":
+					case "or":
+					case "and":
+					case "not":
+					case "isNot": {
+						out += '<tw-operator text="' + token.text + '" name="' + token.type + '"></tw-operator>';
+						break;
+					}
+					case "number":
+					case "boolean":
+					case "string": {
+						out += token.text;
+						break;
+					}*/
 					/*
 						Base case
 					*/
