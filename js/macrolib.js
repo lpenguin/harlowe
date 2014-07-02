@@ -1,4 +1,4 @@
-define(['jquery', 'twinemarked', 'story', 'script', 'state', 'macros', 'wordarray', 'scope', 'engine', 'utils'], function($, TwineMarked, Story, Script, State, Macros, WordArray, Scope, Engine, Utils) {
+define(['jquery', 'twinemarkup', 'story', 'state', 'macros', 'wordarray', 'scope', 'engine', 'utils'], function($, TwineMarkup, Story, State, Macros, WordArray, Scope, Engine, Utils) {
 	"use strict";
 	/*
 		Twine macro standard library.
@@ -143,8 +143,9 @@ define(['jquery', 'twinemarked', 'story', 'script', 'state', 'macros', 'wordarra
 	// using each delay in order.
 	function newTimedMacroFn(innerFn) {
 		return function timedMacroFn(delays /*variadic */) {
-			delays = [].slice.call(arguments,0);
-
+			// TODO: proper type checking
+			delays = [].filter.call(arguments,
+				function(e) { return !isNaN(+e); });
 			if (delays.length) {
 				return function(hook, top) {
 					var code = hook.attr('code');
@@ -253,7 +254,6 @@ define(['jquery', 'twinemarked', 'story', 'script', 'state', 'macros', 'wordarra
 					...it runs immediately.
 				*/
 				if (!enchantDesc) {
-console.log("no enchantdesc");console.log(innerFn);
 					eventFn();
 					return;
 				}

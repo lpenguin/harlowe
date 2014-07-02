@@ -1,15 +1,15 @@
 /**
-	TwineMarked, by Leon Arnott
+	TwineMarkup, by Leon Arnott
 	based on marked: a markdown parser
 	Copyright (c) 2011-2014, Christopher Jeffrey. (MIT Licensed)
 	https://github.com/chjj/marked/tree/43db549e31af5ff6e4a3b12e41a23513b9f88c99
 	
-	@module TwineMarked
+	@module TwineMarkup
 */
 ;(function () {
 	"use strict";
 	
-	var RegExpStrings, Lexer, TwineMarked;
+	var RegExpStrings, Lexer, TwineMarkup;
 
 	/*
 		The RegExpStrings are the raw strings used by the lexer to match tokens.
@@ -415,7 +415,7 @@
 				Artificial types (non-JS primitives)
 			*/
 			
-			cssTime: "\\b(\\d+)(m?s)\\b",
+			cssTime: "\\b(\\d+\\.?\\d*|\\d*\\.?\\d+)(m?s)\\b",
 			
 			/*
 				Natural types
@@ -727,7 +727,7 @@
 		
 		@method rules
 		@private
-		@for TwineMarked
+		@for TwineMarkup
 	*/
 	function rules(state) {
 		// TODO: reimplement backslash-escapes
@@ -954,14 +954,14 @@
 	Lexer = rules(lexerInnerState());
 	
 	/**
-		Export the TwineMarked module.
+		Export the TwineMarkup module.
 		
 		Since this is a light freeze, Utils and RegExpStrings are still modifiable.
 		
-		@class TwineMarked
+		@class TwineMarkup
 		@static
 	*/
-	TwineMarked = Object.freeze({
+	TwineMarkup = Object.freeze({
 		
 		/**
 			@method lex
@@ -978,15 +978,14 @@
 		RegExpStrings: RegExpStrings
 	});
 	if(typeof module === 'object') {
-		module.exports = TwineMarked;
+		module.exports = TwineMarkup;
 	}
 	else if(typeof define === 'function' && define.amd) {
-		define("twinemarked",[],function () {
-			return TwineMarked;
+		define("twinemarkup",[],function () {
+			return TwineMarkup;
 		});
 	}
 	else {
-		this.TwineMarked = TwineMarked;
+		this.TwineMarkup = TwineMarkup;
 	}
-window.TwineMarked = TwineMarked;
 }).call(this || (typeof global !== 'undefined' ? global : window));

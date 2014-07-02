@@ -1,5 +1,5 @@
-define(['jquery', 'twinemarked', 'renderer', 'story', 'utils', 'selectors', 'state', 'script'], 
-function ($, TwineMarked, Renderer, Story, Utils, Selectors, State, Script) {
+define(['jquery', 'twinemarkup', 'renderer', 'story', 'utils', 'selectors', 'state', 'twinescript'], 
+function ($, TwineMarkup, Renderer, Story, Utils, Selectors, State, TwineScript) {
 	"use strict";
 	
 	/**
@@ -88,7 +88,7 @@ function ($, TwineMarked, Renderer, Story, Utils, Selectors, State, Script) {
 	var
 		/*
 			These two vars cache the previously rendered source text, and the syntax tree returned by
-			TwineMarked.lex from that.
+			TwineMarkup.lex from that.
 		*/
 		renderCacheKey,
 		renderCacheValue,
@@ -214,7 +214,7 @@ function ($, TwineMarked, Renderer, Story, Utils, Selectors, State, Script) {
 					html = renderCacheValue;
 				}
 				else {
-					html = Renderer.render(TwineMarked.lex(source));
+					html = Renderer.render(TwineMarkup.lex(source));
 					renderCacheKey = source;
 					renderCacheValue = html;
 				}
@@ -279,7 +279,7 @@ function ($, TwineMarked, Renderer, Story, Utils, Selectors, State, Script) {
 							If this returns a falsy non-string non-zero, don't print it,
 							but regard it as a value to disable
 						*/
-						result = Script.environ(top).eval(call);
+						result = TwineScript.environ(top).eval(call);
 						
 						/*
 							Apply the value to the hook.
@@ -330,10 +330,10 @@ function ($, TwineMarked, Renderer, Story, Utils, Selectors, State, Script) {
 							visited = (State.passageNameVisited(passage));
 						} else {
 							// Is it a code link?
-							//try {
-								passage = Script.environ().eval(passage);
+							try {
+								passage = TwineScript.environ(top).eval(passage);
 								Story.passageNamed(passage) && (visited = (State.passageNameVisited(passage)));
-							//} catch(e) { /* pass */ }
+							} catch(e) { /* pass */ }
 							
 							// Not an internal link?
 							if (!~visited) {

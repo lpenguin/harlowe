@@ -1,4 +1,4 @@
-<tw-storydata name="CSS test" startnode="2" creator="Twine" creator-version="2.0p2"><style role="stylesheet" id="twine-user-stylesheet" type="text/twine-css"></style><script role="script" id="twine-user-script" type="text/twine-javascript"></script><tw-passagedata pid="1" name="Text styles" position="257.5,298.5">*italic*
+<tw-storydata name="CSS test" startnode="3" creator="Twine" options="debug" creator-version="2.0p2"><style role="stylesheet" id="twine-user-stylesheet" type="text/twine-css"></style><script role="script" id="twine-user-script" type="text/twine-javascript"></script><tw-passagedata pid="1" name="Text styles" position="257.5,298.5">*italic*
 **bold**
 &lt;mark&gt;marker&lt;/mark&gt;
 &lt;ins&gt;correction fluid&lt;/ins&gt;
@@ -36,66 +36,60 @@ Hover over the macros to examine them.
 [[Broken Link|basement]]
 
 ####Invalid macro:
-&lt;&lt;clowns vehicle = &quot;Unicycle&quot; &gt;&gt;
+clowns()
 
 ####Display and Display error:
-&lt;&lt;display &quot;displayed&quot; &gt;&gt;
-&lt;&lt;display &quot;basement&quot; &gt;&gt;
+display("displayed")
 
 ####Self-referential Display error:
-&lt;&lt;display &quot;one&quot; &gt;&gt;
+TODO
 
 ####Set and Print:
-&lt;&lt;set $red = &quot;Crimson&quot; &gt;&gt; &lt;&lt;set $blue = &quot;Indigo&quot; &gt;&gt; &lt;&lt;set $green = &quot;Emerald&quot; &gt;&gt;
-You have a &lt;&lt;print $blue&gt;&gt; Brooch and &lt;&lt;print random(2,8) &gt;&gt; &lt;&lt;print $green + &quot;s&quot; &gt;&gt;.
+set($red to "crimson") set($blue = "Indigo") set($green = "Emerald")
+You have a $blue Brooch and print(random(2,8)) print($green + "s").
 
 ####Print error:
-Square root of -1 is &lt;&lt;print sqrt(-1)&gt;&gt;.
-You visited the basement &lt;&lt;print visited(&quot;basement&quot;)&gt;&gt; times.
+Square root of -1 is print(sqrt(-1)).
+You visited the basement visited("basement") times.
 
 ####If:
-&lt;&lt;if true&gt;&gt;
-&#x27;if&#x27; is functional!
-&lt;&lt;set $red to &quot;Crimson&quot; &gt;&gt;
-&lt;&lt;display &quot;displayed&quot; &gt;&gt;
-&lt;&lt;/if&gt;&gt;
+if(true)[
+if is functional!
+set($red to "Crimson")
+display("displayed")
+][a]
 
 ####False If:
-&lt;&lt;if false is true&gt;&gt;
-false &#x27;if&#x27;
-&lt;&lt;/if&gt;&gt;
+if(false)[
+false if
+][a]
 
 ####False If, True Else:
-&lt;&lt;if false is true&gt;&gt;
-&#x27;if&#x27; is functional!
-&lt;&lt;else if true&gt;&gt;
-&#x27;else if&#x27; is functional!
-&lt;&lt;else&gt;&gt;
-&#x27;else&#x27; is functional!
-&lt;&lt;/if&gt;&gt;
+if(false)[
+"if"is functional!
+][a]
+elseif(true)[
+"else if" is functional!
+][a]
+else()[
+"else" is functional!
+][a]
 
 ####Nested If:
-&lt;&lt;if $red is &quot;Crimson&quot;&gt;&gt;
-&lt;&lt;if $blue is not &quot;Cyan&quot;&gt;&gt;
-Nested &#x27;if&#x27; is functional!
-&lt;&lt;/if&gt;&gt;
-&lt;&lt;if $blue is not &quot;Indigo&quot;&gt;&gt;
+if($red is "Crimson")[
+if($blue is not "Cyan")[
+Nested "if" is functional!
+][a]
+if($blue is not "Indigo")[
 ERROR
-&lt;&lt;/if&gt;&gt;
-&lt;&lt;/if&gt;&gt;
-
-####Script and Style:
-&lt;&lt;script&gt;&gt;
-document.title = &quot;Twine 2 debug mode demo 1&quot;
-&lt;&lt;/script&gt;&gt;&lt;&lt;style&gt;&gt;
-b { background-color: PapayaWhip; }
-&lt;&lt;/style&gt;&gt;
+][a]
+][a]
 
 ####Hooks, Click and Replace:
 [This][1] is a hook.
-&lt;&lt;click ?1&gt;&gt;Suddenly, the tunnel collapses...&lt;&lt;/click&gt;&gt;
+click(?1)[Suddenly, the tunnel collapses...][a]
 [This][2] is another hook[.][3]
-&lt;&lt;click ?2&gt;&gt;\
-&lt;&lt;replace ?3&gt;&gt; (as is this one).&lt;&lt;/replace&gt;&gt;
-&lt;&lt;/click&gt;&gt;</tw-passagedata><tw-passagedata pid="4" name="tower" position="744.5,521.5">This is the &#x27;tower&#x27; passage.</tw-passagedata><tw-passagedata pid="5" name="conservatory" position="894.5,521.5">This is the &#x27;conservatory&#x27; passage.</tw-passagedata><tw-passagedata pid="6" name="basement" position="1044.5,521.5">This is the &#x27;basement&#x27; passage.</tw-passagedata><tw-passagedata pid="7" name="waterfall" position="752.5,396.5">This is the &#x27;waterfall&#x27; passage.</tw-passagedata></tw-storydata>
+click(?2)[
+replace(?3)[ (as is this one).][a]
+][a]</tw-passagedata><tw-passagedata pid="4" name="tower" position="744.5,521.5">This is the &#x27;tower&#x27; passage.</tw-passagedata><tw-passagedata pid="5" name="conservatory" position="894.5,521.5">This is the &#x27;conservatory&#x27; passage.</tw-passagedata><tw-passagedata pid="6" name="basement" position="1044.5,521.5">This is the &#x27;basement&#x27; passage.</tw-passagedata><tw-passagedata pid="7" name="waterfall" position="752.5,396.5">This is the &#x27;waterfall&#x27; passage.</tw-passagedata></tw-storydata>
 

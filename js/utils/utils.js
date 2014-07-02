@@ -1,4 +1,4 @@
-define(['jquery', 'twinemarked', 'renderer', 'selectors', 'customelements'], function($, TwineMarked, Renderer, Selectors) {
+define(['jquery', 'twinemarkup', 'renderer', 'selectors', 'customelements'], function($, TwineMarkup, Renderer, Selectors) {
 	"use strict";
 
 	// Used by HTMLEntityConvert and transitionTimes
@@ -120,7 +120,7 @@ define(['jquery', 'twinemarked', 'renderer', 'selectors', 'customelements'], fun
 
 			return ret;
 		},
-
+		
 		/*
 			String utilities
 		*/
@@ -147,7 +147,7 @@ define(['jquery', 'twinemarked', 'renderer', 'selectors', 'customelements'], fun
 		*/
 
 		splitUnquoted: function (str, split) {
-			return str.split(new RegExp((split || " ") + TwineMarked.RegExpStrings.unquoted));
+			return str.split(new RegExp((split || " ") + TwineMarkup.RegExpStrings.unquoted));
 		},
 
 		/**
@@ -269,6 +269,100 @@ define(['jquery', 'twinemarked', 'renderer', 'selectors', 'customelements'], fun
 		transitionSelector: function (str) {
 			return (typeof str === "string" && (str.indexOf("t8n-") === 0) && str.slice(4))
 				|| "dissolve";
+		},
+
+		/*
+			HTML utilities
+		*/
+		
+		/**
+			Unescape HTML entities.
+			For speed, convert common entities quickly, and convert others with jQuery.
+
+			@method unescape
+			@param {String} text Text to convert
+			@return {String} converted text
+		*/
+		unescape: function(text) {
+			var ret;
+			if (text.length <= 1)
+				return text;
+
+			switch (text) {
+				case "&lt;":
+					return '<';
+				case "&gt;":
+					return '>';
+				case "&amp;":
+					return '&';
+				case "&quot;":
+					return '"';
+				case "&#39;":
+					return "'";
+				case "&nbsp;":
+					return String.fromCharCode(160);
+				case "&zwnj;":
+					return String.fromCharCode(8204);
+				default:
+					ret = document.createElement('p');
+					ret.innerHTML = text;
+					return ret.textContent;
+			}
+		},
+
+		/**
+			HTML-escape a string.
+			
+			@method escape
+			@param {String} text Text to escape
+			@return {String} converted text
+		*/
+		escape: function(text) {
+			return text.replace(/&/g, '&amp;')
+				.replace(/>/g, '&gt;'  ).replace(/</g, '&lt;' )
+				.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+		},
+
+		/**
+			Takes a string containing a character or HTML entity, and wraps it into a
+			<tw-char> tag, converting the entity if it is one.
+
+			@method charToSpan
+			@param {String} character
+			@return {String} Resultant HTML
+		*/
+		charToSpan: function(c) {
+			// Use single-quotes if the char is a double-quote.
+			var quot = (c === "&#39;" ? '"' : "'"),
+				value = unescape(c);
+			switch(value) {
+				case ' ': {
+					value = "space";
+					break;
+				}
+				case '\t': {
+					value = "tab";
+					break;
+				}
+			}
+			return "<tw-char value=" +
+				quot + value + quot + ">" +
+				c + "</tw-char>";
+		},
+
+		/**
+			Converts an entire string into individual characters, each enclosed
+			by a <tw-char>.
+
+			@method charSpanify
+			@param {String} text Source string
+			@return {String} Resultant HTML
+		*/
+		charSpanify: function(text) {
+			if (typeof text !== "string") {
+				throw new Error("charSpanify received a non-string:" + text);
+			}
+			return text.replace(/&[#\w]+;|./g, Utils.charToSpan);
 		},
 		
 		/*
@@ -484,8 +578,6 @@ define(['jquery', 'twinemarked', 'renderer', 'selectors', 'customelements'], fun
 		
 		storyElement: $("tw-story")
 	};
-	
-	$.extend(Utils, Renderer.Utils);
 	
 	Utils.log("Utils module ready!");
 	
