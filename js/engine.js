@@ -280,7 +280,6 @@ function ($, TwineMarkup, Renderer, Story, Utils, Selectors, State, TwineScript)
 							but regard it as a value to disable
 						*/
 						result = TwineScript.environ(top).eval(call);
-						
 						/*
 							Apply the value to the hook.
 						*/
@@ -357,6 +356,10 @@ function ($, TwineMarkup, Renderer, Story, Utils, Selectors, State, TwineScript)
 	};
 	
 	Utils.log("Engine module ready!");
-	
+	/*
+	DEBUG
+	*/
+	window.REPL = function(a) { var r = TwineScript.compile(TwineMarkup.lex("print("+a+")"));console.log(r);return TwineScript.environ().eval(r);};
+	window.LEX = function(a) { var r = TwineMarkup.lex(a); return (r.length===1 ? r[0] : r); };
 	return Object.freeze(Engine);
 });

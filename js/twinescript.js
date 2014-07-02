@@ -1,9 +1,9 @@
 /*jshint unused:false */
-define(['utils', 'macros', 'wordarray'], function(Utils, Macros, WordArray) {
+define(['utils', 'macros', 'wordarray', 'state'], function(Utils, Macros, WordArray, State) {
 	"use strict";
 	
 	// JShint's "unused" variables accessible to eval()
-	Macros; WordArray;
+	Macros, WordArray, State;
 	
 	/**
 		A module that handles the compilation and execution of Twine
@@ -21,7 +21,7 @@ define(['utils', 'macros', 'wordarray'], function(Utils, Macros, WordArray) {
 		Converts a function to type-check its two arguments before
 		execution, and thus suppress JS type coercion.
 	*/
-	function doNotCoerce(left, right, fn) {
+	function doNotCoerce(fn) {
 		return function(left, right) {
 			if (typeof left !== typeof right) {
 				return new TypeError(left + " isn't the same type of data as " + right);
@@ -33,16 +33,21 @@ define(['utils', 'macros', 'wordarray'], function(Utils, Macros, WordArray) {
 		};
 	}
 	
+	/*
+		This is a list of operations which TwineScript proxies for JavaScript.
+		Most of these have implicit type coercion or silent errors which must
+		be dealt with.
+	*/
 	var Operation = {
 	
-		add: doNotCoerce(function(left, right) {
-			return left + right;
-		}),
+		add:      doNotCoerce(function(l, r) { return l + r; }),
+		subtract: doNotCoerce(function(l, r) { return l - r; }),
+		multiply: doNotCoerce(function(l, r) { return l * r; }),
+		divide:   doNotCoerce(function(l, r) { return l / r; }),
+		modulo:   doNotCoerce(function(l, r) { return l % r; }),
 		
-		subtract: doNotCoerce(function(left, right) {
-			return left - right;
-		})
 	};
+	
 	/*
 		A helper function for compile()
 	*/
@@ -69,12 +74,23 @@ define(['utils', 'macros', 'wordarray'], function(Utils, Macros, WordArray) {
 	function compile(array) {
 		var i, left, right, type,
 			/*
-				Setting to either of these
+				Hoisted temp variables
+			*/
+			compiledLeft,
+			/*
+				Setting values to either of these
 				determines the code to emit: for midString, a plain
-				JS infix operation between left and right; for callString, an
+				JS infix operation between left and right; for operation, an
 				Operation method call with left and right as arguments.
 			*/
-			midString, callString;
+			midString, operation,
+			/*
+				Some operators, like >, don't work when the other side is absent,
+				even when people expect them to. e.g. $var > 3 and < 5 (which is
+				legal in Inform 6). To cope, I implicitly convert a blank left side to
+				"it", which is the nearest previous left-hand operand.
+			*/
+			implicitLeftIt = false;
 		
 		if (!array) {
 			return;
@@ -115,19 +131,12 @@ define(['utils', 'macros', 'wordarray'], function(Utils, Macros, WordArray) {
 		else if ((i = indexOfType(array, "not")) >-1) {
 			midString = "!";
 		}
-		else if ((i = indexOfType(array, "multiply", "divide", "modulo")) >-1) {
-			type = array[i].type;
-			midString =
-				( type === "multiply" ? "*"
-				: type === "divide"   ? "/"
-				: "%");
-		}
-		else if ((i = indexOfType(array, "add", "subtract")) >-1) {
-			callString =
-				( array[i].type === "add" ? "add" : "subtract" );
+		else if ((i = indexOfType(array, "add", "subtract", "multiply", "divide", "modulo")) >-1) {
+			operation = array[i].type;
 		}
 		else if ((i = indexOfType(array, "lt", "lte", "gt", "gte")) >-1) {
 			type = array[i].type;
+			implicitLeftIt = true;
 			midString =
 				( type === "lt"   ? " < "
 				: type === "lte"  ? " <= "
@@ -141,7 +150,6 @@ define(['utils', 'macros', 'wordarray'], function(Utils, Macros, WordArray) {
 			midString =
 				( array[i].type === "and" ? " && " : " || " );
 		}
-
 		else if ((i = indexOfType(array, "to")) >-1) {
 			midString = " = ";
 		}
@@ -156,14 +164,19 @@ define(['utils', 'macros', 'wordarray'], function(Utils, Macros, WordArray) {
 		/*
 			Recursive case
 		*/
-		if (i >-1) {
-			right = array.splice(i + 1);
-			left  = array.slice (0,  i);
-			if (midString) {
-				return compile(left) + midString + compile(right);
+		if (i >- 1) {
+			right = right || array.splice(i + 1);
+			left  = left  || array.slice (0,  i);
+			
+			compiledLeft = compile(left);
+			if (implicitLeftIt && !(compiledLeft.trim())) {
+				compiledLeft = " it ";
 			}
-			else if (callString) {
-				return " Operation." + callString + "(" + left + "," + right + ") ";
+			if (midString) {
+				return compiledLeft + midString + compile(right);
+			}
+			else if (operation) {
+				return " Operation." + operation + "(" + compiledLeft + "," + compile(right) + ") ";
 			}
 		}
 		/*
@@ -187,7 +200,6 @@ define(['utils', 'macros', 'wordarray'], function(Utils, Macros, WordArray) {
 			eval: function(/* variadic */) {
 				// This specifically has to be a "direct eval()" - calling eval() "indirectly"
 				// makes it run in global scope.
-				console.log([].join.call(arguments, ''));
 				try {
 					// This specifically has to be a "direct eval()" - calling eval() "indirectly"
 					// makes it run in global scope.
@@ -209,7 +221,6 @@ define(['utils', 'macros', 'wordarray'], function(Utils, Macros, WordArray) {
 	});
 	
 	Utils.log("TwineScript module ready!");
-	
 	return TwineScript;
 	/*jshint unused:true */
 });

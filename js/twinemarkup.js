@@ -197,6 +197,8 @@
 		
 		var ws = "\\s*",
 			
+			wb = "\\b",
+			
 			// Checks if text appears before line-breaks or end-of-input.
 			eol = "(?=\\n+|$)",
 			
@@ -439,17 +441,32 @@
 				Macro operators
 			*/
 			
-			is: "\\b" + caseInsensitive("is") + notBefore(" not") + "\\b",
+			is:        wb + caseInsensitive("is") + notBefore(" not") + wb,
 			
-			to: "\\b" + either(caseInsensitive("to"), "=") + "\\b",
+			to:        wb + either(caseInsensitive("to"), "=") + wb,
 			
-			and: "\\b" + either(caseInsensitive("and"), "&&") + "\\b",
+			and:       wb + either(caseInsensitive("and"), "&&") + wb,
 			
-			or: "\\b" + either(caseInsensitive("or"), "\\|\\|") + "\\b",
+			or:        wb + either(caseInsensitive("or"), "\\|\\|") + wb,
 			
-			not: "\\b" + either(caseInsensitive("not"), "!") + "\\b",
+			not:       wb + either(caseInsensitive("not"), "!") + wb,
 			
-			isNot: "\\b" + either(caseInsensitive("is not"), "!==") + "\\b",
+			isNot:     wb + either(caseInsensitive("is not"), "!==") + wb,
+			
+			add:       "\\+",
+			
+			subtract:  "\\-",
+			
+			multiply:  "\\*",
+			
+			divide:    "\\\/",
+			
+			modulo:    "%",
+			
+			lt:        "<",
+			lte:       "<=",
+			gt:        ">",
+			gte:       ">=",
 			
 			grouping:
 				new RecursiveExpression(
@@ -477,6 +494,39 @@
 		}
 		return obj;
 	}
+	
+	/*
+		Just some basic methods that iterate over tokens' children,
+		that tokens can call upon.
+	*/
+	var tokenPrototype = {
+		/*
+			Run a function on this token and all its children.
+		*/
+		forEach: function forEach(fn) {
+			fn(this);
+			this.children.forEach(function() { forEach(fn); });
+		},
+		/*
+			Runs a function on every leaf token in the tree,
+			and returns true if all returned truthy values.
+		*/
+		everyLeaf: function everyLeaf(fn) {
+			var ret;
+			if (!this.children || this.children.length === 0) {
+				return !!fn(this);
+			}
+			return this.children.everyLeaf(function() { ret = ret && !!everyLeaf(fn); });
+		},
+		/*
+			Check if all leaf nodes contain just whitespace.
+		*/
+		isWhitespace: function isWhitespace() {
+			return this.every(function(e) {
+				return !e.text.trim();
+			});
+		}
+	};
 	
 	/*
 		Returns an object representing a lexer's inner state, methods to permute
@@ -520,12 +570,16 @@
 				*/
 			}
 			
-			states[0].tokens.push(merge({
+			states[0].tokens.push(merge(Object.create(tokenPrototype),
+			{
 				type: type,
 				start: states[0].pos,
 				end: states[0].pos + match[0].length,
 				text: match[0],
-				children: children
+				children: children,
+				/*
+					And now for some methods.
+				*/
 			}, data));
 		}
 		
@@ -931,20 +985,20 @@
 			},
 			hookRef:  { match:   r("hookRef"), expression: true, fn: textPusher("hookRef", "name") },
 			variable: { match:  r("variable"), expression: true, fn: textPusher("variable", "name") },
-			string:   { match:    r("string"), macro: true, fn: pusher("string") },
-			boolean:  { match:   r("boolean"), macro: true, fn: pusher("boolean") },
-			is:       { match:        r("is"), macro: true, fn: pusher("is") },
-			to:       { match:        r("to"), macro: true, fn: pusher("to") },
-			or:       { match:        r("or"), macro: true, fn: pusher("or") },
-			and:      { match:       r("and"), macro: true, fn: pusher("and") },
-			not:      { match:       r("not"), macro: true, fn: pusher("not") },
-			isNot:    { match:     r("isNot"), macro: true, fn: pusher("isNot") },
 			grouping: { match:  r("grouping"), macro: true, fn: textPusher("grouping") },
-			comma:    { match:     r("comma"), macro: true, fn: pusher("comma") },
 			
 			// The text rule has no match RegExp
 			text:     { match:         null, fn:     pusher("text") },
-		});
+		},
+		/*
+			Some macro-only tokens
+		*/
+		["string", "boolean", "is", "to", "and", "or", "not", "isNot", "comma",
+		"add", "subtract", "multiply", "divide", "modulo", "lt", "lte", "gt", "gte"].reduce(function(a, e) {
+			a[e] = { match: r(e), macro: true, fn: pusher(e) };
+			return a;
+		},{})
+		);
 		return state;
 	}
 	
