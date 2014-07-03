@@ -54,17 +54,6 @@
 		}
 		
 		/*
-			A sugar REstring function for matching a sequence of characters prior to a terminator.
-		*/
-		/*
-		function notTerminator(terminator) {
-			return terminator.length === 1
-				? notChars(terminator)
-				: "(?:[^" + terminator[0] + "]*|" + terminator[0] + "(?!" + terminator.slice(1) + "))";
-		}
-		*/
-		
-		/*
 			Creates sugar functions which put multiple REstrings into parentheses, separated with |,
 			thus producing a capturer or a lookahead.
 		*/
@@ -127,6 +116,10 @@
 				e = m;
 				m = null;
 			}
+			var start  =       new RegExp("^" + s),
+				nester = (m && new RegExp("^" + m)),
+				end    =       new RegExp("^" + e);
+			
 			return {
 				/*
 					Accepts a string, and tries to match it.
@@ -138,9 +131,7 @@
 					The array lacks index and input properties.
 				*/
 				exec: function exec(src) {
-					var start  =       new RegExp("^" + s),
-						nester = (m && new RegExp("^" + m)),
-						end    =       new RegExp("^" + e),
+					var
 						// Temp variable for tag match checks
 						startMatch = start.exec(src),
 						nesting = 0,
@@ -426,6 +417,9 @@
 			
 			boolean: "(true|false|null|undefined)",
 			
+			// There's only one special identifier currently.
+			identifier: "it",
+			
 			string: 
 				"(" + either(
 					// Single strings					
@@ -441,32 +435,26 @@
 				Macro operators
 			*/
 			
-			is:        wb + caseInsensitive("is") + notBefore(" not") + wb,
-			
+			is:        wb + caseInsensitive("is") + notBefore(" not", " in") + wb,
 			to:        wb + either(caseInsensitive("to"), "=") + wb,
-			
 			and:       wb + either(caseInsensitive("and"), "&&") + wb,
-			
 			or:        wb + either(caseInsensitive("or"), "\\|\\|") + wb,
-			
 			not:       wb + either(caseInsensitive("not"), "!") + wb,
-			
 			isNot:     wb + either(caseInsensitive("is not"), "!==") + wb,
-			
-			add:       "\\+",
-			
-			subtract:  "\\-",
-			
-			multiply:  "\\*",
-			
-			divide:    "\\\/",
-			
-			modulo:    "%",
 			
 			lt:        "<",
 			lte:       "<=",
 			gt:        ">",
 			gte:       ">=",
+			
+			isIn:      wb + caseInsensitive("is in") + wb,
+			contains:  wb + caseInsensitive("contains") + wb,
+
+			add:       "\\+",
+			subtract:  "\\-",
+			multiply:  "\\*",
+			divide:    "\\\/",
+			modulo:    "%",
 			
 			grouping:
 				new RecursiveExpression(
@@ -474,7 +462,7 @@
 					"\\)"
 				),
 			
-			comma: "\\b,\\b",
+			comma: ",",
 		};
 	}());
 	
@@ -993,8 +981,9 @@
 		/*
 			Some macro-only tokens
 		*/
-		["string", "boolean", "is", "to", "and", "or", "not", "isNot", "comma",
-		"add", "subtract", "multiply", "divide", "modulo", "lt", "lte", "gt", "gte"].reduce(function(a, e) {
+		["string", "boolean", "identifier", "is", "to", "and", "or", "not", "isNot", "comma",
+		"add", "subtract", "multiply", "divide", "modulo", "lt", "lte", "gt", "gte",
+		"contains", "isIn"].reduce(function(a, e) {
 			a[e] = { match: r(e), macro: true, fn: pusher(e) };
 			return a;
 		},{})
