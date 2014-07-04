@@ -280,6 +280,15 @@ function ($, TwineMarkup, Renderer, Story, Utils, Selectors, State, TwineScript)
 							but regard it as a value to disable
 						*/
 						result = TwineScript.environ(top).eval(call);
+						
+						/*
+							Don't pass it on if it's an error.
+						*/
+						if (result instanceof Error) {
+							el.addClass('error').text(result.message);
+							break;
+						}
+						
 						/*
 							Apply the value to the hook.
 						*/

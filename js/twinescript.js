@@ -18,8 +18,14 @@ define(['utils', 'macros', 'wordarray', 'state'], function(Utils, Macros, WordAr
 		Script.environ() relies on to be in scope.
 	*/
 	
+	/*
+		If the arguments contain an Error, return that error.
+		Maybe in the future, there could be a way to concatenate multiple
+		errors into a single "report"...
+	*/
 	function isRuntimeError(/*variadic*/) {
-		return [].some.call(arguments,function(e) { return e instanceof Error; });
+		return [].reduceRight.call(arguments,
+			function(last, e) { return e instanceof Error ? e : last; }, false);
 	}
 	
 	var
@@ -128,6 +134,29 @@ define(['utils', 'macros', 'wordarray', 'state'], function(Utils, Macros, WordAr
 				isIn: comparisonOp(function(l,r) {
 					return contains(r,l);
 				}),
+				/*
+					Runs a macro.
+				*/
+				runMacro: function(name, args /*variadic*/) {
+					var fn, error;
+					
+					args = [].slice.call(arguments,1);
+					
+					/*
+						Check the arguments to see if an error is among them.
+					*/
+					if ((error = isRuntimeError.apply(null, args))) {
+						return error;
+					}
+					
+					name = name.toLowerCase();
+					if (!Macros.has(name)) {
+						return new ReferenceError("Unknown macro: " + name);
+					}
+					fn = Macros.get(name.toLowerCase());
+					
+					return fn.apply(null, args);
+				}
 			};
 		}());
 	
@@ -249,7 +278,7 @@ define(['utils', 'macros', 'wordarray', 'state'], function(Utils, Macros, WordAr
 			midString = "!";
 		}
 		else if ((i = indexOfType(array, "macro")) >-1) {
-			midString = 'Macros.run("' + array[i].name + '",' + compile(array[i].children) + ')';
+			midString = 'Operation.runMacro("' + array[i].name + '",' + compile(array[i].children) + ')';
 		}
 		else if ((i = indexOfType(array, "grouping")) >-1) {
 			midString = "(" + compile(array[i].children) + ")";
@@ -312,6 +341,7 @@ define(['utils', 'macros', 'wordarray', 'state'], function(Utils, Macros, WordAr
 					Utils.impossible("TwineScript.environ().eval",
 						"Javascript error:\n\t" + [].join.call(arguments, '')
 						+ "\n" + e.message);
+					return e;
 				}
 			}
 		};

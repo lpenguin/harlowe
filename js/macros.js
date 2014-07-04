@@ -135,27 +135,6 @@ function($, Story, Utils, Selectors) {
 			$(document.documentElement).off(eventName).on(eventName, list, enchantmentEventFn);
 			// Add to registry
 			enchantmentEventRegistry[name] = list;
-		},
-		
-		/**
-			Runs a macro.
-			
-			@method run
-			@param {String} name Name of the macro to run.
-			@param args Arguments to pass to the macro.
-			@return The result of running the macro's function.
-		*/
-		run: function(name, args /*variadic*/) {
-			var fn;
-			
-			name = name.toLowerCase();
-			if (!Macros.has(name)) {
-				return "Unknown macro: " + name;
-			}
-			fn = Macros.get(name.toLowerCase());
-			args = [].slice.call(arguments,1);
-			
-			return fn.apply(null, args);
 		}
 	};
 	

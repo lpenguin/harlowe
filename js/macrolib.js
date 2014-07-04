@@ -41,7 +41,7 @@ define(['jquery', 'twinemarkup', 'story', 'state', 'macros', 'wordarray', 'scope
 
 	// print()
 	Macros.add("print", function (expr) {
-		return expr;
+		return expr+"";
 	});
 
 	// if() / elseif() / else()
