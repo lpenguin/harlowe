@@ -11,7 +11,6 @@ function($, TwineMarkup, Story, State, Macros, WordArray, Scope, Engine, Utils) 
 		the macro evaluates to.
 		
 	*/
-	
 	function renderInto(code, dest, top, prepend) {
 		var result = Engine.render(code + '', top);
 		if (result) {
@@ -19,19 +18,6 @@ function($, TwineMarkup, Story, State, Macros, WordArray, Scope, Engine, Utils) 
 			Utils.transitionIn(result, "fade-in");
 			Engine.updateEnchantments(top);
 		}
-	}
-	
-	/*
-		Takes a function, and registers it as a value macro.
-		This is a non-live macro that simply produces a value
-		with no expected side-effects.
-	*/
-	function addValue(name, fn) {
-		Macros.add(name, {
-			type: "value",
-			live: false,
-			fn: fn
-		});
 	}
 	
 	/*
@@ -69,7 +55,20 @@ function($, TwineMarkup, Story, State, Macros, WordArray, Scope, Engine, Utils) 
 			fn: fn
 		});
 	}
-	// Sugar
+	
+	/*
+		One problem is that Engine's doExpressions() has no easy way of determining
+		if a function it acquired by evaluating an expression is a changer function.
+		
+		So, by tagging all changer functions with an expando property, they can be duck-typed.
+		
+		It's mandatory that all changer functions' return values pass through
+		this function, sadly.
+		
+		Alternative solution rejected: all changer functions must have the name 'changerFn'
+		or something. (Relying on a function's inner name for anything other than metadata is,
+		I feel, overly ad-hoc.) 
+	*/
 	function changerFn(fn) {
 		fn.changer = true;
 		return fn;
@@ -312,7 +311,7 @@ function($, TwineMarkup, Story, State, Macros, WordArray, Scope, Engine, Utils) 
 				}
 				/*
 					Enchanters differ from normal hooks in that they have the
-					"enchanter" attribute, and they have enchantment data, which
+					"enchanter" attribute, and they have enchantment jQuery data, which
 					is an object holding the macro's enchantment descriptor,
 					the eventFn, and the "top", plus some tiny methods.
 				*/

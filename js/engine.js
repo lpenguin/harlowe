@@ -75,7 +75,7 @@ function ($, TwineMarkup, Renderer, Story, Utils, Selectors, State, TwineScript,
 		}
 		// Create new passage
 		passageCode = Utils.unescape(passageData.html());
-		newPassage = createPassageElement().append(Engine.render(passageCode));
+		newPassage = createPassageElement().append(Engine.render(passageCode, $()));
 		el.append(newPassage);
 		Engine.updateEnchantments(newPassage);
 
@@ -88,7 +88,7 @@ function ($, TwineMarkup, Renderer, Story, Utils, Selectors, State, TwineScript,
 	/**
 		Given a <tw-expression js> freshly rendered from TwineScript,
 		run the expression and return its value, removing the
-		js attribute and rendering the expression inert.
+		js attribute and rendering the <tw-expression> inert.
 		
 		@method runExpression
 		@private
@@ -106,6 +106,60 @@ function ($, TwineMarkup, Renderer, Story, Utils, Selectors, State, TwineScript,
 		return environ.eval(call);
 	}
 	
+	/**
+		This runs the changer functions that changer macros
+		return, and performs the augmentations that they request,
+		on the hooks they specify.
+	*/
+	function runChangerFunction(fn, target, top) {
+		/*
+			This is the "default" ChangerDescriptor.
+			It simply takes the 'code' in the target hook,
+			renders it to the target unaltered, appending
+			the elements, with no special transition.
+		*/
+		var result,
+			desc = {
+				code:             target.attr('code'),
+				transition:       "",
+				transitionTime:   1000,
+				target:           target,
+				append:           "append"
+			};
+		
+		// This line here runs the function.
+		fn(desc);
+		
+		/*
+			If no code is left in the descriptor, do nothing.
+			If there's code but no target, something
+			incorrect has transpired.
+		*/
+		
+		if (!desc.code) {
+			return;
+		}
+		else if (!desc.target) {
+			Utils.impossible("Engine.runChangerFunction",
+				"ChangerDescriptor has code but not a target!");
+			return;
+		}
+		
+		// Render the code
+		result = Engine.render(desc.code + '', top);
+		if (result && !(result instanceof Error)) {
+			// Append it using the descriptor's given jQuery method
+			desc.target[desc.append](result);
+			desc.target.removeAttr('code');
+			// Transition it using the descriptor's given transition
+			if (desc.transition) {
+				Utils.transitionIn(result, desc.transition);
+			}
+			// and update enchantments
+			Engine.updateEnchantments(top);
+		}
+	}
+	
 	var
 		/*
 			These two vars cache the previously rendered source text, and the syntax tree returned by
@@ -113,7 +167,9 @@ function ($, TwineMarkup, Renderer, Story, Utils, Selectors, State, TwineScript,
 		*/
 		renderCacheKey,
 		renderCacheValue,
+		
 		Engine = {
+		
 		/**
 			Moves the game state backward one turn. If there is no previous state, this does nothing.
 
@@ -292,52 +348,35 @@ function ($, TwineMarkup, Renderer, Story, Utils, Selectors, State, TwineScript,
 						*/
 						result = runExpression(el,environ);
 						
+						/*
+							The result can be any of these values, and
+							should be put to use in the following ways:
+							
+							falsy primitive:
+								Remove the nearest hook.
+							stringy primitive:
+								Print into the passage.
+							thunk:
+								Unwrap the thunk, then continue.
+							function with .changer property:
+								Assume this was returned by a changer macro.
+								Call runChangerFunction with it and the nearest hook
+								as arguments.
+							function:
+								Run it, passing the nearest hook and the top to it.
+						*/
 						if (typeof result === "function" && result.thunk) {
 							// Unwrap the thunk to get the result
 							result = result();
 						}
-						//TODO: abstract out most of the interior of this if-statement
 						if (typeof result === "function") {
 							/*
 								Check if any hook is connected to this expression's result.
 							*/
 							nextHook = el.next("tw-hook");
 							if (nextHook.length) {
-								/*
-									Set up this data construct used only by changer macros.
-									This is the "default" ChangerDescriptor that changer
-									macros may mutate.
-								*/
-								desc = {
-									code:             nextHook.attr('code'),
-									transition:       "",
-									transitionTime:   1000,
-									target:           nextHook,
-									append:           "append"
-								};
-								
 								if (result.changer) {
-									// It's a changer macro: mutate the desc
-									result(desc);
-									/*
-										Now, take the mutated ChangerDescriptor and enact it.
-									*/
-									if (desc.code && desc.target) {
-										// Render the code
-										result = Engine.render(desc.code + '', top);
-										if (result && !(result instanceof Error)) {
-											// Append it using the descriptor's given jQuery method
-											desc.target[desc.append](result);
-											desc.target.removeAttr('code');
-											// Transition it using the descriptor's given transition
-											if (desc.transition) {
-												Utils.transitionIn(result, desc.transition);
-											}
-											// and update enchantments
-											Engine.updateEnchantments(top);
-											break;
-										}
-									}
+									runChangerFunction(result, nextHook, top);
 								}
 								else {
 									result(nextHook, top);
@@ -358,6 +397,7 @@ function ($, TwineMarkup, Renderer, Story, Utils, Selectors, State, TwineScript,
 								el.append(result);
 							}
 						}
+						// And finally, the falsy primitive case
 						else if (nextHook && (result === false
 								|| result === null || result === undefined)) {
 							nextHook.removeAttr('code');
