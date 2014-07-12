@@ -121,6 +121,25 @@ define(['jquery', 'twinemarkup', 'renderer', 'selectors', 'customelements'], fun
 			return ret;
 		},
 		
+		/**
+			If the arguments contain an Error, return that error.
+			This also recursively examines arrays' contents.
+			
+			Maybe in the future, there could be a way to concatenate multiple
+			errors into a single "report"...
+			
+			@method containsError
+			@return {Error|Boolean} The first error encountered, or false.
+		*/
+		containsError: function(/*variadic*/) {
+			return [].reduce.call(arguments,
+				function(last, e) {
+					return e instanceof Error ? e
+						: Array.isArray(e) ? Utils.containsError.apply(this, e)
+						: last;
+					}, false);
+		},
+		
 		/*
 			String utilities
 		*/

@@ -1,5 +1,5 @@
-define(['jquery', 'twinemarkup', 'renderer', 'story', 'utils', 'selectors', 'state', 'twinescript'], 
-function ($, TwineMarkup, Renderer, Story, Utils, Selectors, State, TwineScript) {
+define(['jquery', 'twinemarkup', 'renderer', 'story', 'utils', 'selectors', 'state', 'twinescript', 'macros'], 
+function ($, TwineMarkup, Renderer, Story, Utils, Selectors, State, TwineScript, Macros) {
 	"use strict";
 	
 	/**
@@ -83,6 +83,27 @@ function ($, TwineMarkup, Renderer, Story, Utils, Selectors, State, TwineScript)
 		if (t8n) {
 			Utils.transitionIn(newPassage, t8n);
 		}
+	}
+	
+	/**
+		Given a <tw-expression js> freshly rendered from TwineScript,
+		run the expression and return its value, removing the
+		js attribute and rendering the expression inert.
+		
+		@method runExpression
+		@private
+		@param {jQuery} el The element.
+		@param {ScriptEnviron} 
+		@return The result of the expression.
+	*/
+	function runExpression(el, environ) {
+		var call = Utils.unescape(el.attr('js'));
+		el.removeAttr('js');
+		
+		/*
+			Execute the expression.
+		*/
+		return environ.eval(call);
 	}
 	
 	var
@@ -189,20 +210,18 @@ function ($, TwineMarkup, Renderer, Story, Utils, Selectors, State, TwineScript)
 
 			@method render
 			@param {string} source The code to render - HTML entities must be unescaped
-			@param {MacroInstance} [context] Macro instance which triggered this rendering.
 			@param {jQuery} [top] the topmost DOM level into which this will be rendered
 			(usually a <tw-passage>). Undefined if this is the document top.
 			@return {jQuery} The rendered passage.
 		*/
-		render: function render(source, context, top) {
-			var ret, html;
+		render: function render(source, top) {
+			var ret, html, environ;
 			
 			// If a non-string is passed into here, there's really nothing to do.
 			if (typeof source !== "string") {
 				Utils.impossible("Engine.render", "source was not a string, but " + typeof source);
 				return $();
 			}
-			
 			// Let's not bother if this source solely held macros.
 			if (source.trim()) {
 				/*
@@ -238,6 +257,7 @@ function ($, TwineMarkup, Renderer, Story, Utils, Selectors, State, TwineScript)
 				rendered fragment.
 			*/
 			top = ret.contents().add(top);
+			environ = TwineScript.environ(top);
 			
 			/*
 				Execute expressions immediately
@@ -251,75 +271,96 @@ function ($, TwineMarkup, Renderer, Story, Utils, Selectors, State, TwineScript)
 					text,
 					visited,
 					// Hoisted vars, used by the tw-expression case
-					call,
-					nextHook,
-					result;
+					result,
+					desc,
+					nextHook;
 
 				switch(this.tagName.toLowerCase()) {
 					case Selectors.hook:
 					{
 						if (el.attr('code')) {
-							el.append(Engine.render(el.attr('code'), context, top));
+							el.append(Engine.render(el.attr('code'), top));
 							el.removeAttr('code');
 						}
 						break;
 					}
 					case Selectors.expression:
 					{
-						call = Utils.unescape(el.attr('js'));
-						el.removeAttr('js');
-						
-						/*
-							Check if any hook is connected to this expression's result.
-						*/
-						nextHook = el.next("tw-hook");
 						
 						/*
 							Execute the expression.
-							If this returns a falsy non-string non-zero, don't print it,
-							but regard it as a value to disable
 						*/
-						result = TwineScript.environ(top).eval(call);
+						result = runExpression(el,environ);
 						
-						/*
-							Don't pass it on if it's an error.
-						*/
+						if (typeof result === "function" && result.thunk) {
+							// Unwrap the thunk to get the result
+							result = result();
+						}
+						//TODO: abstract out most of the interior of this if-statement
+						if (typeof result === "function") {
+							/*
+								Check if any hook is connected to this expression's result.
+							*/
+							nextHook = el.next("tw-hook");
+							if (nextHook.length) {
+								/*
+									Set up this data construct used only by changer macros.
+									This is the "default" ChangerDescriptor that changer
+									macros may mutate.
+								*/
+								desc = {
+									code:             nextHook.attr('code'),
+									transition:       "",
+									transitionTime:   1000,
+									target:           nextHook,
+									append:           "append"
+								};
+								
+								if (result.changer) {
+									// It's a changer macro: mutate the desc
+									result(desc);
+									/*
+										Now, take the mutated ChangerDescriptor and enact it.
+									*/
+									if (desc.code && desc.target) {
+										// Render the code
+										result = Engine.render(desc.code + '', top);
+										if (result && !(result instanceof Error)) {
+											// Append it using the descriptor's given jQuery method
+											desc.target[desc.append](result);
+											desc.target.removeAttr('code');
+											// Transition it using the descriptor's given transition
+											if (desc.transition) {
+												Utils.transitionIn(result, desc.transition);
+											}
+											// and update enchantments
+											Engine.updateEnchantments(top);
+											break;
+										}
+									}
+								}
+								else {
+									result(nextHook, top);
+								}
+							}
+						}
+						// Having run that, print any error that resulted.
 						if (result instanceof Error) {
 							el.addClass('error').text(result.message);
 							break;
 						}
-						
-						/*
-							Apply the value to the hook.
-						*/
-						if (nextHook.length) {
-							/*
-								"Hook augmenter" functions have the signature
-								{jQuery} hook   The <tw-hook> node being applied to.
-								{jQuery} top    The home DOM of the <tw-hook>.
-								{Scope} [scope] The scoping macro's scope.
-							*/
-							if (typeof result === "function") {
-								result(nextHook, top);
-								break;
-							}
-							//TODO: implement hook cards.
-							else if (typeof result === "boolean"
-									|| result === null || result === undefined) {
-								if (!result) {
-									nextHook.removeAttr('code');
-								}
-								break;
-							}
-						}
-						if (typeof result === "string") {
+						else if (typeof result === "string") {
 							/*
 								Transition the resulting Twine code into the expression's element.
 							*/
-							result = Engine.render(result + '', el, top);
+							result = Engine.render(result + '', top);
 							if (result) {
 								el.append(result);
 							}
+						}
+						else if (nextHook && (result === false
+								|| result === null || result === undefined)) {
+							nextHook.removeAttr('code');
 						}
 						break;
 					}

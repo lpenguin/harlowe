@@ -1,28 +1,78 @@
-define(['jquery', 'twinemarkup', 'story', 'state', 'macros', 'wordarray', 'scope', 'engine', 'utils'], function($, TwineMarkup, Story, State, Macros, WordArray, Scope, Engine, Utils) {
+define(['jquery', 'twinemarkup', 'story', 'state', 'macros', 'wordarray', 'scope', 'engine', 'utils'],
+function($, TwineMarkup, Story, State, Macros, WordArray, Scope, Engine, Utils) {
 	"use strict";
 	/*
 		Twine macro standard library.
 		Modifies the Macros module only. Exports nothing.
 	*/
-		
+	
 	/*
 		Macros are primarily defined by their fn: a function which determines what
 		the macro evaluates to.
-		It can be one of these two types of values:
-			A string of HTML code to insert into the passage,
-				or
-			a "Hook Augmenter" function, which is run on the hook
-			that is connected to this macro instance in the passage
-			("connected to" currently means "occurs immediately after").
+		
 	*/
 	
 	function renderInto(code, dest, top, prepend) {
-		var result = Engine.render(code + '', dest, top);
+		var result = Engine.render(code + '', top);
 		if (result) {
 			prepend ? dest.prepend(result) : dest.append(result);
 			Utils.transitionIn(result, "fade-in");
 			Engine.updateEnchantments(top);
 		}
+	}
+	
+	/*
+		Takes a function, and registers it as a value macro.
+		This is a non-live macro that simply produces a value
+		with no expected side-effects.
+	*/
+	function addValue(name, fn) {
+		Macros.add(name, {
+			type: "value",
+			live: false,
+			fn: fn
+		});
+	}
+	
+	/*
+		Takes a function, and registers it as a live sensor macro.
+		
+		Sensors' functions produce booleans, and may also cause side-effects.
+	
+	function addSensor(name, fn) {
+		Macros.add(name, {
+			type: "sensor",
+			live: true,
+			fn: fn
+		});
+	}
+	*/
+	
+	/*
+		Takes a function, and registers it as a live Changer macro.
+		
+		Changers return a transformation function that is passed
+		a ChangerDescriptor object.
+		
+		A ChangerDescriptor is a plain object with the following values:
+					
+		{String} transition      Which transition to use.
+		{Number} transitionTime  The duration of the transition, in ms.
+		{String} code            Transformations made on the hook's code before it is run.
+		{jQuery} target          Where to render the code, if not the hookElement.
+		{String} append          Which jQuery method to append the code to the dest with.
+	*/
+	function addChanger(name, fn) {
+		Macros.add(name, {
+			type: "changer",
+			live: false,
+			fn: fn
+		});
+	}
+	// Sugar
+	function changerFn(fn) {
+		fn.changer = true;
+		return fn;
 	}
 	
 	/*
@@ -46,49 +96,44 @@ define(['jquery', 'twinemarkup', 'story', 'state', 'macros', 'wordarray', 'scope
 
 	// if() / elseif() / else()
 	(function() {
+		/*
+			In order to make elseif() work, 
+			the if() macro's implementation must have private state.
+			This is something of a hack, and should probably be reconsidered.
+		*/
 		var lastIf,
+			// The state of the last if() is reset on passage change.
 			currentPassage = "",
-			removeHook = function(hook) {
-				hook.remove();
-			},
 			initState = function() {
 				if (State.passage !== currentPassage) {
 					currentPassage = State.passage;
 					lastIf = false;
 				}
 			};
+			
 		Macros
-		.add("if", function (expr) {
+		.add("if", function _if(expr) {
 			initState();
-			if (!(lastIf = !!expr)) {
-				return removeHook;
-			}
-			return true;
+			return !!(lastIf = !!expr);
 		})
-		.add("unless", function (expr) {
+		.add("unless", function unless(expr) {
 			initState();
-			if ((lastIf = !!expr)) {
-				return removeHook;
-			}
-			return true;
+			return !(lastIf = !!expr);
 		})
-		.add("elseif", function (expr) {
+		.add("elseif", function elseif(expr) {
 			initState();
 			// Only run if the previous if() failed
-			if (lastIf || !(lastIf = !!expr)) {
-				return removeHook;
-			}
-			return true;
+			return (!lastIf && (lastIf = !!expr));
 		})
-		.add("else", function () {
+		.add("else", function _else() {
 			initState();
 			// Only run if the previous if() failed
-			return lastIf ? removeHook : true;
+			return !lastIf;
 		});
 	}());
 	
 	// display()
-	Macros.add("display", function (name) {
+	Macros.add("display", function display(name) {
 		try {
 			// Test for existence
 			if (!Story.passageNamed(name)) {
@@ -108,31 +153,39 @@ define(['jquery', 'twinemarkup', 'story', 'state', 'macros', 'wordarray', 'scope
 			//this.error(e.message);
 		}
 	});
+	
+	// transition()
+	addChanger("transition", function transition(name, time) {
+		return changerFn(function(d) {
+			d.transition = name;
+			d.transitionTime = time;
+		});
+	});
 
 	// nobr()
 	// Remove line breaks from the hook.
 	// Manual line breaks can be inserted with <br>.
-	Macros.add("nobr", function () {
-		// To prevent keywords from being created by concatenating lines,
-		// replace the line breaks with a zero-width space.
-		return function(hook) {
-			hook.attr('code', hook.attr('code').replace(/\n/g, "&zwnj;"));
-		};
+	addChanger("nobr", function nobr() {
+		return changerFn(function(d) {
+			// To prevent keywords from being created by concatenating lines,
+			// replace the line breaks with a zero-width space.
+			d.code = d.code.replace(/\n/g, "&zwnj;");
+		});
 	});
 
 	// style()
 	// Insert the enclosed raw CSS into a <style> tag that exists for the
 	// duration of the current passage only.
 	// contents: raw CSS.
-	Macros.add("style", function () {
-		return function(hook) {
+	addChanger("style", function style() {
+		return changerFn(function(d) {
 			var selector = 'style#macro';
 			if (!$(selector).length) {
 				$(document.head).append($('<style id="macro">'));
 			}
-			$(selector).text(Utils.unescape(hook.attr('code')));
-			hook.remove();
-		};
+			$(selector).text(Utils.unescape(d.code));
+			d.code = "";
+		});
 	});
 
 	// TODO: script()
@@ -362,7 +415,7 @@ define(['jquery', 'twinemarkup', 'story', 'state', 'macros', 'wordarray', 'scope
 				then the passed code is re-evaluated on every time, allowing
 				random macros like either() to behave correctly.
 			*/
-			scope[e](Engine.render.bind(Engine, code, null, top));
+			scope[e](Engine.render.bind(Engine, code, top));
 			Engine.updateEnchantments(top);
 		}));
 	});
@@ -383,7 +436,7 @@ define(['jquery', 'twinemarkup', 'story', 'state', 'macros', 'wordarray', 'scope
 			// Enchantment macros
 			Macros.add(interactionType.name + "-" + revisionType,
 				newEnchantmentMacroFn(function (code, hook, top, scope) {
-					scope[revisionType](Engine.render.bind(Engine, code, null, top));
+					scope[revisionType](Engine.render.bind(Engine, code, top));
 					Engine.updateEnchantments(top);
 				},
 				interactionType.enchantDesc)
@@ -392,7 +445,7 @@ define(['jquery', 'twinemarkup', 'story', 'state', 'macros', 'wordarray', 'scope
 		// Timed macros
 		Macros.add("timed-" + revisionType, 
 			newTimedMacroFn(function (code, hook, top, scope) {
-				scope[revisionType](Engine.render.bind(Engine, code, null, top));
+				scope[revisionType](Engine.render.bind(Engine, code, top));
 				Engine.updateEnchantments(top);
 			})
 		);

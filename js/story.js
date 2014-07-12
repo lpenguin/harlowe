@@ -39,6 +39,7 @@ define(['jquery', 'utils', 'selectors'], function($, Utils, Selectors) {
 			@method passageNamed
 			@param {String} name Name of the passage
 			@return {jQuery|Boolean} The passage data element, or false.
+			TODO: instead of false, return $().
 		*/
 		passageNamed: function (name) {
 			var passage = $(Selectors.storyData + " > " + Selectors.passageData +'[name="' + name + '"]');

@@ -18,28 +18,24 @@ define(['utils', 'macros', 'wordarray', 'state'], function(Utils, Macros, WordAr
 		Script.environ() relies on to be in scope.
 	*/
 	
-	/*
-		If the arguments contain an Error, return that error.
-		Maybe in the future, there could be a way to concatenate multiple
-		errors into a single "report"...
-	*/
-	function isRuntimeError(/*variadic*/) {
-		return [].reduceRight.call(arguments,
-			function(last, e) { return e instanceof Error ? e : last; }, false);
-	}
-	
 	var
 		/*
 			This contains special runtime identifiers which may change at any time.
 			TODO: this should be re-initialised after every environ().eval().
 		*/
 		Identifiers = {
-		
 			/*
 				The "it" keyword is bound to whatever the last left-hand-side value
 				in a comparison operation was.
 			*/
-			it: false
+			it: false,
+			/*
+				The "time" keyword binds to the number of milliseconds since the passage
+				was rendered.
+			*/
+			get time() {
+				
+			}
 		},
 		
 		/*
@@ -58,7 +54,7 @@ define(['utils', 'macros', 'wordarray', 'state'], function(Utils, Macros, WordAr
 					if (typeof left !== typeof right) {
 						return new TypeError(left + " isn't the same type of data as " + right);
 					}
-					else if (isRuntimeError(left, right)) {
+					else if (Utils.containsError([left, right])) {
 						return left;
 					}
 					return fn(left, right);
@@ -136,18 +132,15 @@ define(['utils', 'macros', 'wordarray', 'state'], function(Utils, Macros, WordAr
 				}),
 				/*
 					Runs a macro.
+					
+					In Twinescript.compile(), the myriad arguments given to a macro invocation are converted
+					to 2 parameters to runMacro:
+					
+					@param {String} name     The macro's name.
+					@param {Function} thunk  A thunk enclosing the expressions 
 				*/
-				runMacro: function(name, args /*variadic*/) {
+				runMacro: function(name, thunk) {
 					var fn, error;
-					
-					args = [].slice.call(arguments,1);
-					
-					/*
-						Check the arguments to see if an error is among them.
-					*/
-					if ((error = isRuntimeError.apply(null, args))) {
-						return error;
-					}
 					
 					name = name.toLowerCase();
 					if (!Macros.has(name)) {
@@ -155,7 +148,7 @@ define(['utils', 'macros', 'wordarray', 'state'], function(Utils, Macros, WordAr
 					}
 					fn = Macros.get(name.toLowerCase());
 					
-					return fn.apply(null, args);
+					return fn(thunk);
 				}
 			};
 		}());
@@ -221,7 +214,9 @@ define(['utils', 'macros', 'wordarray', 'state'], function(Utils, Macros, WordAr
 				return " Identifiers." + token.text + " ";
 			}
 			else if (token.type === "hookRef") {
-				return " WordArray.create('?" + token.name + "') ";
+				// Note that the 'top' passed to WordArray.create
+				// is that provided by the environ.
+				return " WordArray.create('?" + token.name + "', top) ";
 			}
 			else if (token.type === "variable") {
 				// TODO: Defaulting to 0
@@ -278,7 +273,24 @@ define(['utils', 'macros', 'wordarray', 'state'], function(Utils, Macros, WordAr
 			midString = "!";
 		}
 		else if ((i = indexOfType(array, "macro")) >-1) {
-			midString = 'Operation.runMacro("' + array[i].name + '",' + compile(array[i].children) + ')';
+			/*
+				The arguments given to a macro instance must be converted to a thunk.
+				The reason is that "live" macros need to be reliably called again and
+				again, using the same variable bindings in their original invocations.
+				
+				For instance, consider the macro instance "if(time > 2s)". The "time"
+				variable needs to be re-evaluated every time - something which isn't
+				possible by just transpiling the macro instance into a JS function call.
+			*/
+			midString = 'Operation.runMacro("'
+				+ array[i].name + '",function argsThunk(){return ['
+				/*
+					You may notice here, unseen, is the assumption that Javascript array literals
+					and TwineScript macro invocations use the same character to separate arguments/items.
+					This is currently true, but it is nonetheless a fairly bold assumption.
+				*/
+				+ compile(array[i].children)
+				+ ']})';
 		}
 		else if ((i = indexOfType(array, "grouping")) >-1) {
 			midString = "(" + compile(array[i].children) + ")";
@@ -326,7 +338,8 @@ define(['utils', 'macros', 'wordarray', 'state'], function(Utils, Macros, WordAr
 		@param {jQuery} top The DOM context for WordArray.create
 		@return {Object} An environ object with eval methods.
 	*/
-	function environ(top) {		
+	function environ(top) {
+	
 		return {
 			eval: function(/* variadic */) {
 				// This specifically has to be a "direct eval()" - calling eval() "indirectly"

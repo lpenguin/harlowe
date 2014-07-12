@@ -11,9 +11,6 @@ require.config({
 		// WordArray and subclasses
 		wordarray: './wordarray/wordarray',
 		scope: './wordarray/scope',
-		// MacroInstance and subclasses
-		macroinstance: './macroinstance/macroinstance',
-		hookmacroinstance: './macroinstance/hookmacroinstance',
 	}
 });
 require(['jquery', 'renderer', 'story', 'state', 'engine', 'utils', 'selectors', 'macrolib'],

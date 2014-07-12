@@ -169,7 +169,6 @@
 						else if ((match = start.exec(src)) || (nester && (match = nester.exec(src)))) {
 							nesting += 1;
 						}
-						
 						// Keep looping: move characters into the returning string.
 						if (match) {
 							innerMatchText += match[0];
@@ -420,14 +419,17 @@
 			// There's only one special identifier currently.
 			identifier: "it",
 			
+			// TODO: this generated regex is horrendously slow
+			// when an unclosed ' or " is in the source text.
+			// Better make it a recursive regex or something?
 			string: 
 				"(" + either(
 					// Single strings					
-					string.tripleSingle,
+					//string.tripleSingle,
 					string.tripleDouble,
-					string.emptySingle,
+					//string.emptySingle,
 					string.emptyDouble,
-					string.single,
+					//string.single,
 					string.double
 				) + ")",
 			
@@ -694,10 +696,20 @@
 				pos: initpos || 0,
 				inMacro: !!inMacro
 			});
-			
 			while(src) {
+				/*
+					This 'done' variable tracks whether a rule was successfully
+					matched inside the upcoming for loop.
+				*/
 				done = false;
-				// Run through all the rules in turn
+				/*
+					Run through all the rules in turn.
+					This of course could stand to be accelerated by
+					e.g. maintaining multiple short lists of rules to iterate
+					through depending on state, or sorting the rules by expected
+					frequency.
+					Speed concerns also forgo the deployment of [].forEach() here.
+				*/
 				for (i = 0; i < ruleskeys.length; i+=1) {
 					rname = ruleskeys[i];
 					if (rname === "text") {
@@ -736,6 +748,7 @@
 						// Finished matching a rule - resume
 						lastrule = rname;
 						done = true;
+						// Break from the for-loop
 						break;
 					}
 				}

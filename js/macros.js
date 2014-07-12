@@ -35,23 +35,11 @@ function($, Story, Utils, Selectors) {
 			var el = $(this),
 				enchantment = el.data("enchantment");
 
-			if (enchantment.scope && enchantment.scope.hooks && enchantment.scope.hooks.is(triggerer)) {
+			if (enchantment.scope && enchantment.scope.hooks
+					&& enchantment.scope.hooks.is(triggerer)) {
 				enchantment.fn(triggerer);
 			}
 		});
-	}
-
-	/**
-		Report an error when a user-loaded macro fails. Sub-function of Macros.add() and Macros.supplement().
-		
-		@method loaderError
-		@private
-		@param {String} text The text error to display.
-	*/
-	function loaderError(text) {
-		// TODO: Instead of a basic alert, display a notification banner somewhere.
-		window.alert(text);
-		return true;
 	}
 
 	/*
@@ -82,38 +70,127 @@ function($, Story, Utils, Selectors) {
 		/**
 			Register a new macro.
 			If an array of names is given, an identical macro is created under each name.
-				
+			
 			@method add
-			@param {String|Array} name A String, or an Array holding multiple strings.
-			@param {Object} desc A macro definition object.
+			@param {String|Array} name  A String, or an Array holding multiple strings.
+			@param {Object|Function} desc  A macro definition object, or just a function.
 			@return this
+			
+			Definition objects have this structure:
+				type: String (either "sensor", "changer", or, and in absentia, "value")
+				live: Boolean (false in absentia)
+				fn: the function.
+				
 		*/
-		add: function (name, fn) {
-			if (!Utils.stringOrArray(name)) {
-				loaderError("Argument 1 of Macros.add isn't an array or a string.");
-				return this;
+		add: function (name, desc) {
+			var fn;
+			/*
+				If a raw function was passed, assume the default definition for
+				this macro.
+			*/
+			if (typeof desc === "function") {
+				desc = {
+					live: false,
+					type: "value",
+					fn: desc
+				};
 			}
-			if (!(fn && typeof fn === "function")) {
-				loaderError("Argument 2 of Macros.add (\"" + name + "\") isn't a function.");
-				return this;
+			
+			/*
+				Operation.runMacro() in TwineScript passes its arguments as a thunk.
+				See that page for the formal explanation.
+				
+				Now, the macro passed to Macros.add() is expected to be a "plain"
+				Javascript function that has ordinary parameters. So,
+				some modification is needed to make this function handle the
+				arguments thunk automatically.
+				
+				Non-live macros don't actually need the thunk - they take it,
+				unwrap it, and discard it. Live macros, however, need to retain
+				it and re-evaluate it over and over.
+			*/
+			if(!desc.live) {
+				/*
+					Wrap the function, fn, in an outer function which immediately 
+					opens argsThunk and then calls fn with those arguments.
+					
+					Hence, this converts fn into an outwardly identical function
+					that accepts an argsThunk and applies it to its actual parameters.
+				*/
+				desc.fn = (function(fn) {
+					return function macroResult(argsThunk) {
+						var args = argsThunk(),
+							// Do the error check now.
+							error = Utils.containsError(args);
+
+						if (error) {
+							return error;
+						}
+						return fn.apply(0, args);
+					};
+				}(desc.fn));
 			}
-			// Add desc to the macroRegistry, plus aliases (if name is an array of aliases)
+			else {
+				/*
+					Wrap the function, fn, in an outer function, O, which
+					takes argsThunk and returns another thunk that calls the args
+					on fn.
+					
+					Hence, this converts fn into a function that joins the argsThunk
+					with the macro's call, creating a combined thunk.
+				*/
+				desc.fn = (function(fn) {
+					return function deferredMacroResult(argsThunk) {
+						/*
+							While macroResultThunk's interior is similar to macroResult,
+							note that the binding of argsThunk is different,
+							and thus it can't really be abstracted out.
+						*/
+						var t = function macroResultThunk() {
+							var args = argsThunk(),
+								// Do the error check now.
+								error = Utils.containsError(args);
+							
+							if (error) {
+								return error;
+							}
+							return fn.apply(0, args);
+						};
+						t.thunk = true;
+						return t;
+					};
+				}(desc.fn));
+			}
+			desc.fn.type = desc.type;
+			
+			// Add the fn to the macroRegistry, plus aliases (if name is an array of aliases)
 			if (Array.isArray(name)) {
 				name.forEach(function (n) {
-					Utils.lockProperty(macroRegistry, n, fn);
+					Utils.lockProperty(macroRegistry, n, desc.fn);
 				});
 			} else {
-				Utils.lockProperty(macroRegistry, name + "", fn);
+				Utils.lockProperty(macroRegistry, name + "", desc.fn);
 			}
 			return this;
+		},
+		
+		/**
+			Given the name of a registered macro definition,
+			retrieves its type.
+			
+			@method getType
+			@param {String} Name of the macro definition to get
+			@return {String} The result.
+		*/
+		getType: function(name) {
+			var m = Macros.get(name);
+			return (m ? m.type : "");
 		},
 		
 		/**
 			Register an enchantment without creating multiple event handlers for the same event.
 			Enchantments are triggered by DOM events assigned with jQuery's .on().
 			The enchantment registry keeps track of which events have which handlers.
-			
-			Sub-function of Macros.add()
 			
 			@method registerEnchantmentEvent
 			@param {String} name Name of the enchantment. This is used for jQuery event namespacing.
