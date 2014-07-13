@@ -196,8 +196,11 @@ function($, TwineMarkup, Story, State, Macros, WordArray, Scope, Engine, Utils) 
 	function newTimedMacroFn(innerFn) {
 		return function timedMacroFn(delays /*variadic */) {
 			// TODO: proper type checking
-			delays = [].filter.call(arguments,
-				function(e) { return !isNaN(+e); });
+			delays = Array.from(arguments).filter(
+				function(e) {
+					// This is a deliberate window.isNaN invocation.
+					return !isNaN(+e);
+				});
 			if (delays.length) {
 				return function(hook, top) {
 					var code = hook.attr('code');
@@ -260,7 +263,7 @@ function($, TwineMarkup, Story, State, Macros, WordArray, Scope, Engine, Utils) 
 				Utils.classListToSelector(enchantDesc.classList));
 		}
 		return function enchantmentMacroFn(selectors /* variadic */) {
-			selectors = [].slice.call(arguments, 0);
+			selectors = Array.from(arguments);
 			
 			/*
 				This hook-augmenter function transforms Hook nodes into Enchanters,

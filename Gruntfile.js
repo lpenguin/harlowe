@@ -5,7 +5,7 @@ module.exports = function (grunt) {
 		
 		// Source files
 		sourceHTML = ['template.html'],
-		jsFileList = ['js/*.js', 'js/wordarray/*.js', 'js/macroinstance/*.js'],
+		jsFileList = ['js/*.js', 'js/wordarray/*.js', 'js/utils/*.js'],
 		jsFullFileList = ['js/lib/*.js'].concat(jsFileList),
 		cssFileList = ['./css/*.css'],
 		
@@ -47,6 +47,7 @@ module.exports = function (grunt) {
 				eqeqeq   : true,
 				immed    : true,
 				latedef  : "nofunc",
+				noarg    : true,
 				nonew    : true,
 				undef    : true,
 				unused   : true,
@@ -60,7 +61,6 @@ module.exports = function (grunt) {
 				// Environments
 				browser  : true,
 				devel    : true,
-				jquery   : true
 			}
 		},
 

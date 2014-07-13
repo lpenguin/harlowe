@@ -3,6 +3,7 @@ require.config({
 		// External libraries
 		jquery: './lib/jquery',
 		lzstring: './lib/lzstring',
+		es6shims: './lib/es6shims',
 		// Utils
 		utils: './utils/utils',
 		selectors: './utils/selectors',

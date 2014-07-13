@@ -14,7 +14,7 @@ function($, Utils, Selectors, TwineScript, TwineMarkup, Renderer, Story, State) 
 		passageinstance: true,
 		
 		create: function() {
-			var ret = $.extend(Object.create(this), {
+			var ret = Object.assign(Object.create(this), {
 				/*
 					The time this passage instance was rendered. Of course, it's
 					not been rendered yet, but it needs to be recorded this early because
@@ -32,7 +32,7 @@ function($, Utils, Selectors, TwineScript, TwineMarkup, Renderer, Story, State) 
 				Add a TwineScript environ and mix in its eval() method.
 			*/
 			ret = TwineScript.environ(ret);
-			return ret;
+			return Object.preventExtensions(ret);
 		},
 
 		/*
@@ -334,5 +334,6 @@ function($, Utils, Selectors, TwineScript, TwineMarkup, Renderer, Story, State) 
 	window.REPL = function(a) { var r = TwineScript.compile(TwineMarkup.lex("print("+a+")"));console.log(r);return TwineScript.environ().eval(r);};
 	window.LEX = function(a) { var r = TwineMarkup.lex(a); return (r.length===1 ? r[0] : r); };
 	
+	Utils.log("PassageInstance module ready!");
 	return Utils.lockProperties(PassageInstance);
 });

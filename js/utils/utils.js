@@ -1,8 +1,7 @@
 define(['jquery', 'twinemarkup', 'renderer', 'selectors', 'customelements'], function($, TwineMarkup, Renderer, Selectors) {
 	"use strict";
 
-	// Used by HTMLEntityConvert and transitionTimes
-	var p = $('<p>'),
+	var 
 		// Used by lockProperties
 		lockDesc = {
 			configurable: 0,
@@ -42,7 +41,7 @@ define(['jquery', 'twinemarkup', 'renderer', 'selectors', 'customelements'], fun
 				prop = keys[i];
 
 				propDesc[prop] = lockDesc;
-			};
+			}
 
 			return Object.defineProperties(obj, propDesc);
 		},
@@ -95,12 +94,12 @@ define(['jquery', 'twinemarkup', 'renderer', 'selectors', 'customelements'], fun
 					configurable: 1,
 					enumerable: enumerable
 				};
-			};
+			}
 			return Object.defineProperties(Object.create(proto), propDesc);
 		},
 		
 		/**
-			A faster way to clone an object than $.extend({}, ...).
+			A faster way to clone an object than Object.assign({}, ...).
 
 			@method clone
 			@param {Object} obj	object to clone
@@ -132,7 +131,7 @@ define(['jquery', 'twinemarkup', 'renderer', 'selectors', 'customelements'], fun
 			@return {Error|Boolean} The first error encountered, or false.
 		*/
 		containsError: function(/*variadic*/) {
-			return [].reduce.call(arguments,
+			return Array.from(arguments).reduce(
 				function(last, e) {
 					return e instanceof Error ? e
 						: Array.isArray(e) ? Utils.containsError.apply(this, e)
@@ -222,7 +221,7 @@ define(['jquery', 'twinemarkup', 'renderer', 'selectors', 'customelements'], fun
 		*/
 
 		hookTojQuery: function (c, top) {
-			return Utils.findAndFilter(top, Utils.hookToSelector(c.slice(1) /* slice off the ? sigil */))
+			return Utils.findAndFilter(top, Utils.hookToSelector(c.slice(1) /* slice off the ? sigil */));
 		},
 		
 		/**
@@ -241,12 +240,12 @@ define(['jquery', 'twinemarkup', 'renderer', 'selectors', 'customelements'], fun
 		cssTimeUnit: function (s) {
 			var ret;
 
-			if (typeof s == "string") {
+			if (typeof s === "string") {
 				s = s.toLowerCase();
 
-				if (s.slice(-2) == "ms")
+				if (s.slice(-2) === "ms")
 					return (+s.slice(0, -2)) || 0;
-				if (s.slice(-1) == "s")
+				if (s.slice(-1) === "s")
 					return (+s.slice(0, -1)) * 1000 || 0;
 			} else if (Array.isArray(s)) {
 				ret = [];
@@ -353,7 +352,7 @@ define(['jquery', 'twinemarkup', 'renderer', 'selectors', 'customelements'], fun
 		charToSpan: function(c) {
 			// Use single-quotes if the char is a double-quote.
 			var quot = (c === "&#39;" ? '"' : "'"),
-				value = unescape(c);
+				value = Utils.unescape(c);
 			switch(value) {
 				case ' ': {
 					value = "space";
@@ -406,7 +405,7 @@ define(['jquery', 'twinemarkup', 'renderer', 'selectors', 'customelements'], fun
 			Find the closest enclosing hook span(s) for the passed jQuery object, if any.
 
 			@method closestHookSpan
-			@param elems 	jQuery object
+			@param elems    jQuery object
 		*/
 
 		closestHookSpan: function (elems) {
@@ -418,14 +417,14 @@ define(['jquery', 'twinemarkup', 'renderer', 'selectors', 'customelements'], fun
 			Replaces oldElem with newElem while transitioning between both.
 
 			@method transitionReplace
-			@param oldElem 		a jQuery object currently in the DOM or a DOM structure
-			@param newElem			an unattached jQuery object to attach
-			@param transIndex		transition to use
+			@param oldElem          a jQuery object currently in the DOM or a DOM structure
+			@param newElem          an unattached jQuery object to attach
+			@param transIndex       transition to use
 			@return this
 		*/
 
 		transitionReplace: function (oldElem, newElem, transIndex) {
-			var delay, container1, container2a, container2b;
+			var container1, container2a, container2b;
 
 			oldElem = Utils.closestHookSpan(oldElem);
 

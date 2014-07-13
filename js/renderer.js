@@ -205,22 +205,6 @@ define(['utils', 'twinescript'], function(Utils, TwineScript) {
 						break;
 					}
 					/*
-					case "is":
-					case "to":
-					case "or":
-					case "and":
-					case "not":
-					case "isNot": {
-						out += '<tw-operator text="' + token.text + '" name="' + token.type + '"></tw-operator>';
-						break;
-					}
-					case "number":
-					case "boolean":
-					case "string": {
-						out += token.text;
-						break;
-					}*/
-					/*
 						Base case
 					*/
 					default: {
@@ -232,5 +216,6 @@ define(['utils', 'twinescript'], function(Utils, TwineScript) {
 			return out;
 		}
 	};
-	return Renderer;
+	Utils.log("Renderer module ready!");
+	return Object.freeze(Renderer);
 });

@@ -1,5 +1,5 @@
 /*jshint unused:false */
-define(['utils', 'macros', 'wordarray', 'state'], function(Utils, Macros, WordArray, State) {
+define(['jquery', 'utils', 'macros', 'wordarray', 'state'], function($, Utils, Macros, WordArray, State) {
 	"use strict";
 	
 	// JShint's "unused" variables accessible to eval()
@@ -99,13 +99,7 @@ define(['utils', 'macros', 'wordarray', 'state'], function(Utils, Macros, WordAr
 			lte: comparisonOp(doNotCoerce(function(l,r) { return l <= r; })),
 			gte: comparisonOp(doNotCoerce(function(l,r) { return l >= r; })),
 			
-			/*
-				This fixes the NaN !== NaN "bug" in IEEE754.
-				If ES6 Object.is() is available, it also makes -0 !== 0.
-			*/
-			is: comparisonOp(Object.is || function(l,r) {
-				return (l === r) === (l !== l && r !== r);
-			}),
+			is: comparisonOp(Object.is),
 			isNot: comparisonOp(function(l,r) {
 				return !Operation.is(l,r);
 			}),
@@ -143,7 +137,7 @@ define(['utils', 'macros', 'wordarray', 'state'], function(Utils, Macros, WordAr
 		var i,
 			types = (arguments.length === 1
 				? type
-				: array.slice.call(arguments, 1));
+				: Array.from(arguments).slice(1));
 		
 		for (i = 0; i < array.length; i+=1) {
 			if (0+types.indexOf(array[i].type) > -1) {
@@ -347,7 +341,7 @@ define(['utils', 'macros', 'wordarray', 'state'], function(Utils, Macros, WordAr
 			},
 			Operation = operations(Identifiers);
 			
-		return $.extend(top, {
+		return Object.assign(top, {
 			eval: function(/* variadic */) {
 				// This specifically has to be a "direct eval()" - calling eval() "indirectly"
 				// makes it run in global scope.
@@ -355,11 +349,11 @@ define(['utils', 'macros', 'wordarray', 'state'], function(Utils, Macros, WordAr
 					// This specifically has to be a "direct eval()" - calling eval() "indirectly"
 					// makes it run in global scope.
 					return eval(
-						[].join.call(arguments, '')
+						Array.from(arguments).join('')
 					);
 				} catch(e) {
 					Utils.impossible("TwineScript.environ().eval",
-						"Javascript error:\n\t" + [].join.call(arguments, '')
+						"Javascript error:\n\t" + Array.from(arguments).join('')
 						+ "\n" + e.message);
 					return e;
 				}

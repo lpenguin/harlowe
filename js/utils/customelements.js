@@ -1,5 +1,5 @@
-define([], function() {
-
+define(['es6shims'], function() {
+	"use strict";
 	/*
 		Custom Elements
 		
@@ -23,7 +23,7 @@ define([], function() {
 			proto = Object.create(HTMLElement.prototype),
 			propDef = {};
 		
-		props = [].slice.call(arguments,1);
+		props = Array.from(arguments).slice(1);
 		/*
 			Load up the prototype with the passed properties
 			while making them non-configurable, non-writable etc.
