@@ -83,7 +83,6 @@ function($, Story, Utils, Selectors) {
 				
 		*/
 		add: function (name, desc) {
-			var fn;
 			/*
 				If a raw function was passed, assume the default definition for
 				this macro.

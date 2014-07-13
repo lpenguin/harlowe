@@ -12,11 +12,11 @@ function($, TwineMarkup, Story, State, Macros, WordArray, Scope, Engine, Utils) 
 		
 	*/
 	function renderInto(code, dest, top, prepend) {
-		var result = Engine.render(code + '', top);
+		var result = top.render(code + '');
 		if (result) {
 			prepend ? dest.prepend(result) : dest.append(result);
 			Utils.transitionIn(result, "fade-in");
-			Engine.updateEnchantments(top);
+			top.updateEnchantments();
 		}
 	}
 	
@@ -57,7 +57,7 @@ function($, TwineMarkup, Story, State, Macros, WordArray, Scope, Engine, Utils) 
 	}
 	
 	/*
-		One problem is that Engine's doExpressions() has no easy way of determining
+		One problem is that doExpressions() has no easy way of determining
 		if a function it acquired by evaluating an expression is a changer function.
 		
 		So, by tagging all changer functions with an expando property, they can be duck-typed.
@@ -414,8 +414,8 @@ function($, TwineMarkup, Story, State, Macros, WordArray, Scope, Engine, Utils) 
 				then the passed code is re-evaluated on every time, allowing
 				random macros like either() to behave correctly.
 			*/
-			scope[e](Engine.render.bind(Engine, code, top));
-			Engine.updateEnchantments(top);
+			scope[e](top.render.bind(top, code));
+			top.updateEnchantments();
 		}));
 	});
 
@@ -423,7 +423,7 @@ function($, TwineMarkup, Story, State, Macros, WordArray, Scope, Engine, Utils) 
 	// Removes the scope(s).
 	Macros.add("remove", function (code, hook, top, scope) {
 		scope.remove();
-		Engine.updateEnchantments();
+		top.updateEnchantments();
 	});
 
 	/*
@@ -435,8 +435,8 @@ function($, TwineMarkup, Story, State, Macros, WordArray, Scope, Engine, Utils) 
 			// Enchantment macros
 			Macros.add(interactionType.name + "-" + revisionType,
 				newEnchantmentMacroFn(function (code, hook, top, scope) {
-					scope[revisionType](Engine.render.bind(Engine, code, top));
-					Engine.updateEnchantments(top);
+					scope[revisionType](top.render.bind(top, code));
+					top.updateEnchantments();
 				},
 				interactionType.enchantDesc)
 			);
@@ -444,8 +444,8 @@ function($, TwineMarkup, Story, State, Macros, WordArray, Scope, Engine, Utils) 
 		// Timed macros
 		Macros.add("timed-" + revisionType, 
 			newTimedMacroFn(function (code, hook, top, scope) {
-				scope[revisionType](Engine.render.bind(Engine, code, top));
-				Engine.updateEnchantments(top);
+				scope[revisionType](top.render.bind(top, code));
+				top.updateEnchantments();
 			})
 		);
 	});

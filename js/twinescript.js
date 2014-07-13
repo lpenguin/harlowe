@@ -18,141 +18,124 @@ define(['utils', 'macros', 'wordarray', 'state'], function(Utils, Macros, WordAr
 		Script.environ() relies on to be in scope.
 	*/
 	
-	var
-		/*
-			This contains special runtime identifiers which may change at any time.
-			TODO: this should be re-initialised after every environ().eval().
-		*/
-		Identifiers = {
-			/*
-				The "it" keyword is bound to whatever the last left-hand-side value
-				in a comparison operation was.
-			*/
-			it: false,
-			/*
-				The "time" keyword binds to the number of milliseconds since the passage
-				was rendered.
-			*/
-			get time() {
-				
-			}
-		},
+	/*
+		Generates an operation object, given an identifiers object.
+		
+		The operation object is a list of operations which TwineScript proxies
+		for JavaScript. Most of these have implicit type coercion or silent errors 
+		which must be dealt with.
+	*/
+	function operations(Identifiers) {
+		var Operation;
 		
 		/*
-			This is a list of operations which TwineScript proxies for JavaScript.
-			Most of these have implicit type coercion or silent errors which must
-			be dealt with.
+			Converts a function to type-check its two arguments before
+			execution, and thus suppress JS type coercion.
 		*/
-		Operation = (function Operation(){
-			
-			/*
-				Converts a function to type-check its two arguments before
-				execution, and thus suppress JS type coercion.
-			*/
-			function doNotCoerce(fn) {
-				return function(left, right) {
-					if (typeof left !== typeof right) {
-						return new TypeError(left + " isn't the same type of data as " + right);
-					}
-					else if (Utils.containsError([left, right])) {
-						return left;
-					}
-					return fn(left, right);
-				};
-			}
-			
-			/*
-				Converts a function to set Identifiers.it after it is done.
-			*/
-			function comparisonOp(fn) {
-				return function(left, right) {
-					Identifiers.it = left;
-					return fn(Identifiers.it, right);
-				};
-			}
-			
-			/*
-				As the base function for Operation.contains,
-				this implements the "x contains y" and "y is in x" keywords.
-				This is placed outside so that Operation.isIn can call it.
-			*/
-			function contains(container,obj) {
-				var i, keys;
-				if (container) {
-					/*
-						Basic array or string indexOf check
-					*/
-					if (typeof container === "string" || Array.isArray(container)) {
-						return container.indexOf(obj) > -1;
-					}
-					/*
-						Controversially, for plain object containers, it returns true if
-						the obj is a stored value OR a string key.
-					*/
-					if (container.constructor === Object) {
-						for (i = 0, keys = Object.keys(container); i < keys.length; i+=1) {
-							if (keys === obj || container[keys] === obj) {
-								return true;
-							}
+		function doNotCoerce(fn) {
+			return function(left, right) {
+				if (typeof left !== typeof right) {
+					return new TypeError(left + " isn't the same type of data as " + right);
+				}
+				else if (Utils.containsError([left, right])) {
+					return left;
+				}
+				return fn(left, right);
+			};
+		}
+		
+		/*
+			Converts a function to set Identifiers.it after it is done.
+		*/
+		function comparisonOp(fn) {
+			return function(left, right) {
+				Identifiers.it = left;
+				return fn(Identifiers.it, right);
+			};
+		}
+		
+		/*
+			As the base function for Operation.contains,
+			this implements the "x contains y" and "y is in x" keywords.
+			This is placed outside so that Operation.isIn can call it.
+		*/
+		function contains(container,obj) {
+			var i, keys;
+			if (container) {
+				/*
+					Basic array or string indexOf check
+				*/
+				if (typeof container === "string" || Array.isArray(container)) {
+					return container.indexOf(obj) > -1;
+				}
+				/*
+					Controversially, for plain object containers, it returns true if
+					the obj is a stored value OR a string key.
+				*/
+				if (container.constructor === Object) {
+					for (i = 0, keys = Object.keys(container); i < keys.length; i+=1) {
+						if (keys === obj || container[keys] === obj) {
+							return true;
 						}
 					}
 				}
-				/*
-					Default: since "'r' is in 'r'" is true, so is "false is in false".
-				*/
-				return Operation.is(container,obj);
 			}
+			/*
+				Default: since "'r' is in 'r'" is true, so is "false is in false".
+			*/
+			return Operation.is(container,obj);
+		}
+		
+		Operation = {
 			
-			return {
+			add:      doNotCoerce(function(l, r) { return l + r; }),
+			subtract: doNotCoerce(function(l, r) { return l - r; }),
+			multiply: doNotCoerce(function(l, r) { return l * r; }),
+			divide:   doNotCoerce(function(l, r) { return l / r; }),
+			modulo:   doNotCoerce(function(l, r) { return l % r; }),
+			
+			lt:  comparisonOp(doNotCoerce(function(l,r) { return l <  r; })),
+			gt:  comparisonOp(doNotCoerce(function(l,r) { return l >  r; })),
+			lte: comparisonOp(doNotCoerce(function(l,r) { return l <= r; })),
+			gte: comparisonOp(doNotCoerce(function(l,r) { return l >= r; })),
+			
+			/*
+				This fixes the NaN !== NaN "bug" in IEEE754.
+				If ES6 Object.is() is available, it also makes -0 !== 0.
+			*/
+			is: comparisonOp(Object.is || function(l,r) {
+				return (l === r) === (l !== l && r !== r);
+			}),
+			isNot: comparisonOp(function(l,r) {
+				return !Operation.is(l,r);
+			}),
+			contains: comparisonOp(contains),
+			isIn: comparisonOp(function(l,r) {
+				return contains(r,l);
+			}),
+			/*
+				Runs a macro.
 				
-				add:      doNotCoerce(function(l, r) { return l + r; }),
-				subtract: doNotCoerce(function(l, r) { return l - r; }),
-				multiply: doNotCoerce(function(l, r) { return l * r; }),
-				divide:   doNotCoerce(function(l, r) { return l / r; }),
-				modulo:   doNotCoerce(function(l, r) { return l % r; }),
+				In TwineScript.compile(), the myriad arguments given to a macro invocation are converted to 2 parameters to runMacro:
 				
-				lt:  comparisonOp(doNotCoerce(function(l,r) { return l <  r; })),
-				gt:  comparisonOp(doNotCoerce(function(l,r) { return l >  r; })),
-				lte: comparisonOp(doNotCoerce(function(l,r) { return l <= r; })),
-				gte: comparisonOp(doNotCoerce(function(l,r) { return l >= r; })),
+				@param {String} name     The macro's name.
+				@param {Function} thunk  A thunk enclosing the expressions 
+			*/
+			runMacro: function(name, thunk) {
+				var fn, error;
 				
-				/*
-					This fixes the NaN !== NaN "bug" in IEEE754.
-					If ES6 Object.is() is available, it also makes -0 !== 0.
-				*/
-				is: comparisonOp(Object.is || function(l,r) {
-					return (l === r) === (l !== l && r !== r);
-				}),
-				isNot: comparisonOp(function(l,r) {
-					return !Operation.is(l,r);
-				}),
-				contains: comparisonOp(contains),
-				isIn: comparisonOp(function(l,r) {
-					return contains(r,l);
-				}),
-				/*
-					Runs a macro.
-					
-					In Twinescript.compile(), the myriad arguments given to a macro invocation are converted
-					to 2 parameters to runMacro:
-					
-					@param {String} name     The macro's name.
-					@param {Function} thunk  A thunk enclosing the expressions 
-				*/
-				runMacro: function(name, thunk) {
-					var fn, error;
-					
-					name = name.toLowerCase();
-					if (!Macros.has(name)) {
-						return new ReferenceError("Unknown macro: " + name);
-					}
-					fn = Macros.get(name.toLowerCase());
-					
-					return fn(thunk);
+				name = name.toLowerCase();
+				if (!Macros.has(name)) {
+					return new ReferenceError("Unknown macro: " + name);
 				}
-			};
-		}());
-	
+				fn = Macros.get(name.toLowerCase());
+				
+				return fn(thunk);
+			}
+		};
+		return Object.freeze(Operation);
+	}
+
 	/*
 		A helper function for compile()
 	*/
@@ -332,15 +315,39 @@ define(['utils', 'macros', 'wordarray', 'state'], function(Utils, Macros, WordAr
 	}
 	
 	/**
-		Creates a new script execution environment, in which "top"
-		is bound to a certain value.
+		Creates a new script execution environment. This accepts and
+		decorates a Passage Instance object (see Engine.showPassage) and will
+		use it as the binding for the "top" keyword.
+		
 		@method environ
-		@param {jQuery} top The DOM context for WordArray.create
+		@param {Object} obj
 		@return {Object} An environ object with eval methods.
 	*/
 	function environ(top) {
-	
-		return {
+		top = top || {};
+		
+		var 
+			/*
+				This contains special runtime identifiers which may change at any time.
+				TODO: this should be re-initialised after every environ().eval().
+			*/
+			Identifiers = {
+				/*
+					The "it" keyword is bound to whatever the last left-hand-side value
+					in a comparison operation was.
+				*/
+				it: false,
+				/*
+					The "time" keyword binds to the number of milliseconds since the passage
+					was rendered.
+				*/
+				get time() {
+					return (+new Date() - top.timestamp) || 0;
+				}
+			},
+			Operation = operations(Identifiers);
+			
+		return $.extend(top, {
 			eval: function(/* variadic */) {
 				// This specifically has to be a "direct eval()" - calling eval() "indirectly"
 				// makes it run in global scope.
@@ -357,7 +364,7 @@ define(['utils', 'macros', 'wordarray', 'state'], function(Utils, Macros, WordAr
 					return e;
 				}
 			}
-		};
+		});
 	}
 	
 	var TwineScript = Object.freeze({

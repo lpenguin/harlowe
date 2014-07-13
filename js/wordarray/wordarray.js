@@ -80,7 +80,7 @@ define(['jquery', 'utils', 'selectors'], function ($, Utils, Selectors) {
 						Utils.transitionIn(w, t8n || "dissolve");
 					}
 				} else {
-					Utils.impossible("Engine.modifyWordArray", "this.contents contained the non-jQuery object, " + e);
+					Utils.impossible("WordArray.modifyWordArray", "this.contents contained the non-jQuery object, " + e);
 				}
 			});
 		}
@@ -96,12 +96,12 @@ define(['jquery', 'utils', 'selectors'], function ($, Utils, Selectors) {
 		@method findCharSpans
 		@private
 		@param {String} selector The search string.
-		@param {jQuery} top The DOM to search.
+		@param {jQuery} dom The DOM to search.
 		@return {Array} An array of jQuery objects.
 	*/
-	function findCharSpans(selector, top) {
+	function findCharSpans(selector, dom) {
 		// Recursive call
-		return _findCharSpans(selector, Utils.findAndFilter(top, Selectors.charSpan), true);
+		return _findCharSpans(selector, Utils.findAndFilter(dom, Selectors.charSpan), true);
 	}
 
 	/**
@@ -239,12 +239,14 @@ define(['jquery', 'utils', 'selectors'], function ($, Utils, Selectors) {
 			This queries the given DOM for selected words.
 			
 			@method refresh
-			@param {jQuery} top The DOM in which to search. Usually the contents of one <tw-passage>.
+			@param {PassageInstance} top
 			@return this
 		*/
 		refresh: function (top) {
 			var other = this,
 				type, i, word, invalid;
+			
+			Utils.assert(top.passageinstance);
 
 			// Turn each matched element in the jQuery into a separate word.
 			function forEachjQuery() {
@@ -264,10 +266,10 @@ define(['jquery', 'utils', 'selectors'], function ($, Utils, Selectors) {
 						word.each(forEachjQuery);
 						break;
 					case "wordarray string":
-						this.contents = findCharSpans(word, top);
+						this.contents = findCharSpans(word, top.dom);
 						break;
 					case "hookRef":
-						Utils.hookTojQuery(word, top).each(forEachjQuery);
+						Utils.hookTojQuery(word, top.dom).each(forEachjQuery);
 						break;
 					default:
 						invalid += 1;
@@ -320,11 +322,13 @@ define(['jquery', 'utils', 'selectors'], function ($, Utils, Selectors) {
 			
 			@method create
 			@param {String|Array} selectorstring A single string, or an array, of WordArray selectors.
-			@param {jQuery} top The DOM in which to search. Usually the contents of one <tw-passage>.
+			@param {PassageInstance} top
 			@return this
 		*/
 		create: function (selectorString, top) {
 			var ret = Object.create(this);
+			
+			Utils.assert(top.passageinstance);
 			
 			// Array.prototype.concat turns selectorString into an array, but ignores it
 			// if it's already an array.

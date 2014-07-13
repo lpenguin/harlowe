@@ -575,6 +575,14 @@ define(['jquery', 'twinemarkup', 'renderer', 'selectors', 'customelements'], fun
 		
 		impossible: function (where, data) {
 			console.error(where + "(): " + data);
+			console.trace();
+		},
+		
+		assert: function(assertion) {
+			if (!assertion) {
+				console.error("Assertion failed!");
+				console.trace();
+			}
 		},
 		
 		/*

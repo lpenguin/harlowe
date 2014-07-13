@@ -35,12 +35,14 @@ define(['jquery', 'story', 'utils', 'selectors', 'wordarray'], function($, Story
 			
 			@method enchant
 			@param {String} className class to add
-			@param {jQuery} top The passage element in which this is being performed.
+			@param {PassageInstance} top The passage in which this is being performed.
 			@return {String} description
 		*/
 		enchant: function (className, top) {
 			var i, j, selector, type;
 
+			Utils.assert(top.passageinstance);
+			
 			this.hooks = $();
 
 			// Do all the selector(s).
@@ -57,7 +59,7 @@ define(['jquery', 'story', 'utils', 'selectors', 'wordarray'], function($, Story
 					this.hooks = this.hooks.add(selector);
 				}
 				else if (type === "hookRef") {
-					this.hooks = this.hooks.add(Utils.hookTojQuery(selector, top));
+					this.hooks = this.hooks.add(Utils.hookTojQuery(selector, top.dom));
 				}
 				else if (type === "wordarray string")
 				// Pseudohooks
