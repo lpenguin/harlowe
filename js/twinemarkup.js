@@ -316,7 +316,7 @@
 			hook:
 				new RecursiveExpression(
 					"\\[",
-					"\\]" + ws + "\\[(" + notChars("]") + ")\\]"
+					"\\]" + "\\[(" + notChars("]") + ")\\]"
 				),
 			
 			passageLink:
@@ -416,8 +416,8 @@
 			
 			boolean: "(true|false|null|undefined)",
 			
-			// There's only one special identifier currently.
-			identifier: "it",
+			// Special identifiers
+			identifier: "it|time",
 			
 			// TODO: this generated regex is horrendously slow
 			// when an unclosed ' or " is in the source text.
@@ -444,9 +444,9 @@
 			not:       wb + either(caseInsensitive("not"), "!") + wb,
 			isNot:     wb + either(caseInsensitive("is not"), "!==") + wb,
 			
-			lt:        "<",
+			lt:        "<(?!=)",
 			lte:       "<=",
-			gt:        ">",
+			gt:        ">(?!=)",
 			gte:       ">=",
 			
 			isIn:      wb + caseInsensitive("is in") + wb,

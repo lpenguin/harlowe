@@ -334,9 +334,15 @@ define(['jquery', 'utils', 'macros', 'wordarray', 'state'], function($, Utils, M
 				/*
 					The "time" keyword binds to the number of milliseconds since the passage
 					was rendered.
+					
+					It might be something of toss-up whether the "time" keyword should
+					intuitively refer to the entire passage's lifetime, or just the nearest
+					hook's. I believe that the passage is what's called for here, but an
+					adjustment to the latter can be made by changing top.root.timestamp to
+					just top.timestamp.
 				*/
 				get time() {
-					return (+new Date() - top.timestamp) || 0;
+					return (Date.now() - top.root.timestamp);
 				}
 			},
 			Operation = operations(Identifiers);

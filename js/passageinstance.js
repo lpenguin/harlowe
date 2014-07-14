@@ -27,7 +27,15 @@ function($, Utils, Selectors, TwineScript, TwineMarkup, Renderer, Story, State) 
 				*/
 				dom: $(this.dom),
 			});
-			
+			/*
+				PassageInstances, despite their horrid name, are also used for hooks'
+				interiors. As such, they may need to obtain data from the actual passage
+				housing them.
+				
+				Add a reference to the 'root', the farthest parent PassageInstance, which
+				corresponds to the actual passage.
+			*/
+			ret.root = this.root || ret;
 			/*
 				Add a TwineScript environ and mix in its eval() method.
 			*/
@@ -230,7 +238,10 @@ function($, Utils, Selectors, TwineScript, TwineMarkup, Renderer, Story, State) 
 							Execute the expression.
 						*/
 						result = innerInstance.runExpression(expr);
-						
+						/*
+							Become cognizant of any hook connected to this expression.
+						*/
+						nextHook = expr.next("tw-hook");
 						/*
 							The result can be any of these values, and
 							should be put to use in the following ways:
@@ -253,10 +264,6 @@ function($, Utils, Selectors, TwineScript, TwineMarkup, Renderer, Story, State) 
 							result = result();
 						}
 						if (typeof result === "function") {
-							/*
-								Check if any hook is connected to this expression's result.
-							*/
-							nextHook = expr.next("tw-hook");
 							if (nextHook.length) {
 								if (result.changer) {
 									innerInstance.runChangerFunction(result, nextHook);
