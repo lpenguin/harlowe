@@ -108,7 +108,7 @@
 			
 			{String}  s   REstring for the start tag.
 			{String} [m]  REstring for any tags within the match that
-			|             match with the end tag (e.g. "(" with ")")
+			.             match with the end tag (e.g. "(" with ")")
 			{String}  e   REstring for the end tag.
 		*/
 		function RecursiveExpression(s, m, e) {
@@ -322,17 +322,20 @@
 			hookAppended:
 				new RecursiveExpression(
 					"\\[",
-					"\\]" + "<(" + notChars("]") + ")\\|"
+					"\\]" + "<(" + anyLetter.replace("]", "_]") + "*)\\|"
 				),
 			
 			hookPrepended:
 				new RecursiveExpression(
-					"\\|(" + notChars("]") + ")>\\[",
+					"\\|(" + anyLetter.replace("]", "_]") + "*)>\\[",
 					"\\]"
 				),
-			/*
-				TODO: hookWithMacro
-			*/
+			
+			hookAnonymous:
+				new RecursiveExpression(
+					"\\[",
+					"\\]"
+				),
 			
 			passageLink:
 				passageLink.opener
@@ -702,10 +705,19 @@
 		*/
 		function lex(src, initpos, inMacro) {
 			var done, ret, rname, rule, match, i,
-				lastrule = "",
+				lastRule = "",
+				/*
+					This is a buffer holding text that isn't matched
+					by any particular rule, to be stored until the source
+					is exhausted or a rule is finally matched.
+				*/
 				text = "",
 				ruleskeys = Object.keys(rules);
 			
+			/*
+				Put a new state on the state stack. If this is a recursively nested lex() call,
+				then below it on the stack are the states of its calling scopes.
+			*/
 			states.unshift({
 				tokens: [],
 				pos: initpos || 0,
@@ -731,22 +743,36 @@
 						continue;
 					}
 					rule = rules[rname];
-					// Ignore unimplemented rules
+					/*
+						Rules with no handler (which I must've left in by mistake)
+						cannot be matched.
+					*/
 					if (!rule.fn) {
 						continue;
 					}
 					if ((match = rule.match.exec(src)) &&
-							// match.block rules only apply at the start of new lines.
-							(!rule.block ||
-								(!lastrule
-								|| lastrule === "br"
-								|| lastrule === "paragraph")) &&
-							// within macros, only macro rules and expressions can be used.
+							/*
+								Check whether this rule is restricted to only being matched
+								directly after another rule has. An example is the "block"
+								rules, which may only match after a "br" or "paragraph" rule.
+							*/
+							(!lastRule || !rule.lastRule
+								|| rule.lastRule.indexOf(lastRule)>-1) &&
+							/*
+								Within macros, only macro rules and expressions can be used.
+							*/
 							(!states[0].inMacro || rule.macro || rule.expression) &&
-							// outside macros, macro rules can't be used.
+							/*
+								Outside macros, macro rules can't be used.
+							*/
 							(!rule.macro || states[0].inMacro)) {
 						
-						// First, push the current run of slurped text.
+						/*
+							Now that it's matched, let's forge this token.
+							First, push the slurped text buffer, and hastily
+							create a token out of it, representing the interstitial unmatched
+							text between this and the last "proper" token.
+						*/
 						if (text) {
 							rules.text.fn([text]);
 							states[0].pos += text.length;
@@ -761,16 +787,19 @@
 						src = src.slice(match[0].length);
 						
 						// Finished matching a rule - resume
-						lastrule = rname;
+						lastRule = rname;
 						done = true;
 						// Break from the for-loop
 						break;
 					}
 				}
-				// If no match, then treat as generic text, and slurp it up.
+				/*
+					If no match was available, then treat this run of source as mere human prose,
+					and slurp it up into the text buffer.
+				*/
 				if (src && !done) {
 					text += src[0];
-					lastrule = "text";
+					lastRule = "text";
 					src = src.slice(1);
 				}
 			}
@@ -778,17 +807,35 @@
 			if (text) {
 				push("text", [text]);
 			}
+			/*
+				Pop the state from the stack, fetch the tokens, and return them.
+			*/
 			ret = states.shift().tokens;
 			return ret;
 		}
-			
+		
+		/*
+			This is the returned object representing the lexer inner state.
+		*/
 		return {
+			// The main function
+			lex: lex,
+			/*
+				The (initially empty) rules object should be augmented with
+				whatever rules the language requires.
+			*/
+			rules: rules,
+			/*
+				The push function is exported to allow rules object entries to
+				use it in their handlers.
+			*/
 			push: push,
+			/*
+				The "sugar" functions act as shorthands for common push() uses.
+			*/
 			pusher: pusher,
 			textPusher: textPusher,
 			valuePusher: valuePusher,
-			lex: lex,
-			rules: rules
 		};
 	}
 	
@@ -804,7 +851,8 @@
 		var push = state.push,
 			pusher = state.pusher,
 			textPusher = state.textPusher,
-			valuePusher = state.valuePusher;
+			valuePusher = state.valuePusher,
+			block = ["br", "paragraph"];
 		
 		/*
 			A quick shorthand function to convert a RegExpStrings property into a RegExp,
@@ -824,7 +872,7 @@
 			*/
 			heading: {
 				match: r("heading"),
-				block: true,
+				lastRule: block,
 				fn: function(match) {
 					push("heading", match, {
 						depth: match[1].length,
@@ -845,7 +893,7 @@
 			*/
 			align: {
 				match: r("align"),
-				block: true,
+				lastRule: block,
 				fn: function (match) {
 					var align,
 						arrow = match[1],
@@ -861,9 +909,9 @@
 						align = Math.round(centerIndex / (arrow.length - 2) * 50);
 					} else if (arrow[0] === "<" && arrow.slice(-1) === ">") {
 						align = "justify";
-					} else if (~arrow.indexOf(">")) {
+					} else if (arrow.contains(">")) {
 						align = "right";
-					} else if (~arrow.indexOf("<")) {
+					} else if (arrow.contains("<")) {
 						align = "left";
 					}
 					push('align', match, { align: align });
@@ -871,12 +919,12 @@
 			},
 			hr: {
 				match: r("hr"),
-				block: true,
+				lastRule: block,
 				fn: pusher("hr")
 			},
 			bulleted: {
 				match: r("bulleted"),
-				block: true,
+				lastRule: block,
 				fn: function(match) {
 					push("bulleted", match, {
 						depth: match[1].length,
@@ -886,7 +934,7 @@
 			},
 			numbered: {
 				match: r("numbered"),
-				block: true,
+				lastRule: block,
 				fn: function(match) {
 					push("numbered", match, {
 						depth: match[1].length / 2,
@@ -896,7 +944,7 @@
 			},
 			paragraph: {
 				match: r("paragraph"),
-				block: true,
+				lastRule: block,
 				fn: textPusher("paragraph")
 			},
 			/*
@@ -948,6 +996,19 @@
 					push("hook", match, {
 						innerText: match[2],
 						name: match[1]
+					});
+				}
+			},
+			/*
+				A tag-less hook that appears after a macro.
+				Sadly, the "after a macro" part must be hard-coded in lex().
+			*/
+			hookAnonymous: {
+				match: r("hookAnonymous"),
+				lastRule: ["macro"],
+				fn: function(match) {
+					push("hook", match, {
+						innerText: match[1]
 					});
 				}
 			},

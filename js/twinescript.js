@@ -140,6 +140,11 @@ define(['jquery', 'utils', 'macros', 'wordarray', 'state'], function($, Utils, M
 				: Array.from(arguments).slice(1));
 		
 		for (i = 0; i < array.length; i+=1) {
+			/*
+				Odd fact: unary + is often used to convert non-numbers to
+				numbers, but it also converts negative numbers to positive.
+				So, use 0+ instead when that matters.
+			*/
 			if (0+types.indexOf(array[i].type) > -1) {
 				return i;
 			}
@@ -162,7 +167,7 @@ define(['jquery', 'utils', 'macros', 'wordarray', 'state'], function($, Utils, M
 			*/
 			compiledLeft, token,
 			/*
-				Setting values to either of these
+				Setting values to either of these two variables
 				determines the code to emit: for midString, a plain
 				JS infix operation between left and right; for operation, an
 				Operation method call with left and right as arguments.
@@ -205,7 +210,6 @@ define(['jquery', 'utils', 'macros', 'wordarray', 'state'], function($, Utils, M
 			
 			grouping ()
 			macro
-			comma
 			not
 			multiply
 			divide
@@ -221,6 +225,7 @@ define(['jquery', 'utils', 'macros', 'wordarray', 'state'], function($, Utils, M
 			and
 			or
 			to
+			comma
 			
 			We must check these in reverse, so that the least-precedent
 			is associated last.
@@ -264,6 +269,7 @@ define(['jquery', 'utils', 'macros', 'wordarray', 'state'], function($, Utils, M
 				/*
 					You may notice here, unseen, is the assumption that Javascript array literals
 					and TwineScript macro invocations use the same character to separate arguments/items.
+					(That, of course, being the comma - macro(1,2,3) vs [1,2,3].)
 					This is currently true, but it is nonetheless a fairly bold assumption.
 				*/
 				+ compile(array[i].children)

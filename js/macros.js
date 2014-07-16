@@ -205,7 +205,7 @@ function($, Story, Utils, Selectors) {
 				eventName = name + ".macro";
 
 			// Append the newList to the list, if it isn't present already.
-			(!~list.indexOf(newList) && (list += (list && ", ") + newList));
+			(!list.contains(newList) && (list += (list && ", ") + newList));
 
 			// Set the event handler
 			$(document.documentElement).off(eventName).on(eventName, list, enchantmentEventFn);

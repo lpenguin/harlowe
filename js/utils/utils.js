@@ -285,7 +285,7 @@ define(['jquery', 'twinemarkup', 'renderer', 'selectors', 'customelements'], fun
 			@return {String} The transition selector.
 		*/
 		transitionSelector: function (str) {
-			return (typeof str === "string" && (str.indexOf("t8n-") === 0) && str.slice(4))
+			return (typeof str === "string" && str.startsWith("t8n-") && str.slice(4))
 				|| "dissolve";
 		},
 
