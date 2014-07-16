@@ -313,11 +313,26 @@
 			bulleted:    bulleted,
 			numbered:    numbered,
 			
-			hook:
+			/*
+				Hook tags can be either prepended, pointing to the right,
+					|tag>[The hook's text]
+				or appended, pointing to the left.
+					[The hook's text]<tag|
+			*/
+			hookAppended:
 				new RecursiveExpression(
 					"\\[",
-					"\\]" + "\\[(" + notChars("]") + ")\\]"
+					"\\]" + "<(" + notChars("]") + ")\\|"
 				),
+			
+			hookPrepended:
+				new RecursiveExpression(
+					"\\|(" + notChars("]") + ")>\\[",
+					"\\]"
+				),
+			/*
+				TODO: hookWithMacro
+			*/
 			
 			passageLink:
 				passageLink.opener
@@ -918,12 +933,21 @@
 					});
 				}
 			},
-			hook: {
-				match: r("hook"),
+			hookAppended: {
+				match: r("hookAppended"),
 				fn: function(match) {
 					push("hook", match, {
 						innerText: match[1],
 						name: match[2]
+					});
+				}
+			},
+			hookPrepended: {
+				match: r("hookPrepended"),
+				fn: function(match) {
+					push("hook", match, {
+						innerText: match[2],
+						name: match[1]
 					});
 				}
 			},
