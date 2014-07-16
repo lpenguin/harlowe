@@ -329,7 +329,6 @@ define(['jquery', 'utils', 'macros', 'wordarray', 'state'], function($, Utils, M
 		var 
 			/*
 				This contains special runtime identifiers which may change at any time.
-				TODO: this should be re-initialised after every environ().eval().
 			*/
 			Identifiers = {
 				/*
@@ -355,11 +354,11 @@ define(['jquery', 'utils', 'macros', 'wordarray', 'state'], function($, Utils, M
 			
 		return Object.assign(top, {
 			eval: function(/* variadic */) {
-				// This specifically has to be a "direct eval()" - calling eval() "indirectly"
-				// makes it run in global scope.
 				try {
-					// This specifically has to be a "direct eval()" - calling eval() "indirectly"
-					// makes it run in global scope.
+					/*
+						This specifically has to be a "direct eval()" - calling eval() "indirectly"
+						makes it run in global scope.
+					*/
 					return eval(
 						Array.from(arguments).join('')
 					);

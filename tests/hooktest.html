@@ -3,54 +3,52 @@
 0. [[Time macro test]]
 0. [[Random test]]
 
-if(false)[x][x]
-
-[Tick][2]
+[Tick]<2|
 click(?2)[
 print(time)
 if(time >= 3s)[
 3 seconds passed!
-][c]
+]
 else()[
 3 seconds did not pass!
-][c]
-][a]
+]
+]
 </tw-passagedata>
 <tw-passagedata pid="9" name="Displayed" position="612,419">Frogs!!</tw-passagedata>
 <tw-passagedata pid="2" name="Hook test" position="330,418">#One macro, two different hooks.
-One [bunny][1], two [bunnies][1].
-click-replace(?1)[sheep][a]
+One [bunny]<1|, two [bunnies]<1|.
+click-replace(?1)[sheep]
 
 #A hook that enchants a second hook.
-One [bunny][2], two [bunnies][3].
+One [bunny]<2|, two [bunnies]<3|.
 click(?2)[
-replace(?2)[sheep][a]
-click-replace(?3)[sheep][a]
-][a]
+replace(?2)[sheep]
+click-replace(?3)[sheep]
+]
 
 #A hook that replaces a different hook.
-One [bunny][4], two [bunnies][5].
+One [bunny]<4|, two [bunnies]<5|.
 click(?4)[
-replace(?5)[sheep][a]
-][a]
+replace(?5)[sheep]
+]
 click(?5)[
-replace(?4)[sheep][a]
-][a]
-</tw-passagedata><tw-passagedata pid="3" name="Time macro test" position="471,420">A [red clock][1]. A [blue clock][2].
-A [green clock][3].
-A [white clock][4].
+replace(?4)[sheep]
+]
+</tw-passagedata><tw-passagedata pid="3" name="Time macro test" position="471,420">A [red clock]<1|. A [blue clock]<2|.
+A [green clock]<3|.
+A [white clock]<4|.
 time(1s)[
-replace(?1)[blue clock][a]
-][a]
+replace(?1)[blue clock]
+]
 time(1500ms)[
-append(?2)[and a red clock][a]
-][a]
+append(?2)[ and a red clock]
+]
 
 time(0.8s, 0.7s, "Invalid parameter that should be ignored", 0.6s, 0.5s, 0.4s)[
-append(?3)[...tick][a]
-][a]
+append(?3)[...tick]
+]
 
-timed-append(?4,1s)[with red hands][a]&gt;&gt;</tw-passagedata><tw-passagedata pid="4" name="Random test" position="780,418">||||||||||||||||
+timed-append(?4, 1s)[with red hands]&gt;&gt;</tw-passagedata><tw-passagedata pid="4" name="Random test" position="780,418">||||||||||||||||
 ||||||||||||||||
 ||||||||||||||||
 ||||||||||||||||
@@ -58,8 +56,7 @@ timed-append(?4,1s)[with red hands][a]&gt;&gt;</tw-passagedata><tw-passagedata p
 ||||||||||||||||
 ||||||||||||||||
 ||||||||||||||||
-<!-- &lt;&lt;replace &quot;|&quot;&gt;&gt;&lt;&lt;print either(&quot;╱&quot;,&quot;╲&quot;)&gt;&gt;&lt;&lt;/replace&gt;&gt; -->
-replace('|')[either("╱","╲")][c]
+replace('|')[either("╱","╲")]
 </tw-passagedata>
 <tw-passagedata pid="5" name="Pseudo-hook test" position="612,419">A definite article indicates that its noun is a particular one (or ones) identifiable to the listener. It may be something that the speaker has already mentioned, or it may be something uniquely specified. The definite article in English, for both singular and plural nouns, is the.
 
@@ -77,28 +74,20 @@ which does not specify what book is to be given.
 The definite article can also be used in English to indicate a specific class among other classes:
 The cabbage white butterfly lays its eggs on members of the Brassica genus.
 
-[Bold &quot;the&quot; and make &quot;Children&quot; and &quot;children&quot; shudder][1]
-[Add &quot;?&quot; to each &quot;in&quot;][2]
-[Remove lowercase vowels][3]
+[Bold &quot;the&quot; and make &quot;Children&quot; and &quot;children&quot; shudder]<1|
+[Add &quot;?&quot; to each &quot;in&quot;]<2|
+[Remove lowercase vowels]<3|
 
-&lt;&lt;nobr&gt;&gt;
-&lt;&lt;click &quot;general&quot;&gt;&gt;
-Hey! You clicked &quot;general&quot;!
-&lt;&lt;/click&gt;&gt;
-&lt;&lt;click ?1&gt;&gt;
-&lt;&lt;replace &quot;the&quot;&gt;&gt;**the**&lt;&lt;/replace&gt;&gt;
-&lt;&lt;replace &quot;Children&quot;&gt;&gt;&lt;span class=&quot;shudder&quot;&gt;Children&lt;/span&gt;&lt;&lt;/replace&gt;&gt;
-&lt;&lt;replace &quot;children&quot;&gt;&gt;&lt;span class=&quot;shudder&quot;&gt;children&lt;/span&gt;&lt;&lt;/replace&gt;&gt;
-&lt;&lt;/click&gt;&gt;
-&lt;&lt;click ?2&gt;&gt;
-&lt;&lt;append &quot;in&quot;&gt;&gt;?&lt;&lt;/append&gt;&gt;
-&lt;&lt;/click&gt;&gt;
-&lt;&lt;click ?3&gt;&gt;
-&lt;&lt;remove &quot;a&quot;&gt;&gt;
-&lt;&lt;remove &quot;e&quot;&gt;&gt;
-&lt;&lt;remove &quot;i&quot;&gt;&gt;
-&lt;&lt;remove &quot;o&quot;&gt;&gt;
-&lt;&lt;remove &quot;u&quot;&gt;&gt;
-&lt;&lt;/click&gt;&gt;
-&lt;&lt;/nobr&gt;&gt;</tw-passagedata></tw-storydata>
+click(?1)[
+replace("the")[''the'']
+replace("Children")[&lt;x-shudder&gt;Children&lt;/x-shudder&gt;]
+replace("children")[&lt;x-shudder&gt;children&lt;/x-shudder&gt;]
+]
+click(?2)[
+replace("in")[in?]
+]
+click(?3)[
+remove("a") remove("e") remove("i") remove("o") remove("u")
+]
+</tw-passagedata></tw-storydata>
 

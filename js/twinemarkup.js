@@ -1008,7 +1008,8 @@
 				lastRule: ["macro"],
 				fn: function(match) {
 					push("hook", match, {
-						innerText: match[1]
+						innerText: match[1],
+						name: ""
 					});
 				}
 			},
