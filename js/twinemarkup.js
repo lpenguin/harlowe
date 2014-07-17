@@ -285,6 +285,7 @@
 			
 			unquoted:    unquoted,
 			escapedLine: "\\\\\\n",
+			br: "\\n",
 			
 			/*
 				Twine currently just uses HTML comment syntax for comments.
@@ -852,7 +853,212 @@
 			pusher = state.pusher,
 			textPusher = state.textPusher,
 			valuePusher = state.valuePusher,
-			block = ["br", "paragraph"];
+			block = ["br", "paragraph"],
+			addedRules;
+
+		addedRules = merge({
+				/*
+					First, the block rules.
+				*/
+				heading: {
+					lastRule: block,
+					fn: function(match) {
+						push("heading", match, {
+							depth: match[1].length,
+							innerText: match[2]
+						});
+					}
+				},
+				
+				/*
+					Text align syntax
+					
+					==>      : right-aligned
+					=><=     : centered
+					<==>     : justified
+					<==      : left-aligned (undoes the above)
+					===><=   : margins 3/4 left, 1/4 right
+					=><===== : margins 1/6 left, 5/6 right, etc.
+				*/
+				align: {
+					lastRule: block,
+					fn: function (match) {
+						var align,
+							arrow = match[1],
+							centerIndex = arrow.indexOf("><");
+							
+						if (~centerIndex) {
+							/*
+								Find the left-align value
+								(Since offset-centered text is centered,
+								halve the left-align - hence I multiply by 50 instead of 100
+								to convert to a percentage.)
+							*/
+							align = Math.round(centerIndex / (arrow.length - 2) * 50);
+						} else if (arrow[0] === "<" && arrow.slice(-1) === ">") {
+							align = "justify";
+						} else if (arrow.contains(">")) {
+							align = "right";
+						} else if (arrow.contains("<")) {
+							align = "left";
+						}
+						push('align', match, { align: align });
+					},
+				},
+				hr: {
+					lastRule: block,
+					fn: pusher("hr")
+				},
+				bulleted: {
+					lastRule: block,
+					fn: function(match) {
+						push("bulleted", match, {
+							depth: match[1].length,
+							innerText: match[2]
+						});
+					}
+				},
+				numbered: {
+					lastRule: block,
+					fn: function(match) {
+						push("numbered", match, {
+							depth: match[1].length / 2,
+							innerText: match[2]
+						});
+					}
+				},
+				paragraph: {
+					lastRule: block,
+					fn: textPusher("paragraph")
+				},
+				/*
+					Now, the inline macros.
+				*/
+				passageLink: {
+					fn: function(match) {
+						var p1 = match[1],
+							p2 = match[2],
+							p3 = match[3];
+						
+						push("twineLink", match, {
+							innerText: p2 ? p3 : p1,
+							passage: p1 ? p3 : p2
+						});
+					}
+				},
+				legacyLink: {
+					fn: function(match) {
+						push("twineLink", match, {
+							innerText: match[1],
+							passage: match[2]
+						});
+					}
+				},
+				simpleLink: {
+					fn: function(match) {
+						push("twineLink", match, {
+							innerText: match[1],
+							passage: match[1]
+						});
+					}
+				},
+				hookAppended: {
+					fn: function(match) {
+						push("hook", match, {
+							innerText: match[1],
+							name: match[2]
+						});
+					}
+				},
+				hookPrepended: {
+					fn: function(match) {
+						push("hook", match, {
+							innerText: match[2],
+							name: match[1]
+						});
+					}
+				},
+				/*
+					A tag-less hook that appears after a macro.
+				*/
+				hookAnonymous: {
+					lastRule: ["macro"],
+					fn: function(match) {
+						push("hook", match, {
+							innerText: match[1],
+							name: ""
+						});
+					}
+				},
+				code: {
+					fn: function(match) {
+						push("code", match, {
+							code: match[2]
+						});
+					}
+				},
+				escapedLine: {
+					fn: pusher("escapedLine")
+				},
+				/*
+					Like GitHub-Flavoured Markdown, Twine preserves line breaks.
+				*/
+				br:      { fn:     pusher("br") },
+				comment: { fn:     pusher("comment") },
+				tag:     { fn:     pusher("tag") },
+				url:     { fn:     pusher("url") },
+				strong:  { fn: textPusher("strong") },
+				em:      { fn: textPusher("em") },
+				bold:    { fn: textPusher("bold") },
+				italic:  { fn: textPusher("italic") },
+				del:     { fn: textPusher("del") },
+				
+				/*
+					Now, macro code rules.
+				*/
+				macro: {
+					expression: true,
+					fn: function(match) {
+						push("macro", match, {
+							name: match[1],
+							innerText: match[2],
+							expression: true
+						});
+					}
+				},
+				cssTime: {
+					macro: true,
+					fn: valuePusher("cssTime", function(match) {
+						return +match[1]
+							* (match[2].toLowerCase() === "s" ? 1000 : 1);
+					})
+				},
+				number: {
+					macro: true,
+					fn: valuePusher("number", function(match) {
+						/*
+							This fixes accidental octal (by eliminating octal)
+						*/
+						return parseFloat(match[0]);
+					})
+				},
+				hookRef:  { expression: true, fn: textPusher("hookRef", "name") },
+				variable: { expression: true, fn: textPusher("variable", "name") },
+				grouping: { macro: true, fn: textPusher("grouping") },
+				
+				// The text rule has no match RegExp
+				text:     { fn:     pusher("text") },
+			},
+			/*
+				Some macro-only tokens
+			*/
+			["string", "boolean", "identifier", "is", "to", "and", "or", "not", "isNot", "comma",
+			"add", "subtract", "multiply", "divide", "modulo", "lt", "lte", "gt", "gte",
+			"contains", "isIn"].reduce(function(a, e) {
+				a[e] = { macro: true, fn: pusher(e) };
+				return a;
+			},{})
+		);
 		
 		/*
 			A quick shorthand function to convert a RegExpStrings property into a RegExp,
@@ -865,228 +1071,16 @@
 			}
 			return new RegExp("^(?:" + re + ")");
 		}
-
-		merge(state.rules, {
-			/*
-				First, the block rules.
-			*/
-			heading: {
-				match: r("heading"),
-				lastRule: block,
-				fn: function(match) {
-					push("heading", match, {
-						depth: match[1].length,
-						innerText: match[2]
-					});
-				}
-			},
-			
-			/*
-				Text align syntax
-				
-				==>      : right-aligned
-				=><=     : centered
-				<==>     : justified
-				<==      : left-aligned (undoes the above)
-				===><=   : margins 3/4 left, 1/4 right
-				=><===== : margins 1/6 left, 5/6 right, etc.
-			*/
-			align: {
-				match: r("align"),
-				lastRule: block,
-				fn: function (match) {
-					var align,
-						arrow = match[1],
-						centerIndex = arrow.indexOf("><");
-						
-					if (~centerIndex) {
-						/*
-							Find the left-align value
-							(Since offset-centered text is centered,
-							halve the left-align - hence I multiply by 50 instead of 100
-							to convert to a percentage.)
-						*/
-						align = Math.round(centerIndex / (arrow.length - 2) * 50);
-					} else if (arrow[0] === "<" && arrow.slice(-1) === ">") {
-						align = "justify";
-					} else if (arrow.contains(">")) {
-						align = "right";
-					} else if (arrow.contains("<")) {
-						align = "left";
-					}
-					push('align', match, { align: align });
-				},
-			},
-			hr: {
-				match: r("hr"),
-				lastRule: block,
-				fn: pusher("hr")
-			},
-			bulleted: {
-				match: r("bulleted"),
-				lastRule: block,
-				fn: function(match) {
-					push("bulleted", match, {
-						depth: match[1].length,
-						innerText: match[2]
-					});
-				}
-			},
-			numbered: {
-				match: r("numbered"),
-				lastRule: block,
-				fn: function(match) {
-					push("numbered", match, {
-						depth: match[1].length / 2,
-						innerText: match[2]
-					});
-				}
-			},
-			paragraph: {
-				match: r("paragraph"),
-				lastRule: block,
-				fn: textPusher("paragraph")
-			},
-			/*
-				Now, the inline macros.
-			*/
-			passageLink: {
-				match: r("passageLink"),
-				fn: function(match) {
-					var p1 = match[1],
-						p2 = match[2],
-						p3 = match[3];
-					
-					push("twineLink", match, {
-						innerText: p2 ? p3 : p1,
-						passage: p1 ? p3 : p2
-					});
-				}
-			},
-			legacyLink: {
-				match: r("legacyLink"),
-				fn: function(match) {
-					push("twineLink", match, {
-						innerText: match[1],
-						passage: match[2]
-					});
-				}
-			},
-			simpleLink: {
-				match: r("simpleLink"),
-				fn: function(match) {
-					push("twineLink", match, {
-						innerText: match[1],
-						passage: match[1]
-					});
-				}
-			},
-			hookAppended: {
-				match: r("hookAppended"),
-				fn: function(match) {
-					push("hook", match, {
-						innerText: match[1],
-						name: match[2]
-					});
-				}
-			},
-			hookPrepended: {
-				match: r("hookPrepended"),
-				fn: function(match) {
-					push("hook", match, {
-						innerText: match[2],
-						name: match[1]
-					});
-				}
-			},
-			/*
-				A tag-less hook that appears after a macro.
-				Sadly, the "after a macro" part must be hard-coded in lex().
-			*/
-			hookAnonymous: {
-				match: r("hookAnonymous"),
-				lastRule: ["macro"],
-				fn: function(match) {
-					push("hook", match, {
-						innerText: match[1],
-						name: ""
-					});
-				}
-			},
-			code: {
-				match: r("code"),
-				fn: function(match) {
-					push("code", match, {
-						code: match[2]
-					});
-				}
-			},
-			escapedLine: {
-				match: r("escapedLine"),
-				fn: pusher("escapedLine")
-			},
-			/*
-				Like GitHub-Flavoured Markdown, Twine preserves line breaks.
-			*/
-			br:      { match:        /^\n/, fn:     pusher("br") },
-			comment: { match: r("comment"), fn:     pusher("comment") },
-			tag:     { match:     r("tag"), fn:     pusher("tag") },
-			url:     { match:     r("url"), fn:     pusher("url") },
-			strong:  { match:  r("strong"), fn: textPusher("strong") },
-			em:      { match:      r("em"), fn: textPusher("em") },
-			bold:    { match:    r("bold"), fn: textPusher("bold") },
-			italic:  { match:  r("italic"), fn: textPusher("italic") },
-			del:     { match:     r("del"), fn: textPusher("del") },
-			
-			/*
-				Now, macro code rules.
-			*/
-			macro: {
-				match: r("macro"),
-				expression: true,
-				fn: function(match) {
-					push("macro", match, {
-						name: match[1],
-						innerText: match[2],
-						expression: true
-					});
-				}
-			},
-			cssTime: {
-				match: r("cssTime"),
-				macro: true,
-				fn: valuePusher("cssTime", function(match) {
-					return +match[1]
-						* (match[2].toLowerCase() === "s" ? 1000 : 1);
-				})
-			},
-			number: {
-				match: r("number"),
-				macro: true,
-				fn: valuePusher("number", function(match) {
-					/*
-						This fixes accidental octal (by eliminating octal)
-					*/
-					return parseFloat(match[0]);
-				})
-			},
-			hookRef:  { match:   r("hookRef"), expression: true, fn: textPusher("hookRef", "name") },
-			variable: { match:  r("variable"), expression: true, fn: textPusher("variable", "name") },
-			grouping: { match:  r("grouping"), macro: true, fn: textPusher("grouping") },
-			
-			// The text rule has no match RegExp
-			text:     { match:         null, fn:     pusher("text") },
-		},
+		
 		/*
-			Some macro-only tokens
+			Each named rule uses the same named RegExpString for its
+			regular expression. Add those properties succinctly now.
 		*/
-		["string", "boolean", "identifier", "is", "to", "and", "or", "not", "isNot", "comma",
-		"add", "subtract", "multiply", "divide", "modulo", "lt", "lte", "gt", "gte",
-		"contains", "isIn"].reduce(function(a, e) {
-			a[e] = { match: r(e), macro: true, fn: pusher(e) };
-			return a;
-		},{})
-		);
+		Object.keys(addedRules).forEach(function(e) {
+		console.log(e,r(e));
+			addedRules[e].match = r(e);
+		});
+		merge(state.rules, addedRules);
 		return state;
 	}
 	

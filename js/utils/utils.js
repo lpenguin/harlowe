@@ -1,4 +1,4 @@
-define(['jquery', 'twinemarkup', 'renderer', 'selectors', 'customelements'], function($, TwineMarkup, Renderer, Selectors) {
+define(['jquery', 'twinemarkup', 'selectors', 'customelements'], function($, TwineMarkup, Selectors) {
 	"use strict";
 
 	var 
@@ -216,7 +216,7 @@ define(['jquery', 'twinemarkup', 'renderer', 'selectors', 'customelements'], fun
 
 			@method hookTojQuery
 			@param {String} c		Hook index (such as "?cupboard")
-			@param {Element} top	Passage element parent
+			@param {jQuery} top	Passage element parent
 			@return jQuery object
 		*/
 

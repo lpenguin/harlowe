@@ -1,38 +1,45 @@
 define(['jquery', 'utils', 'selectors', 'twinescript', 'twinemarkup', 'renderer', 'story', 'state'],
 function($, Utils, Selectors, TwineScript, TwineMarkup, Renderer, Story, State) {
 	"use strict";
-	
+	/**
+		Section objects represent a block of Twine prose rendered into a DOM.
+		It contains its own DOM, a reference to any enclosing Section,
+		and methods and properties related to invoking TwineScript code within it.
+		
+		@class Section
+		
+	*/
 	/*
 		These two vars cache the previously rendered source text, and the syntax tree returned by
 		TwineMarkup.lex from that.
 	*/
 	var renderCacheKey,
 		renderCacheValue,
-		PassageInstance;
+		Section;
 	
-	PassageInstance = {
-		passageinstance: true,
+	Section = {	
+		// Used for duck-typing
+		section: true,
 		
 		create: function() {
 			var ret = Object.assign(Object.create(this), {
 				/*
-					The time this passage instance was rendered. Of course, it's
+					The time this Section was rendered. Of course, it's
 					not been rendered yet, but it needs to be recorded this early because
 					TwineScript uses it.
 				*/
-				timestamp: +new Date(),
+				timestamp: Date.now(),
 				/*
 					The visible DOM that any TwineScript code can see. Macros, hookRefs, etc.
-					can only affect those in this passage's DOM.
+					can only affect those in this Section's DOM.
 				*/
 				dom: $(this.dom),
 			});
 			/*
-				PassageInstances, despite their horrid name, are also used for hooks'
-				interiors. As such, they may need to obtain data from the actual passage
+				Sections may need to obtain data from the actual passage
 				housing them.
 				
-				Add a reference to the 'root', the farthest parent PassageInstance, which
+				Add a reference to the 'root', the farthest parent sSection, which
 				corresponds to the actual passage.
 			*/
 			ret.root = this.root || ret;
@@ -59,7 +66,6 @@ function($, Utils, Selectors, TwineScript, TwineMarkup, Renderer, Story, State) 
 			@method runExpression
 			@private
 			@param {jQuery} el The element.
-			@param {PassageInstance} top
 			@return The result of the expression.
 		*/
 		runExpression: function(el) {
@@ -110,7 +116,7 @@ function($, Utils, Selectors, TwineScript, TwineMarkup, Renderer, Story, State) 
 				return;
 			}
 			else if (!desc.target) {
-				Utils.impossible("PassageInstance.runChangerFunction",
+				Utils.impossible("Section.runChangerFunction",
 					"ChangerDescriptor has code but not a target!");
 				return;
 			}
@@ -161,11 +167,11 @@ function($, Utils, Selectors, TwineScript, TwineMarkup, Renderer, Story, State) 
 			@return {jQuery} The rendered passage.
 		*/
 		render: function render(source) {
-			var ret, html, innerInstance;
+			var ret, html, innerSection;
 			
 			// If a non-string is passed into here, there's really nothing to do.
 			if (typeof source !== "string") {
-				Utils.impossible("PassageInstance.render", "source was not a string, but " + typeof source);
+				Utils.impossible("Section.render", "source was not a string, but " + typeof source);
 				return $();
 			}
 			// Let's not bother if this source solely held macros.
@@ -199,14 +205,14 @@ function($, Utils, Selectors, TwineScript, TwineMarkup, Renderer, Story, State) 
 			
 			/*
 				The upcoming TwineScript expressions need to be able to access the elements
-				just rendered. So, create a new PassageInstance which can be passed in.
+				just rendered. So, create a new Section which can be passed in.
 			*/
-			innerInstance = this.create();
+			innerSection = this.create();
 			/*
 				Unwrap the <tw-temp-container>, and add its elements to
-				this PassageInstance's DOM.
+				this Section's DOM.
 			*/
-			innerInstance.dom = innerInstance.dom.add(ret.contents());
+			innerSection.dom = innerSection.dom.add(ret.contents());
 
 			/*
 				Execute the expressions immediately.
@@ -227,7 +233,7 @@ function($, Utils, Selectors, TwineScript, TwineMarkup, Renderer, Story, State) 
 					case Selectors.hook:
 					{
 						if (expr.attr('code')) {
-							expr.append(innerInstance.render(expr.attr('code')));
+							expr.append(innerSection.render(expr.attr('code')));
 							expr.removeAttr('code');
 						}
 						break;
@@ -235,13 +241,13 @@ function($, Utils, Selectors, TwineScript, TwineMarkup, Renderer, Story, State) 
 					case Selectors.expression:
 					{
 						/*
-							Execute the expression.
-						*/
-						result = innerInstance.runExpression(expr);
-						/*
 							Become cognizant of any hook connected to this expression.
 						*/
 						nextHook = expr.next("tw-hook");
+						/*
+							Execute the expression.
+						*/
+						result = innerSection.runExpression(expr);
 						/*
 							The result can be any of these values, and
 							should be put to use in the following ways:
@@ -250,8 +256,6 @@ function($, Utils, Selectors, TwineScript, TwineMarkup, Renderer, Story, State) 
 								Remove the nearest hook.
 							stringy primitive:
 								Print into the passage.
-							thunk:
-								Unwrap the thunk, then continue.
 							function with .changer property:
 								Assume this was returned by a changer macro.
 								Call runChangerFunction with it and the nearest hook
@@ -259,17 +263,13 @@ function($, Utils, Selectors, TwineScript, TwineMarkup, Renderer, Story, State) 
 							function:
 								Run it, passing the nearest hook and innerInstance.
 						*/
-						if (typeof result === "function" && result.thunk) {
-							// Unwrap the thunk to get the result
-							result = result();
-						}
 						if (typeof result === "function") {
 							if (nextHook.length) {
 								if (result.changer) {
-									innerInstance.runChangerFunction(result, nextHook);
+									innerSection.runChangerFunction(result, nextHook);
 								}
 								else {
-									result(nextHook, innerInstance);
+									result(nextHook, innerSection);
 								}
 							}
 						}
@@ -282,7 +282,7 @@ function($, Utils, Selectors, TwineScript, TwineMarkup, Renderer, Story, State) 
 							/*
 								Transition the resulting Twine code into the expression's element.
 							*/
-							result = innerInstance.render(result + '');
+							result = innerSection.render(result + '');
 							if (result) {
 								expr.append(result);
 							}
@@ -310,7 +310,7 @@ function($, Utils, Selectors, TwineScript, TwineMarkup, Renderer, Story, State) 
 						} else {
 							// Is it a code link?
 							try {
-								passage = innerInstance.eval(passage);
+								passage = innerSection.eval(passage);
 								Story.passageNamed(passage) && (visited = (State.passageNameVisited(passage)));
 							} catch(err) { /* pass */ }
 							
@@ -341,6 +341,6 @@ function($, Utils, Selectors, TwineScript, TwineMarkup, Renderer, Story, State) 
 	window.REPL = function(a) { var r = TwineScript.compile(TwineMarkup.lex("print("+a+")"));console.log(r);return TwineScript.environ().eval(r);};
 	window.LEX = function(a) { var r = TwineMarkup.lex(a); return (r.length===1 ? r[0] : r); };
 	
-	Utils.log("PassageInstance module ready!");
-	return Utils.lockProperties(PassageInstance);
+	Utils.log("Section module ready!");
+	return Utils.lockProperties(Section);
 });

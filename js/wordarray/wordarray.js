@@ -236,17 +236,17 @@ define(['jquery', 'utils', 'selectors'], function ($, Utils, Selectors) {
 
 		/**
 			Updates this WordArray's contents to match its selector(s).
-			This queries the given DOM for selected words.
+			This queries the given Section's for selected words.
 			
 			@method refresh
-			@param {PassageInstance} top
+			@param {Section} section
 			@return this
 		*/
-		refresh: function (top) {
+		refresh: function (section) {
 			var other = this,
 				type, i, word, invalid;
 			
-			Utils.assert(top.passageinstance);
+			Utils.assert(section.section);
 
 			// Turn each matched element in the jQuery into a separate word.
 			function forEachjQuery() {
@@ -266,10 +266,10 @@ define(['jquery', 'utils', 'selectors'], function ($, Utils, Selectors) {
 						word.each(forEachjQuery);
 						break;
 					case "wordarray string":
-						this.contents = findCharSpans(word, top.dom);
+						this.contents = findCharSpans(word, section.dom);
 						break;
 					case "hookRef":
-						Utils.hookTojQuery(word, top.dom).each(forEachjQuery);
+						Utils.hookTojQuery(word, section.dom).each(forEachjQuery);
 						break;
 					default:
 						invalid += 1;
@@ -322,13 +322,13 @@ define(['jquery', 'utils', 'selectors'], function ($, Utils, Selectors) {
 			
 			@method create
 			@param {String|Array} selectorstring A single string, or an array, of WordArray selectors.
-			@param {PassageInstance} top
+			@param {Section} section
 			@return this
 		*/
-		create: function (selectorString, top) {
+		create: function (selectorString, section) {
 			var ret = Object.create(this);
 			
-			Utils.assert(top.passageinstance);
+			Utils.assert(section.section);
 			
 			// Array.prototype.concat turns selectorString into an array, but ignores it
 			// if it's already an array.
@@ -337,7 +337,7 @@ define(['jquery', 'utils', 'selectors'], function ($, Utils, Selectors) {
 			ret.selectors = ret.selectors.map(function(e) {
 				return (e.wordarray) ? e.selectors.join(',') : e;
 			});
-			ret.refresh(top);
+			ret.refresh(section);
 			return ret;
 		},
 

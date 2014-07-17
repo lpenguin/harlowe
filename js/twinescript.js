@@ -196,9 +196,9 @@ define(['jquery', 'utils', 'macros', 'wordarray', 'state'], function($, Utils, M
 				return " Identifiers." + token.text + " ";
 			}
 			else if (token.type === "hookRef") {
-				// Note that the 'top' passed to WordArray.create
+				// Note that the 'section' passed to WordArray.create
 				// is that provided by the environ.
-				return " WordArray.create('?" + token.name + "', top) ";
+				return " WordArray.create('?" + token.name + "', section) ";
 			}
 			else if (token.type === "variable") {
 				// TODO: Defaulting to 0
@@ -316,15 +316,17 @@ define(['jquery', 'utils', 'macros', 'wordarray', 'state'], function($, Utils, M
 	
 	/**
 		Creates a new script execution environment. This accepts and
-		decorates a Passage Instance object (see Engine.showPassage) and will
-		use it as the binding for the "top" keyword.
+		decorates a Section object (see Engine.showPassage) with the
+		eval method.
 		
 		@method environ
-		@param {Object} obj
+		@param {Section} section
 		@return {Object} An environ object with eval methods.
 	*/
-	function environ(top) {
-		top = top || {};
+	function environ(section) {
+		if (typeof section !== "object" || !section) {
+			Utils.impossible("TwineScript.environ", "no Section argument was given!");
+		}
 		
 		var 
 			/*
@@ -343,16 +345,16 @@ define(['jquery', 'utils', 'macros', 'wordarray', 'state'], function($, Utils, M
 					It might be something of toss-up whether the "time" keyword should
 					intuitively refer to the entire passage's lifetime, or just the nearest
 					hook's. I believe that the passage is what's called for here, but an
-					adjustment to the latter can be made by changing top.root.timestamp to
-					just top.timestamp.
+					adjustment to the latter can be made by changing section.root.timestamp to
+					just section.timestamp.
 				*/
 				get time() {
-					return (Date.now() - top.root.timestamp);
+					return (Date.now() - section.root.timestamp);
 				}
 			},
 			Operation = operations(Identifiers);
 			
-		return Object.assign(top, {
+		return Object.assign(section, {
 			eval: function(/* variadic */) {
 				try {
 					/*

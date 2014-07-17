@@ -11,20 +11,21 @@ function($, TwineMarkup, Story, State, Macros, WordArray, Scope, Engine, Utils) 
 		the macro evaluates to.
 		
 	*/
-	function renderInto(code, dest, top, prepend) {
-		var result = top.render(code + '');
+	function renderInto(code, dest, section, prepend) {
+		var result = section.render(code + '');
 		if (result) {
 			prepend ? dest.prepend(result) : dest.append(result);
 			Utils.transitionIn(result, "fade-in");
-			top.updateEnchantments();
+			section.updateEnchantments();
 		}
 	}
 	
 	/*
 		Takes a function, and registers it as a live sensor macro.
 		
-		Sensors' functions produce booleans, and may also cause side-effects.
-	
+		Sensors return a sensor function which is checked every frame, and,
+		when true, triggers rendering of the attached hook.
+	*/
 	function addSensor(name, fn) {
 		Macros.add(name, {
 			type: "sensor",
@@ -32,7 +33,6 @@ function($, TwineMarkup, Story, State, Macros, WordArray, Scope, Engine, Utils) 
 			fn: fn
 		});
 	}
-	*/
 	
 	/*
 		Takes a function, and registers it as a live Changer macro.
@@ -77,9 +77,16 @@ function($, TwineMarkup, Story, State, Macros, WordArray, Scope, Engine, Utils) 
 	/*
 		Basic Macros
 	*/
-
+	
+	// when()
+	addSensor("when", function() {
+		return function(expr) {
+			return expr;
+		};
+	});
+	
 	// set()
-	Macros.add("set", function () {
+	Macros.add("set", function() {
 		return "";
 	});
 
@@ -202,7 +209,7 @@ function($, TwineMarkup, Story, State, Macros, WordArray, Scope, Engine, Utils) 
 					return !isNaN(+e);
 				});
 			if (delays.length) {
-				return function(hook, top) {
+				return function(hook, section) {
 					var code = hook.attr('code');
 					hook.removeAttr('code');
 					
@@ -210,10 +217,10 @@ function($, TwineMarkup, Story, State, Macros, WordArray, Scope, Engine, Utils) 
 						if ($('html').find(hook).length > 0) {
 							
 							if (innerFn) {
-								innerFn(code, hook, top);
+								innerFn(code, hook, section);
 							}
 							else {
-								renderInto(code, hook, top);
+								renderInto(code, hook, section);
 							}
 							// Re-run the timer with the next number.
 							if (delays.length) {
@@ -274,8 +281,8 @@ function($, TwineMarkup, Story, State, Macros, WordArray, Scope, Engine, Utils) 
 				
 				The scope is specified by the selectors passed to the macro.
 			*/
-			return function makeEnchanter(hook, top) {
-				var scope = Scope.create(selectors, top),
+			return function makeEnchanter(hook, section) {
+				var scope = Scope.create(selectors, section),
 					code = hook.attr('code'),
 					enchantData;
 				hook.removeAttr("code");
@@ -293,7 +300,7 @@ function($, TwineMarkup, Story, State, Macros, WordArray, Scope, Engine, Utils) 
 					
 					if (innerFn && typeof innerFn === "function") {
 						//TODO: make this signature less messy
-						innerFn(code, hook, top, scope);
+						innerFn(code, hook, section, scope);
 					} else {
 						// Default behaviour: simply parse the inner contents.
 						if (!rerender || rerender === "replace") {
@@ -302,7 +309,7 @@ function($, TwineMarkup, Story, State, Macros, WordArray, Scope, Engine, Utils) 
 						/*
 							Transition the resulting Twine code into the expression's element.
 						*/
-						renderInto(code + '', hook, top, rerender === "prepend");
+						renderInto(code + '', hook, section, rerender === "prepend");
 					}
 				}
 				/*
@@ -316,20 +323,20 @@ function($, TwineMarkup, Story, State, Macros, WordArray, Scope, Engine, Utils) 
 					Enchanters differ from normal hooks in that they have the
 					"enchanter" attribute, and they have enchantment jQuery data, which
 					is an object holding the macro's enchantment descriptor,
-					the eventFn, and the "top", plus some tiny methods.
+					the eventFn, and the section, plus some tiny methods.
 				*/
 				enchantData = {
 					fn: eventFn,
 					enchantDesc: enchantDesc,
 					scope: scope,
-					top: top,
+					section: section,
 					/*
 						Enchants the scope, applying the macro's enchantment's classes
 						to the matched elements.
 					*/
 					enchantScope: function () {
 						if (this.scope && this.enchantDesc) {
-							this.scope.enchant(this.enchantDesc.classList, this.top);
+							this.scope.enchant(this.enchantDesc.classList, this.section);
 						}
 					},
 					/*
@@ -341,7 +348,7 @@ function($, TwineMarkup, Story, State, Macros, WordArray, Scope, Engine, Utils) 
 					*/
 					refreshScope: function () {
 						if (this.scope) {
-							this.scope.refresh(this.top);
+							this.scope.refresh(this.section);
 						}
 					}
 				};
@@ -411,22 +418,22 @@ function($, TwineMarkup, Story, State, Macros, WordArray, Scope, Engine, Utils) 
 	];
 	
 	revisionTypes.forEach(function(e) {
-		Macros.add(e, newEnchantmentMacroFn(function (code, hook, top, scope) {
+		Macros.add(e, newEnchantmentMacroFn(function (code, hook, section, scope) {
 			/*
 				By passing a function here (a bound call to Engine.render)
 				then the passed code is re-evaluated on every time, allowing
 				random macros like either() to behave correctly.
 			*/
-			scope[e](top.render.bind(top, code));
-			top.updateEnchantments();
+			scope[e](section.render.bind(section, code));
+			section.updateEnchantments();
 		}));
 	});
 
 	// remove()
 	// Removes the scope(s).
-	Macros.add("remove", function (code, hook, top, scope) {
+	Macros.add("remove", function (code, hook, section, scope) {
 		scope.remove();
-		top.updateEnchantments();
+		section.updateEnchantments();
 	});
 
 	/*
@@ -437,18 +444,18 @@ function($, TwineMarkup, Story, State, Macros, WordArray, Scope, Engine, Utils) 
 		interactionTypes.forEach(function(interactionType) {
 			// Enchantment macros
 			Macros.add(interactionType.name + "-" + revisionType,
-				newEnchantmentMacroFn(function (code, hook, top, scope) {
-					scope[revisionType](top.render.bind(top, code));
-					top.updateEnchantments();
+				newEnchantmentMacroFn(function (code, hook, section, scope) {
+					scope[revisionType](section.render.bind(section, code));
+					section.updateEnchantments();
 				},
 				interactionType.enchantDesc)
 			);
 		});
 		// Timed macros
 		Macros.add("timed-" + revisionType, 
-			newTimedMacroFn(function (code, hook, top, scope) {
-				scope[revisionType](top.render.bind(top, code));
-				top.updateEnchantments();
+			newTimedMacroFn(function (code, hook, section, scope) {
+				scope[revisionType](section.render.bind(section, code));
+				section.updateEnchantments();
 			})
 		);
 	});

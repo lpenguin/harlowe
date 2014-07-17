@@ -1,5 +1,5 @@
-define(['jquery', 'story', 'utils', 'selectors', 'state', 'passageinstance'], 
-function ($, Story, Utils, Selectors, State, PassageInstance) {
+define(['jquery', 'story', 'utils', 'selectors', 'state', 'section'], 
+function ($, Story, Utils, Selectors, State, Section) {
 	"use strict";
 	
 	/**
@@ -56,7 +56,7 @@ function ($, Story, Utils, Selectors, State, PassageInstance) {
 			// The <tw-passagedata> element
 			passageData = Story.passageWithID(id),
 			oldPassages,
-			passageInstance,
+			section,
 			win = $(window);
 
 		/*
@@ -102,13 +102,13 @@ function ($, Story, Utils, Selectors, State, PassageInstance) {
 			Utils.transitionOut(oldPassages, t8n);
 		}
 		
-		passageInstance = PassageInstance.create();
+		section = Section.create();
 		
 		/*
 			Actually do the work of rendering the passage now.
 		*/	
 		newPassage = createPassageElement().append(
-			passageInstance.render(
+			section.render(
 				Utils.unescape(
 					passageData.html()
 				)
@@ -118,7 +118,7 @@ function ($, Story, Utils, Selectors, State, PassageInstance) {
 			Having rendered it, we now insert it into the destination...
 		*/
 		el.append(newPassage);
-		passageInstance.updateEnchantments();
+		section.updateEnchantments();
 		
 		/*
 			...and apply the aforementioned transition.
