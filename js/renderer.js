@@ -1,4 +1,4 @@
-define(['utils', 'twinescript'], function(Utils, TwineScript) {
+define(['utils', 'twinemarkup', 'twinescript'], function(Utils, TwineMarkup, TwineScript) {
 	"use strict";
 	/**
 		The Renderer takes the syntax tree from TwineMarkup and returns a HTML string.
@@ -43,6 +43,35 @@ define(['utils', 'twinescript'], function(Utils, TwineScript) {
 			@type Object
 		*/
 		options: {},
+		
+		/**
+			A composition of TwineMarkup.lex and Renderer.render,
+			but with a (currently rudimentary) memoizer.
+			This could be replaced with _.compose and _.memoize.
+		*/
+		exec: (function() {
+			/*
+				These two vars cache the previously rendered source text, and
+				the syntax tree returned by TwineMarkup.lex from that.
+			*/
+			var cachedInput,
+				cachedOutput;
+		
+			return function(src) {
+				// If a non-string is passed into here, there's really nothing to do.
+				if (typeof src !== "string") {
+					Utils.impossible("Renderer.exec", "source was not a string, but " + typeof src);
+					return "";
+				}
+				
+				if (src === cachedInput) {
+					return cachedOutput;
+				}
+				cachedInput = src;
+				cachedOutput = this.render(TwineMarkup.lex(src));
+				return cachedOutput;
+			};
+		}()),
 		
 		/**
 			The recursive rendering method.
@@ -217,5 +246,12 @@ define(['utils', 'twinescript'], function(Utils, TwineScript) {
 		}
 	};
 	Utils.log("Renderer module ready!");
+	
+	/*
+	DEBUG
+	*/
+	window.REPL = function(a) { var r = TwineScript.compile(TwineMarkup.lex("print("+a+")"));console.log(r);return TwineScript.environ().eval(r);};
+	window.LEX = function(a) { var r = TwineMarkup.lex(a); return (r.length===1 ? r[0] : r); };
+	
 	return Object.freeze(Renderer);
 });

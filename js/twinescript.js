@@ -196,9 +196,9 @@ define(['jquery', 'utils', 'macros', 'wordarray', 'state'], function($, Utils, M
 				return " Identifiers." + token.text + " ";
 			}
 			else if (token.type === "hookRef") {
-				// Note that the 'section' passed to WordArray.create
-				// is that provided by the environ.
-				return " WordArray.create('?" + token.name + "', section) ";
+				// Note that the 'section' is that provided by the environ,
+				// not the Section prototype.
+				return " section.WordArray('?" + token.name + "') ";
 			}
 			else if (token.type === "variable") {
 				// TODO: Defaulting to 0

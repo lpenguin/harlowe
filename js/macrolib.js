@@ -1,5 +1,5 @@
-define(['jquery', 'twinemarkup', 'story', 'state', 'macros', 'wordarray', 'scope', 'engine', 'utils'],
-function($, TwineMarkup, Story, State, Macros, WordArray, Scope, Engine, Utils) {
+define(['jquery', 'twinemarkup', 'story', 'state', 'macros', 'wordarray', 'engine', 'utils'],
+function($, TwineMarkup, Story, State, Macros, WordArray, Engine, Utils) {
 	"use strict";
 	/*
 		Twine macro standard library.
@@ -282,7 +282,7 @@ function($, TwineMarkup, Story, State, Macros, WordArray, Scope, Engine, Utils) 
 				The scope is specified by the selectors passed to the macro.
 			*/
 			return function makeEnchanter(hook, section) {
-				var scope = Scope.create(selectors, section),
+				var scope = section.WordArray(selectors),
 					code = hook.attr('code'),
 					enchantData;
 				hook.removeAttr("code");

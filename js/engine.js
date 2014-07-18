@@ -114,6 +114,7 @@ function ($, Story, Utils, Selectors, State, Section) {
 				)
 			)
 		);
+		
 		/*
 			Having rendered it, we now insert it into the destination...
 		*/
@@ -167,38 +168,7 @@ function ($, Story, Utils, Selectors, State, Section) {
 			// Update the state.
 			State.play(id);
 			showPassage(id, stretch);
-		},
-
-		/**
-			Does all initial startup work. This should be called once.
-
-			@method init
-		*/
-		init: function () {
-			var html = $(document.documentElement);
-			
-			// Install the handler for passage links.
-
-			html.on('click.passage-link', Selectors.internalLink+'[passage-id]', function(e) {
-				var next = $(this).attr('passage-id');
-
-				if (next) {
-					// TODO: stretchtext
-					Engine.goToPassage(next,false);
-				}
-
-				e.preventDefault();
-			});
-
-			// If the debug option is on, add the debug button.
-
-			if (Story.options.debug) {
-				$(document.body).append($('<div class="debug-button">').click(function() {
-					html.toggleClass('debug-mode');
-				}));
-			}
-		},
-
+		}
 		
 	};
 	

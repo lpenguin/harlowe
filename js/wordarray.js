@@ -1,4 +1,4 @@
-define(['jquery', 'utils', 'selectors'], function ($, Utils, Selectors) {
+define(['jquery', 'utils', 'selectors', 'story'], function ($, Utils, Selectors, Story) {
 	"use strict";
 	/**
 		WordArray
@@ -9,7 +9,6 @@ define(['jquery', 'utils', 'selectors'], function ($, Utils, Selectors) {
 	*/
 
 	var WordArray;
-
 	
 	/**
 		Convert a string or WordArray to a jQuery of spanified HTML,
@@ -205,6 +204,24 @@ define(['jquery', 'utils', 'selectors'], function ($, Utils, Selectors) {
 		last: function () {
 			return this.subset(this.contents[this.contents.length - 1]);
 		},
+		
+		/**
+			Takes a subset selector, and returns a subset of this scope
+			reflecting that selector.
+			
+			@method selectSubset
+			@param {String} subsetSelector Currently either "first" or "last".
+		*/
+		selectSubset: function (subsetSelector) {
+			switch (subsetSelector) {
+				case "first":
+					return this.first();
+				case "last":
+					return this.last();
+				default:
+					return this;
+			}
+		},
 
 		/**
 			Return a copy of this WordArray, but with only the given jQuery as its contents.
@@ -236,7 +253,7 @@ define(['jquery', 'utils', 'selectors'], function ($, Utils, Selectors) {
 
 		/**
 			Updates this WordArray's contents to match its selector(s).
-			This queries the given Section's for selected words.
+			This queries the given Section's DOM for selected words.
 			
 			@method refresh
 			@param {Section} section
@@ -407,7 +424,66 @@ define(['jquery', 'utils', 'selectors'], function ($, Utils, Selectors) {
 				e.attr("style", style);
 			});
 			return this;
+		},
+		
+		/**
+			Select the matching hooks, or create pseudo-hooks around matching words,
+			and apply a class to those hooks.
+			
+			@method enchant
+			@param {String} className class to add
+			@param {Section} section The passage in which this is being performed.
+			@return {String} description
+		*/
+		enchant: function (className, section) {
+			var i, j, selector, type;
+
+			Utils.assert(section.section);
+			
+			this.hooks = $();
+
+			// Do all the selector(s).
+			for (i = 0; i < this.selectors.length; i += 1) {
+				
+				selector = this.selectors[i],
+				type = WordArray.scopeType(selector);
+
+				// Targeting actual hooks?
+				if (type === "wordarray") {
+					this.hooks = this.hooks.add(selector.contents);
+				}
+				else if (type === "jquery") {
+					this.hooks = this.hooks.add(selector);
+				}
+				else if (type === "hookRef") {
+					this.hooks = this.hooks.add(Utils.hookTojQuery(selector, section.dom));
+				}
+				else if (type === "wordarray string")
+				// Pseudohooks
+				{
+					// Create pseudohooks around the Words
+					for (j = 0; j < this.contents.length; j++) {
+						this.contents[j].wrapAll("<tw-pseudo-hook "
+							// Debug mode: show the pseudo-hook selector as a tooltip
+							+ (Story.options.debug ? "title='Pseudo-hook: " + selector + "'" : "") + "/>");
+						this.hooks = this.hooks.add(this.contents[j].parent());
+					}
+				}
+			}
+			this.hooks && this.hooks.addClass(className);
+			return this;
+		},
+		
+		/**
+			Removes the <tw-hook>s around each hook.
+			@method unhook
+			@return this
+		*/
+		unhook: function () {
+			this.hooks && this.hooks.children().unwrap();
+			return this;
 		}
+		
 	};
 	//Make text() its toString() method, so that <<print ?hook>> etc. works.
 	WordArray.toString = WordArray.text;

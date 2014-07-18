@@ -1,5 +1,5 @@
-define(['jquery', 'utils', 'selectors', 'twinescript', 'twinemarkup', 'renderer', 'story', 'state'],
-function($, Utils, Selectors, TwineScript, TwineMarkup, Renderer, Story, State) {
+define(['jquery', 'utils', 'selectors', 'renderer', 'twinescript', 'story', 'state', 'wordarray'],
+function($, Utils, Selectors, Renderer, TwineScript, Story, State, WordArray) {
 	"use strict";
 	/**
 		Section objects represent a block of Twine prose rendered into a DOM.
@@ -9,19 +9,18 @@ function($, Utils, Selectors, TwineScript, TwineMarkup, Renderer, Story, State) 
 		@class Section
 		
 	*/
-	/*
-		These two vars cache the previously rendered source text, and the syntax tree returned by
-		TwineMarkup.lex from that.
-	*/
-	var renderCacheKey,
-		renderCacheValue,
-		Section;
+
+	var Section;
 	
 	Section = {	
 		// Used for duck-typing
 		section: true,
 		
-		create: function() {
+		/**
+			Creates a new Section which inherits from this one.
+			@param {jQuery} newDom The DOM that comprises this section (and will be added 
+		*/
+		create: function(newDom) {
 			var ret = Object.assign(Object.create(this), {
 				/*
 					The time this Section was rendered. Of course, it's
@@ -33,7 +32,7 @@ function($, Utils, Selectors, TwineScript, TwineMarkup, Renderer, Story, State) 
 					The visible DOM that any TwineScript code can see. Macros, hookRefs, etc.
 					can only affect those in this Section's DOM.
 				*/
-				dom: $(this.dom),
+				dom: $(this.dom).add(newDom),
 			});
 			/*
 				Sections may need to obtain data from the actual passage
@@ -56,6 +55,13 @@ function($, Utils, Selectors, TwineScript, TwineMarkup, Renderer, Story, State) 
 		*/
 		$: function(str) {
 			return Utils.$(str, this.dom);
+		},
+		
+		/*
+			This method creates a WordArray that is native to this section.
+		*/
+		WordArray: function(selectorString) {
+			return WordArray.create(selectorString, this);
 		},
 	
 		/**
@@ -167,31 +173,11 @@ function($, Utils, Selectors, TwineScript, TwineMarkup, Renderer, Story, State) 
 			@return {jQuery} The rendered passage.
 		*/
 		render: function render(source) {
-			var ret, html, innerSection;
+			var ret, innerSection;
 			
-			// If a non-string is passed into here, there's really nothing to do.
-			if (typeof source !== "string") {
-				Utils.impossible("Section.render", "source was not a string, but " + typeof source);
-				return $();
-			}
-			// Let's not bother if this source solely held macros.
-			if (source.trim()) {
-				/*
-					A rudimentary caching mechanism to save on lexing:
-					if the previously rendered source is the same as this,
-					recall the HTML that was produced.
-				*/
-				if (source === renderCacheKey) {
-					html = renderCacheValue;
-				}
-				else {
-					html = Renderer.render(TwineMarkup.lex(source));
-					renderCacheKey = source;
-					renderCacheValue = html;
-				}
-			}
-			// Render the HTML
 			/*
+				Render the HTML.
+				
 				Important: various Twine macros perform DOM operations on this pre-inserted jQuery set of
 				rendered elements, but assume that all the elements have a parent item, so that e.g.
 				.insertBefore() can be performed on them. Also, and perhaps more saliently, the next
@@ -201,18 +187,15 @@ function($, Utils, Selectors, TwineScript, TwineMarkup, Renderer, Story, State) 
 				So, a <tw-temp-container> is temporarily used to house the entire rendered HTML
 				before it's inserted at the end of this function.
 			*/
-			ret = $('<tw-temp-container>' + html);
+			ret = $('<tw-temp-container>' + Renderer.exec(source));
 			
 			/*
 				The upcoming TwineScript expressions need to be able to access the elements
 				just rendered. So, create a new Section which can be passed in.
+				
+				(ret.contents() unwrap the aforementioned <tw-temp-container>.)
 			*/
-			innerSection = this.create();
-			/*
-				Unwrap the <tw-temp-container>, and add its elements to
-				this Section's DOM.
-			*/
-			innerSection.dom = innerSection.dom.add(ret.contents());
+			innerSection = this.create(ret.contents());
 
 			/*
 				Execute the expressions immediately.
@@ -334,12 +317,6 @@ function($, Utils, Selectors, TwineScript, TwineMarkup, Renderer, Story, State) 
 			return ret.contents();
 		}
 	};
-	
-	/*
-	DEBUG
-	*/
-	window.REPL = function(a) { var r = TwineScript.compile(TwineMarkup.lex("print("+a+")"));console.log(r);return TwineScript.environ().eval(r);};
-	window.LEX = function(a) { var r = TwineMarkup.lex(a); return (r.length===1 ? r[0] : r); };
 	
 	Utils.log("Section module ready!");
 	return Utils.lockProperties(Section);

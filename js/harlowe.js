@@ -9,9 +9,6 @@ require.config({
 		selectors: './utils/selectors',
 		regexstrings: './utils/regexstrings',
 		customelements: './utils/customelements',
-		// WordArray and subclasses
-		wordarray: './wordarray/wordarray',
-		scope: './wordarray/scope',
 	}
 });
 require(['jquery', 'renderer', 'story', 'state', 'engine', 'utils', 'selectors', 'macrolib'],
@@ -19,6 +16,9 @@ require(['jquery', 'renderer', 'story', 'state', 'engine', 'utils', 'selectors',
 	"use strict";
 	/**
 		Harlowe, the default story format for Twine 2.
+		
+		This module contains only code which initialises the document and the game.
+		
 		@module Harlowe
 		@main Harlowe
 	*/
@@ -28,7 +28,42 @@ require(['jquery', 'renderer', 'story', 'state', 'engine', 'utils', 'selectors',
 		return eval(text + '');
 	}
 	
-	$(document).ready(function() {
+	/**
+		Sets up event handlers for specific Twine elements. This should only be called
+		once at setup.
+
+		@method installHandlers
+	*/
+	var installHandlers = function() {
+		var html = $(document.documentElement);
+		
+		// Install the handler for passage links.
+
+		html.on('click.passage-link', Selectors.internalLink+'[passage-id]', function(e) {
+			var next = $(this).attr('passage-id');
+
+			if (next) {
+				// TODO: stretchtext
+				Engine.goToPassage(next,false);
+			}
+
+			e.preventDefault();
+		});
+
+		// If the debug option is on, add the debug button.
+
+		if (Story.options.debug) {
+			$(document.body).append($('<div class="debug-button">').click(function() {
+				html.toggleClass('debug-mode');
+			}));
+		}
+		installHandlers = null;
+	};
+
+	/*
+		This is the main function which starts up the entire program.
+	*/
+	$(document).ready(function main() {
 		var header = $(Selectors.storyData),
 			options,
 			script = $(Selectors.script),
@@ -51,7 +86,7 @@ require(['jquery', 'renderer', 'story', 'state', 'engine', 'utils', 'selectors',
 
 		// Init game engine
 
-		Engine.init();
+		installHandlers();
 		
 		// Execute the custom scripts
 		
