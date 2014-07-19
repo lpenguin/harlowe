@@ -155,7 +155,11 @@ function($, Story, Utils, Selectors) {
 							}
 							return fn.apply(0, args);
 						};
-						t.thunk = true;
+						/*
+							The combined thunk should have the same expando properties
+							("changer", "sensor", etc.) as the initial function.
+						*/
+						Object.assign(t, fn);
 						return t;
 					};
 				}(desc.fn));

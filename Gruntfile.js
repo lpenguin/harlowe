@@ -41,7 +41,8 @@ module.exports = function (grunt) {
 					require : true,
 					define  : true,
 					module  : true,
-					global  : true
+					global  : true,
+					requestAnimationFrame : true
 				},
 				// Enforcing options
 				eqeqeq   : true,

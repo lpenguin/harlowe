@@ -23,10 +23,15 @@ function($, TwineMarkup, Story, State, Macros, WordArray, Engine, Utils) {
 	/*
 		Takes a function, and registers it as a live sensor macro.
 		
-		Sensors return a sensor function which is checked every frame, and,
-		when true, triggers rendering of the attached hook.
+		Sensors return an object signifying whether to display the
+		attached hook, and whether to continue sensing.
+		
+		The returned object has:
+			{Boolean} value Whether to display or not
+			{Boolean} done Whether to stop sensing.
 	*/
 	function addSensor(name, fn) {
+		fn.sensor = true;
 		Macros.add(name, {
 			type: "sensor",
 			live: true,
@@ -37,7 +42,7 @@ function($, TwineMarkup, Story, State, Macros, WordArray, Engine, Utils) {
 	/*
 		Takes a function, and registers it as a live Changer macro.
 		
-		Changers return a transformation function that is passed
+		Changers return a transformation function that is used to mutate
 		a ChangerDescriptor object.
 		
 		A ChangerDescriptor is a plain object with the following values:
@@ -79,9 +84,26 @@ function($, TwineMarkup, Story, State, Macros, WordArray, Engine, Utils) {
 	*/
 	
 	// when()
-	addSensor("when", function() {
-		return function(expr) {
-			return expr;
+	addSensor("when", function(expr) {
+		return {
+			value: expr,
+			done: expr
+		};
+	});
+	
+	// until()
+	addSensor("until", function(expr) {
+		return {
+			value: !expr,
+			done: expr
+		};
+	});
+	
+	// whenever()
+	addSensor("whenever", function(expr) {
+		return {
+			value: expr,
+			done: false
 		};
 	});
 	

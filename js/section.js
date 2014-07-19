@@ -18,7 +18,9 @@ function($, Utils, Selectors, Renderer, TwineScript, Story, State, WordArray) {
 		
 		/**
 			Creates a new Section which inherits from this one.
-			@param {jQuery} newDom The DOM that comprises this section (and will be added 
+			@method create
+			@param {jQuery} newDom The DOM that comprises this section.
+			@return {Section} Object that inherits from this one.
 		*/
 		create: function(newDom) {
 			var ret = Object.assign(Object.create(this), {
@@ -48,17 +50,32 @@ function($, Utils, Selectors, Renderer, TwineScript, Story, State, WordArray) {
 			ret = TwineScript.environ(ret);
 			return Object.preventExtensions(ret);
 		},
+		
+		/**
+			A quick check to see if this section's DOM is connected to the
+			document's DOM.
+			Currently only used by recursiveSensor().
+			
+			@method inDOM
+		*/
+		inDOM: function() {
+			return $(document.documentElement).find(this.dom).length > 0;
+		},
 
-		/*
+		/**
 			This method runs Utils.$ (which is the $ function filtering out transition-out
 			elements) with the dom as the context.
+			
+			@method $
 		*/
 		$: function(str) {
 			return Utils.$(str, this.dom);
 		},
 		
-		/*
+		/**
 			This method creates a WordArray that is native to this section.
+			
+			@method WordArray
 		*/
 		WordArray: function(selectorString) {
 			return WordArray.create(selectorString, this);
@@ -83,7 +100,50 @@ function($, Utils, Selectors, Renderer, TwineScript, Story, State, WordArray) {
 			*/
 			return this.eval(call);
 		},
-	
+		
+		runSensorFunction: function(sensor, target) {
+			/*
+				Remember the code of the target hook
+				that will be run if the sensor triggers.
+			*/
+			var code = target.attr('code'),
+				on,
+				recursiveSensing;
+			
+			target.removeAttr('code');
+			
+			/*
+				This closure runs every frame from now on, until 
+				the target hook is gone.
+			*/
+			recursiveSensing = function(){
+				/*
+					Check if the sensor has triggered.
+				*/
+				var result = sensor();
+				/*
+					Act on the data given - if the value differs from the previous,
+					alter the target hook.
+				*/
+				Utils.assert("done" in result && "value" in result);
+				if (result.value !== on) {
+					on = result.value;
+					if (on) {
+						target.append(this.render(code));
+					}
+					else {
+						target.empty();
+					}
+				}
+				// If it's not done, keep sensing.
+				if (!result.done /*|| !this.inDOM()*/) {
+					requestAnimationFrame(recursiveSensing);
+				}
+			}.bind(this);
+			
+			recursiveSensing();
+		},
+		
 		/**
 			This runs the changer functions that changer macros
 			return, and performs the augmentations that they request,
@@ -91,10 +151,10 @@ function($, Utils, Selectors, Renderer, TwineScript, Story, State, WordArray) {
 			
 			@method runChangerFunction
 			@private
-			@param {Function} fn The changer function to run.
+			@param {Function} changer The changer function to run.
 			@param {jQuery} target The destination <tw-hook> or <tw-expression>.
 		*/
-		runChangerFunction: function(fn, target) {
+		runChangerFunction: function(changer, target) {
 			/*
 				This is the "default" ChangerDescriptor.
 				It simply takes the 'code' in the target hook,
@@ -111,7 +171,7 @@ function($, Utils, Selectors, Renderer, TwineScript, Story, State, WordArray) {
 				};
 			
 			// This line here runs the function.
-			fn(desc);
+			changer(desc);
 			
 			/*
 				If no code is left in the descriptor, do nothing.
@@ -248,7 +308,10 @@ function($, Utils, Selectors, Renderer, TwineScript, Story, State, WordArray) {
 						*/
 						if (typeof result === "function") {
 							if (nextHook.length) {
-								if (result.changer) {
+								if (result.sensor) {
+									innerSection.runSensorFunction(result, nextHook);
+								}
+								else if (result.changer) {
 									innerSection.runChangerFunction(result, nextHook);
 								}
 								else {
