@@ -6,6 +6,7 @@ require.config({
 		es6shims: './lib/es6shims',
 		// Utils
 		utils: './utils/utils',
+		hookutils: './utils/hookutils',
 		selectors: './utils/selectors',
 		regexstrings: './utils/regexstrings',
 		customelements: './utils/customelements',

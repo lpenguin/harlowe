@@ -197,32 +197,6 @@ define(['jquery', 'twinemarkup', 'selectors', 'customelements'], function($, Twi
 				return c.replace(/\./g, " ").trim();
 			}
 		},
-
-		/**
-			Convert a hook index string to a CSS selector.
-
-			@method hookToSelector
-			@param {String} list	chain to convert
-			@return {String} classlist string
-		*/
-
-		hookToSelector: function (c) {
-			c = c.replace(/"/g, "&quot;");
-			return Selectors.hook+'[name="' + c + '"]';
-		},
-
-		/**
-			Convert a hook index string into a jQuery object.
-
-			@method hookTojQuery
-			@param {String} c		Hook index (such as "?cupboard")
-			@param {jQuery} top	Passage element parent
-			@return jQuery object
-		*/
-
-		hookTojQuery: function (c, top) {
-			return Utils.findAndFilter(top, Utils.hookToSelector(c.slice(1) /* slice off the ? sigil */));
-		},
 		
 		/**
 			Takes a string argument, expressed as a CSS time,
@@ -258,22 +232,6 @@ define(['jquery', 'twinemarkup', 'selectors', 'customelements'], function($, Twi
 			}
 
 			return 0;
-		},
-
-		/**
-			Search the given string to find any subset keywords ("first", "last", "this"),
-			then return those. If none found, return "all".
-			
-			@method subsetSelector
-			@param {String} str The string to test.
-			@return {String} the subset selector.
-		*/
-		subsetSelector: function (str) {
-			return (typeof str === "string" && 
-				(str === "this" && "this")
-				|| (str === "first" && "first")
-				|| (str === "last" && "last"))
-				|| "all";
 		},
 
 		/**
@@ -388,7 +346,9 @@ define(['jquery', 'twinemarkup', 'selectors', 'customelements'], function($, Twi
 		*/		
 	
 		/**
-			Quick utility function that calls .filter(q).add(q).find(q)
+			Quick utility function that calls .filter(q).add(q).find(q),
+			which is similar to just .find() but includes the top element
+			if it also matches.
 
 			@method findAndFilter
 			@private
@@ -587,17 +547,10 @@ define(['jquery', 'twinemarkup', 'selectors', 'customelements'], function($, Twi
 		/*
 			Constants
 		*/
-		
-		/**
-			Default value for variables affected with <<set>>
-			@property defaultValue
-			@static
-		*/
-		
-		defaultValue: 0,
 
 		/**
-			Story element
+			Story element. Since Utils is frozen, this will always refer to the
+			same DOM object for the entirety of the game.
 			@property storyElement
 			@static
 		*/

@@ -3,3 +3,5 @@ syntax: glob
 node_modules/*
 dist/*
 docs/*
+build/*
+*.bat

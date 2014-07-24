@@ -73,6 +73,8 @@ function ($, Story, Utils, Selectors, State, Section) {
 			recipient.
 		*/
 		el = el || Utils.storyElement;
+		
+		el.detach();
 
 		/*
 			Find out how many tw-passage elements there are currently in the
@@ -102,31 +104,25 @@ function ($, Story, Utils, Selectors, State, Section) {
 			Utils.transitionOut(oldPassages, t8n);
 		}
 		
-		section = Section.create();
+		newPassage = createPassageElement().appendTo(el);
+		
+		section = Section.create(newPassage);
 		
 		/*
 			Actually do the work of rendering the passage now.
-		*/	
-		newPassage = createPassageElement().append(
-			section.render(
-				Utils.unescape(
-					passageData.html()
-				)
-			)
+		*/
+		
+		section.renderInto(
+			Utils.unescape(
+				passageData.html()
+			),
+			newPassage,
+			/*
+				...and apply the aforementioned transition.
+			*/
+			function (desc) { desc.transition = t8n; } 
 		);
-		
-		/*
-			Having rendered it, we now insert it into the destination...
-		*/
-		el.append(newPassage);
-		section.updateEnchantments();
-		
-		/*
-			...and apply the aforementioned transition.
-		*/
-		if (t8n) {
-			Utils.transitionIn(newPassage, t8n);
-		}
+		$('body').append(el);
 	}
 	
 	var Engine = {

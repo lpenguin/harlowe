@@ -1077,7 +1077,6 @@
 			regular expression. Add those properties succinctly now.
 		*/
 		Object.keys(addedRules).forEach(function(e) {
-		console.log(e,r(e));
 			addedRules[e].match = r(e);
 		});
 		merge(state.rules, addedRules);

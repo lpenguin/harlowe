@@ -1,9 +1,9 @@
 /*jshint unused:false */
-define(['jquery', 'utils', 'macros', 'wordarray', 'state'], function($, Utils, Macros, WordArray, State) {
+define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State) {
 	"use strict";
 	
 	// JShint's "unused" variables accessible to eval()
-	Macros, WordArray, State;
+	State;
 	
 	/**
 		A module that handles the compilation and execution of Twine
@@ -196,9 +196,15 @@ define(['jquery', 'utils', 'macros', 'wordarray', 'state'], function($, Utils, M
 				return " Identifiers." + token.text + " ";
 			}
 			else if (token.type === "hookRef") {
-				// Note that the 'section' is that provided by the environ,
-				// not the Section prototype.
-				return " section.WordArray('?" + token.name + "') ";
+				/*
+					Some remarks:
+					
+					1. Note that the 'section' is that provided by the environ,
+					and is not the Section prototype.
+					2. The ? sigil is needed to distinguish the hook name
+					from a pseudo-hook selector string.
+				*/
+				return " section.selectHook('?" + token.name + "') ";
 			}
 			else if (token.type === "variable") {
 				// TODO: Defaulting to 0
