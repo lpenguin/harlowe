@@ -1,142 +1,9 @@
-define(['jquery', 'utils', 'selectors', 'renderer', 'twinescript', 'story', 'state', 'hookutils'],
-function($, Utils, Selectors, Renderer, TwineScript, Story, State, HookUtils) {
+define(['jquery', 'utils', 'selectors', 'renderer', 'twinescript', 'story', 'state', 'hookutils', 'hookset', 'pseudohookset'],
+function($, Utils, Selectors, Renderer, TwineScript, Story, State, HookUtils, HookSet, PseudoHookSet) {
 	"use strict";
 
-	var Section, HookSet, PseudoHookSet;
-	
-	/**
-		A HookSet is an object representing a "hook selection". Hooks in
-		Twine passages can have identical titles, and both can therefore be
-		selected by the same hook reference. This class represents
-		these selections within a given Section.
-		
-		These are currently exclusively created by Section.selectHook.
-		
-		@class HookSet
-		@static
-	*/
-	HookSet = Object.freeze({
-		
-		/**
-			An Array forEach-styled iteration function. The given function is
-			called on every <tw-hook> in the section DOM 
-			
-			This is currently just used by Section.renderInto, to iterate over each
-			word and render it individually.
-			
-			@method forEach
-			@param {Function} fn The callback, which is passed the following:
-				{jQuery} The <tw-hook> element to manipulate.
-		*/
-		forEach: function(fn) {
-			/*
-				hooks is a jQuery collection of every <tw-hook> in the Section
-				which matches this HookSet's selector string.
-				
-				This is re-evaluated during every forEach call, so that it's always
-				up-to-date with the DOM.
-			*/
-			var hooks = this.section.$(
-				HookUtils.hookToSelector(
-					this.selector.slice(1) /* slice off the hook sigil */
-				)
-			);
-			hooks.each(function() {
-				fn($(this));
-			});
-		},
-		
-		/**
-			Creates a new HookSet. It has a selector and a section
-			which determine what hooks to select, and from where.
-			
-			There isn't much call to ever use a HookSet as a prototype
-			(especially since it's frozen, rendering section and selector
-			difficult to override) but it's still available anyway. Such
-			is the porous, spongy nature of JS.)
-			
-			@method create
-			@param {Section} section The section to use for DOM lookups.
-			@param {String} hookSelector The selector string.
-		*/
-		create: function(section, hookSelector) {
-			var ret = Object.create(this);
-			ret.section = section;
-			ret.selector = hookSelector;
-			return Object.freeze(ret);
-		}
-	});
-	
-	/**		
-		A PseudoHookSet represents a "pseudo-hook", which selects
-		section text using a search string, rather than a hook tag reference.
-		A macro instantiation like...
-			remove("cats")
-		...would make a pseudo-hook that matches, or "hooks", every instance of
-		the string "cats" in the passage. So, without needing to mark up
-		that text with hook syntax, the author can still manipulate it intuitively.
-		This is a powerful construct!
-		
-		PseudoHookSets, like HookSets, are exclusively created by Section.selectHook.
-		
-		@class PseudoHookSet
-		@static
-	*/
-	PseudoHookSet = Object.freeze({		
-		/**
-			An Array forEach-styled iteration function. This wraps all
-			matched words in the section DOM with a temporary element,
-			then calls the passed function for each element.
-			
-			This is currently just used by Section.renderInto to iterate
-			over each word and render it individually.
-			
-			@method forEach
-			@param {Function} fn The callback, which is passed the following:
-				{jQuery} The <tw-pseudo-hook> element to manipulate.
-		*/
-		forEach: function(fn) {
-		
-			/*
-				HookUtils.findCharSpans powers the entire PseudoHook
-				concept, and here is where it is invoked.
-			*/
-			HookUtils.findCharSpans(this.selector, this.section.dom)
-				.forEach(function(e) {
-				/*
-					This is a bit of a #kludge, but no better solution
-					exists. In order for DOM replacement jQuery methods
-					to work reliably on the entire word, a temporary wrapper
-					element must be placed around them, thus giving them a
-					solid DOM parentage base.
-					
-					HookSet, of course, can simply use the <tw-hook> elements
-					that already exist. As symmetry with that, the element name
-					used here is <tw-pseudo-hook>.					
-				*/
-				e.wrapAll('<tw-pseudo-hook>');
-				fn(e.parent());
-				e.children().unwrap();
-			});
-		},
-		
-		/**
-			Creates a new PseudoHookSet. It has a selector and a section
-			which determine what words to select, and from where.
-			
-			@method create
-			@param {Section} section The section to use for DOM lookups.
-			@param {String} pseudoHookSelector The selector string.
-		*/
-		create: function(section, pseudoHookSelector) {
-			var ret = Object.create(this);
-			
-			ret.section = section;
-			ret.selector = pseudoHookSelector;
-			return ret;
-		}
-	});
-	
+	var Section;
+
 	/**
 		Section objects represent a block of Twine prose rendered into the DOM.
 		It contains its own DOM, a reference to any enclosing Section,
@@ -404,6 +271,12 @@ function($, Utils, Selectors, Renderer, TwineScript, Story, State, HookUtils) {
 		target[desc.append](dom);
 		
 		/*
+			Before executing the expressions, put a fresh object on the
+			expression data stack.
+		*/
+		this.stack.unshift(Object.create(null));
+		
+		/*
 			Execute the expressions immediately.
 			
 			Now, I could .bind doExpressions to this, but since
@@ -440,6 +313,13 @@ function($, Utils, Selectors, Renderer, TwineScript, Story, State, HookUtils) {
 				}
 			}
 		});
+		
+		/*
+			After evaluating the expressions, pop the expression data stack.
+			The data is purely temporary and can be safely discarded.
+		*/
+		this.stack.shift();
+		
 		/*
 			Transition it using the descriptor's given transition.
 			This should ideally come last to avoid making the DOM structure needlessly
@@ -469,9 +349,7 @@ function($, Utils, Selectors, Renderer, TwineScript, Story, State, HookUtils) {
 			Utils.assert(dom instanceof $ && dom.length === 1);
 			
 			/*
-				Install all of the non-referential properties
-				(those that don't reference prior properties in their
-				instantiation).
+				Install all of the non-circular properties.
 			*/
 			ret = Object.assign(Object.create(this), {
 				/*
@@ -485,21 +363,23 @@ function($, Utils, Selectors, Renderer, TwineScript, Story, State, HookUtils) {
 					can only affect those in this Section's DOM.
 				*/
 				dom: dom || Utils.storyElement,
+				/*
+					The expression stack is an array of plain objects,
+					each housing runtime data that is local to the expression being
+					evaluated. It is used by macros such as "display" and "if" to
+					keep track of prior evaluations - e.g. display loops, else().
+					
+					render() pushes a new object to this stack before
+					running expressions, and pops it off again afterward.
+				*/
+				stack: []
 			});
 			
-			/*
-				Sections may need to obtain data from the actual passage
-				housing them.
-				
-				Add a reference to the 'root', the farthest parent Section, which
-				corresponds to the actual passage.
-			*/
-			ret.root = this.root || ret;
 			/*
 				Add a TwineScript environ and mix in its eval() method.
 			*/
 			ret = TwineScript.environ(ret);
-			return Object.preventExtensions(ret);
+			return ret;
 		},
 		
 		/**

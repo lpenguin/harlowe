@@ -10,6 +10,9 @@ require.config({
 		selectors: './utils/selectors',
 		regexstrings: './utils/regexstrings',
 		customelements: './utils/customelements',
+		// Hook sets
+		hookset: './hooksets/hookset',
+		pseudohookset: './hooksets/pseudohookset',
 	}
 });
 require(['jquery', 'renderer', 'story', 'state', 'engine', 'utils', 'selectors', 'macrolib'],

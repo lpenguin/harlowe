@@ -529,7 +529,8 @@ define(['jquery', 'twinemarkup', 'selectors', 'customelements'], function($, Twi
 			This should be used for engine errors beyond the story author's control.
 			
 			@method impossible
-			@param data	line to log
+			@param {String} where Name of the calling method.
+			@param data	Line to log
 		*/
 		
 		impossible: function (where, data) {
@@ -537,10 +538,15 @@ define(['jquery', 'twinemarkup', 'selectors', 'customelements'], function($, Twi
 			console.trace();
 		},
 		
+		/**
+			Standard assertion function.
+			
+			@method assert
+			@param {Boolean} assertion
+		*/
 		assert: function(assertion) {
 			if (!assertion) {
 				console.error("Assertion failed!");
-				console.trace();
 			}
 		},
 		

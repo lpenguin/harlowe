@@ -192,7 +192,7 @@ tw-broken-link
 	cursor: not-allowed;
 }
 
-.error, .warning
+tw-error.error, tw-error.warning
 {
 	background-color: hsla(312, 72%, 55%, 0.4);
 	border-radius: 0.2em;
@@ -201,7 +201,7 @@ tw-broken-link
 	cursor: help;
 }
 
-.warning
+tw-error.warning
 {
 	background-color: hsla(30, 72%, 55%, 0.4);
 }

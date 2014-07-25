@@ -7,6 +7,14 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 	*/
 	
 	/*
+		This one-line functions returns HTML code for Twine's 
+		macro error messages.
+	*/
+	function error(message) {
+		return "<tw-error class='error'>" + message + "</tw-error>";
+	}
+	
+	/*
 		Takes a function, and registers it as a live sensor macro.
 		
 		Sensors return an object signifying whether to display the
@@ -94,83 +102,109 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 		};
 	});
 	
-	// set()
-	Macros.add("set", function() {
-		return "";
-	});
-
-	// run()
-	Macros.add("run", function() {
-		return "";
-	});
-
-	// print()
-	Macros.add("print", function (expr) {
-		return expr+"";
-	});
-
-	// if() / elseif() / else()
-	(function() {
-		/*
-			In order to make elseif() work, 
-			the if() macro's implementation must have private state.
-			This is something of a hack, and should probably be reconsidered.
-		*/
-		var lastIf,
-			// The state of the last if() is reset on passage change.
-			currentPassage = "",
-			initState = function() {
-				if (State.passage !== currentPassage) {
-					currentPassage = State.passage;
-					lastIf = false;
-				}
-			};
-			
-		Macros
-		.add("if", function _if(expr) {
-			initState();
-			return !!(lastIf = !!expr);
-		})
-		.add("unless", function unless(expr) {
-			initState();
-			return !(lastIf = !!expr);
-		})
-		.add("elseif", function elseif(expr) {
-			initState();
-			// Only run if the previous if() failed
-			return (!lastIf && (lastIf = !!expr));
-		})
-		.add("else", function _else() {
-			initState();
-			// Only run if the previous if() failed
-			return !lastIf;
-		});
-	}());
+	Macros
 	
-	// display()
-	Macros.add("display", function display(name) {
-		try {
-			// Test for existence
-			if (!Story.passageNamed(name)) {
-				//this.error('Can\'t <<display>> passage "' + name + '"', true);
-				return;
+		// set()
+		/*
+			TODO: At present, all of the work in this macro is done
+			within JavaScript's = operator in the act of evaluating the
+			expression. Hmm.
+		*/
+		.add("set", function() {
+			return "";
+		})
+
+		// run()
+		.add("run", function() {
+			return "";
+		})
+
+		// print()
+		.add("print", function (_, expr) {
+			return expr+"";
+		})
+		
+		/*
+			The if() macro family currently determines else() and elseif()
+			by remembering the previous if() result. By "remembering", I
+			mean it puts a fresh expando property, "lastIf", on the section's
+			expression stack.
+		*/
+		.add("if", function _if(section, expr) {
+			/*
+				This and unless() set the lastIf expando
+				property. Whatever was there last is no longer
+				relevant, just as consecutive if()s have no
+				bearing on one another.
+			*/
+			return !!(section.stack[0].lastIf = !!expr);
+		})
+		
+		/*
+			unless: only true if its expression is false.
+		*/
+		.add("unless", function unless(section, expr) {
+			return !(section.stack[0].lastIf = !!expr);
+		})
+		
+		/*
+			elseif: only true if the previous if() was false,
+			and its own expression is true.
+		*/
+		.add("elseif", function elseif(section, expr) {
+			/*
+				This and else() check the lastIf expando
+				property, if present.
+			*/
+			return (!section.stack[0].lastIf && (section.stack[0].lastIf = !!expr));
+		})
+		
+		/*
+			else: only true if the previous if() was false.
+		*/
+		.add("else", function _else(section) {
+			return !section.lastIf;
+		})
+	
+		// display()
+		.add("display", function display(section, name) {
+			try {
+				
+				/*
+					Test for the existence of the named passage in the story.
+				*/
+				if (!Story.passageNamed(name)) {
+					return error('Can\'t display passage "' + name + '"');
+				}
+				
+				/*
+					Make a much-needed check that this display() isn't being
+					recursively called without end. A limit of 5 recursions is set.
+				*/
+				if (section.stack.reduce(function(count,e) {
+					return count + ((e.display && e.display.indexOf(name) >-1) || 0);
+				},0) >= 25) {
+					return error('display loop: ' + name + ' is displaying itself 25+ times.');
+				}
+				
+				/*
+					In order to make the above check work, of course,
+					each call to display() must set a property on the expression
+					stack of the section. So, we do it now:
+				*/
+				section.stack[0].display = (section.stack[0].display || []).concat(name);
+
+				/*
+					Having concluded those checks, 
+				*/
+				return (Story.passageNamed(name).html());
+			} catch (e) {
+				//this.error(e.message);
 			}
-			// Test for recursion
-			/*if (this.contextQuery("display").filter(function (e) {
-				return e.el.filter("[display='" + name + "']").length > 0;
-			}).length >= 5) {
-				this.error('<<display>> loop: "' + name + '" is displaying itself 5+ times.', true);
-				return;
-			}
-			this.el.attr("display", name);*/
-			return (Story.passageNamed(name).html());
-		} catch (e) {
-			//this.error(e.message);
-		}
-	});
+		});
 	
 	// transition()
-	addChanger("transition", function transition(name, time) {
+	addChanger("transition", function transition(section, name, time) {
 		return changerFn(function(d) {
 			d.transition = name;
 			d.transitionTime = time;
@@ -406,7 +440,7 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 	}));
 */
 	revisionTypes.forEach(function(e) {
-		addChanger(e, function(scope) {
+		addChanger(e, function(section, scope) {
 			return changerFn(function(desc) {
 				if (e === "remove") {
 					desc.code = "";
@@ -605,7 +639,21 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 		"": function() {
 			Object.keys(this).forEach(function(key) {
 				if (key) {
-					Macros.add(key, this[key]);
+					/*
+						Of course, the mandatory first argument of all macro
+						functions is section, so we have to convert the above
+						to use a contract that's amenable to this requirement.
+					*/
+					Macros.add(key, function() {
+						/*
+							As none of the above actually need or use section,
+							we can safely discard it.
+							
+							Aside: in ES6 this function would be:
+							(section, ...rest) => this[key](...rest)
+						*/
+						return this[key].apply(0, Array.from(arguments).slice(1));
+					}.bind(this));
 				}
 			}.bind(this));
 		}

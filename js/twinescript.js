@@ -157,10 +157,10 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 		and returns raw Javascript code for the macro's execution.
 		
 		@method compile
-		@param {Array} array The tokens array.
+		@param {Array} tokens The tokens array.
 		@return {String} String of Javascript code.
 	*/
-	function compile(array) {
+	function compile(tokens) {
 		var i, left, right, type,
 			/*
 				Hoisted temp variables
@@ -181,17 +181,17 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 			*/
 			implicitLeftIt = false;
 		
-		if (!array) {
+		if (!tokens) {
 			return;
 		}
 		// Convert non-arrays to arrays;
-		array = [].concat(array);
+		tokens = [].concat(tokens);
 		
 		/*
 			Potential early return if we're at a leaf node.
 		*/
-		if (array.length === 1) {
-			token = array[0];
+		if (tokens.length === 1) {
+			token = tokens[0];
 			if (token.type === "identifier") {
 				return " Identifiers." + token.text + " ";
 			}
@@ -236,31 +236,34 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 			We must check these in reverse, so that the least-precedent
 			is associated last.
 		*/
-		if ((i = indexOfType(array, "comma")) >-1) {
+		if ((i = indexOfType(tokens, "comma")) >-1) {
 			midString = ",";
 		}
-		else if ((i = indexOfType(array, "to")) >-1) {
-			midString = " = ";
+		else if ((i = indexOfType(tokens, "to")) >-1) {
+			operation = "intendToSet";
 		}
-		else if ((i = indexOfType(array, "and", "or")) >-1) {
+		else if ((i = indexOfType(tokens, "augmentedAssign")) >-1) {
+			operation = "intendToSet['" + tokens[i].type + "']";
+		}
+		else if ((i = indexOfType(tokens, "and", "or")) >-1) {
 			midString =
-				( array[i].type === "and" ? " && " : " || " );
+				( tokens[i].type === "and" ? " && " : " || " );
 		}
-		else if ((i = indexOfType(array, "is", "isNot", "contains", "isIn")) >-1) {
+		else if ((i = indexOfType(tokens, "is", "isNot", "contains", "isIn")) >-1) {
 			implicitLeftIt = true;
-			operation = array[i].type;
+			operation = tokens[i].type;
 		}
-		else if ((i = indexOfType(array, "lt", "lte", "gt", "gte")) >-1) {
+		else if ((i = indexOfType(tokens, "lt", "lte", "gt", "gte")) >-1) {
 			implicitLeftIt = true;
-			operation = array[i].type;
+			operation = tokens[i].type;
 		}
-		else if ((i = indexOfType(array, "add", "subtract", "multiply", "divide", "modulo")) >-1) {
-			operation = array[i].type;
+		else if ((i = indexOfType(tokens, "add", "subtract", "multiply", "divide", "modulo")) >-1) {
+			operation = tokens[i].type;
 		}
-		else if ((i = indexOfType(array, "not")) >-1) {
+		else if ((i = indexOfType(tokens, "not")) >-1) {
 			midString = "!";
 		}
-		else if ((i = indexOfType(array, "macro")) >-1) {
+		else if ((i = indexOfType(tokens, "macro")) >-1) {
 			/*
 				The arguments given to a macro instance must be converted to a thunk.
 				The reason is that "live" macros need to be reliably called again and
@@ -271,26 +274,33 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 				possible by just transpiling the macro instance into a JS function call.
 			*/
 			midString = 'Operation.runMacro("'
-				+ array[i].name + '",function argsThunk(){return ['
+				+ tokens[i].name + '", function argsThunk(){return ['
+				/*
+					The first argument to macros must be the current section,
+					so as to give the macros' functions access to data
+					about the runtime state (such as, whether this expression
+					is nested within another one).
+				*/
+				+ "section,"
 				/*
 					You may notice here, unseen, is the assumption that Javascript array literals
 					and TwineScript macro invocations use the same character to separate arguments/items.
 					(That, of course, being the comma - macro(1,2,3) vs [1,2,3].)
 					This is currently true, but it is nonetheless a fairly bold assumption.
 				*/
-				+ compile(array[i].children)
+				+ compile(tokens[i].children)
 				+ ']})';
 		}
-		else if ((i = indexOfType(array, "grouping")) >-1) {
-			midString = "(" + compile(array[i].children) + ")";
+		else if ((i = indexOfType(tokens, "grouping")) >-1) {
+			midString = "(" + compile(tokens[i].children) + ")";
 		}
 		
 		/*
 			Recursive case
 		*/
 		if (i >- 1) {
-			right = right || array.splice(i + 1);
-			left  = left  || array.slice (0,  i);
+			right = right || tokens.splice(i + 1);
+			left  = left  || tokens.slice (0,  i);
 			
 			compiledLeft = compile(left);
 			
@@ -311,11 +321,11 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 		/*
 			Base case: just convert the tokens back into text.
 		*/
-		else if (array.length === 1) {
+		else if (tokens.length === 1) {
 			return (token.value || token.text);
 		}
 		else {
-			return array.reduce(function(a, token) { return a + compile(token); }, "");
+			return tokens.reduce(function(a, token) { return a + compile(token); }, "");
 		}
 		return "";
 	}
@@ -348,14 +358,12 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 					The "time" keyword binds to the number of milliseconds since the passage
 					was rendered.
 					
-					It might be something of toss-up whether the "time" keyword should
+					It might be something of a toss-up whether the "time" keyword should
 					intuitively refer to the entire passage's lifetime, or just the nearest
-					hook's. I believe that the passage is what's called for here, but an
-					adjustment to the latter can be made by changing section.root.timestamp to
-					just section.timestamp.
+					hook's. I believe that the passage is what's called for here.
 				*/
 				get time() {
-					return (Date.now() - section.root.timestamp);
+					return (Date.now() - section.timestamp);
 				}
 			},
 			Operation = operations(Identifiers);
