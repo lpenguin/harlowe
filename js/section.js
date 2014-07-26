@@ -125,6 +125,7 @@ function($, Utils, Selectors, Renderer, TwineScript, Story, State, HookUtils, Ho
 		else if (nextHook && (result === false
 				|| result === null || result === undefined)) {
 			nextHook.removeAttr('code');
+			expr.addClass("false");
 		}
 	}
 	
@@ -172,6 +173,7 @@ function($, Utils, Selectors, Renderer, TwineScript, Story, State, HookUtils, Ho
 				Check if the sensor has triggered.
 			*/
 			var result = sensor();
+			
 			/*
 				Act on the data given - if the value differs from the previous,
 				alter the target hook.

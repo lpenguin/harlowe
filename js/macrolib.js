@@ -10,8 +10,77 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 		This one-line functions returns HTML code for Twine's 
 		macro error messages.
 	*/
-	function error(message) {
+	function errorElement(message) {
 		return "<tw-error class='error'>" + message + "</tw-error>";
+	}
+	
+	/*
+		Operation.runMacro() in TwineScript passes its arguments as a thunk.
+		See that page for the formal explanation. These two functions convert
+		regular Javascript functions to accept a such a thunk as its sole argument.
+		
+		Non-live macros ("eager" macros) don't actually need the thunk - they take it,
+		unwrap it, and discard it. Live macros, however, need to retain
+		it and re-evaluate it over and over.
+	*/
+	function eager(fn) {
+		return function macroResult(argsThunk) {
+			var args = argsThunk(),
+				// Do the error check now.
+				error = Utils.containsError(args);
+
+			if (error) {
+				return errorElement(error);
+			}
+			return fn.apply(0, args);
+		};
+	}
+	
+	/*
+		Conversely, this one wrap the function, fn, in an outer function, O,
+		which takes argsThunk and returns another thunk that calls the args
+		on fn.
+		
+		Hence, this converts fn into a function that joins the argsThunk
+		with the macro's call, creating a combined thunk.
+	*/
+	function deferred(fn) {
+		return function deferredMacroResult(argsThunk) {
+			/*
+				While macroResultThunk's interior is similar to macroResult,
+				returned up above in eagerFunction(),
+				note that the scope binding of argsThunk is different,
+				and thus it can't really be abstracted out.
+			*/
+			var t = function macroResultThunk() {
+				var args = argsThunk(),
+					// Do the error check now.
+					error = Utils.containsError(args);
+				
+				if (error) {
+					return errorElement(error);
+				}
+				return fn.apply(0, args);
+			};
+			/*
+				The combined thunk should have the same expando properties
+				("changer", "sensor", etc.) as the initial function.
+			*/
+			Object.assign(t, fn);
+			return t;
+		};
+	}
+	
+	/*
+		Takes a function, and registers it as a value macro.
+	*/
+	function addValue(name, fn) {
+		Macros.add(name,
+			"value",
+			eager(fn)
+		);
+		// Return the function to enable "bubble chaining".
+		return addValue;
 	}
 	
 	/*
@@ -26,11 +95,12 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 	*/
 	function addSensor(name, fn) {
 		fn.sensor = true;
-		Macros.add(name, {
-			type: "sensor",
-			live: true,
-			fn: fn
-		});
+		Macros.add(name,
+			"sensor",
+			deferred(fn)
+		);
+		// Return the function to enable "bubble chaining".
+		return addSensor;
 	}
 	
 	/*
@@ -48,11 +118,12 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 		{String} append          Which jQuery method to append the code to the dest with.
 	*/
 	function addChanger(name, fn) {
-		Macros.add(name, {
-			type: "changer",
-			live: false,
-			fn: fn
-		});
+		Macros.add(name,
+			"changer",
+			eager(fn)
+		);
+		// Return the function to enable "bubble chaining".
+		return addChanger;
 	}
 	
 	/*
@@ -78,49 +149,19 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 		Basic Macros
 	*/
 	
-	// when()
-	addSensor("when", function(expr) {
-		return {
-			value: expr,
-			done: expr
-		};
-	});
-	
-	// until()
-	addSensor("until", function(expr) {
-		return {
-			value: !expr,
-			done: expr
-		};
-	});
-	
-	// whenever()
-	addSensor("whenever", function(expr) {
-		return {
-			value: expr,
-			done: false
-		};
-	});
-	
-	Macros
-	
-		// set()
+	addValue
+		// set(), run()
 		/*
 			TODO: At present, all of the work in this macro is done
 			within JavaScript's = operator in the act of evaluating the
 			expression. Hmm.
 		*/
-		.add("set", function() {
-			return "";
-		})
-
-		// run()
-		.add("run", function() {
+		(["set", "run"], function set() {
 			return "";
 		})
 
 		// print()
-		.add("print", function (_, expr) {
+		("print", function print(_, expr) {
 			return expr+"";
 		})
 		
@@ -130,7 +171,7 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 			mean it puts a fresh expando property, "lastIf", on the section's
 			expression stack.
 		*/
-		.add("if", function _if(section, expr) {
+		("if", function _if(section, expr) {
 			/*
 				This and unless() set the lastIf expando
 				property. Whatever was there last is no longer
@@ -143,7 +184,7 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 		/*
 			unless: only true if its expression is false.
 		*/
-		.add("unless", function unless(section, expr) {
+		("unless", function unless(section, expr) {
 			return !(section.stack[0].lastIf = !!expr);
 		})
 		
@@ -151,7 +192,7 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 			elseif: only true if the previous if() was false,
 			and its own expression is true.
 		*/
-		.add("elseif", function elseif(section, expr) {
+		("elseif", function elseif(section, expr) {
 			/*
 				This and else() check the lastIf expando
 				property, if present.
@@ -162,19 +203,19 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 		/*
 			else: only true if the previous if() was false.
 		*/
-		.add("else", function _else(section) {
-			return !section.lastIf;
+		("else", function _else(section) {
+			return !section.stack[0].lastIf;
 		})
 	
 		// display()
-		.add("display", function display(section, name) {
+		("display", function display(section, name) {
 			try {
 				
 				/*
 					Test for the existence of the named passage in the story.
 				*/
 				if (!Story.passageNamed(name)) {
-					return error('Can\'t display passage "' + name + '"');
+					return errorElement('Can\'t display passage "' + name + '"');
 				}
 				
 				/*
@@ -184,7 +225,7 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 				if (section.stack.reduce(function(count,e) {
 					return count + ((e.display && e.display.indexOf(name) >-1) || 0);
 				},0) >= 25) {
-					return error('display loop: ' + name + ' is displaying itself 25+ times.');
+					return errorElement('Display loop: ' + name + ' is displaying itself 25+ times.');
 				}
 				
 				/*
@@ -199,48 +240,111 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 				*/
 				return (Story.passageNamed(name).html());
 			} catch (e) {
-				//this.error(e.message);
+				return errorElement(e.message);
 			}
 		});
 	
-	// transition()
-	addChanger("transition", function transition(section, name, time) {
-		return changerFn(function(d) {
-			d.transition = name;
-			d.transitionTime = time;
+	
+	addChanger
+		// transition()
+		(["transition","t8n"], function transition(section, name, time) {
+			return changerFn(function(d) {
+				d.transition = name;
+				d.transitionTime = time;
+			});
+		})
+
+		// nobr()
+		// Remove line breaks from the hook.
+		// Manual line breaks can be inserted with <br>.
+		("nobr", function nobr() {
+			return changerFn(function(d) {
+				// To prevent keywords from being created by concatenating lines,
+				// replace the line breaks with a zero-width space.
+				d.code = d.code.replace(/\n/g, "&zwnj;");
+			});
+		});
+
+		// style()
+		// Insert the enclosed raw CSS into a <style> tag that exists for the
+		// duration of the current passage only.
+		// contents: raw CSS.
+		("style", function style() {
+			return changerFn(function(d) {
+				var selector = 'style#macro';
+				if (!$(selector).length) {
+					$(document.head).append($('<style id="macro">'));
+				}
+				$(selector).text(Utils.unescape(d.code));
+				d.code = "";
+			});
+		});
+	
+	/*
+		Standard sensor macros.
+	*/
+	addSensor
+		// when()
+		("when", function(_, expr) {
+			return {
+				value: expr,
+				done: expr
+			};
+		})
+		
+		// until()
+		("until", function(_, expr) {
+			return {
+				value: !expr,
+				done: expr
+			};
+		})
+		
+		// whenever()
+		("whenever", function(_, expr) {
+			return {
+				value: expr,
+				done: false
+			};
+		});
+	
+	/*
+		Revision macros
+	*/
+
+	var revisionTypes = [
+		// replace()
+		// A macro that replaces the scope element(s) with its contents.
+		"replace",
+		// append()
+		// Similar to replace, but appends the contents to the scope(s).
+		"append",
+		// prepend()
+		// Similar to replace, but prepends the contents to the scope(s).
+		"prepend",
+		// remove()
+		// Removes the scope(s).
+		"remove"
+	];
+	
+	revisionTypes.forEach(function(e) {
+		addChanger(e, function(section, scope) {
+			return changerFn(function(desc) {
+				if (e === "remove") {
+					desc.code = "";
+					return;
+				}
+				desc.append = e;
+				desc.target = scope;
+			});
 		});
 	});
-
-	// nobr()
-	// Remove line breaks from the hook.
-	// Manual line breaks can be inserted with <br>.
-	addChanger("nobr", function nobr() {
-		return changerFn(function(d) {
-			// To prevent keywords from being created by concatenating lines,
-			// replace the line breaks with a zero-width space.
-			d.code = d.code.replace(/\n/g, "&zwnj;");
-		});
-	});
-
-	// style()
-	// Insert the enclosed raw CSS into a <style> tag that exists for the
-	// duration of the current passage only.
-	// contents: raw CSS.
-	addChanger("style", function style() {
-		return changerFn(function(d) {
-			var selector = 'style#macro';
-			if (!$(selector).length) {
-				$(document.head).append($('<style id="macro">'));
-			}
-			$(selector).text(Utils.unescape(d.code));
-			d.code = "";
-		});
-	});
-
+	
 	// TODO: script()
 
 	// TODO: key()
 	// Perform the enclosed macros after the given keyboard letter is pushed
+	
 	
 	/*
 		Generate a function for enchantment macros or scope macros.
@@ -410,47 +514,6 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 	});
 */
 
-	/*
-		Revision macros
-	*/
-
-	var revisionTypes = [
-		// replace()
-		// A macro that replaces the scope element(s) with its contents.
-		"replace",
-		// append()
-		// Similar to replace, but appends the contents to the scope(s).
-		"append",
-		// prepend()
-		// Similar to replace, but prepends the contents to the scope(s).
-		"prepend",
-		// remove()
-		// Removes the scope(s).
-		"remove"
-	];
-/*
-	Macros.add(e, newEnchantmentMacroFn(function (code, hook, section, scope) {
-		/*
-			By passing a function here (a bound call to Engine.render)
-			then the passed code is re-evaluated on every time, allowing
-			random macros like either() to behave correctly.
-		*
-		scope[e](section.render.bind(section, code));
-		section.updateEnchantments();
-	}));
-*/
-	revisionTypes.forEach(function(e) {
-		addChanger(e, function(section, scope) {
-			return changerFn(function(desc) {
-				if (e === "remove") {
-					desc.code = "";
-					return;
-				}
-				desc.append = e;
-				desc.target = scope;
-			});
-		});
-	});
 	
 	/*
 		Combos
@@ -467,13 +530,6 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 				interactionType.enchantDesc)
 			);
 		});
-		// Timed macros
-		Macros.add("timed-" + revisionType, 
-			newTimedMacroFn(function (code, hook, section, scope) {
-				scope[revisionType](section.render.bind(section, code));
-				section.updateEnchantments();
-			})
-		);
 	});*/
 	
 	/*
@@ -644,7 +700,7 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 						functions is section, so we have to convert the above
 						to use a contract that's amenable to this requirement.
 					*/
-					Macros.add(key, function() {
+					addValue(key, function() {
 						/*
 							As none of the above actually need or use section,
 							we can safely discard it.

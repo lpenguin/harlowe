@@ -73,106 +73,21 @@ function($, Story, Utils, Selectors) {
 			
 			@method add
 			@param {String|Array} name  A String, or an Array holding multiple strings.
-			@param {Object|Function} desc  A macro definition object, or just a function.
+			@param {String} type The type (either "sensor", "changer", or, and in absentia, "value")
+			@param {Function} fn  The function.
 			@return this
-			
-			Definition objects have this structure:
-				type: String (either "sensor", "changer", or, and in absentia, "value")
-				live: Boolean (false in absentia)
-				fn: the function.
-				
 		*/
-		add: function (name, desc) {
-			/*
-				If a raw function was passed, assume the default definition for
-				this macro.
-			*/
-			if (typeof desc === "function") {
-				desc = {
-					live: false,
-					type: "value",
-					fn: desc
-				};
-			}
-			
-			/*
-				Operation.runMacro() in TwineScript passes its arguments as a thunk.
-				See that page for the formal explanation.
-				
-				Now, the macro passed to Macros.add() is expected to be a "plain"
-				Javascript function that has ordinary parameters. So,
-				some modification is needed to make this function handle the
-				arguments thunk automatically.
-				
-				Non-live macros don't actually need the thunk - they take it,
-				unwrap it, and discard it. Live macros, however, need to retain
-				it and re-evaluate it over and over.
-			*/
-			if(!desc.live) {
-				/*
-					Wrap the function, fn, in an outer function which immediately 
-					opens argsThunk and then calls fn with those arguments.
-					
-					Hence, this converts fn into an outwardly identical function
-					that accepts an argsThunk and applies it to its actual parameters.
-				*/
-				desc.fn = (function(fn) {
-					return function macroResult(argsThunk) {
-						var args = argsThunk(),
-							// Do the error check now.
-							error = Utils.containsError(args);
-
-						if (error) {
-							return error;
-						}
-						return fn.apply(0, args);
-					};
-				}(desc.fn));
-			}
-			else {
-				/*
-					Wrap the function, fn, in an outer function, O, which
-					takes argsThunk and returns another thunk that calls the args
-					on fn.
-					
-					Hence, this converts fn into a function that joins the argsThunk
-					with the macro's call, creating a combined thunk.
-				*/
-				desc.fn = (function(fn) {
-					return function deferredMacroResult(argsThunk) {
-						/*
-							While macroResultThunk's interior is similar to macroResult,
-							note that the binding of argsThunk is different,
-							and thus it can't really be abstracted out.
-						*/
-						var t = function macroResultThunk() {
-							var args = argsThunk(),
-								// Do the error check now.
-								error = Utils.containsError(args);
-							
-							if (error) {
-								return error;
-							}
-							return fn.apply(0, args);
-						};
-						/*
-							The combined thunk should have the same expando properties
-							("changer", "sensor", etc.) as the initial function.
-						*/
-						Object.assign(t, fn);
-						return t;
-					};
-				}(desc.fn));
-			}
-			desc.fn.type = desc.type;
+		add: function (name, type, fn) {
+			type = type || "value";
+			fn.type = type;
 			
 			// Add the fn to the macroRegistry, plus aliases (if name is an array of aliases)
 			if (Array.isArray(name)) {
 				name.forEach(function (n) {
-					Utils.lockProperty(macroRegistry, n, desc.fn);
+					Utils.lockProperty(macroRegistry, n, fn);
 				});
 			} else {
-				Utils.lockProperty(macroRegistry, name + "", desc.fn);
+				Utils.lockProperty(macroRegistry, name + "", fn);
 			}
 			return this;
 		},

@@ -14,8 +14,8 @@
 .debug-mode tw-expression[type=macro][name="display"] { background-color: hsla(200,100%,50%,0.1) !important; }
 .debug-mode tw-expression[type=macro][name="if"],
 .debug-mode tw-expression[type=macro][name="elseif"],
-.debug-mode tw-expression[type=macro][name="else"] { background-color: hsla(120,100%,50%,0.1) !important; } 
-.debug-mode tw-expression[type=macro][name="if"].false-if { background-color: hsla(0,100%,50%,0.2) !important; } 
+.debug-mode tw-expression[type=macro][name="else"] { background-color: hsla(120,100%,50%,0.1) !important; }
+.debug-mode tw-expression[type=macro].false { background-color: hsla(0,100%,50%,0.2) !important; } 
 .debug-mode tw-expression[type=macro][name="print"] { background-color: hsla(60,100%,50%,0.2) !important; } 
 .debug-mode tw-expression[type=macro][name="set"] { background-color: hsla(30,100%,50%,0.2) !important; }
 .debug-mode tw-expression[type=macro][name="script"] { background-color: hsla(45,100%,50%,0.2) !important; }

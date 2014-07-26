@@ -435,6 +435,8 @@
 			
 			boolean: "(true|false|null|undefined)",
 			
+			event: "clicked|hovered-over|hovered-off",
+			
 			// Special identifiers
 			identifier: "it|time",
 			
@@ -1052,7 +1054,7 @@
 			/*
 				Some macro-only tokens
 			*/
-			["string", "boolean", "identifier", "is", "to", "and", "or", "not", "isNot", "comma",
+			["string", "boolean", "event", "identifier", "is", "to", "and", "or", "not", "isNot", "comma",
 			"add", "subtract", "multiply", "divide", "modulo", "lt", "lte", "gt", "gte",
 			"contains", "isIn"].reduce(function(a, e) {
 				a[e] = { macro: true, fn: pusher(e) };
