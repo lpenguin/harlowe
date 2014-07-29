@@ -263,7 +263,7 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 				// replace the line breaks with a zero-width space.
 				d.code = d.code.replace(/\n/g, "&zwnj;");
 			});
-		});
+		})
 
 		// style()
 		// Insert the enclosed raw CSS into a <style> tag that exists for the
@@ -307,6 +307,7 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 				done: false
 			};
 		});
+	
 	
 	/*
 		Revision macros
@@ -700,7 +701,7 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 						functions is section, so we have to convert the above
 						to use a contract that's amenable to this requirement.
 					*/
-					addValue(key, function() {
+					addValue(key, function(/* variadic */) {
 						/*
 							As none of the above actually need or use section,
 							we can safely discard it.

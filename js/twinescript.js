@@ -107,6 +107,7 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 			isIn: comparisonOp(function(l,r) {
 				return contains(r,l);
 			}),
+			
 			/*
 				Runs a macro.
 				
@@ -131,7 +132,13 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 	}
 
 	/*
-		A helper function for compile()
+		A helper function for compile(). When given a token array, and a
+		bunch of token type strings, it returns the index in the array of the
+		first token that has one of those types. Very useful.
+		
+		@param {Array} array The tokens array.
+		@param {String} type* The token type(s).
+		@return {Number} The array index, or NaN.
 	*/
 	function indexOfType(array, type /* variadic */) {
 		var i,
@@ -150,6 +157,17 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 			}
 		}
 		return NaN;
+	}
+	
+	/*
+		A helper function for compile(). This takes some compiled
+		Javascript values in string form, and joins them into a compiled
+		Javascript thunk function.
+	*/
+	function thunk(/* variadic */) {
+		return 'function argsThunk(){return ['
+			+ Array.from(arguments).join()
+			+ ']}';
 	}
 	
 	/**
@@ -211,8 +229,10 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 				return " State.variables." + token.name + " ";
 			}
 		}
+		
 		/*
-			Precedence:
+			Attempt to find the index of a valid token, using this
+			order of precedence:
 			
 			grouping ()
 			macro
@@ -240,10 +260,10 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 			midString = ",";
 		}
 		else if ((i = indexOfType(tokens, "to")) >-1) {
-			operation = "intendToSet";
+			midString = "=";
 		}
 		else if ((i = indexOfType(tokens, "augmentedAssign")) >-1) {
-			operation = "intendToSet['" + tokens[i].type + "']";
+			midString = tokens[i].type;
 		}
 		else if ((i = indexOfType(tokens, "and", "or")) >-1) {
 			midString =
@@ -274,48 +294,51 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 				possible by just transpiling the macro instance into a JS function call.
 			*/
 			midString = 'Operation.runMacro("'
-				+ tokens[i].name + '", function argsThunk(){return ['
-				/*
-					The first argument to macros must be the current section,
-					so as to give the macros' functions access to data
-					about the runtime state (such as, whether this expression
-					is nested within another one).
-				*/
-				+ "section,"
-				/*
-					You may notice here, unseen, is the assumption that Javascript array literals
-					and TwineScript macro invocations use the same character to separate arguments/items.
-					(That, of course, being the comma - macro(1,2,3) vs [1,2,3].)
-					This is currently true, but it is nonetheless a fairly bold assumption.
-				*/
-				+ compile(tokens[i].children)
-				+ ']})';
+				+ tokens[i].name + '", ' + thunk(
+					/*
+						The first argument to macros must be the current section,
+						so as to give the macros' functions access to data
+						about the runtime state (such as, whether this expression
+						is nested within another one).
+					*/
+					"section",
+					/*
+						You may notice here, unseen, is the assumption that Javascript array literals
+						and TwineScript macro invocations use the same character to separate arguments/items.
+						(That, of course, being the comma - macro(1,2,3) vs [1,2,3].)
+						This is currently true, but it is nonetheless a fairly bold assumption.
+					*/
+					compile(tokens[i].children)
+				) + ')';
 		}
 		else if ((i = indexOfType(tokens, "grouping")) >-1) {
 			midString = "(" + compile(tokens[i].children) + ")";
 		}
 		
 		/*
-			Recursive case
+			If a token was found, we can recursively
+			compile those next to it.
 		*/
 		if (i >- 1) {
-			right = right || tokens.splice(i + 1);
-			left  = left  || tokens.slice (0,  i);
-			
-			compiledLeft = compile(left);
-			
+			/*
+				Any of the comparisons above could have provided specific
+				values for left and right, but usually they will just be
+				the tokens to the left and right of the matched one.
+			*/
+			left  = left  || compile(tokens.slice (0,  i)).trim();
+			right = right || compile(tokens.splice(i + 1)).trim();
 			/*
 				The compiler should implicitly insert the "it" keyword when the 
 				left-hand-side of a comparison operator was omitted.
 			*/
-			if (implicitLeftIt && !(compiledLeft.trim())) {
-				compiledLeft = " Identifiers.it ";
+			if (implicitLeftIt && !(left)) {
+				left = " Identifiers.it ";
 			}
 			if (midString) {
-				return compiledLeft + midString + compile(right);
+				return left + midString + right;
 			}
 			else if (operation) {
-				return " Operation." + operation + "(" + compiledLeft + "," + compile(right) + ") ";
+				return " Operation." + operation + "(" + left + "," + right + ") ";
 			}
 		}
 		/*

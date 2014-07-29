@@ -535,7 +535,6 @@ define(['jquery', 'twinemarkup', 'selectors', 'customelements'], function($, Twi
 		
 		impossible: function (where, data) {
 			console.error(where + "(): " + data);
-			console.trace();
 		},
 		
 		/**

@@ -472,6 +472,8 @@
 			
 			isIn:      wb + caseInsensitive("is in") + wb,
 			contains:  wb + caseInsensitive("contains") + wb,
+			
+			gets:      wb + caseInsensitive("gets") + wb,
 
 			add:       "\\+",
 			subtract:  "\\-",
@@ -1055,7 +1057,7 @@
 				Some macro-only tokens
 			*/
 			["string", "boolean", "event", "identifier", "is", "to", "and", "or", "not", "isNot", "comma",
-			"add", "subtract", "multiply", "divide", "modulo", "lt", "lte", "gt", "gte",
+			"add", "subtract", "multiply", "divide", "modulo", "lt", "lte", "gt", "gte", "gets",
 			"contains", "isIn"].reduce(function(a, e) {
 				a[e] = { macro: true, fn: pusher(e) };
 				return a;
