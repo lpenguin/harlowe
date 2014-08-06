@@ -167,6 +167,9 @@ function($, Utils, Selectors, Renderer, TwineScript, Story, State, HookUtils, Ho
 		/*
 			This closure runs every frame from now on, until 
 			the target hook is gone.
+			
+			Notice that as this is bound, giving it a name isn't
+			all that useful.
 		*/
 		recursiveSensing = function() {
 			/*
@@ -374,7 +377,11 @@ function($, Utils, Selectors, Renderer, TwineScript, Story, State, HookUtils, Ho
 					render() pushes a new object to this stack before
 					running expressions, and pops it off again afterward.
 				*/
-				stack: []
+				stack: [],
+				/*
+					This is an enchantments stack. I'll explain later.
+				*/
+				enchantments: []
 			});
 			
 			/*
@@ -414,9 +421,17 @@ function($, Utils, Selectors, Renderer, TwineScript, Story, State, HookUtils, Ho
 			syntax (e.g. "?cupboard" becoming "section.selectHook('?cupboard')").
 			
 			@method selectHook
+			@param {String} selectorString
 			@return {HookSet|PseudoHookSet}
 		*/
 		selectHook: function(selectorString) {
+			/*
+				If a HookSet or PseudoHookSet was passed in, return it unmodified.
+			*/
+			if (HookSet.isPrototypeOf(selectorString)
+				|| PseudoHookSet.isPrototypeOf(selectorString)) {
+				return selectorString;
+			}
 			switch(HookUtils.selectorType(selectorString)) {
 				case "hookRef": {
 					return HookSet.create(this, selectorString);
@@ -425,7 +440,7 @@ function($, Utils, Selectors, Renderer, TwineScript, Story, State, HookUtils, Ho
 					return PseudoHookSet.create(this, selectorString);
 				}
 			}
-			return $();
+			return null;
 		},
 		
 		/**
@@ -453,7 +468,7 @@ function($, Utils, Selectors, Renderer, TwineScript, Story, State, HookUtils, Ho
 			*/
 			var desc = {
 				code:             source || target.attr('code'),
-				transition:       "",
+				transition:       "dissolve",
 				target:           target,
 				append:           "append"
 			};
@@ -525,24 +540,20 @@ function($, Utils, Selectors, Renderer, TwineScript, Story, State, HookUtils, Ho
 		},
 		
 		/**
-			Updates all enchantment DOM structures in the passage.
-			Currently not used!
+			Updates all enchantments in the section.
 
 			@method updateEnchantments
 		*/
 		updateEnchantments: function () {
-			// Remove the old enchantments
-			this.$(Selectors.pseudoHook).children().unwrap();
-			this.$(Selectors.hook).attr("class", "");
-
-			// Perform actions for each scoping macro's scope.
-			this.$(Selectors.enchanter).each(function () {
-				var enchantment = $(this).data("enchantment");
-				if (enchantment) {
-					// Refresh the scope, and enchant it.
-					enchantment.refreshScope();
-					enchantment.enchantScope();
-				}
+			this.enchantments.forEach(function(e) {
+				/*
+					This first method removes old <tw-enchantment> elements...
+				*/
+				e.refreshScope();
+				/*
+					...and this one adds new ones.
+				*/
+				e.enchantScope();
 			});
 		}
 		

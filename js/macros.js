@@ -1,11 +1,8 @@
-define(['jquery', 'story', 'utils', 'selectors'],
-function($, Story, Utils, Selectors) {
+define(['jquery', 'story', 'utils'],
+function($, Story, Utils) {
 	"use strict";
 	/**
 		This contains a registry of macro definitions, and methods to add to that registry.
-		
-		The registration methods also come equipped with default behaviour for hook macro functions, and register
-		any enchantment events that the macro definition defines.
 		
 		@class Macros
 		@static
@@ -13,34 +10,7 @@ function($, Story, Utils, Selectors) {
 	
 	var Macros,
 		// Private collection of registered macros.
-		macroRegistry = {},
-		// Tracker of registered events and their class lists
-		enchantmentEventRegistry = {};
-
-	/**
-		Called when an enchantment's event is triggered. 
-		This is called as a jQuery .on handler.
-		
-		Sub-function of Macros.add()
-		
-		@event enchantmentEventFn
-		@private
-	*/
-	function enchantmentEventFn() {
-		var triggerer = $(this),
-			story = Utils.storyElement;
-		
-		// Trigger the hook macros that refer to this enchantment.
-		Utils.$(Selectors.enchanter, story).each(function () {
-			var el = $(this),
-				enchantment = el.data("enchantment");
-
-			if (enchantment.scope && enchantment.scope.hooks
-					&& enchantment.scope.hooks.is(triggerer)) {
-				enchantment.fn(triggerer);
-			}
-		});
-	}
+		macroRegistry = {};
 
 	/*
 		The object containing all the macros available to a story.
@@ -103,33 +73,6 @@ function($, Story, Utils, Selectors) {
 		getType: function(name) {
 			var m = Macros.get(name);
 			return (m ? m.type : "");
-		},
-		
-		/**
-			Register an enchantment without creating multiple event handlers for the same event.
-			Enchantments are triggered by DOM events assigned with jQuery's .on().
-			The enchantment registry keeps track of which events have which handlers.
-			
-			@method registerEnchantmentEvent
-			@param {String} name Name of the enchantment. This is used for jQuery event namespacing.
-			@param {String} newList Comma-separated list of DOM selectors (hence, a
-			compound selector) for this macro to apply to.
-		*/
-		registerEnchantmentEvent: function (name, newList) {
-			/*
-				Obtain and update the list of jQuery selectors
-				that select the elements that can trigger this event.
-			*/
-			var list = enchantmentEventRegistry[name] || "",
-				eventName = name + ".macro";
-
-			// Append the newList to the list, if it isn't present already.
-			(!list.contains(newList) && (list += (list && ", ") + newList));
-
-			// Set the event handler
-			$(document.documentElement).off(eventName).on(eventName, list, enchantmentEventFn);
-			// Add to registry
-			enchantmentEventRegistry[name] = list;
 		}
 	};
 	

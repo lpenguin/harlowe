@@ -16,12 +16,14 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 	
 	/*
 		Operation.runMacro() in TwineScript passes its arguments as a thunk.
-		See that page for the formal explanation. These two functions convert
-		regular Javascript functions to accept a such a thunk as its sole argument.
+		See that page for the formal explanation. These two functions, eager and deferred,
+		convert regular Javascript functions to accept a such a thunk as its sole argument.
 		
 		Non-live macros ("eager" macros) don't actually need the thunk - they take it,
 		unwrap it, and discard it. Live macros, however, need to retain
 		it and re-evaluate it over and over.
+		
+		These should currently (August 2014) only be called by addChanger and addValue.
 	*/
 	function eager(fn) {
 		return function macroResult(argsThunk) {
@@ -43,6 +45,8 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 		
 		Hence, this converts fn into a function that joins the argsThunk
 		with the macro's call, creating a combined thunk.
+		
+		Again, this should currently (August 2014) only be called by addSensor.
 	*/
 	function deferred(fn) {
 		return function deferredMacroResult(argsThunk) {
@@ -173,7 +177,7 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 		*/
 		("if", function _if(section, expr) {
 			/*
-				This and unless() set the lastIf expando
+				This and unless() both set the lastIf expando
 				property. Whatever was there last is no longer
 				relevant, just as consecutive if()s have no
 				bearing on one another.
@@ -244,10 +248,14 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 			}
 		});
 	
-	
+	/*
+		TODO: Maybe it would be better, or at least more functional, if
+		changerFns returned a fresh ChangerDescriptor instead of permuting
+		the passed-in one.
+	*/
 	addChanger
 		// transition()
-		(["transition","t8n"], function transition(section, name, time) {
+		(["transition","t8n"], function transition(_, name, time) {
 			return changerFn(function(d) {
 				d.transition = name;
 				d.transitionTime = time;
@@ -258,7 +266,7 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 		// Remove line breaks from the hook.
 		// Manual line breaks can be inserted with <br>.
 		("nobr", function nobr() {
-			return changerFn(function(d) {
+			return changerFn(function(_, d) {
 				// To prevent keywords from being created by concatenating lines,
 				// replace the line breaks with a zero-width space.
 				d.code = d.code.replace(/\n/g, "&zwnj;");
@@ -270,7 +278,7 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 		// duration of the current passage only.
 		// contents: raw CSS.
 		("style", function style() {
-			return changerFn(function(d) {
+			return changerFn(function(_, d) {
 				var selector = 'style#macro';
 				if (!$(selector).length) {
 					$(document.head).append($('<style id="macro">'));
@@ -348,128 +356,244 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 	
 	
 	/*
-		Generate a function for enchantment macros or scope macros.
-		If no enchantDesc is passed, then it's a plain scope macro.
-		Otherwise, it's an enchantment macro.
+		Generates a function for enchantment macros, to ideally be used as the second
+		argument to addChanger().
 		
-		The enchantDesc object contains the following:
-		- event: the DOM event that triggers the rendering of this macro's contents.
-		- classList: the list of classes to 'enchant' the hook with, to denote that it is ready for the player to
-		trigger an event on it.
-		- rerender: a String determining whether to clear the span before rendering into it ("replace", default),
+		The enchantDesc object describes the enchantment. It contains the following:
+		
+		{String} event The DOM event that triggers the rendering of this macro's contents.
+		
+		{String} classList The list of classes to 'enchant' the hook with, to denote that it is
+		ready for the player to trigger an event on it.
+		
+		{String} rerender Determines whether to clear the span before rendering into it ("replace"),
 		append the rendering to its current contents ("append") or prepend it ("prepend").
-		- once: Boolean whether or not the enchanted DOM elements can trigger this macro multiple times.
-		- filterFn: a Function to determines whether to apply the enchantment class to said hook. First arg is the
+		Only used for "combos", like click-replace().
+		
+		{Boolean} once Whether or not the enchanted DOM elements can trigger this macro multiple times.
 		
 		@method newEnchantmentMacroFn
-		@param {Function} innerFn The function to perform on the macro's hooks
-		@param {Object} [enchantDesc] An enchantment description object, or null.
-		@return {Function} An enchantment macro function.
+		@param  {Function} innerFn       The function to perform on the macro's hooks
+		@param  {Object}  [enchantDesc]  An enchantment description object, or null.
+		@return {Function}               An enchantment macro function.
 	*/
-	/*function newEnchantmentMacroFn(innerFn, enchantDesc) {
-
-		// Enchantment macro? Register the enchantment's event.
-		if (enchantDesc && enchantDesc.event && enchantDesc.classList) {
-			// Set the event that the enchantment descriptor declares
-			Macros.registerEnchantmentEvent(enchantDesc.event,
-				Utils.classListToSelector(enchantDesc.classList));
+	function newEnchantmentMacroFn(enchantDesc) {
+		// enchantDesc is mandatory
+		if (!enchantDesc) {
+			return;
 		}
-		return function enchantmentMacroFn(selectors /* variadic *) {
-			selectors = Array.from(arguments);
+		
+		/*
+			Register the event that this enchantment responds to
+			in a jQuery handler.
 			
+			Sadly, since there's no permitted way to attach a jQuery handler
+			directly to the triggering element, the "actual" handler
+			is "attached" via a jQuery .data() key, and must be called
+			from this <html> handler.
+		*/
+		$(document.documentElement).on(
 			/*
-				This hook-augmenter function transforms Hook nodes into Enchanters,
-				which are hooks that "enchant" a scope.
-				
-				Note: some enchantments (like replace()) are executed immediately,
-				and thus instantly dispel their enchantment.
-				
-				The scope is specified by the selectors passed to the macro.
-			*
-			return function makeEnchanter(hook, section) {
-				var scope = section.HookArray(selectors),
-					code = hook.attr('code'),
-					enchantData;
-				hook.removeAttr("code");
-
-				/*
-					An Enchanter's event function either executes innerFn on the hook,
-					or (by default) renders the hook's code into the hook.
-					
-					For enchanter hooks, this function runs when the enchantment's event
-					(e.g. clicking for click(), time for timed___()) is triggered.
-					Otherwise...
-				*
-				function eventFn() {
-					var rerender = enchantDesc && enchantDesc.rerender;
-					
-					if (innerFn && typeof innerFn === "function") {
-						//TODO: make this signature less messy
-						innerFn(code, hook, section, scope);
-					} else {
-						// Default behaviour: simply parse the inner contents.
-						if (!rerender || rerender === "replace") {
-							Utils.transitionOut(hook.children(), "fade-in");
-						}
-						/*
-							Transition the resulting Twine code into the expression's element.
-						*
-						renderInto(code + '', hook, section, rerender === "prepend");
-					}
-				}
-				/*
-					...it runs immediately.
-				*
-				if (!enchantDesc) {
-					eventFn();
-					return;
-				}
-				/*
-					Enchanters differ from normal hooks in that they have the
-					"enchanter" attribute, and they have enchantment jQuery data, which
-					is an object holding the macro's enchantment descriptor,
-					the eventFn, and the section, plus some tiny methods.
-				*
-				enchantData = {
-					fn: eventFn,
-					enchantDesc: enchantDesc,
-					scope: scope,
-					section: section,
+				Put this event in the "enchantment" jQuery event
+				namespace, solely for personal tidiness.
+			*/
+			enchantDesc.event + ".enchantment",
+			Utils.classListToSelector(enchantDesc.classList),
+			function generalEnchantmentEvent() {
+				var enchantment = $(this),
 					/*
-						Enchants the scope, applying the macro's enchantment's classes
-						to the matched elements.
-					*
+						Run the actual event handler.
+					*/
+					event = enchantment.data('enchantmentEvent');
+				
+				if (event) {
+					event(enchantment);
+				}
+			}
+		);
+		
+		/*
+			Return the macro function. Note that its "selector" argument
+			is that which the author passes to it when invoking the
+			macro (in the case of "macro(?1)", selector will be "?1").
+		*/
+		return function enchantmentMacroFn(section, selector, target) {
+			/*
+				This changer function registers a new enchantment
+				in the passed-in Section.
+				
+				It must perform the following tasks:
+				1. Silence the passed-in ChangerDescriptor.
+				2. Call Section.selectHook() to find which hooks are
+				selected by the given selector.
+				3. Set up the <tw-enchantment> elements around the hooks.
+				4. Affix an enchantment event function (that is, a function to run
+				when the enchantment's event is trigggere) to the <tw-enchantment> elements.
+				5. Provide an API for refreshing/resetting the enchantment's
+				<tw-enchantment> elements to the Section (usually performing steps
+				2-4 again).
+				
+				You may notice most of these are side-effects to a changer function's
+				proper task of altering a ChangerDescriptor. Alas... it is something of
+				a #kludge that it piggybacks off the changer macro concept.
+			*/
+			return changerFn(function makeEnchanter(desc) {
+				var enchantData,
+					/*
+						The scope is shared with both enchantData methods:
+						refreshScope removes the <tw-enchantment> elements
+						set on the scope, and enchantScope creates an updated
+						scope to enchant.
+					*/
+					scope,
+					/*
+						A store for the <tw-enchantment> wrappers created
+						by enchantScope. Used by the enchantment's event function.
+						
+						This is a case of a jQuery object being used as a
+						data structure rather than as a query result set.
+						Search function calls for DOM elements 'contained' in
+						these enchantments is more succinct using jQuery
+						than using a plain Array or Set.
+					*/
+					enchantments = $(),
+					code = desc.code;
+				
+				/*
+					Prevent the target from being run normally. 
+					(This idiom is #awkward...)
+				*/
+				desc.code = '';
+				
+				/*
+					If this macro is a "combo", then its rerender method was specified,
+					and an alternative target was passed in by the author. Modify
+					the descriptor to use that target.
+				*/
+				if (enchantDesc.rerender && target) {
+					desc.target = target;
+				}
+				
+				/*
+					This enchantData object is stored in the Section's enchantments
+					list, to allow the Section to easily enchant and re-enchant this
+					scope whenever its DOM is altered (e.g. words matching this enchantment's
+					selector are added or removed from the DOM).
+				*/
+				enchantData = {
+				
+					/*
+						This method enchants the scope, applying the macro's enchantment's
+						classes to the matched elements.
+					*/
 					enchantScope: function () {
-						if (this.scope && this.enchantDesc) {
-							this.scope = this.scope.map(HookUtils.wrapPseudoHook);
-							this.scope.forEach(function(e) {
-								if (e.length > 0) {
-									e = e.wrapAll("<tw-pseudo-hook>").parent();
-								}
-								e.addClass(this.enchantDesc.classList);
-							}
+						/*
+							Create the scope, which is a HookSet or PseudoHookSet
+							depending on the selector.
+						*/
+						scope = section.selectHook(selector);
+						
+						/*
+							In the unlikely event that no scope could be
+							created, call it quits.
+							Q: should it make a fuss?
+						*/
+						if (!scope) {
+							return;
 						}
+						
+						/*
+							Reset the enchantments store, to prepare for the
+							insertion of a fresh set of <tw-enchantment>s.
+						*/
+						enchantments = $();
+						
+						/*
+							Now, iterate over each selected word 
+							or hook within the scope.
+						*/
+						scope.forEach(function(e) {
+							var wrapping;
+							
+							/*
+								Create a fresh <tw-enchantment>,
+								and wrap the elements in it.
+							*/
+							e.wrapAll("<tw-enchantment class='"
+								+ enchantDesc.classList +"'>");
+							/*
+								It's a little odd that the generated wrapper
+								must be retrieved in this roundabout fashion,
+								but oh well. That's how jQuery works.
+							*/
+							wrapping = e.parent();
+							
+							/*
+								Store the wrapping in the Section's
+								enchantments list.
+							*/
+							enchantments = enchantments.add(wrapping);
+							/*
+								Affix to it an event function, to run when
+								it experiences the enchantment event.
+								
+								Alas, this is a #kludge to allow the
+								jQuery event handler function above
+								to access this inner data (as in, call
+								this.event).
+							*/
+							e.parent().data('enchantmentEvent', 
+								function specificEnchantmentEvent() {
+									var index;
+									if (enchantDesc.once) {
+										/*
+											Remove this enchantment from the Section's list.
+											This must be done now, so that renderInto(), when
+											it calls updateEnchantments(), will not re-enchant
+											the scope using this very enchantment.
+										*/
+										index = section.enchantments.indexOf(enchantData);
+										section.enchantments.splice(index,1);
+										/*
+											Of course, the <tw-enchantment>s
+											must also be removed.
+										*/
+										enchantData.refreshScope();
+									}
+									/*
+										At last, the target originally specified
+										by the ChangerDescriptor can now be filled with the
+										ChangerDescriptor's original code.
+									*/
+									section.renderInto(code + '', desc.target);
+								}
+							);
+						});
 					},
 					/*
-						Refresh the scope to reflect the current passage DOM state.
-						Necessary if the scope selector is a WordArray or jQuery selector,
-						or if a hook was removed or inserted for some other reason.
-						
-						@method refreshScope
-					*
+						This method refreshes the scope to reflect the current passage DOM state.
+					*/
 					refreshScope: function () {
-						this.scope = this.scope.map(HookUtils.unwrapPseudoHook);
-						this.scope.forEach(function(e) {
-							e.removeClass(this.enchantDesc.classList);
+						/*
+							Clear all existing <tw-enchantment> wrapper elements placed by
+							the previous call to enchantScope().
+						*/
+						scope.forEach(function(e) {
+							if (e.parent()[0].tagName.toLowerCase() === "tw-enchantment") {
+								e.unwrap();
+							}
 						});
-						this.scope = section.HookArray(selectors);
-						this.enchantScope();
 					}
 				};
-				hook.attr("enchanter", "")
-					.data("enchantment", enchantData);
+				/*
+					Add the above object to the section's enchantments.
+				*/
+				section.enchantments.push(enchantData);
+				/*
+					Enchant the scope.
+				*/
 				enchantData.enchantScope();
-			};
+			});
 		};
 	}
 	
@@ -511,9 +635,8 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 	//TODO: hover()
 	
 	interactionTypes.forEach(function(e) {
-		Macros.add(e.name, newEnchantmentMacroFn(null, e.enchantDesc));
+		addChanger(e.name, newEnchantmentMacroFn(e.enchantDesc));
 	});
-*/
 
 	
 	/*

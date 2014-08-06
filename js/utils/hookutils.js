@@ -134,31 +134,7 @@ define(['jquery', 'utils', 'selectors'], function($, Utils, Selectors) {
 		hookToSelector: function (c) {
 			c = c.replace(/"/g, "&quot;");
 			return Selectors.hook+'[name="' + c + '"]';
-		},
-		
-		/*
-			If the given jQuery contains more than 1 element, then they are all wrapped
-			in a <tw-pseudo-hook> element.
-			
-			This is used to allow pseudo-hooks to be treated as hooks by various
-			hook-augmenting functions, such as section.render().
-		*/
-		wrapPseudoHook: function(jquery) {
-			if (jquery.length > 0) {
-				jquery = jquery.wrapAll("<tw-pseudo-hook>").parent();
-			}
-			return jquery;
-		},
-		
-		/*
-			The inverse of wrapPseudoHook.
-		*/
-		unwrapPseudoHook: function(jquery) {
-			if(jquery.length === 1 && jquery[0].tagName.toLowerCase() === "tw-pseudo-hook") {
-				jquery = jquery.children().unwrap();
-			}
-			return jquery;
-		},
+		}
 	};
 	return Object.freeze(HookUtils);
 });
