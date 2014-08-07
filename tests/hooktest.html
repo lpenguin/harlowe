@@ -3,14 +3,23 @@
 0. [[Time macro test]]
 0. [[Random test]]
 
-when(time >= 3s)[
-3 seconds passed!
+[Good!]<1|
+mouseout("Random")[replace("Random")["Predictable"]]
+
+St**eve** [Steve]<2| **St**eve
+when(time >= 2s)[
+replace("Steve")[Maud]
 ]
+when(time >= 1s)[
+replace(?2)[Jess]
+replace("Jess")[Teresa]
+]
+display("Displayed")
 </tw-passagedata>
-<tw-passagedata pid="9" name="Displayed" position="612,419">Frogs!!</tw-passagedata>
+<tw-passagedata pid="9" name="Displayed" position="612,419">Frogs!! display("Displayed")</tw-passagedata>
 <tw-passagedata pid="2" name="Hook test" position="330,418">#One macro, two different hooks.
 One [bunny]<1|, two [bunnies]<1|.
-click-replace(?1)[sheep]
+click(?1)[replace(?1)[sheep]]
 
 #A hook that enchants a second hook.
 One [bunny]<2|, two [bunnies]<3|.
@@ -30,18 +39,18 @@ replace(?4)[sheep]
 </tw-passagedata><tw-passagedata pid="3" name="Time macro test" position="471,420">A [red clock]<1|. A [blue clock]<2|.
 A [green clock]<3|.
 A [white clock]<4|.
-time(1s)[
+when(time &gt; 1s)[
 replace(?1)[blue clock]
 ]
-time(1500ms)[
+when(time &gt; 1500ms)[
 append(?2)[ and a red clock]
 ]
 
-time(0.8s, 0.7s, "Invalid parameter that should be ignored", 0.6s, 0.5s, 0.4s)[
+whenever(time is 0.8s or time is 0.7s or time is 0.6s or time is 0.5s or time is 0.4s)[
 append(?3)[...tick]
 ]
 
-timed-append(?4, 1s)[with red hands]&gt;&gt;</tw-passagedata><tw-passagedata pid="4" name="Random test" position="780,418">||||||||||||||||
+when(time &gt; 1s)[append(?4)[ with red hands]]</tw-passagedata><tw-passagedata pid="4" name="Random test" position="780,418">||||||||||||||||
 ||||||||||||||||
 ||||||||||||||||
 ||||||||||||||||

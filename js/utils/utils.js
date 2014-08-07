@@ -64,39 +64,6 @@ define(['jquery', 'twinemarkup', 'selectors', 'customelements'], function($, Twi
 			Object.defineProperty(obj, prop, propDesc);
 			return obj;
 		},
-
-		/**
-			Object.create variant that takes a set of properties
-			instead of a set of property descriptors.
-			
-			@method create
-			@param {Object} proto	The prototype of the returned object.
-			@param {Object} props	The properties to add to the returned object.
-			@param {Boolean} [enumerable]	Whether the properties must be enumerable.
-			@return {Object} created object
-		*/
-		
-		create: function(proto, props, enumerable) {
-			var i, prop, keys, propDesc;
-			
-			if (!props) {
-				return Object.create(proto);
-			}
-			keys = Object.keys(props),
-			propDesc = {};
-			
-			for (i = 0; i < keys.length; i++) {
-				prop = keys[i];
-
-				propDesc[prop] = {
-					value: props[prop],
-					writable: 1,
-					configurable: 1,
-					enumerable: enumerable
-				};
-			}
-			return Object.defineProperties(Object.create(proto), propDesc);
-		},
 		
 		/**
 			A faster way to clone an object than Object.assign({}, ...).

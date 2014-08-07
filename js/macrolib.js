@@ -359,18 +359,26 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 		Generates a function for enchantment macros, to ideally be used as the second
 		argument to addChanger().
 		
+		An "enchantment" is a process by which selected hooks in a passage are
+		automatically wrapped in <tw-enchantment> elements that have certain styling classes,
+		and can trigger the rendering of the attached TwineMarkup code when they experience
+		an event.
+		
+		In short, it allows various words to become links etc., and do something when
+		they are clicked, just by deploying a single macro instantiation! Just type 
+		"click("house")[...]", and every instance of "house" in the section becomes
+		a link that does something.
+		
 		The enchantDesc object describes the enchantment. It contains the following:
 		
-		{String} event The DOM event that triggers the rendering of this macro's contents.
-		
-		{String} classList The list of classes to 'enchant' the hook with, to denote that it is
-		ready for the player to trigger an event on it.
-		
-		{String} rerender Determines whether to clear the span before rendering into it ("replace"),
+		* {String} event The DOM event that triggers the rendering of this macro's contents.
+		* {String} classList The list of classes to 'enchant' the hook with, to denote that it 
+		is ready for the player to trigger an event on it.
+		* {String} rerender Determines whether to clear the span before rendering into it ("replace"),
 		append the rendering to its current contents ("append") or prepend it ("prepend").
 		Only used for "combos", like click-replace().
-		
-		{Boolean} once Whether or not the enchanted DOM elements can trigger this macro multiple times.
+		* {Boolean} once Whether or not the enchanted DOM elements can trigger this macro
+		multiple times.
 		
 		@method newEnchantmentMacroFn
 		@param  {Function} innerFn       The function to perform on the macro's hooks
@@ -378,10 +386,8 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 		@return {Function}               An enchantment macro function.
 	*/
 	function newEnchantmentMacroFn(enchantDesc) {
-		// enchantDesc is mandatory
-		if (!enchantDesc) {
-			return;
-		}
+		// enchantDesc is a mandatory argument.
+		Utils.assert(enchantDesc);
 		
 		/*
 			Register the event that this enchantment responds to
@@ -463,15 +469,25 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 					Prevent the target from being run normally. 
 					(This idiom is #awkward...)
 				*/
-				desc.code = '';
+				delete desc.code;
 				
 				/*
-					If this macro is a "combo", then its rerender method was specified,
-					and an alternative target was passed in by the author. Modify
-					the descriptor to use that target.
+					If a rerender method was specified, then this is a "combo" macro,
+					which will render its hook's code into a separate target.
+					
+					Let's modify the descriptor to use that target and render method.
+					(Yes, the name "rerender" is #awkward.)
 				*/
-				if (enchantDesc.rerender && target) {
-					desc.target = target;
+				if (enchantDesc.rerender) {
+					/*
+						The target can either be a separate selector passed as an
+						additional argument to the macro (e.g. click-replace(?1, ?2) )
+						or, if absent, the enchantment selector.
+						
+						TODO: Need a way to target just the triggering enchantment.
+					*/
+					desc.target = target || selector;
+					desc.append = enchantDesc.rerender;
 				}
 				
 				/*
@@ -509,7 +525,7 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 						enchantments = $();
 						
 						/*
-							Now, iterate over each selected word 
+							Now, enchant each selected word 
 							or hook within the scope.
 						*/
 						scope.forEach(function(e) {
@@ -564,8 +580,12 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 										At last, the target originally specified
 										by the ChangerDescriptor can now be filled with the
 										ChangerDescriptor's original code.
+										
+										By passing the desc as the third argument,
+										all its values are assigned, not just the target.
+										The second argument may be extraneous. #awkward
 									*/
-									section.renderInto(code + '', desc.target);
+									section.renderInto(code + '', null, desc);
 								}
 							);
 						});
@@ -590,7 +610,7 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 				*/
 				section.enchantments.push(enchantData);
 				/*
-					Enchant the scope.
+					Enchant the scope for the first time.
 				*/
 				enchantData.enchantScope();
 			});
@@ -605,7 +625,7 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 			enchantDesc: {
 				event: "click",
 				once: true,
-				rerender: "replace",
+				rerender: "",
 				classList: "link enchantment-link"
 			}
 		},
@@ -616,7 +636,7 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 			enchantDesc: {
 				event: "mouseenter",
 				once: true,
-				rerender: "replace",
+				rerender: "",
 				classList: "enchantment-mouseover"
 			}
 		},
@@ -627,7 +647,7 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 			enchantDesc: {
 				event: "mouseleave",
 				once: true,
-				rerender: "replace",
+				rerender: "",
 				classList: "enchantment-mouseout"
 			}
 		}];
@@ -643,18 +663,17 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 		Combos
 	*/
 	
-	/*revisionTypes.forEach(function(revisionType) {
+	revisionTypes.forEach(function(revisionType) {
 		interactionTypes.forEach(function(interactionType) {
-			// Enchantment macros
-			Macros.add(interactionType.name + "-" + revisionType,
-				newEnchantmentMacroFn(function (code, hook, section, scope) {
-					scope[revisionType](section.render.bind(section, code));
-					section.updateEnchantments();
-				},
-				interactionType.enchantDesc)
+			var enchantDesc = Object.assign({}, interactionType.enchantDesc, {
+					rerender: revisionType
+				});
+			addChanger(
+				interactionType.name + "-" + revisionType,
+				newEnchantmentMacroFn(enchantDesc)
 			);
 		});
-	});*/
+	});
 	
 	/*
 		JS library wrapper macros

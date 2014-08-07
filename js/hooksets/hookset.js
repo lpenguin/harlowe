@@ -12,7 +12,7 @@ define(['jquery', 'hookutils'],function($, HookUtils) {
 		@class HookSet
 		@static
 	*/
-	return Object.freeze({
+	var HookSet = Object.freeze({
 		
 		/**
 			An Array forEach-styled iteration function. The given function is
@@ -63,4 +63,5 @@ define(['jquery', 'hookutils'],function($, HookUtils) {
 			return Object.freeze(ret);
 		}
 	});
+	return HookSet;
 });

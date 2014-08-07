@@ -288,7 +288,7 @@ function($, Utils, Selectors, Renderer, TwineScript, Story, State, HookUtils, Ho
 			jQuery .each() is consistently dogmatic about 'this' binding,
 			overruling it in this instance would be too unusual.
 			
-			So, instead:
+			So, instead...
 		*/
 		section = this;
 		
@@ -333,7 +333,11 @@ function($, Utils, Selectors, Renderer, TwineScript, Story, State, HookUtils, Ho
 		if (desc.transition) {
 			Utils.transitionIn(dom, desc.transition);
 		}
-		// Finally, update enchantments.
+		/*
+			Finally, update the enchantments now that the DOM is modified.
+			TODO: this really should not be run more than once per frame,
+			so some way of throttled debouncing is necessary.
+		*/
 		this.updateEnchantments();
 	}
 	
@@ -479,7 +483,10 @@ function($, Utils, Selectors, Renderer, TwineScript, Story, State, HookUtils, Ho
 				leaving arrays intact.
 			*/
 			changers && [].concat(changers).forEach(function(e) {
-				// Currently no objects are ever passed to this. #unused
+				/*
+					If an object was passed, assign its values,
+					overwriting the default descriptor's.
+				*/
 				if (typeof e !== "function") {
 					Object.assign(desc, e);
 				}
@@ -540,7 +547,8 @@ function($, Utils, Selectors, Renderer, TwineScript, Story, State, HookUtils, Ho
 		},
 		
 		/**
-			Updates all enchantments in the section.
+			Updates all enchantments in the section. Should be called after every
+			DOM manipulation within the section (such as, at the end of .render()).
 
 			@method updateEnchantments
 		*/

@@ -48,7 +48,7 @@ define(['story', 'utils', 'lzstring'], function(Story, Utils, LZString) {
 			ret.passage = p || "";
 			// For the first moment, this becomes a call to Object.create(null),
 			// keeping the prototype chain clean.
-			ret.variables = Utils.create(this.variables, v, true);
+			ret.variables = Object.assign(Object.create(this.variables), v);
 			return ret;
 		}
 	};

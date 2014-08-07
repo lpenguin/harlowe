@@ -16,7 +16,7 @@ define(['hookutils'],function(HookUtils) {
 		@class PseudoHookSet
 		@static
 	*/
-	return Object.freeze({		
+	var PseudoHookSet = Object.freeze({		
 		/**
 			An Array forEach-styled iteration function. This wraps all
 			matched words in the section DOM with a temporary element,
@@ -50,7 +50,7 @@ define(['hookutils'],function(HookUtils) {
 				*/
 				e.wrapAll('<tw-pseudo-hook>');
 				fn(e.parent());
-				e.children().unwrap();
+				e.unwrap();
 			});
 		},
 		
@@ -70,4 +70,5 @@ define(['hookutils'],function(HookUtils) {
 			return ret;
 		}
 	});
+	return PseudoHookSet;
 });
