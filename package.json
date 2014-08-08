@@ -30,6 +30,7 @@
 		"grunt-contrib-requirejs": "*",
 		"grunt-contrib-cssmin": "*",
 		"grunt-text-replace": "*",
+		"grunt-sass": "*",
 		"requirejs": "*"
 	}
 }

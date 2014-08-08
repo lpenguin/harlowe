@@ -1,0 +1,139 @@
+
+/*** Debug mode ***/
+.debug-mode {
+
+	tw-expression[type=macro] {
+		display:inline-block;
+		&[title] {
+			cursor: help;
+		}
+		/* Colours for generic macros */
+		&:nth-of-type(4n+0)     { background-color: hsla(80, 20%,50%,0.15); }
+		&:nth-of-type(2n+1)     { background-color: hsla(120,20%,50%,0.15); }
+		&:nth-of-type(4n+2)     { background-color: hsla(160,20%,50%,0.15); }
+
+		/* Colours for specific macros */
+		&[name="display"]       { background-color: hsla(200,100%,50%,0.1) !important; }
+		&[name="if"],
+		&[name="elseif"],
+		&[name="else"]          { background-color: hsla(120,100%,50%,0.1) !important; }
+		&.false                 { background-color: hsla(0,  100%,50%,0.2) !important; } 
+		&[name="print"]         { background-color: hsla(60, 100%,50%,0.2) !important; } 
+		&[name="set"]           { background-color: hsla(30, 100%,50%,0.2) !important; }
+		&[name="script"]        { background-color: hsla(45, 100%,50%,0.2) !important; }
+		&[name="style"]         { background-color: hsla(180, 10%,75%,0.2) !important; }
+		&[name^="click"] ,
+		&[name^="mouseover"],
+		&[name^="mouseout"]     { background-color: hsla(90,  75%,50%,0.2) !important; }
+		&[name^="replace"],
+		&[name^="prepend"],
+		&[name^="append"],
+		&[name^="remove"]       { background-color: hsla(20,  75%,50%,0.2) !important; }
+		&[name="when"],
+		&[name="until"],
+		&[name="whenever"]      { background-color: hsla(220, 75%,50%,0.2) !important; }
+		
+		/* Show the macro name */
+		&::before
+		{
+			content: attr(name);
+			padding: 0 0.5rem;
+			font-size: 1rem;
+			background-color:  inherit;
+			border: 1px solid rgba(255,255,255,0.5);
+		}
+	}
+
+	/* Colours for other things */
+	tw-hook  {
+		background-color: hsla(220,100%,50%,0.1) !important;
+		
+		/*
+			Show the hook syntax. This should line up with what TwineMarkup expects.
+			
+			But, of course, anonymouse hooks shouldn't be highlighted like this.
+		*/
+		&:not([title="Hook: ?"]) {
+			&::before {
+				content: "["
+			}
+			/* Show the IDs of hooks */
+			&::after
+			{
+				content: "]<" attr(name) "|"
+			}
+		}
+	}
+	tw-pseudo-hook {
+		background-color: hsla(40,100%,50%,0.1) !important;
+	}
+	tw-align {
+		&[style*="text-align: center"]{
+			background: linear-gradient(to right, hsla(14,100%,87%,0) 0%, hsla(14,100%,87%,0.25) 50%, hsla(14,100%,87%,0) 100%);
+		}
+		&[style*="text-align: left"] {
+			background: linear-gradient(to right, hsla(14,100%,87%,0.25) 0%, hsla(14,100%,87%,0) 100%);
+		}
+		&[style*="text-align: right"] {
+			background: linear-gradient(to right, hsla(14,100%,87%, 0) 0%, hsla(14,100%,87%,0.25) 100%);
+		}
+	}
+	
+	@keyframes enchantment 
+	{
+		0%,to { border-color: hsl(30,100%,70%); }
+		50% { border-color: hsl(160,100%,70%); }
+	}
+	@-webkit-keyframes enchantment 
+	{
+		0%,to { border-color: hsl(30,100%,70%); }
+		50% { border-color: hsl(160,100%,70%); }
+	}
+
+	tw-enchantment {
+		animation: enchantment 0.5s infinite;
+		-webkit-animation: enchantment 0.5s infinite;
+		border: 1px solid;
+	}
+
+
+	/* Show destinations of links */
+	tw-link::after,	 tw-broken-link::after
+	{
+		font-size: 0.8rem;
+		content: attr(passage-id)
+	}
+}
+
+/* The debug button */
+
+.debug-button
+{
+	position:fixed;
+	bottom:0;
+	right:0;
+	width:66px;
+	height:66px;
+	border-top-left-radius: 1em;
+	border: solid #fff 2em;
+	box-shadow: -0.1em -0.1em 1em 1em #888;
+	background: #fff;
+	transition: opacity 0.2s; -webkit-transition: opacity 0.2s;
+}
+
+.debug-button
+{
+	opacity: 0.8;
+	&:hover
+	{
+		opacity: 1;
+	}
+}
+
+
+/*** Base64 encoded images ***/
+
+.debug-button
+{
+	background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEIAAABBCAMAAABSHoJ0AAAABGdBTUEAALGPC/xhBQAAAV9QTFRFAAAAAAAAAQEBAwMDBAQECAgICQkJCwsLKCgoAgICGhoaEhISQUFBIiIiJiYmLi4uNDQ0DAwMRkZGYWFhKioqFhYWHR0dDQ0NIyMjQkJCJycnMDAwBgYGLS0tExMTNTU1Pz8/QEBAFRUVR0dHUVFRVVVVFxcXZWVlZ2dnaGhobm5uenp6fn5+GRkZcnJyZmZmHh4eeHh4X19fHx8fU1NTOTk5Ojo6Pj4+EBAQCgoKYmJiFBQUc3NzKysrREREampqbGxsBQUFWVlZWlpaNzc3KSkpS0tLXl5edHR0dXV1d3d3VlZWTU1NT09PICAgODg4MTExDg4OY2NjUlJSGBgYMjIyXFxcXV1dZGRkDw8PSUlJSkpKHBwcaWlpOzs7a2trTk5ObW1tPDw8b29vcXFxPT09SEhIdnZ2NjY2YGBgLCwsV1dXeXl5MzMze3t7fHx8fX19BwcHW1tbERERJSUlRf2RbAAAAAF0Uk5TAEDm2GYAAAMDSURBVHhezdZFs+Q4EIXR+7kYHjMzMzQzM/cwM/P8/5hQhh22/MqOqvZmzi69uFYp0yopn06grmIADotHMKeefDqlJMyf6sEtaClpMwDGe13410r6A6DHiIZ8Az3+EmBLIy2A+c9kNoG2utYiqS5tTOAsq0v34aMywF1JZRIChSrlB8rxkuChHkO/DMB3knSzArM7csr2LNMLbkmqgEwTUOibCoxGsdeU5Y5LuA1wOLJ6twKQWPN16NOTIL/BIE2RNNRxp79UJ0eMtUsM6BRPahjmcIbVEeavBTwnZzeLf5SBTso6YwaU4Tmsv0+KPF9tu2I8O2P4c12FY9WJ8MjvN9CylleVqURLipeyoYSfMVckwWBuT9UmdFm6ACzI+Z3QtrQKyjBlETUMW9IszkVJ+gLiZcwzpM5GLQLDkdTA4HfMCj5UR7+BtEb0VU54fWkkq/6sHf0Eqos4NUnbhC7JeeMFwkNFXiu2S2hGUtzcqF0YwqKiUBnWUxMaPZjEcBx97MmD5xqMyaS+/ZXkTN/BrCpyL5F4ihkan1lPjfE0pbioABwoNgncltnB86+kI5mX3kz3c09ZSJqWzZCd9kFDXSI26erzwJ5l19UlaOittXxHzhCApEF+VJegpqSfcM6pSaAuwRV5liA1BRoBfzfPJ8/BXeiTb4VQ1NQfMHuKnMO8kLkBS0rZqWJ4KkNkzWtBNJTtaL2+fkwqgracZ0SarhwDZTiEuVQEcp76NTkbD6Qjrrr6VyI8kURO+09hVv61QIbk7jwCZRsID8sg9a/6hsiBNAfK0QzvM4N+lzVNSBJUlSOI33zj79eKLWJu2jRPKdvHOI2sBXJZUgOU6dtJQu/lXutRlmGcwF5XPlBntdyL0gWcfVkGlX2d8eASjrIB5cR6Jh4raW0Zw3XlWNmKZ92Uni8sDS8O1i8SYVRdG6ODvn31ZA/PxH29A5xXperywC96R98DbKsQgHkV0gegQnaLR+h/EfEMeKUCmjibkgpNBQ0VsIHzQeF21FTIJpTUhf8AnMY7oMTf7fEAAAAASUVORK5CYII%3D);
+}

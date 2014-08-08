@@ -7,7 +7,6 @@ module.exports = function (grunt) {
 		sourceHTML = ['template.html'],
 		jsFileList = ['js/*.js', 'js/utils/*.js', 'js/hooksets/*.js'],
 		jsFullFileList = ['js/lib/*.js'].concat(jsFileList),
-		cssFileList = ['./css/*.css'],
 		
 		// Destinations
 		destCSS = "./build/harlowe-css.css",
@@ -79,9 +78,21 @@ module.exports = function (grunt) {
 			}
 		},
 
+		sass: {
+			dist: {
+				files: [{
+					expand: true,
+					cwd: 'scss/',
+					src: ['*.scss'],
+					dest: 'build/',
+					ext: '.build.css',
+					extDot: 'first'
+				}],
+			}
+		},
 		cssmin: {
 			minify: {
-				src: cssFileList,
+				src: ['./build/*.build.css'],
 				dest: destCSS
 			}
 		},
@@ -101,7 +112,7 @@ module.exports = function (grunt) {
 					to: function () {
 						var ret = '';
 						
-						grunt.file.expand(cssFileList).forEach(function(a) {
+						grunt.file.expand(['./build/*.build.css']).forEach(function(a) {
 							ret += '<link rel="stylesheet" href=".' + a + '"/>';
 						});
 						
@@ -157,12 +168,18 @@ module.exports = function (grunt) {
 	grunt.loadNpmTasks('grunt-contrib-watch');
 	grunt.loadNpmTasks('grunt-contrib-yuidoc');
 	grunt.loadNpmTasks('grunt-contrib-requirejs');
+	/*
+		Notice this isn't grunt-contrib-sass, as that requires Ruby,
+		whereas grunt-sass uses libsass and is potentially cross-platform,
+		at the expense of being a lower Sass version.
+	*/
+	grunt.loadNpmTasks('grunt-sass');
 	grunt.loadNpmTasks('grunt-contrib-cssmin');
 	grunt.loadNpmTasks('grunt-text-replace');
 
-	grunt.registerTask('default', [ 'jshint', 'replace:test']);
-	grunt.registerTask('build', [ 'jshint', 'yuidoc', 'requirejs', 'cssmin', 'replace:build']);
-	grunt.registerTask('runtime', [ 'requirejs', 'yuidoc', 'cssmin', 'replace:runtime']);
+	grunt.registerTask('default', [ 'jshint', 'sass', 'replace:test']);
+	grunt.registerTask('build', [ 'jshint', 'yuidoc', 'requirejs', 'sass', 'cssmin', 'replace:build']);
+	grunt.registerTask('runtime', [ 'requirejs', 'yuidoc', 'sass', 'cssmin', 'replace:runtime']);
 	grunt.registerTask('release', [
 		'clean', 'yuidoc'
 	]);
