@@ -68,7 +68,7 @@ define(['utils', 'twinemarkup', 'twinescript'], function(Utils, TwineMarkup, Twi
 					return cachedOutput;
 				}
 				cachedInput = src;
-				cachedOutput = this.render(TwineMarkup.lex(src));
+				cachedOutput = this.render(TwineMarkup.lex(src).children);
 				return cachedOutput;
 			};
 		}()),
@@ -78,7 +78,7 @@ define(['utils', 'twinemarkup', 'twinescript'], function(Utils, TwineMarkup, Twi
 			
 			@method render
 			@static
-			@param {Array} tokens The TwineMarkup tokens array.
+			@param {Array} tokens A TwineMarkup token array.
 			@return {String} The rendered HTML string.
 		*/
 		render: function render(tokens) {

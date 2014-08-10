@@ -494,7 +494,7 @@
 	/*
 		Equivalent to ES6 Object.assign()
 	*/
-	function merge(obj /* variadic */) {
+	function assign(obj /* variadic */) {
 		var i = 1,
 			target, key;
 		for(; i < arguments.length; i++) {
@@ -509,16 +509,72 @@
 	}
 	
 	/*
-		Just some basic methods that iterate over tokens' children,
-		that tokens can call upon.
+		The prototype object for lexer tokens.
+		It just has some basic methods that iterate over tokens' children,
+		but which nonetheless lexer customers may find valuable.
 	*/
-	var tokenPrototype = {
+	var tokenPrototype = Object.freeze({
 		/*
 			Run a function on this token and all its children.
 		*/
 		forEach: function forEach(fn) {
 			fn(this);
 			this.children.forEach(function() { forEach(fn); });
+		},
+		/*
+			Given a position in this token's text, find the deepest leaf,
+			if any, that corresponds to it.
+		*/
+		tokenAt: function tokenAt(pos) {
+			// First, a basic range check.
+			if (pos < this.start || pos >= this.end) {
+				return null;
+			}
+			/*
+				Ask each child, if any, what their deepest token
+				for this position is.
+			*/
+			if (this.children) {
+				return this.children.reduce(function(prevValue, child) {
+					return prevValue || child.tokenAt(pos);
+				}, null);
+			}
+			return this;
+		},
+		/*
+			Given a position in this token's text, find the closest leaf
+			(that is, only from among the token's immediate children)
+			that corresponds to it.
+		*/
+		nearestTokenAt: function nearestTokenAt(pos) {
+			// First, a basic range check.
+			if (pos < this.start || pos >= this.end) {
+				return null;
+			}
+			/*
+				Find whichever child has the pos within its start-end range.
+			*/
+			if (this.children) {
+				return this.children.reduce(function(prevValue, child) {
+					return prevValue || ((pos >= child.start && pos < child.end) ? child : null);
+				}, null);
+			}
+			return this;
+		},
+		/*
+			Removes all children at or beyond a certain pos, and updates the
+			text and end properties to match.
+		*/
+		cutTail: function(pos) {
+			var lastChild,
+				cutIndex = this.children.indexOf(this.nearestTokenAt(pos));
+			
+			this.children = this.children.slice(0, cutIndex);
+			lastChild = this.children[cutIndex-1];
+			this.end = lastChild.end;
+			this.text = this.text.slice(0,this.end);
+			
+			return this;
 		},
 		/*
 			Runs a function on every leaf token in the tree,
@@ -535,11 +591,11 @@
 			Check if all leaf nodes contain just whitespace.
 		*/
 		isWhitespace: function isWhitespace() {
-			return this.every(function(e) {
+			return this.everyLeaf(function(e) {
 				return !e.text.trim();
 			});
 		}
-	};
+	});
 	
 	/*
 		Returns an object representing a lexer's inner state, methods to permute
@@ -574,7 +630,7 @@
 					and append to its children array.
 				*/
 				if (data.innerText) {
-					children = lex(data.innerText,
+					children = recursiveLex(data.innerText,
 						states[0].pos + match[0].indexOf(data.innerText),
 						data.expression || states[0].inMacro);
 				}
@@ -583,16 +639,13 @@
 				*/
 			}
 			
-			states[0].tokens.push(merge(Object.create(tokenPrototype),
+			states[0].tokens.push(assign(Object.create(tokenPrototype),
 			{
 				type: type,
 				start: states[0].pos,
 				end: states[0].pos + match[0].length,
 				text: match[0],
-				children: children,
-				/*
-					And now for some methods.
-				*/
+				children: children
 			}, data));
 		}
 		
@@ -650,57 +703,108 @@
 			};
 		}
 		
-		/**
-			A post-processing routine that takes the token tree from lex(),
-			and turns sequences of macro tokens into trees rooted at openMacro tokens.
-			This is an in-place array transformation.
+		/*
+			A subroutine of recursiveLex, this takes a source text object,
+			tries to match this lexer's rules to the start of it,
+			then runs the matched rule's match event function, if one is found.
+			Finally, it permutes the passed-in object to reflect
+			the results.
 			
-			This is a stop-gap measure and should be replaced by lex()
-			performing this transformation itself during its pass.
+			This takes an object with the following structure:
+			{String} src              The source string to match against.
+			{String} unmatchedText    Storage for text that wasn't matched.
+			{String} lastRule         Name (index into the rules dict) of the
+			.                         last matched rule.
 			
-			@method nestMacroTokens
-			@private
+			If no rule matches, then the unmatched text is stored on the
+			unmatchedText property. Otherwise, that property is emptied and
+			used to run the "text" rule's match event function.
 		*/
-		void function nestMacroTokens(tokens) {
-			var i, token,
-				macroStack = [];
+		function matchRule(srcObj) {
+			var i, rname, rule, match,
+				ruleskeys = Object.keys(rules);
 			
-			for (i = 0; i < tokens.length; i+=1) {
-				token = tokens[i];
-				
-				if (macroStack[0]) {
-					/*
-						Remove the token from its position in the tokens array,
-						and make it a child of the nearest macro.
-					*/
-					macroStack[0].children.push(token);
-					tokens.splice(i,1);
-					i -= 1;
-					/*
-						Incorporate the child's text into the macro token's text.
-					*/
-					if (!token.openMacro) {
-						macroStack[0].text += token.text;
-						macroStack[0].end = token.end;
-					}
+			/*
+				Run through all the rules in turn.
+				This of course could stand to be accelerated by
+				e.g. maintaining multiple short lists of rules to iterate
+				through depending on state, or sorting the rules by expected
+				frequency.
+				Speed concerns also forgo the deployment of [].forEach() here.
+			*/
+			for (i = 0; i < ruleskeys.length; i+=1) {
+				rname = ruleskeys[i];
+				if (rname === "text") {
+					continue;
+				}
+				rule = rules[rname];
+				/*
+					Rules with no handler (which I must've left in by mistake)
+					cannot be matched.
+				*/
+				if (!rule.fn) {
+					continue;
 				}
 				
-				if (token.openMacro) {
-					macroStack.unshift(token);
-				}
-				else if (token.closeMacro) {
-					token = macroStack.shift();
+				if (
+						/*
+							Check whether this rule is restricted to only being matched
+							directly after another rule has. An example is the "block"
+							rules, which may only match after a "br" or "paragraph" rule.
+						*/
+						(!srcObj.lastRule || !rule.lastRule
+							|| rule.lastRule.indexOf(srcObj.lastRule)>-1) &&
+						/*
+							Within macros, only macro rules and expressions can be used.
+						*/
+						(!states[0].inMacro || rule.macro || rule.expression) &&
+						/*
+							Outside macros, macro rules can't be used.
+						*/
+						(!rule.macro || states[0].inMacro) &&
+						/*
+							Finally, run the match. Any earlier would cause the rules excluded
+							by the above checks to be run anyway, and waste time.
+						*/
+						(match = rule.match.exec(srcObj.src))) {
+					
 					/*
-						Propagate the changes up the tree to the parent.
+						Now that it's matched, let's forge this token.
+						First, push the slurped text buffer, and hastily
+						create a token out of it, representing the interstitial unmatched
+						text between this and the last "proper" token.
 					*/
-					if (macroStack[0]) {
-						macroStack[0].text += token.text;
-						macroStack[0].end = token.end;
+					if (srcObj.unmatchedText) {
+						rules.text.fn([srcObj.unmatchedText]);
+						states[0].pos += srcObj.unmatchedText.length;
+						srcObj.unmatchedText = "";
 					}
+					
+					// Now handle the matched rule
+					rule.fn(match);
+					
+					// Increment the position in the src
+					states[0].pos += match[0].length;
+					srcObj.src = srcObj.src.slice(match[0].length);
+					
+					// Finished matching a rule - resume
+					srcObj.lastRule = rname;
+					// Break from the for-loop
+					return;
 				}
 			}
-			return tokens;
-		};
+			
+			/*
+				If no match was available, then treat this run of source as mere human prose,
+				and slurp it up into the text buffer.
+			*/
+			if (srcObj.src) {
+				srcObj.unmatchedText += srcObj.src[0];
+				srcObj.lastRule = "text";
+				srcObj.src = srcObj.src.slice(1);
+			}
+		}
+		
 		
 		/*
 			The main method of the lexer. Returns an array of tokens for the passed text.
@@ -708,19 +812,21 @@
 			start of the src. If no rule matches, a default "text" token is gradually
 			built up, to be pushed when a rule finally matches.
 		*/
-		function lex(src, initpos, inMacro) {
-			var done, ret, rname, rule, match, i,
-				lastRule = "",
-				/*
-					This is a buffer holding text that isn't matched
-					by any particular rule, to be stored until the source
-					is exhausted or a rule is finally matched.
-				*/
-				text = "",
-				ruleskeys = Object.keys(rules);
+		function recursiveLex(src, initpos, inMacro) {
+			var done,
+				srcObj = {
+					src: src,
+					lastRule: "",
+					/*
+						This is a buffer holding text that isn't matched
+						by any particular rule, to be stored until the source
+						is exhausted or a rule is finally matched.
+					*/
+					unmatchedText: ""
+				};
 			
 			/*
-				Put a new state on the state stack. If this is a recursively nested lex() call,
+				Put a new state on the state stack. If this is a nested recursiveLex() call,
 				then below it on the stack are the states of its calling scopes.
 			*/
 			states.unshift({
@@ -728,103 +834,37 @@
 				pos: initpos || 0,
 				inMacro: !!inMacro
 			});
-			while(src) {
-				/*
-					This 'done' variable tracks whether a rule was successfully
-					matched inside the upcoming for loop.
-				*/
-				done = false;
-				/*
-					Run through all the rules in turn.
-					This of course could stand to be accelerated by
-					e.g. maintaining multiple short lists of rules to iterate
-					through depending on state, or sorting the rules by expected
-					frequency.
-					Speed concerns also forgo the deployment of [].forEach() here.
-				*/
-				for (i = 0; i < ruleskeys.length; i+=1) {
-					rname = ruleskeys[i];
-					if (rname === "text") {
-						continue;
-					}
-					rule = rules[rname];
-					/*
-						Rules with no handler (which I must've left in by mistake)
-						cannot be matched.
-					*/
-					if (!rule.fn) {
-						continue;
-					}
-					if ((match = rule.match.exec(src)) &&
-							/*
-								Check whether this rule is restricted to only being matched
-								directly after another rule has. An example is the "block"
-								rules, which may only match after a "br" or "paragraph" rule.
-							*/
-							(!lastRule || !rule.lastRule
-								|| rule.lastRule.indexOf(lastRule)>-1) &&
-							/*
-								Within macros, only macro rules and expressions can be used.
-							*/
-							(!states[0].inMacro || rule.macro || rule.expression) &&
-							/*
-								Outside macros, macro rules can't be used.
-							*/
-							(!rule.macro || states[0].inMacro)) {
-						
-						/*
-							Now that it's matched, let's forge this token.
-							First, push the slurped text buffer, and hastily
-							create a token out of it, representing the interstitial unmatched
-							text between this and the last "proper" token.
-						*/
-						if (text) {
-							rules.text.fn([text]);
-							states[0].pos += text.length;
-							text = "";
-						}
-						
-						// Now handle the matched rule
-						rule.fn(match);
-						
-						// Increment the position in the src
-						states[0].pos += match[0].length;
-						src = src.slice(match[0].length);
-						
-						// Finished matching a rule - resume
-						lastRule = rname;
-						done = true;
-						// Break from the for-loop
-						break;
-					}
-				}
-				/*
-					If no match was available, then treat this run of source as mere human prose,
-					and slurp it up into the text buffer.
-				*/
-				if (src && !done) {
-					text += src[0];
-					lastRule = "text";
-					src = src.slice(1);
-				}
+			while(srcObj.src) {
+				done = matchRule(srcObj);
 			}
 			// Push the last run of slurped text.
-			if (text) {
-				push("text", [text]);
+			if (srcObj.unmatchedText) {
+				push("text", [srcObj.unmatchedText]);
 			}
 			/*
 				Pop the state from the stack, fetch the tokens, and return them.
 			*/
-			ret = states.shift().tokens;
-			return ret;
+			return states.shift().tokens;
 		}
 		
 		/*
 			This is the returned object representing the lexer inner state.
 		*/
 		return {
-			// The main function
-			lex: lex,
+			/*
+				The main function.
+				This returns the entire set of tokens, rooted in a "root"
+				token that has all of tokenPrototype's methods.
+			*/
+			lex: function(src, initpos, inMacro) {
+				return assign(Object.create(tokenPrototype), {
+					type:          "root",
+					start:   initpos || 0,
+					end:       src.length,
+					text:             src,
+					children: recursiveLex(src, initpos, inMacro)
+				});
+			},
 			/*
 				The (initially empty) rules object should be augmented with
 				whatever rules the language requires.
@@ -836,7 +876,7 @@
 			*/
 			push: push,
 			/*
-				The "sugar" functions act as shorthands for common push() uses.
+				These "sugar" functions act as shorthands for common push() uses.
 			*/
 			pusher: pusher,
 			textPusher: textPusher,
@@ -860,7 +900,7 @@
 			block = ["br", "paragraph"],
 			addedRules;
 
-		addedRules = merge({
+		addedRules = assign({
 				/*
 					First, the block rules.
 				*/
@@ -1083,7 +1123,7 @@
 		Object.keys(addedRules).forEach(function(e) {
 			addedRules[e].match = r(e);
 		});
-		merge(state.rules, addedRules);
+		assign(state.rules, addedRules);
 		return state;
 	}
 	
