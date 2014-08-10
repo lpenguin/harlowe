@@ -200,7 +200,7 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 			implicitLeftIt = false;
 		
 		if (!tokens) {
-			return;
+			return "";
 		}
 		// Convert non-arrays to arrays;
 		tokens = [].concat(tokens);
@@ -325,8 +325,8 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 				values for left and right, but usually they will just be
 				the tokens to the left and right of the matched one.
 			*/
-			left  = left  || compile(tokens.slice (0,  i)).trim();
-			right = right || compile(tokens.splice(i + 1)).trim();
+			left  = left  || (compile(tokens.slice (0,  i))).trim();
+			right = right || (compile(tokens.splice(i + 1))).trim();
 			/*
 				The compiler should implicitly insert the "it" keyword when the 
 				left-hand-side of a comparison operator was omitted.
@@ -345,7 +345,7 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 			Base case: just convert the tokens back into text.
 		*/
 		else if (tokens.length === 1) {
-			return (token.value || token.text);
+			return (token.value || token.text) + "";
 		}
 		else {
 			return tokens.reduce(function(a, token) { return a + compile(token); }, "");
