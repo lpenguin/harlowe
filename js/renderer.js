@@ -183,7 +183,7 @@ define(['utils', 'twinemarkup', 'twinescript'], function(Utils, TwineMarkup, Twi
 					case "comment": {
 						break;
 					}
-					case "url": {
+					case "inlineUrl": {
 						out += '<a class="link" href="' + escape(token.text) + '">' + charSpanify(token.text) + '</a>';
 						break;
 					}

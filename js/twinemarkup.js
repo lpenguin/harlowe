@@ -48,6 +48,7 @@
 		
 		/*
 			A sugar REstring function for negative character sets.
+			This escapes its input.
 		*/
 		function notChars(/* variadic */) {
 			return "[^" + Array.apply(0, arguments).map(escape).join("") + "]*";
@@ -56,6 +57,7 @@
 		/*
 			Creates sugar functions which put multiple REstrings into parentheses, separated with |,
 			thus producing a capturer or a lookahead.
+			This does NOT escape its input.
 		*/
 		function makeWrapper(starter) {
 			return function(/* variadic */) {
@@ -185,6 +187,36 @@
 			};
 		}
 		
+		/*
+			Opener lookaheads come in two forms: a simple string to match, when
+			only one option for the syntax's opening exists, and a RegExp when
+			there are multiple options. This function returns the former when
+			only one option is passed as an argument, and the latter otherwise
+			(performing escaping on the input strings, etc.)
+		*/
+		function opener(a /*variadic*/) {
+			var regExpString;
+			
+			if (arguments.length > 1 || 1) {
+				regExpString = "^(?:" + Array.apply(0, arguments).map(escape).join("|") + ")";
+				return new RegExp(regExpString);
+			}
+			return {
+				/*
+					This function strives to be as fast as possible.
+				*/
+				exec: function(input) {
+					var i = a.length;
+					while(--i >= 0) {
+						if (input[i] !== a[i]) {
+							return false;
+						}
+					}
+					return true;
+				}
+			};
+		}
+		
 		var ws = "\\s*",
 			
 			wb = "\\b",
@@ -275,6 +307,10 @@
 			;
 		/*
 			Return the RegExpStrings object.
+			
+			Note that some of these properties are "opener" objects, which are used by the 
+			lexer. It's a bit #awkward having them alongside the string properties like this,
+			keyed to a similar but otherwise disconnected property name...
 		*/
 		return {
 			
@@ -290,9 +326,11 @@
 			/*
 				Twine currently just uses HTML comment syntax for comments.
 			*/
-			comment:     "<!--[^]*?-->",
+			comment:         "<!--[^]*?-->",
+			commentOpener:   opener("<!--"),
 			
 			tag:         "<\\/?" + tag.name + tag.attrs + ">",
+			tagOpener:                            opener("<"),
 			
 			url:         "(" + either("https?","mailto","javascript","ftp","data") + ":\\/\\/[^\\s<]+[^<.,:;\"')\\]\\s])",
 			
@@ -302,14 +340,26 @@
 			heading:     heading,
 			align:       align,
 			
-			strong:      stylerSyntax("__", "**"),
-			em:          stylerSyntax("_",  "*"),
-			del:         stylerSyntax("~~"),
-			italic:      stylerSyntax("//"),
-			bold:        stylerSyntax("''"),
-			sup:         stylerSyntax("^^"),
+			strong:          stylerSyntax("__", "**"),
+			strongOpener:          opener("__", "**"),
+			
+			em:               stylerSyntax("_",  "*"),
+			emOpener:               opener("_",  "*"),
+			
+			del:                   stylerSyntax("~~"),
+			delOpener:                   opener("~~"),
+			
+			italic:                stylerSyntax("//"),
+			italicOpener:                opener("//"),
+			
+			bold:                  stylerSyntax("''"),
+			boldOpener:                  opener("''"),
+			
+			sup:                   stylerSyntax("^^"),
+			supOpener:                   opener("^^"),
 			
 			code:        "(`+)" + ws + "([^]*?[^`])" + ws + "\\1(?!`)",
+			codeOpener:                                    opener("`"),
 			
 			bulleted:    bulleted,
 			numbered:    numbered,
@@ -325,18 +375,24 @@
 					"\\[",
 					"\\]" + "<(" + anyLetter.replace("]", "_]") + "*)\\|"
 				),
+			hookAppendedOpener:
+				opener("["),
 			
 			hookPrepended:
 				new RecursiveExpression(
 					"\\|(" + anyLetter.replace("]", "_]") + "*)>\\[",
 					"\\]"
 				),
+			hookPrependedOpener:
+				opener("|"),
 			
 			hookAnonymous:
 				new RecursiveExpression(
 					"\\[",
 					"\\]"
 				),
+			hookAnonymousOpener:
+				opener("["),
 			
 			passageLink:
 				passageLink.opener
@@ -363,9 +419,7 @@
 				+ passageLink.text
 				+ passageLink.closer,
 				
-			passageLinkOpener: passageLink.opener,
-			passageLinkCloser: passageLink.closer,
-			passageLinkText:   passageLink.text,
+			passageLinkOpener: opener("[["),
 				
 			legacyLink:
 				/*
@@ -379,6 +433,8 @@
 				passageLink.opener
 				+ passageLink.legacyText + passageLink.legacySeparator
 				+ passageLink.legacyText + passageLink.closer,
+			
+			legacyLinkOpener: opener("[["),
 				
 			simpleLink:
 				/*
@@ -387,17 +443,14 @@
 				*/
 				passageLink.opener + passageLink.legacyText + passageLink.closer,
 			
+			simpleLinkOpener: opener("[["),
+			
 			macro:
 				new RecursiveExpression(
 					macro.name + macro.opener,
 					"\\(",
 					macro.closer
 				),
-			
-			macroOpener:
-				macro.name + macro.opener,
-				
-			macroCloser: macro.closer,
 			
 			paragraph:
 				/*
@@ -407,6 +460,8 @@
 				"\\n((?:[^\\n]+\\n?(?!"
 				+ notBefore(heading, align, hr)
 				+ "))+)\\n?",
+			
+			paragraphOpener: opener("\n"),
 			
 			/*
 				Macro code
@@ -420,7 +475,13 @@
 				// Array indexing syntax
 				+ "|\\[[^\\]]+\\])+)",
 			
+			variableOpener:
+				opener("$"),
+			
 			hookRef: "\\?(" + anyLetter + "+)\\b",
+			
+			hookRefOpener:
+				opener("?"),
 			
 			/*
 				Artificial types (non-JS primitives)
@@ -434,8 +495,6 @@
 			number: number,
 			
 			boolean: "(true|false|null|undefined)",
-			
-			event: "clicked|hovered-over|hovered-off",
 			
 			// Special identifiers
 			identifier: "it|time",
@@ -472,8 +531,6 @@
 			
 			isIn:      wb + caseInsensitive("is in") + wb,
 			contains:  wb + caseInsensitive("contains") + wb,
-			
-			gets:      wb + caseInsensitive("gets") + wb,
 
 			add:       "\\+",
 			subtract:  "\\-",
@@ -707,88 +764,91 @@
 			unmatchedText property. Otherwise, that property is emptied and
 			used to run the "text" rule's match event function.
 		*/
-		function matchRule(srcObj) {
+		function matchRules(srcObj) {
 			var i, rname, rule, match,
-				ruleskeys = Object.keys(rules);
+				rulesKeys = rules[" keys"];
 			
-			/*
-				Run through all the rules in turn.
-				This of course could stand to be accelerated by
-				e.g. maintaining multiple short lists of rules to iterate
-				through depending on state, or sorting the rules by expected
-				frequency.
-				Speed concerns also forgo the deployment of [].forEach() here.
-			*/
-			for (i = 0; i < ruleskeys.length; i+=1) {
-				rname = ruleskeys[i];
-				if (rname === "text") {
-					continue;
-				}
-				rule = rules[rname];
+			while(srcObj.src) {
+				
 				/*
-					Rules with no handler (which I must've left in by mistake)
-					cannot be matched.
+					Run through all the rules in turn.
+					This of course could stand to be accelerated by
+					e.g. maintaining multiple short lists of rules to iterate
+					through depending on state, or sorting the rules by expected
+					frequency.
+					Speed concerns also forgo the deployment of [].forEach() here.
 				*/
-				if (!rule.fn) {
-					continue;
+				for (i = 0; i < rulesKeys.length; i+=1) {
+					/*
+						Note that the rule name is not just used as a key into
+						the rules array - it's used to record the last rule
+						on the srcObj.
+					*/
+					rname = rulesKeys[i];
+					rule = rules[rname];
+					
+					if (
+							/*
+								Check whether this rule is restricted to only being matched
+								directly after another rule has. An example is the "block"
+								rules, which may only match after a "br" or "paragraph" rule.
+							*/
+							(!rule.lastRule || !srcObj.lastRule
+								|| rule.lastRule.indexOf(srcObj.lastRule)>-1) &&
+							/*
+								Within macros, only macro rules and expressions can be used.
+							*/
+							(!states[0].inMacro || rule.macro || rule.expression) &&
+							/*
+								Outside macros, macro rules can't be used.
+							*/
+							(!rule.macro || states[0].inMacro) &&
+							/*
+								If an opener is available, check that before running
+								the full match regexp.
+							*/
+							(!rule.opener || rule.opener.exec(srcObj.src)) &&
+							/*
+								Finally, run the match. Any earlier would cause the rules excluded
+								by the above checks to be run anyway, and waste time.
+							*/
+							(match = rule.match.exec(srcObj.src))) {
+						
+						/*
+							Now that it's matched, let's forge this token.
+							First, push the slurped text buffer, and hastily
+							create a token out of it, representing the interstitial unmatched
+							text between this and the last "proper" token.
+						*/
+						if (srcObj.unmatchedText) {
+							rules.text.fn([srcObj.unmatchedText]);
+							states[0].pos += srcObj.unmatchedText.length;
+							srcObj.unmatchedText = "";
+						}
+						
+						// Now handle the matched rule
+						rule.fn(match);
+						
+						// Increment the position in the src
+						states[0].pos += match[0].length;
+						srcObj.src = srcObj.src.slice(match[0].length);
+						
+						// Finished matching a rule - resume
+						srcObj.lastRule = rname;
+						// Break from the for-loop
+						break;
+					}
 				}
 				
-				if (
-						/*
-							Check whether this rule is restricted to only being matched
-							directly after another rule has. An example is the "block"
-							rules, which may only match after a "br" or "paragraph" rule.
-						*/
-						(!srcObj.lastRule || !rule.lastRule
-							|| rule.lastRule.indexOf(srcObj.lastRule)>-1) &&
-						/*
-							Within macros, only macro rules and expressions can be used.
-						*/
-						(!states[0].inMacro || rule.macro || rule.expression) &&
-						/*
-							Outside macros, macro rules can't be used.
-						*/
-						(!rule.macro || states[0].inMacro) &&
-						/*
-							Finally, run the match. Any earlier would cause the rules excluded
-							by the above checks to be run anyway, and waste time.
-						*/
-						(match = rule.match.exec(srcObj.src))) {
-					
-					/*
-						Now that it's matched, let's forge this token.
-						First, push the slurped text buffer, and hastily
-						create a token out of it, representing the interstitial unmatched
-						text between this and the last "proper" token.
-					*/
-					if (srcObj.unmatchedText) {
-						rules.text.fn([srcObj.unmatchedText]);
-						states[0].pos += srcObj.unmatchedText.length;
-						srcObj.unmatchedText = "";
-					}
-					
-					// Now handle the matched rule
-					rule.fn(match);
-					
-					// Increment the position in the src
-					states[0].pos += match[0].length;
-					srcObj.src = srcObj.src.slice(match[0].length);
-					
-					// Finished matching a rule - resume
-					srcObj.lastRule = rname;
-					// Break from the for-loop
-					return;
+				/*
+					If no match was available, then treat this run of source as mere human prose,
+					and slurp it up into the text buffer.
+				*/
+				if (i === rulesKeys.length && srcObj.src) {
+					srcObj.unmatchedText += srcObj.src[0];
+					srcObj.lastRule = "text";
+					srcObj.src = srcObj.src.slice(1);
 				}
-			}
-			
-			/*
-				If no match was available, then treat this run of source as mere human prose,
-				and slurp it up into the text buffer.
-			*/
-			if (srcObj.src) {
-				srcObj.unmatchedText += srcObj.src[0];
-				srcObj.lastRule = "text";
-				srcObj.src = srcObj.src.slice(1);
 			}
 		}
 		
@@ -800,8 +860,7 @@
 			built up, to be pushed when a rule finally matches.
 		*/
 		function recursiveLex(src, initpos, inMacro) {
-			var done,
-				srcObj = {
+			var srcObj = {
 					src: src,
 					lastRule: "",
 					/*
@@ -821,9 +880,11 @@
 				pos: initpos || 0,
 				inMacro: !!inMacro
 			});
-			while(srcObj.src) {
-				done = matchRule(srcObj);
-			}
+			/*
+				Do the work.
+			*/
+			matchRules(srcObj);
+			
 			// Push the last run of slurped text.
 			if (srcObj.unmatchedText) {
 				push("text", [srcObj.unmatchedText]);
@@ -879,174 +940,194 @@
 		@for TwineMarkup
 	*/
 	function rules(state) {
-		// TODO: reimplement backslash-escapes
 		var push = state.push,
 			pusher = state.pusher,
 			textPusher = state.textPusher,
 			valuePusher = state.valuePusher,
+			/*
+				These two rules are the only ones that permit
+				block rules to follow them.
+			*/
 			block = ["br", "paragraph"],
-			addedRules;
+			/*
+				Because it's important that all of the block rules be evaluated
+				before the inline rules, etc., these three objects contain
+				each ordered category of rules, and are joined together later.
+			*/
+			blockRules,
+			inlineRules,
+			macroRules,
+			allRules;
 
-		addedRules = assign({
-				/*
-					First, the block rules.
-				*/
-				heading: {
-					lastRule: block,
-					fn: function(match) {
-						push("heading", match, {
-							depth: match[1].length,
-							innerText: match[2]
-						});
-					}
-				},
+		blockRules = {
+			/*
+				First, the block rules.
+			*/
+			paragraph: {
+				lastRule: block,
+				fn: textPusher("paragraph")
+			},
+			hr: {
+				lastRule: block,
+				fn: pusher("hr")
+			},
+			bulleted: {
+				lastRule: block,
+				fn: function(match) {
+					push("bulleted", match, {
+						depth: match[1].length,
+						innerText: match[2]
+					});
+				}
+			},
+			heading: {
+				lastRule: block,
+				fn: function(match) {
+					push("heading", match, {
+						depth: match[1].length,
+						innerText: match[2]
+					});
+				}
+			},
+			/*
+				Text align syntax
 				
-				/*
-					Text align syntax
-					
-					==>      : right-aligned
-					=><=     : centered
-					<==>     : justified
-					<==      : left-aligned (undoes the above)
-					===><=   : margins 3/4 left, 1/4 right
-					=><===== : margins 1/6 left, 5/6 right, etc.
-				*/
-				align: {
-					lastRule: block,
-					fn: function (match) {
-						var align,
-							arrow = match[1],
-							centerIndex = arrow.indexOf("><");
-							
-						if (~centerIndex) {
-							/*
-								Find the left-align value
-								(Since offset-centered text is centered,
-								halve the left-align - hence I multiply by 50 instead of 100
-								to convert to a percentage.)
-							*/
-							align = Math.round(centerIndex / (arrow.length - 2) * 50);
-						} else if (arrow[0] === "<" && arrow.slice(-1) === ">") {
-							align = "justify";
-						} else if (arrow.contains(">")) {
-							align = "right";
-						} else if (arrow.contains("<")) {
-							align = "left";
-						}
-						push('align', match, { align: align });
-					},
-				},
-				hr: {
-					lastRule: block,
-					fn: pusher("hr")
-				},
-				bulleted: {
-					lastRule: block,
-					fn: function(match) {
-						push("bulleted", match, {
-							depth: match[1].length,
-							innerText: match[2]
-						});
-					}
-				},
-				numbered: {
-					lastRule: block,
-					fn: function(match) {
-						push("numbered", match, {
-							depth: match[1].length / 2,
-							innerText: match[2]
-						});
-					}
-				},
-				paragraph: {
-					lastRule: block,
-					fn: textPusher("paragraph")
-				},
-				/*
-					Now, the inline macros.
-				*/
-				passageLink: {
-					fn: function(match) {
-						var p1 = match[1],
-							p2 = match[2],
-							p3 = match[3];
+				==>      : right-aligned
+				=><=     : centered
+				<==>     : justified
+				<==      : left-aligned (undoes the above)
+				===><=   : margins 3/4 left, 1/4 right
+				=><===== : margins 1/6 left, 5/6 right, etc.
+			*/
+			align: {
+				lastRule: block,
+				fn: function (match) {
+					var align,
+						arrow = match[1],
+						centerIndex = arrow.indexOf("><");
 						
-						push("twineLink", match, {
-							innerText: p2 ? p3 : p1,
-							passage: p1 ? p3 : p2
-						});
+					if (~centerIndex) {
+						/*
+							Find the left-align value
+							(Since offset-centered text is centered,
+							halve the left-align - hence I multiply by 50 instead of 100
+							to convert to a percentage.)
+						*/
+						align = Math.round(centerIndex / (arrow.length - 2) * 50);
+					} else if (arrow[0] === "<" && arrow.slice(-1) === ">") {
+						align = "justify";
+					} else if (arrow.contains(">")) {
+						align = "right";
+					} else if (arrow.contains("<")) {
+						align = "left";
 					}
+					push('align', match, { align: align });
 				},
-				legacyLink: {
-					fn: function(match) {
-						push("twineLink", match, {
-							innerText: match[1],
-							passage: match[2]
-						});
-					}
-				},
-				simpleLink: {
-					fn: function(match) {
-						push("twineLink", match, {
-							innerText: match[1],
-							passage: match[1]
-						});
-					}
-				},
-				hookAppended: {
-					fn: function(match) {
-						push("hook", match, {
-							innerText: match[1],
-							name: match[2]
-						});
-					}
-				},
-				hookPrepended: {
-					fn: function(match) {
-						push("hook", match, {
-							innerText: match[2],
-							name: match[1]
-						});
-					}
-				},
-				/*
-					A tag-less hook that appears after a macro.
-				*/
-				hookAnonymous: {
-					lastRule: ["macro"],
-					fn: function(match) {
-						push("hook", match, {
-							innerText: match[1],
-							name: ""
-						});
-					}
-				},
-				code: {
-					fn: function(match) {
-						push("code", match, {
-							code: match[2]
-						});
-					}
-				},
-				escapedLine: {
-					fn: pusher("escapedLine")
-				},
-				/*
-					Like GitHub-Flavoured Markdown, Twine preserves line breaks.
-				*/
-				br:      { fn:     pusher("br") },
-				comment: { fn:     pusher("comment") },
-				tag:     { fn:     pusher("tag") },
-				url:     { fn:     pusher("url") },
-				strong:  { fn: textPusher("strong") },
-				em:      { fn: textPusher("em") },
-				bold:    { fn: textPusher("bold") },
-				italic:  { fn: textPusher("italic") },
-				del:     { fn: textPusher("del") },
-				
-				/*
-					Now, macro code rules.
-				*/
+			},
+			numbered: {
+				lastRule: block,
+				fn: function(match) {
+					push("numbered", match, {
+						depth: match[1].length / 2,
+						innerText: match[2]
+					});
+				}
+			},
+		};
+		
+		/*
+			Now, the inline rules.
+		*/
+		inlineRules = {
+			
+			/*
+				Like GitHub-Flavoured Markdown, Twine preserves line breaks
+				within paragraphs.
+			*/
+			br:      { fn:     pusher("br") },
+			strong:  { fn: textPusher("strong") },
+			em:      { fn: textPusher("em") },
+			bold:    { fn: textPusher("bold") },
+			italic:  { fn: textPusher("italic") },
+			del:     { fn: textPusher("del") },
+			
+			comment: { fn:     pusher("comment") },
+			tag:     { fn:     pusher("tag") },
+			url:     { fn:     pusher("inlineUrl") },
+			
+			passageLink: {
+				fn: function(match) {
+					var p1 = match[1],
+						p2 = match[2],
+						p3 = match[3];
+					
+					push("twineLink", match, {
+						innerText: p2 ? p3 : p1,
+						passage: p1 ? p3 : p2
+					});
+				}
+			},
+			simpleLink: {
+				fn: function(match) {
+					push("twineLink", match, {
+						innerText: match[1],
+						passage: match[1]
+					});
+				}
+			},
+			
+			hookAppended: {
+				fn: function(match) {
+					push("hook", match, {
+						innerText: match[1],
+						name: match[2]
+					});
+				}
+			},
+			hookPrepended: {
+				fn: function(match) {
+					push("hook", match, {
+						innerText: match[2],
+						name: match[1]
+					});
+				}
+			},
+			/*
+				A tag-less hook that appears after a macro.
+			*/
+			hookAnonymous: {
+				lastRule: ["macro"],
+				fn: function(match) {
+					push("hook", match, {
+						innerText: match[1],
+						name: ""
+					});
+				}
+			},
+			code: {
+				fn: function(match) {
+					push("code", match, {
+						code: match[2]
+					});
+				}
+			},
+			escapedLine: {
+				fn: pusher("escapedLine")
+			},
+			legacyLink: {
+				fn: function(match) {
+					push("twineLink", match, {
+						innerText: match[1],
+						passage: match[2]
+					});
+				}
+			},
+		};
+		
+		/*
+			Now, macro code rules.
+		*/
+		macroRules = assign({
 				macro: {
 					expression: true,
 					fn: function(match) {
@@ -1075,16 +1156,13 @@
 				},
 				hookRef:  { expression: true, fn: textPusher("hookRef", "name") },
 				variable: { expression: true, fn: textPusher("variable", "name") },
-				grouping: { macro: true, fn: textPusher("grouping") },
-				
-				// The text rule has no match RegExp
-				text:     { fn:     pusher("text") },
+				grouping: { macro: true, fn: textPusher("grouping") }
 			},
 			/*
 				Some macro-only tokens
 			*/
-			["string", "boolean", "event", "identifier", "is", "to", "and", "or", "not", "isNot", "comma",
-			"add", "subtract", "multiply", "divide", "modulo", "lt", "lte", "gt", "gte", "gets",
+			["string", "boolean", "identifier", "is", "to", "and", "or", "not", "isNot", "comma",
+			"add", "subtract", "multiply", "divide", "modulo", "lt", "lte", "gt", "gte",
 			"contains", "isIn"].reduce(function(a, e) {
 				a[e] = { macro: true, fn: pusher(e) };
 				return a;
@@ -1092,25 +1170,45 @@
 		);
 		
 		/*
-			A quick shorthand function to convert a RegExpStrings property into a RegExp,
-			or to return it if it's a RecursiveExpression already.
+			Merge all of the above together.
 		*/
-		function r(index) {
-			var re = RegExpStrings[index];
-			if (typeof re !== "string") {
-				return re;
-			}
-			return new RegExp("^(?:" + re + ")");
-		}
+		allRules = assign({}, blockRules, inlineRules, macroRules);
 		
 		/*
-			Each named rule uses the same named RegExpString for its
+			Cache the rule keys in a separate " keys" property,
+			in the order in which they should be evaluated by matchRule().
+			
+			(The space is to signify that it's not a rule property.)
+		*/
+		allRules[" keys"] = Object.keys(allRules);
+		
+		/*
+			Each named rule uses the same-named RegExpString for its
 			regular expression. Add those properties succinctly now.
 		*/
-		Object.keys(addedRules).forEach(function(e) {
-			addedRules[e].match = r(e);
+		allRules[" keys"].forEach(function(key) {
+			var re = RegExpStrings[key];
+			if (typeof re !== "string") {
+				allRules[key].match = re;
+			}
+			else {
+				allRules[key].match = new RegExp("^(?:" + re + ")");
+			}
+			/*
+				If an opener is available, include that as well.
+				Openers are used as lookaheads to save calling
+				the entire match regexp every time.
+			*/
+			if (RegExpStrings[key + "Opener"]) {
+				allRules[key].opener = RegExpStrings[key + "Opener"];
+			}
 		});
-		assign(state.rules, addedRules);
+		assign(state.rules, allRules, 
+			/*
+				The final "text" rule is a dummy, exempt from being a proper
+				rule key, and with no match property. 
+			*/
+			{ text:     { fn:     pusher("text") }});
 		return state;
 	}
 	

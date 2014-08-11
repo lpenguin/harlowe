@@ -289,7 +289,7 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 				The reason is that "live" macros need to be reliably called again and
 				again, using the same variable bindings in their original invocations.
 				
-				For instance, consider the macro instance "if(time > 2s)". The "time"
+				For instance, consider the macro instance "when(time > 2s)". The "time"
 				variable needs to be re-evaluated every time - something which isn't
 				possible by just transpiling the macro instance into a JS function call.
 			*/
