@@ -509,11 +509,13 @@
 	}
 	
 	/*
-		The prototype object for lexer tokens.
+		The "prototype" object for lexer tokens.
+		(Actually, for speed reasons, tokens are not created by Object.create(tokenMethods),
+		and instead these methods are just assign()ed onto plain object tokens.)
 		It just has some basic methods that iterate over tokens' children,
 		but which nonetheless lexer customers may find valuable.
 	*/
-	var tokenPrototype = Object.freeze({
+	var tokenMethods = Object.freeze({
 		/*
 			Run a function on this token and all its children.
 		*/
@@ -559,21 +561,6 @@
 					return prevValue || ((pos >= child.start && pos < child.end) ? child : null);
 				}, null);
 			}
-			return this;
-		},
-		/*
-			Removes all children at or beyond a certain pos, and updates the
-			text and end properties to match.
-		*/
-		cutTail: function(pos) {
-			var lastChild,
-				cutIndex = this.children.indexOf(this.nearestTokenAt(pos));
-			
-			this.children = this.children.slice(0, cutIndex);
-			lastChild = this.children[cutIndex-1];
-			this.end = lastChild.end;
-			this.text = this.text.slice(0,this.end);
-			
 			return this;
 		},
 		/*
@@ -639,14 +626,14 @@
 				*/
 			}
 			
-			states[0].tokens.push(assign(Object.create(tokenPrototype),
+			states[0].tokens.push(assign(
 			{
 				type: type,
 				start: states[0].pos,
 				end: states[0].pos + match[0].length,
 				text: match[0],
 				children: children
-			}, data));
+			}, data, tokenMethods));
 		}
 		
 		/**
@@ -854,16 +841,16 @@
 			/*
 				The main function.
 				This returns the entire set of tokens, rooted in a "root"
-				token that has all of tokenPrototype's methods.
+				token that has all of tokenMethods's methods.
 			*/
 			lex: function(src, initpos, inMacro) {
-				return assign(Object.create(tokenPrototype), {
+				return assign({
 					type:          "root",
 					start:   initpos || 0,
 					end:       src.length,
 					text:             src,
 					children: recursiveLex(src, initpos, inMacro)
-				});
+				}, tokenMethods);
 			},
 			/*
 				The (initially empty) rules object should be augmented with
