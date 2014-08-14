@@ -154,7 +154,10 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 	*/
 	
 	addValue
-		// set(), run()
+		/*
+			set(), run(): set Twine variables.
+			Evaluates to nothing.
+		*/
 		/*
 			TODO: At present, all of the work in this macro is done
 			within JavaScript's = operator in the act of evaluating the
@@ -164,12 +167,18 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 			return "";
 		})
 
-		// print()
-		("print", function print(_, expr) {
+		/*
+			print(), text(): convert the expression to text.
+			Evaluates to a text string.
+		*/
+		(["print", "string"], function print(_, expr) {
 			return expr+"";
 		})
 		
 		/*
+			if(): converts the expression to boolean, affecting subsequent
+			else() and elseif() calls. Evaluates to a boolean.
+		
 			The if() macro family currently determines else() and elseif()
 			by remembering the previous if() result. By "remembering", I
 			mean it puts a fresh expando property, "lastIf", on the section's
@@ -186,15 +195,17 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 		})
 		
 		/*
-			unless: only true if its expression is false.
+			unless(): the negated form of if().
+			Evaluates to a boolean.
 		*/
 		("unless", function unless(section, expr) {
 			return !(section.stack[0].lastIf = !!expr);
 		})
 		
 		/*
-			elseif: only true if the previous if() was false,
+			elseif(): only true if the previous if() was false,
 			and its own expression is true.
+			Evaluates to a boolean.
 		*/
 		("elseif", function elseif(section, expr) {
 			/*
@@ -205,13 +216,18 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 		})
 		
 		/*
-			else: only true if the previous if() was false.
+			else(): only true if the previous if() was false.
+			Evaluates to a boolean.
 		*/
 		("else", function _else(section) {
 			return !section.stack[0].lastIf;
 		})
 	
-		// display()
+		/*
+			display(): evaluates to the TwineMarkup source of the passage
+			with the given name.
+			Evaluates to a string.
+		*/
 		("display", function display(section, name) {
 			try {
 				
@@ -255,7 +271,7 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 	*/
 	addChanger
 		// transition()
-		(["transition","t8n"], function transition(_, name, time) {
+		(["transition", "t8n"], function transition(_, name, time) {
 			return changerFn(function(d) {
 				d.transition = name;
 				d.transitionTime = time;
@@ -356,8 +372,8 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 	
 	
 	/*
-		Generates a function for enchantment macros, to ideally be used as the second
-		argument to addChanger().
+		This large routine generates a function for enchantment macros, to ideally be used
+		as the second argument to addChanger().
 		
 		An "enchantment" is a process by which selected hooks in a passage are
 		automatically wrapped in <tw-enchantment> elements that have certain styling classes,
@@ -434,7 +450,7 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 				selected by the given selector.
 				3. Set up the <tw-enchantment> elements around the hooks.
 				4. Affix an enchantment event function (that is, a function to run
-				when the enchantment's event is trigggere) to the <tw-enchantment> elements.
+				when the enchantment's event is triggered) to the <tw-enchantment> elements.
 				5. Provide an API for refreshing/resetting the enchantment's
 				<tw-enchantment> elements to the Section (usually performing steps
 				2-4 again).
@@ -598,10 +614,8 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 							Clear all existing <tw-enchantment> wrapper elements placed by
 							the previous call to enchantScope().
 						*/
-						scope.forEach(function(e) {
-							if (e.parent()[0].tagName.toLowerCase() === "tw-enchantment") {
-								e.unwrap();
-							}
+						enchantments.each(function() {
+							$(this).children().unwrap();
 						});
 					}
 				};
