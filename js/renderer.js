@@ -237,7 +237,7 @@ define(['utils', 'twinemarkup', 'twinescript'], function(Utils, TwineMarkup, Twi
 						Base case
 					*/
 					default: {
-						out += token.children ? render(token.children) : charSpanify(token.text);
+						out += token.children && token.children.length ? render(token.children) : charSpanify(token.text);
 						break;
 					}
 				}
