@@ -47,6 +47,9 @@ function($, Utils, Selectors, Renderer, TwineScript, Story, State, HookUtils, Ho
 			}
 		}
 		link.removeAttr("passage-expr").attr("passage-id", Story.getPassageID(passage));
+		if (Story.options.debug) {
+			link.attr("passage-name", passage);
+		}
 		if (visited) {
 			link.addClass("visited");
 		}

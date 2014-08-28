@@ -16,7 +16,11 @@
 		&[name="display"]       { background-color: hsla(200,100%,50%,0.1) !important; }
 		&[name="if"],
 		&[name="elseif"],
-		&[name="else"]          { background-color: hsla(120,100%,50%,0.1) !important; }
+		&[name="else"]          { 
+			&, & + tw-hook:not([name]) {
+				background-color: hsla(120,100%,50%,0.1) !important; 
+			}
+		}
 		&.false                 { background-color: hsla(0,  100%,50%,0.2) !important; } 
 		&[name="print"]         { background-color: hsla(60, 100%,50%,0.2) !important; } 
 		&[name="set"]           { background-color: hsla(30, 100%,50%,0.2) !important; }
@@ -51,9 +55,9 @@
 		/*
 			Show the hook syntax. This should line up with what TwineMarkup expects.
 			
-			But, of course, anonymouse hooks shouldn't be highlighted like this.
+			But, of course, anonymous hooks shouldn't be highlighted like this.
 		*/
-		&:not([title="Hook: ?"]) {
+		&[name] {
 			&::before {
 				content: "["
 			}
@@ -81,13 +85,13 @@
 	
 	@keyframes enchantment 
 	{
-		0%,to { border-color: hsl(30,100%,70%); }
-		50% { border-color: hsl(160,100%,70%); }
+		0%,to { border-color: hsl( 30,100%,70%) }
+		50%   { border-color: hsl(160,100%,70%) }
 	}
 	@-webkit-keyframes enchantment 
 	{
-		0%,to { border-color: hsl(30,100%,70%); }
-		50% { border-color: hsl(160,100%,70%); }
+		0%,to { border-color: hsl( 30,100%,70%); }
+		50%   { border-color: hsl(160,100%,70%); }
 	}
 
 	tw-enchantment {
@@ -101,7 +105,7 @@
 	tw-link::after,	 tw-broken-link::after
 	{
 		font-size: 0.8rem;
-		content: attr(passage-id)
+		content: attr(passage-name);
 	}
 }
 
