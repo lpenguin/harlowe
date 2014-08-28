@@ -473,12 +473,17 @@
 			tokenMethods;
 		/*
 			The "prototype" object for lexer tokens.
-			(Actually, for speed reasons, tokens are not created by Object.create(tokenMethods),
-			and instead these methods are just assign()ed onto plain object tokens.)
+			(As an experiment in JS pseudo-classical syntax, instances are created
+			by directly calling tokenMethods.constructor, which is otherwise nameless.)
 			It just has some basic methods that iterate over tokens' children,
 			but which nonetheless lexer customers may find valuable.
 		*/
 		tokenMethods = {
+			constructor: function() {
+				for (var i = 0; i < arguments.length; i++) {
+					assign(this, arguments[i]);
+				}
+			},
 			/*
 				Create a token and put it in the children array.
 			*/
@@ -499,7 +504,7 @@
 					Now, create the token, then assign to it the idiosyncratic data
 					properties and the tokenMethods.
 				*/
-				childToken = assign(
+				childToken = new this.constructor(
 					{
 						type:      type,
 						start:     index,
@@ -507,7 +512,7 @@
 						text:      matchText,
 						children:  []
 					},
-					tokenData, tokenMethods);
+					tokenData);
 				
 				/*
 					If the token has non-empty innerText, lex the innerText
@@ -624,8 +629,17 @@
 			*/
 			demote: function demote() {
 				this.type = "text";
+			},
+			
+			toString: function() {
+				var ret = this.type;
+				if (this.children && this.children.length > 0) {
+					ret += "[" + this.children + "]";
+				}
+				return ret;
 			}
 		};
+		tokenMethods.constructor.prototype = tokenMethods;
 		
 		/*
 			The main lexing routine. Given a token with an innerText property and
@@ -637,9 +651,18 @@
 				// Some shortcuts
 				src = parentToken.innerText,
 				/*
-					This somewhat simple check determines if this token is within a macro.
+					This somewhat simple stack determines what "mode"
+					the lexer is in.
+					
+					Ugh... I need to implement "mode"s as a thing.
 				*/
-				insideMacro = (parentToken.expression || parentToken.macro),
+				modeStack = [parentToken.type === "macro" ? "macro" : ""],
+				/*
+					The frontTokenStack's items are "front" tokens, those
+					that pair up with a "back" token to make a token representing
+					an arbitrarily nestable rule.
+				*/
+				frontTokenStack = [],
 				// Some hoisted temporary vars used in each loop iteration. 
 				i, l, rule, match, slice,
 				// The cached array of rules property keys, for quick iteration.
@@ -652,7 +675,7 @@
 				index = 0,
 				firstUnmatchedIndex = 0,
 				/*
-					This caches the most recently created token.
+					This caches the most recently created token between iterations.
 				*/
 				lastToken = null;
 			
@@ -674,12 +697,13 @@
 				for (i = 0, l = rulesKeys.length; i < l; i+=1) {
 					
 					rule = rules[rulesKeys[i]];
-					
+
 					if (
 							/*
 								Check whether this rule is restricted to only being matched
 								directly after another rule has. An example is the "block"
-								rules, which may only match after a "br" or "paragraph" rule.								
+								rules, which may only match after a "br" or "paragraph"
+								rule.
 							*/
 							(!rule.canFollow ||
 								rule.canFollow.indexOf(lastToken && lastToken.type) >-1) &&
@@ -692,11 +716,11 @@
 							/*
 								Within macros, only macro rules and expressions can be used.
 							*/
-							(!insideMacro || rule.expression || rule.macro) &&
+							(modeStack[0] !== "macro" || rule.isExpression || rule.isMacroOnly) &&
 							/*
-								Outside macros, macro rules can't be used.
+								Outside macros, macro rules can't be used. (But expressions can!)
 							*/
-							(!rule.macro || insideMacro) &&
+							(!rule.isMacroOnly || modeStack[0] === "macro") &&
 							/*
 								If an opener is available, check that before running
 								the full match regexp.
@@ -722,13 +746,53 @@
 						/*
 							Re-store the last pushed token, assuming it was changed
 							by the rule.fn call.
+							(BIG ASSUMPTION??)
 						*/
 						lastToken = parentToken.lastChild();
 						
 						// Increment the index in the src
 						index += lastToken.text.length;
 						firstUnmatchedIndex = index;
-						
+						/*
+							Front tokens are saved, in case a Back token arrives
+							later that can match it.
+						*/
+						if (lastToken.type.endsWith("Front")) {
+							frontTokenStack.unshift(lastToken);
+							
+							// Ugh, modes
+							if (lastToken.innerMode) {
+								modeStack.unshift(lastToken.innerMode);
+							}
+						}
+						/*
+							If a Back token arrives, it must match with the most recent Front token.
+							If so, both tokens, and those intervening, are merged ("folded") into one.
+						*/
+						else if (lastToken.type.endsWith("Back")) {
+							if (frontTokenStack.length &&
+								lastToken.matches && frontTokenStack[0].type in lastToken.matches) {
+								/*
+									Having found a matching pair of tokens, we fold them together.
+								*/
+								foldTokens(parentToken, lastToken, frontTokenStack.shift());
+								/*
+									Note: that function splices the children array in-place!!
+									Fortunately, nothing needs to be adjusted to account for this.
+								*/
+								// I'll explain later.
+								if (lastToken.innerMode === modeStack[0]) {
+									modeStack.shift();
+								}
+							}
+							else {
+								/*
+									It doesn't match anything...! It's just prose text, then.
+									Demote the token to a text token.
+								*/
+								lastToken.demote();
+							}
+						}
 						// Break from the for-loop
 						break;
 					}
@@ -748,72 +812,12 @@
 			if (firstUnmatchedIndex < index) {
 				parentToken.addChild("text", src.slice(firstUnmatchedIndex, index));
 			}
-			
-			return nestTokens(parentToken);
-		}
-		
-		function nestTokens(parentToken) {
-			var children = parentToken.children,
-				child,
-				/*
-					The frontTokenStack's items are pairs: the token, and its index.
-					This matches the parameter types used by foldTokens() below,
-					which uses those due to speed paranoia.
-				*/
-				frontTokenStack = [],
-				// For-i loop variables
-				i, l;
 			/*
-				The goal of this loop is to perform a single iteration through the children,
-				matching Front and Back tokens into single tokens containing all between them,
-				and demoting unmatched Fronts and Backs into plain text.
-			*/
-			for(i = 0, l = children.length; i < l; i+=1) {
-				child = children[i];
-				/*
-					Front tokens are saved, in case a Back token arrives
-					later that can match it.
-				*/
-				if (child.type.endsWith("Front")) {
-					frontTokenStack.unshift([child, i]);
-				}
-				/*
-					If a Back token arrives, it must match with the most recent Front token.
-					If so, both tokens, and those intervening, are merged ("folded") into one.
-				*/
-				else if (child.type.endsWith("Back")) {
-					if (frontTokenStack.length &&
-						child.matches && frontTokenStack[0][0].type in child.matches) {
-						/*
-							Having found a matching pair of tokens, we fold them together.
-						*/
-						foldTokens(parentToken, [child, i], frontTokenStack.shift());
-						/*
-							Note: that function splices the children array in-place!! However, 
-							it only removes elements from earlier in the array than the
-							current index. So, we need only update i and l to reflect the
-							new length of the array.
-							
-							Tsk, such oblique lines indeed.
-						*/
-						i -= (l - children.length);
-						l = children.length;
-					}
-					else {
-						/*
-							It doesn't match anything...! It's just prose text, then.
-							Demote the token to a text token.
-						*/
-						child.demote();
-					}
-				}
-			}
-			/*
-				We're done, except that we may still have unmatched beginTokens.
+				We're done, except that we may still have unmatched frontTokens.
 				Go through them and demote them.
 			*/
 			while(frontTokenStack.length > 0) {
-				frontTokenStack.shift()[0].demote();
+				frontTokenStack.shift().demote();
 			}
 			return parentToken;
 		}
@@ -823,17 +827,14 @@
 			the token object itself, and its index within the parentToken's
 			children array.
 		*/
-		function foldTokens(parentToken, backTokenPair, frontTokenPair) {
+		function foldTokens(parentToken, backToken, frontToken) {
 			/*
 				Having found a matching pair of tokens, we fold them together.
 				For convenience, let's promote the Back token (currently, "child")
 				into the folded-up single token.
 			*/
-			// Assign some better names for the incoming data.
-			var backToken       = backTokenPair[0],
-				backTokenIndex  = backTokenPair[1],
-				frontToken      = frontTokenPair[0],
-				frontTokenIndex = frontTokenPair[1],
+			var backTokenIndex   = parentToken.children.indexOf(backToken),
+				frontTokenIndex  = parentToken.children.indexOf(frontToken),
 				// Hoisted loop vars
 				i, l, key;
 			
@@ -914,14 +915,14 @@
 				token that has all of tokenMethods's methods.
 			*/
 			lex: function(src, initIndex) {
-				var ret = lex(assign({
+				var ret = lex(new tokenMethods.constructor({
 					type:            "root",
 					start:   initIndex || 0,
 					end:         src.length,
 					text:               src,
 					innerText:          src,
 					children:            [],
-				}, tokenMethods));
+				}));
 				/*
 					[Insert console.log(ret) here if you feel like it]
 				*/
@@ -1189,21 +1190,21 @@
 		*/
 		macroRules = assign({
 				macroFront: {
-					expression: true,
+					isExpression: true,
 					fn: function(token, match) {
 						token.addChild("macroFront", match, {
 							name: match[1],
 							/*
-								This is used by lex() to determine that
-								it's lexing inside a TwineScript expression.
+								This is used to change the mode inside lex(),
+								to switch from TwineMarkup to TwineScript.
 							*/
-							expression: true
+							innerMode: "macro",
 						});
 					}
 				},
-				groupingFront: { macro: true, fn: pusher("groupingFront") },
+				groupingFront: { isMacroOnly: true, fn: pusher("groupingFront") },
 				groupingBack: {
-					expression: true,
+					isMacroOnly: true,
 					fn: function(token, match) {
 						token.addChild("groupingBack", match, {
 							matches: {
@@ -1215,14 +1216,14 @@
 				},
 				
 				cssTime: {
-					macro: true,
+					isMacroOnly: true,
 					fn: valuePusher("cssTime", function(match) {
 						return +match[1]
 							* (match[2].toLowerCase() === "s" ? 1000 : 1);
 					})
 				},
 				number: {
-					macro: true,
+					isMacroOnly: true,
 					fn: valuePusher("number", function(match) {
 						/*
 							This fixes accidental octal (by eliminating octal)
@@ -1230,8 +1231,8 @@
 						return parseFloat(match[0]);
 					})
 				},
-				hookRef:  { expression: true, fn: textPusher("hookRef", "name") },
-				variable: { expression: true, fn: textPusher("variable", "name") }
+				hookRef:  { isExpression: true, fn: textPusher("hookRef", "name") },
+				variable: { isExpression: true, fn: textPusher("variable", "name") }
 			},
 			/*
 				Some macro-only tokens
@@ -1239,7 +1240,7 @@
 			["string", "boolean", "identifier", "is", "to", "and", "or", "not", "isNot", "comma",
 			"add", "subtract", "multiply", "divide", "modulo", "lt", "lte", "gt", "gte",
 			"contains", "isIn"].reduce(function(a, e) {
-				a[e] = { macro: true, fn: pusher(e) };
+				a[e] = { isMacroOnly: true, fn: pusher(e) };
 				return a;
 			},{})
 		);
@@ -1287,6 +1288,7 @@
 			/*
 				The final "text" rule is a dummy, exempt from being a proper
 				rule key, and with no match property. 
+				TODO: Can we remove it?
 			*/
 			{ text:     { fn:     pusher("text") }});
 		return state;
@@ -1304,7 +1306,7 @@
 		
 		@class TwineMarkup
 		@static
-	*/
+	*/	
 	TwineMarkup = Object.freeze({
 		
 		/**

@@ -210,9 +210,10 @@ define(['utils', 'twinemarkup', 'twinescript'], function(Utils, TwineMarkup, Twi
 						break;
 					}
 					case "hook": {
-						out += '<tw-hook name="' + token.name + '"'
+						out += '<tw-hook '
+							+ (token.name ? 'name="' + token.name + '"' : '')
 							// Debug mode: show the hook destination as a title.
-							+ (Renderer.options.debug ? ' title="Hook: ?' + token.name + '"' : '')
+							+ ((Renderer.options.debug && token.name) ? ' title="Hook: ?' + token.name + '"' : '')
 							+ ' code="' + escape(token.innerText) + '">'
 							// Insert a non-breaking space so that the hook can be selected
 							// and used in a Scope.
