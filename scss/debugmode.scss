@@ -83,17 +83,6 @@
 		}
 	}
 	
-	@keyframes enchantment 
-	{
-		0%,to { border-color: hsl( 30,100%,70%) }
-		50%   { border-color: hsl(160,100%,70%) }
-	}
-	@-webkit-keyframes enchantment 
-	{
-		0%,to { border-color: hsl( 30,100%,70%); }
-		50%   { border-color: hsl(160,100%,70%); }
-	}
-
 	tw-enchantment {
 		animation: enchantment 0.5s infinite;
 		-webkit-animation: enchantment 0.5s infinite;
@@ -107,6 +96,17 @@
 		font-size: 0.8rem;
 		content: attr(passage-name);
 	}
+}
+
+@keyframes enchantment 
+{
+	0%,to { border-color: hsl( 30,100%,70%) }
+	50%   { border-color: hsl(160,100%,70%) }
+}
+@-webkit-keyframes enchantment 
+{
+	0%,to { border-color: hsl( 30,100%,70%); }
+	50%   { border-color: hsl(160,100%,70%); }
 }
 
 /* The debug button */

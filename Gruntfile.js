@@ -125,9 +125,17 @@ module.exports = function (grunt) {
 			},
 			runtime: {
 				requires: ['requirejs', 'cssmin'],
-				src: sourceHTML,
-				dest: 'dist/runtime.html',
-				replacements: scriptStyleReplacements
+				src: 'format.js',
+				dest: 'dist/format.js',
+				replacements: [{
+					from: '"source":""',
+					to: '"source":' + JSON.stringify(grunt.file.read(sourceHTML))
+				}].concat(scriptStyleReplacements.map(function(e) {
+					return {
+						from: e.from,
+						to: function() { return JSON.stringify(e.to()).slice(1, -1); }
+					};
+				}))
 			},
 			build: {
 				requires: ['requirejs', 'cssmin'],

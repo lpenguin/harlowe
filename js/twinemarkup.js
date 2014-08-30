@@ -1109,7 +1109,7 @@
 					
 					token.addChild("twineLink", match, {
 						innerText: p2 ? p3 : p1,
-						passage: p1 ? p3 : p2
+						passage:   p1 ? p3 : p2
 					});
 				}
 			},
@@ -1117,7 +1117,7 @@
 				fn: function(token, match) {
 					token.addChild("twineLink", match, {
 						innerText: match[1],
-						passage: match[1]
+						passage:   match[1]
 					});
 				}
 			},
@@ -1266,7 +1266,9 @@
 		allRules[" keys"].forEach(function(key) {
 			/*
 				Each named rule uses the same-named RegExpString for its
-				regular expression. The RegExpStrings are added now.
+				regular expression.
+				That is, each rule key *should* map directly to a RegExpString key.
+				The RegExpStrings are added now.
 			*/
 			var re = RegExpStrings[key];
 			if (typeof re !== "string") {
