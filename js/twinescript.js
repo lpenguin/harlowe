@@ -225,7 +225,6 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 				return " section.selectHook('?" + token.name + "') ";
 			}
 			else if (token.type === "variable") {
-				// TODO: Defaulting to 0
 				return " State.variables." + token.name + " ";
 			}
 		}
@@ -289,7 +288,7 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 				The reason is that "live" macros need to be reliably called again and
 				again, using the same variable bindings in their original invocations.
 				
-				For instance, consider the macro instance "when(time > 2s)". The "time"
+				For instance, consider the macro instance "(when: time > 2s)". The "time"
 				variable needs to be re-evaluated every time - something which isn't
 				possible by just transpiling the macro instance into a JS function call.
 			*/
@@ -305,7 +304,7 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 					/*
 						You may notice here, unseen, is the assumption that Javascript array literals
 						and TwineScript macro invocations use the same character to separate arguments/items.
-						(That, of course, being the comma - macro(1,2,3) vs [1,2,3].)
+						(That, of course, being the comma - (macro: 1,2,3) vs [1,2,3].)
 						This is currently true, but it is nonetheless a fairly bold assumption.
 					*/
 					compile(tokens[i].children)
@@ -388,6 +387,9 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 				get time() {
 					return (Date.now() - section.timestamp);
 				}
+				/*
+					TODO: An author-facing error message for setting time()
+				*/
 			},
 			Operation = operations(Identifiers);
 			

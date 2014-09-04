@@ -85,6 +85,8 @@ function($, Utils, Selectors, Renderer, TwineScript, Story, State, HookUtils, Ho
 			
 			falsy primitive:
 				Remove the nearest hook.
+			HookSet:
+				Print the text of the first hook in the set.
 			stringy primitive:
 				Print into the passage.
 			function with .changer property:
@@ -113,10 +115,18 @@ function($, Utils, Selectors, Renderer, TwineScript, Story, State, HookUtils, Ho
 					result(nextHook, this);
 				}
 			}
+			else {
+				/*
+					TODO: An author-facing error message.
+				*/
+			}
 		}
 		// Having run that, print any error that resulted.
 		if (result instanceof Error) {
 			expr.addClass('error').text(result.message);
+		}
+		else if (HookSet.isPrototypeOf(result)) {
+			this.renderInto(result.text(), expr);
 		}
 		else if (typeof result === "string") {
 			/*

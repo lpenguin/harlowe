@@ -198,8 +198,8 @@
 			},
 			
 			macro = {
-				name:              "(" + anyLetter.replace("]","\\/]") + anyLetter + "*)(?=\\()",
 				opener:            "\\(",
+				name:              "(" + anyLetter.replace("]","\\/]") + anyLetter + "*):",
 				closer:            "\\)"
 			},
 			
@@ -352,7 +352,7 @@
 			
 			simpleLinkOpener: opener("[["),
 			
-			macroFront: macro.name + macro.opener,
+			macroFront: macro.opener + macro.name,
 			groupingFront: "\\(",
 			groupingBack:  "\\)",
 			

@@ -1,4 +1,4 @@
-define(['jquery', 'hookutils'],function($, HookUtils) {
+define(['hookutils'],function(HookUtils) {
 	"use strict";
 	
 	/**
@@ -12,6 +12,29 @@ define(['jquery', 'hookutils'],function($, HookUtils) {
 		@class HookSet
 		@static
 	*/
+	
+	/*
+		This private function allows a specific jQuery method to be called
+		on the collection of matched hooks in the HookSet.
+	*/
+	function jQueryCall(methodName /*variadic*/) {
+		/*
+			hooks is a jQuery collection of every <tw-hook> in the Section
+			which matches this HookSet's selector string.
+			
+			This is re-evaluated during every jQueryCall, so that it's always
+			up-to-date with the DOM.
+		*/
+		var args = Array.from(arguments).slice(2),
+			hooks = this.section.$(
+				HookUtils.hookToSelector(
+					this.selector.slice(1) /* slice off the hook sigil */
+				)
+			);
+		console.log(hooks, methodName, methodName in hooks);
+		return hooks[methodName] && hooks[methodName].apply(hooks, args);
+	}
+	
 	var HookSet = Object.freeze({
 		
 		/**
@@ -26,21 +49,21 @@ define(['jquery', 'hookutils'],function($, HookUtils) {
 				{jQuery} The <tw-hook> element to manipulate.
 		*/
 		forEach: function(fn) {
-			/*
-				hooks is a jQuery collection of every <tw-hook> in the Section
-				which matches this HookSet's selector string.
-				
-				This is re-evaluated during every forEach call, so that it's always
-				up-to-date with the DOM.
-			*/
-			var hooks = this.section.$(
-				HookUtils.hookToSelector(
-					this.selector.slice(1) /* slice off the hook sigil */
-				)
-			);
-			hooks.each(function() {
-				fn($(this));
-			});
+			return jQueryCall.call(this, "each", fn);
+		},
+		
+		/**
+			Retrieves the text of the first (by which I mean, earliest in the
+			passage) hook within this HookSet. Note that this does not retrieve
+			formatting, macros or whatever in the hook - only visible text.
+			
+			This is currently just used by Section.runExpression, to print a
+			hookRef in passage text.
+			
+			@method text
+		*/
+		text: function(fn) {
+			return jQueryCall.call(this, "text", fn);
 		},
 		
 		/**
@@ -61,7 +84,7 @@ define(['jquery', 'hookutils'],function($, HookUtils) {
 			ret.section = section;
 			ret.selector = hookSelector;
 			return Object.freeze(ret);
-		}
+		},
 	});
 	return HookSet;
 });
