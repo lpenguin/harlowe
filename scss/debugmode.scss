@@ -85,6 +85,9 @@
 			background: linear-gradient(to right, hsla(14,100%,87%, 0) 0%, hsla(14,100%,87%,0.25) 100%);
 		}
 	}
+	p {
+		background-color: hsla(50,100%,50%,0.1);
+	}
 	
 	tw-enchantment {
 		animation: enchantment 0.5s infinite;

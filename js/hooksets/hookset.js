@@ -1,4 +1,4 @@
-define(['hookutils'],function(HookUtils) {
+define(['hookutils', 'jquery'],function(HookUtils, $) {
 	"use strict";
 	
 	/**
@@ -25,14 +25,13 @@ define(['hookutils'],function(HookUtils) {
 			This is re-evaluated during every jQueryCall, so that it's always
 			up-to-date with the DOM.
 		*/
-		var args = Array.from(arguments).slice(2),
+		var args = Array.from(arguments).slice(1),
 			hooks = this.section.$(
 				HookUtils.hookToSelector(
 					this.selector.slice(1) /* slice off the hook sigil */
 				)
 			);
-		console.log(hooks, methodName, methodName in hooks);
-		return hooks[methodName] && hooks[methodName].apply(hooks, args);
+		return methodName in hooks && hooks[methodName].apply(hooks, args);
 	}
 	
 	var HookSet = Object.freeze({
@@ -49,7 +48,9 @@ define(['hookutils'],function(HookUtils) {
 				{jQuery} The <tw-hook> element to manipulate.
 		*/
 		forEach: function(fn) {
-			return jQueryCall.call(this, "each", fn);
+			return jQueryCall.call(this, "each", function() {
+				fn($(this));
+			});
 		},
 		
 		/**
@@ -62,8 +63,8 @@ define(['hookutils'],function(HookUtils) {
 			
 			@method text
 		*/
-		text: function(fn) {
-			return jQueryCall.call(this, "text", fn);
+		text: function() {
+			return jQueryCall.call(this, "text");
 		},
 		
 		/**

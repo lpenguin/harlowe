@@ -361,9 +361,9 @@
 					Every block regex that separates paragraphs should be included in
 					the negative lookahead in this regex.
 				*/
-				"\\n((?:[^\\n]+\\n?(?!"
+				"((?:[^\\n]+\\n?"
 				+ notBefore(heading, align, hr)
-				+ "))+)\\n?",
+				+ ")+)\\n?",
 			
 			paragraphOpener: opener("\n"),
 			
@@ -676,6 +676,8 @@
 				firstUnmatchedIndex = 0,
 				/*
 					This caches the most recently created token between iterations.
+					This must be 'null' and not 'undefined' because some canFollow
+					arrays may contain null, to mean the start of input.
 				*/
 				lastToken = null;
 			
@@ -706,13 +708,23 @@
 								rule.
 							*/
 							(!rule.canFollow ||
-								rule.canFollow.indexOf(lastToken && lastToken.type) >-1) &&
+								rule.canFollow.indexOf(
+									/*
+										Interesting note: this allows null lastTokens
+										to be passed as-is, and object lastTokens to have
+										their type checked - the short-circuit's falsy
+										value's type matters here.
+									*/
+									lastToken && lastToken.type
+								) >-1) &&
 							/*
 								Conversely, check whether this rule cannot follow after
 								the previous rule.
 							*/
 							(!rule.cannotFollow ||
-								rule.cannotFollow.indexOf(lastToken && lastToken.type) === -1) &&
+								rule.cannotFollow.indexOf(
+									lastToken && lastToken.type
+								) === -1) &&
 							/*
 								Within macros, only macro rules and expressions can be used.
 							*/
