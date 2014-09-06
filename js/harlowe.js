@@ -10,6 +10,10 @@ require.config({
 		selectors: './utils/selectors',
 		regexstrings: './utils/regexstrings',
 		customelements: './utils/customelements',
+		// Markup
+		twinemarkup: './markup/markup',
+		lexer: './markup/lexer',
+		patterns: './markup/patterns',
 		// Hook sets
 		hookset: './hooksets/hookset',
 		pseudohookset: './hooksets/pseudohookset',

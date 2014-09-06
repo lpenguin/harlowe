@@ -191,6 +191,8 @@ define(['utils', 'twinemarkup', 'twinescript'], function(Utils, TwineMarkup, Twi
 						out += token.text;
 						break;
 					}
+					case "sub": // Note: there's no sub syntax yet.
+					case "sup":
 					case "del":
 					case "strong":
 					case "em": {
