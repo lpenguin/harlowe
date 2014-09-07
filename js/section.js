@@ -495,16 +495,16 @@ function($, Utils, Selectors, Renderer, TwineScript, Story, State, HookUtils, Ho
 				[].concat() wraps a non-array in an array, while
 				leaving arrays intact.
 			*/
-			changers && [].concat(changers).forEach(function(e) {
+			changers && [].concat(changers).forEach(function(changer) {
 				/*
 					If an object was passed, assign its values,
 					overwriting the default descriptor's.
 				*/
-				if (typeof e !== "function") {
-					Object.assign(desc, e);
+				if (typeof changer !== "function") {
+					Object.assign(desc, changer);
 				}
 				else {
-					e(desc);
+					changer(desc);
 				}
 			});
 			

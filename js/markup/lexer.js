@@ -1,6 +1,6 @@
 /**
-	An object representing a lexer's inner state, methods to permute
-	that state, and methods to query that state.
+	The Lexer accepts plain strings, and, given a set of rules, transforms
+	them to a tree of tokens.
 	
 	Consumers must augment this object's 'rules' property.
 	
@@ -9,8 +9,9 @@
 (function(){
 	"use strict";
 	var Lexer,
-		rules = {},
-		tokenMethods;
+		Token,
+		tokenProto,
+		rules = {};
 	
 	/*
 		Polyfill for Object.assign()
@@ -36,7 +37,7 @@
 		It just has some basic methods that iterate over tokens' children,
 		but which nonetheless lexer customers may find valuable.
 	*/
-	tokenMethods = {
+	tokenProto = {
 		constructor: function() {
 			for (var i = 0; i < arguments.length; i++) {
 				Object.assign(this, arguments[i]);
@@ -45,9 +46,10 @@
 		/*
 			Create a token and put it in the children array.
 		*/
-		addChild: function addChild(type, matchText, tokenData) {
+		addChild: function addChild(tokenData) {
 			var index = this.lastChildEnd(),
-				childToken;
+				childToken,
+				matchText = tokenData.match;
 			
 			/*
 				This accepts both regexp match arrays, and strings.
@@ -64,14 +66,13 @@
 			*/
 			childToken = new this.constructor(
 				{
-					type:      type,
 					start:     index,
 					end:       matchText && index + matchText.length,
 					text:      matchText,
 					children:  []
 				},
 				tokenData);
-			
+				
 			/*
 				If the token has non-empty innerText, lex the innerText
 				and append to its children array.
@@ -84,7 +85,7 @@
 			*/
 			this.children.push(childToken);
 			/*
-				Q: Is this returned value used?
+				Let other things probe and manipulate the childToken; return it.
 			*/
 			return childToken;
 		},
@@ -197,7 +198,8 @@
 			return ret;
 		}
 	};
-	tokenMethods.constructor.prototype = tokenMethods;
+	Token = tokenProto.constructor;
+	Token.prototype = tokenProto;
 	
 	/*
 		The main lexing routine. Given a token with an innerText property and
@@ -211,10 +213,8 @@
 			/*
 				This somewhat simple stack determines what "mode"
 				the lexer is in.
-				
-				Ugh... I need to implement "mode"s as a thing.
 			*/
-			modeStack = [parentToken.type === "macro" ? "macro" : ""],
+			modeStack = [parentToken.innerMode],
 			/*
 				The frontTokenStack's items are "front" tokens, those
 				that pair up with a "back" token to make a token representing
@@ -223,8 +223,6 @@
 			frontTokenStack = [],
 			// Some hoisted temporary vars used in each loop iteration. 
 			i, l, rule, match, slice,
-			// The cached array of rules property keys, for quick iteration.
-			rulesKeys = rules[" keys"],
 			/*
 				index ticks upward as we advance through the src.
 				firstUnmatchedIndex is bumped up whenever a match is made,
@@ -247,17 +245,12 @@
 			slice = src.slice(index);
 			
 			/*
-				Run through all the rules in turn.
-				This of course could stand to be accelerated by
-				e.g. maintaining multiple short lists of rules to iterate
-				through depending on state, or sorting the rules by expected
-				frequency.
-				Speed concerns also forgo the deployment of [].forEach() here.
+				Run through all the rules in the current mode in turn.
+				Note that modeStack[0] means "the current mode in the modeStack".
+				Speed paranoia precludes the deployment of [].forEach() here.
 			*/
-			for (i = 0, l = rulesKeys.length; i < l; i+=1) {
-				
-				rule = rules[rulesKeys[i]];
-
+			for (i = 0, l = modeStack[0].length; i < l; i+=1) {
+				rule = rules[modeStack[0][i]];
 				if (
 						/*
 							Check whether this rule is restricted to only being matched
@@ -284,45 +277,34 @@
 								lastToken && lastToken.type
 							) === -1) &&
 						/*
-							Within macros, only macro rules and expressions can be used.
-						*/
-						(modeStack[0] !== "macro" || rule.isExpression || rule.isMacroOnly) &&
-						/*
-							Outside macros, macro rules can't be used. (But expressions can!)
-						*/
-						(!rule.isMacroOnly || modeStack[0] === "macro") &&
-						/*
 							If an opener is available, check that before running
 							the full match regexp.
 						*/
 						(!rule.opener || rule.opener.exec(slice)) &&
 						/*
-							Finally, run the match. Any earlier would cause the rules excluded
+							Finally, run the pattern. Any earlier would cause the rules excluded
 							by the above checks to be run anyway, and waste time.
 						*/
-						(match = rule.match.exec(slice))) {
+						(match = rule.pattern.exec(slice))) {
 					/*
 						Now that it's matched, let's forge this token.
 						First, create a token out of the interstitial unmatched
 						text between this and the last "proper" token.
 					*/
-					
 					if (firstUnmatchedIndex < index) {
-						parentToken.addChild("text", src.slice(firstUnmatchedIndex, index));
+						parentToken.addChild({
+							type: "text",
+							match: src.slice(firstUnmatchedIndex, index),
+							innerMode: modeStack[0]
+						});
 					}
-					// Now handle the matched rule
-					rule.fn(parentToken, match);
-					
-					/*
-						Re-store the last pushed token, assuming it was changed
-						by the rule.fn call.
-						(BIG ASSUMPTION??)
-					*/
-					lastToken = parentToken.lastChild();
+					// Create a token using the matched rule's fn.
+					lastToken = parentToken.addChild(rule.fn(match));
 					
 					// Increment the index in the src
 					index += lastToken.text.length;
 					firstUnmatchedIndex = index;
+					
 					/*
 						Front tokens are saved, in case a Back token arrives
 						later that can match it.
@@ -331,9 +313,7 @@
 						frontTokenStack.unshift(lastToken);
 						
 						// Ugh, modes
-						if (lastToken.innerMode) {
-							modeStack.unshift(lastToken.innerMode);
-						}
+						modeStack.unshift(lastToken.innerMode);
 					}
 					/*
 						If a Back token arrives, it must match with the most recent Front token.
@@ -344,16 +324,13 @@
 							lastToken.matches && frontTokenStack[0].type in lastToken.matches) {
 							/*
 								Having found a matching pair of tokens, we fold them together.
-							*/
-							foldTokens(parentToken, lastToken, frontTokenStack.shift());
-							/*
-								Note: that function splices the children array in-place!!
+								Note: this function splices the children array in-place!!
 								Fortunately, nothing needs to be adjusted to account for this.
 							*/
+							foldTokens(parentToken, lastToken, frontTokenStack.shift());
+							
 							// I'll explain later.
-							if (lastToken.innerMode === modeStack[0]) {
-								modeStack.shift();
-							}
+							modeStack.shift();
 						}
 						else {
 							/*
@@ -371,7 +348,7 @@
 			/*
 				If no match was available, then advance one character and loop again.
 			*/
-			if (i === rulesKeys.length) {
+			if (i === l) {
 				index += 1;
 			}
 		}
@@ -380,7 +357,11 @@
 			Push the last run of unmatched text before we go.
 		*/
 		if (firstUnmatchedIndex < index) {
-			parentToken.addChild("text", src.slice(firstUnmatchedIndex, index));
+			parentToken.addChild({
+				type: "text",
+				match: src.slice(firstUnmatchedIndex, index),
+				innerMode: modeStack[0]
+			});
 		}
 		/*
 			We're done, except that we may still have unmatched frontTokens.
@@ -407,7 +388,7 @@
 			frontTokenIndex  = parentToken.children.indexOf(frontToken),
 			// Hoisted loop vars
 			i, l, key;
-		
+
 		/*
 			First, find the tokens enclosed by the pair, and make them the
 			Back token's children.
@@ -464,10 +445,12 @@
 			Remove the Front token.
 		*/
 		parentToken.children.splice(frontTokenIndex, 1);
-		
+
 		/*
 			Oh, before I forget: if the new token is a macro, we'll have to lex()
 			its children all again. Sorry ;_;
+			
+			TODO: change to "has a different mode than the currently prevailing mode"
 		*/
 		if (backToken.type === "macro") {
 			backToken.children = [];
@@ -485,13 +468,14 @@
 			token that has all of tokenMethods's methods.
 		*/
 		lex: function(src, initIndex) {
-			var ret = lex(new tokenMethods.constructor({
-				type:            "root",
-				start:   initIndex || 0,
-				end:         src.length,
-				text:               src,
-				innerText:          src,
-				children:            [],
+			var ret = lex(new Token({
+				type:                 "root",
+				start:        initIndex || 0,
+				end:              src.length,
+				text:                    src,
+				innerText:               src,
+				children:                 [],
+				innerMode:   Lexer.startMode,
 			}));
 			/*
 				[Insert console.log(ret) here if you feel like it]

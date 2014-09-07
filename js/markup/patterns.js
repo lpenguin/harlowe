@@ -350,11 +350,9 @@
 				Every block regex that separates paragraphs should be included in
 				the negative lookahead in this regex.
 			*/
-			"((?:[^\\n]+\\n?"
-			+ notBefore(heading, align, hr)
-			+ ")+)\\n?",
-		
-		paragraphOpener: opener("\n"),
+			"((?:[^\\n]+(?:\\n" 
+			+ notBefore(heading, align, hr, bulleted, numbered, "\\n")
+			+ ")?)+)",
 		
 		/*
 			Macro code
