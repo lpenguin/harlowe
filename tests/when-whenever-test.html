@@ -1,0 +1,19 @@
+<!DOCTYPE html><meta charset="utf-8">
+<title>When-Whenever Test</title>
+<link rel="stylesheet" href="../build/harlowe-css.css"/>
+<tw-story></tw-story><script data-main="../js/harlowe.js" src="../node_modules/requirejs/require.js"></script>
+<tw-storydata options="debug" startnode="1">
+<tw-passagedata pid="1" name="1" position="512,384">
+A [red clock]<1|. A [blue clock]<2|.
+A [green clock]<3|.
+A [white clock]<4|.
+(when: time &gt; 1s)[
+(replace: ?1)[blue clock]
+]
+(when: time &gt; 1500ms)[
+(append: ?2)[ and a red clock]
+]
+
+(whenever: time is 0.8s or time is 0.7s or time is 0.6s or time is 0.5s or time is 0.4s)[
+(append: ?3)[...tick]
+]

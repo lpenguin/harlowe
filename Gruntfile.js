@@ -1,7 +1,6 @@
 module.exports = function (grunt) {
 	"use strict";
-	var testFile = 'tests/hooktest.html',
-		testTitle = 'Harlowe Test',
+	var testTitle = 'Harlowe Test',
 		
 		// Source files
 		sourceHTML = ['template.html'],
@@ -98,31 +97,6 @@ module.exports = function (grunt) {
 		},
 
 		replace: {
-			test: {
-				src: sourceHTML,
-				dest: 'dist/index.html',
-				replacements: [{
-					from: '{{STORY_NAME}}',
-					to: testTitle,
-				}, {
-					from: '{{STORY_DATA}}',
-					to: grunt.file.read(testFile)
-				}, {
-					from: '{{CSS}}',
-					to: function () {
-						var ret = '';
-						
-						grunt.file.expand(['./build/*.build.css']).forEach(function(a) {
-							ret += '<link rel="stylesheet" href=".' + a + '"/>';
-						});
-						
-						return ret;
-					}
-				}, {
-					from: '{{HARLOWE}}',
-					to: '<script data-main="../js/harlowe.js" src="../node_modules/requirejs/require.js"></script>'
-				}]
-			},
 			runtime: {
 				requires: ['requirejs', 'cssmin'],
 				src: 'format.js',
@@ -136,18 +110,6 @@ module.exports = function (grunt) {
 						to: function() { return JSON.stringify(e.to()).slice(1, -1); }
 					};
 				}))
-			},
-			build: {
-				requires: ['requirejs', 'cssmin'],
-				src: sourceHTML,
-				dest: 'dist/index.html',
-				replacements: [{
-					from: '{{STORY_NAME}}',
-					to: testTitle
-				}, {
-					from: '{{STORY_DATA}}',
-					to: grunt.file.read(testFile)
-				}].concat(scriptStyleReplacements)
 			}
 		},
 
@@ -185,8 +147,7 @@ module.exports = function (grunt) {
 	grunt.loadNpmTasks('grunt-contrib-cssmin');
 	grunt.loadNpmTasks('grunt-text-replace');
 
-	grunt.registerTask('default', [ 'jshint', 'sass', 'replace:test']);
-	grunt.registerTask('build', [ 'jshint', 'yuidoc', 'requirejs', 'sass', 'cssmin', 'replace:build']);
+	grunt.registerTask('default', [ 'jshint', 'requirejs', 'sass', 'cssmin']);
 	grunt.registerTask('runtime', [ 'requirejs', 'yuidoc', 'sass', 'cssmin', 'replace:runtime']);
 	grunt.registerTask('release', [
 		'clean', 'yuidoc'
