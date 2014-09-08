@@ -183,6 +183,7 @@
 				within paragraphs.
 			*/
 			br:      { fn:        Object },
+			
 			strong:  { fn: textTokenFn() },
 			em:      { fn: textTokenFn() },
 			bold:    { fn: textTokenFn() },
@@ -351,7 +352,7 @@
 		[].push.apply(blockMode,        Object.keys(blockRules));
 		[].push.apply(inlineMode,       Object.keys(inlineRules)
 								.concat(Object.keys(expressionRules)));
-		[].push.apply(macroMode,        Object.keys(inlineRules)
+		[].push.apply(macroMode,        Object.keys(macroRules)
 								.concat(Object.keys(expressionRules)));
 		/*
 			"Flat Mode" is something of a kludge - a combination of block and inline,

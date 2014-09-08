@@ -7,14 +7,6 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 	*/
 	
 	/*
-		This one-line functions returns HTML code for Twine's 
-		macro error messages.
-	*/
-	function errorElement(message) {
-		return "<tw-error class='error'>" + message + "</tw-error>";
-	}
-	
-	/*
 		Operation.runMacro() in TwineScript passes its arguments as a thunk.
 		See that page for the formal explanation. These two functions, eager and deferred,
 		convert regular Javascript functions to accept a such a thunk as its sole argument.
@@ -32,7 +24,7 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 				error = Utils.containsError(args);
 
 			if (error) {
-				return errorElement(error);
+				return error;
 			}
 			return fn.apply(0, args);
 		};
@@ -62,7 +54,7 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 					error = Utils.containsError(args);
 				
 				if (error) {
-					return errorElement(error);
+					return error;
 				}
 				return fn.apply(0, args);
 			};
@@ -235,7 +227,7 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 					Test for the existence of the named passage in the story.
 				*/
 				if (!Story.passageNamed(name)) {
-					return errorElement('Can\'t display passage "' + name + '"');
+					return new ReferenceError('Can\'t display passage "' + name + '" because it doesn\'t exist');
 				}
 				
 				/*
@@ -245,7 +237,7 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 				if (section.stack.reduce(function(count,e) {
 					return count + ((e.display && e.display.indexOf(name) >-1) || 0);
 				},0) >= 25) {
-					return errorElement('Display loop: ' + name + ' is displaying itself 25+ times.');
+					return new RangeError('Display loop: ' + name + ' is displaying itself 25+ times.');
 				}
 				
 				/*
@@ -260,7 +252,7 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 				*/
 				return (Story.passageNamed(name).html());
 			} catch (e) {
-				return errorElement(e.message);
+				return e;
 			}
 		});
 	

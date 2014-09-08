@@ -121,9 +121,10 @@ function($, Utils, Selectors, Renderer, TwineScript, Story, State, HookUtils, Ho
 				*/
 			}
 		}
+		console.log(result instanceof Error);
 		// Having run that, print any error that resulted.
 		if (result instanceof Error) {
-			expr.addClass('error').text(result.message);
+			expr.replaceWith("<tw-error class='error' title='" + expr.attr('title') + "'>" + result.message + "</tw-error>");
 		}
 		else if (HookSet.isPrototypeOf(result)) {
 			this.renderInto(result.text(), expr);

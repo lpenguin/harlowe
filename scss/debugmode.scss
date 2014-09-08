@@ -1,7 +1,28 @@
 
 /*** Debug mode ***/
 .debug-mode {
+	@mixin tiny-annotation() {
+		font-size: 0.8rem;
+		vertical-align: top;
+	}
+	tw-expression[type=hookref] {
+		background-color: hsla(220, 10%, 50%, 0.15);
+	
+		/* Show the IDs of hooks */
+		&::after {
+			@include tiny-annotation();
+			content: "?" attr(name)
+		}
+	}
+	tw-expression[type=variable] {
+		background-color: hsla(30, 10%, 50%, 0.15);
 
+		/* Show the IDs of hooks */
+		&::after {
+			@include tiny-annotation();
+			content: "$" attr(name)
+		}
+	}
 	tw-expression[type=macro] {
 		display:inline-block;
 		
@@ -52,7 +73,7 @@
 	}
 
 	/* Colours for other things */
-	tw-hook  {
+	tw-hook {
 		background-color: hsla(220,100%,50%,0.1) !important;
 		
 		/*
@@ -65,8 +86,7 @@
 				content: "["
 			}
 			/* Show the IDs of hooks */
-			&::after
-			{
+			&::after {
 				content: "]<" attr(name) "|"
 			}
 		}
@@ -75,7 +95,7 @@
 		background-color: hsla(40,100%,50%,0.1) !important;
 	}
 	tw-align {
-		&[style*="text-align: center"]{
+		&[style*="text-align: center"] {
 			background: linear-gradient(to right, hsla(14,100%,87%,0) 0%, hsla(14,100%,87%,0.25) 50%, hsla(14,100%,87%,0) 100%);
 		}
 		&[style*="text-align: left"] {
@@ -94,14 +114,12 @@
 		-webkit-animation: enchantment 0.5s infinite;
 		border: 1px solid;
 	}
-
-
+	
 	/* Show destinations of links */
 	tw-link::after,	 tw-broken-link::after
 	{
-		font-size: 0.8rem;
+		@include tiny-annotation();
 		content: attr(passage-name);
-		vertical-align: top;
 	}
 }
 

@@ -29,14 +29,62 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 		var Operation;
 		
 		/*
+			Some TwineScript objects can, in fact, be coerced to string.
+			HookRefs, for instance, coerce to the string value of their first
+			matching hook.
+			
+			This returns the resulting string, or false if it couldn't be performed.
+		*/
+		function coerceToString(fn, left, right) {
+			if (typeof left  === "string" && "TwineScript_ToString" in right) {
+				return fn(left, right.TwineScript_ToString());
+			}
+			/*
+				We can't really replace this case with a second call to
+				canCoerceToString, passing (fn, right, left), because fn
+				may not be symmetric.
+			*/
+			if (typeof right  === "string" && "TwineScript_ToString" in left) {
+				return fn(left.TwineScript_ToString(), right);
+			}
+			return false;
+		}
+		
+		/*
+			Some TwineScript objects have an ObjectName method which supplies a name
+			string to the error message facilities.
+		*/
+		function objectName(obj) {
+			return (obj && typeof obj === "object" && "TwineScript_ObjectName" in obj)
+				? obj.TwineScript_ObjectName()
+				: obj;
+		}
+		
+		/*
 			Converts a function to type-check its two arguments before
 			execution, and thus suppress JS type coercion.
+			
 		*/
 		function doNotCoerce(fn) {
 			return function(left, right) {
 				if (typeof left !== typeof right) {
-					return new TypeError(left + " isn't the same type of data as " + right);
+					/*
+						Attempt to coerce to string using TwineScript specific
+						methods, and return an error if it fails.
+					*/
+					return coerceToString(fn, left, right)
+						/*
+							TwineScript errors are handled by TwineScript, not JS,
+							so don't throw this error, please.
+						*/
+						|| new TypeError(
+							objectName(left)
+							+ " isn't the same type of data as "
+							+ objectName(right));
 				}
+				/*
+					This part allows errors to propagate up the TwineScript stack.
+				*/
 				else if (Utils.containsError([left, right])) {
 					return left;
 				}
@@ -160,14 +208,24 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 	}
 	
 	/*
+		This mixin function takes a plain function that is assumed to be a thunk,
+		and attaches some thunk methods and properties to it.
+	*/
+	function makeThunk(fn) {
+		return Object.assign(fn, {
+			thunk: true
+		});
+	}
+	
+	/*
 		A helper function for compile(). This takes some compiled
 		Javascript values in string form, and joins them into a compiled
 		Javascript thunk function.
 	*/
-	function thunk(/* variadic */) {
-		return 'function argsThunk(){return ['
+	function thunkJS(/* variadic */) {
+		return 'makeThunk(function argsThunk(){return ['
 			+ Array.from(arguments).join()
-			+ ']}';
+			+ ']})';
 	}
 	
 	/**
@@ -293,7 +351,7 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 				possible by just transpiling the macro instance into a JS function call.
 			*/
 			midString = 'Operation.runMacro("'
-				+ tokens[i].name + '", ' + thunk(
+				+ tokens[i].name + '", ' + thunkJS(
 					/*
 						The first argument to macros must be the current section,
 						so as to give the macros' functions access to data

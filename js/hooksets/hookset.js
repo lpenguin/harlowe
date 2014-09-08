@@ -68,6 +68,26 @@ define(['hookutils', 'jquery'],function(HookUtils, $) {
 		},
 		
 		/**
+			TwineScript_ToString is a function that TwineScript uses to
+			determine if an object can be implicitly coerced to string.
+			Since HookSets may appear in TwineScript code (via the HookSet
+			expression), AND it's expected that you can add strings to it,
+			this method is called upon.
+			
+			@method TwineScript_ToString
+		*/
+		TwineScript_ToString: function() {
+			return this.text();
+		},
+		
+		/**
+			TwineScript_ObjectName is used for error messages.
+		*/
+		TwineScript_ObjectName: function() {
+			return this.selector + " (a hook reference)";
+		},
+		
+		/**
 			Creates a new HookSet. It has a selector and a section
 			which determine what hooks to select, and from where.
 			

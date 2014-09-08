@@ -1,34 +1,26 @@
 
 /*** Main formatting ***/
 
-html
-{
+html {
 	font: 100% Georgia, serif;
 	background-color: #fcfcfc;
 	color: #000;
 	margin: 0;
-}
-
-html.sans-serif
-{
-	font: 100% Verdana, serif;
-}
-
-html.serif
-{
-	font: 100% Georgia, serif;
-}
-
-html.white
-{
-	background-color: #fcfcfc;
-	color: #000;
-}
-
-html.black
-{
-	background-color: #000;
-	color: #fcfcfc;
+	
+	&.sans-serif {
+		font: 100% Verdana, serif;
+	}
+	&.serif {
+		font: 100% Georgia, serif;
+	}
+	&.white {
+		background-color: #fcfcfc;
+		color: #000;
+	}
+	&.black {
+		background-color: #000;
+		color: #fcfcfc;
+	}
 }
 
 h1
@@ -192,16 +184,16 @@ tw-broken-link
 	cursor: not-allowed;
 }
 
-tw-error.error, tw-error.warning
+tw-error
 {
-	background-color: hsla(312, 72%, 55%, 0.4);
 	border-radius: 0.2em;
 	padding: 0.2em;
 	font-size: 1rem;
 	cursor: help;
-}
-
-tw-error.warning
-{
-	background-color: hsla(30, 72%, 55%, 0.4);
+	&.error {
+		background-color: hsla(312, 72%, 55%, 0.4);
+	}
+	&.warning {
+		background-color: hsla(30, 72%, 55%, 0.4);
+	}
 }
