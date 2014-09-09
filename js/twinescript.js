@@ -36,7 +36,9 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 			This returns the resulting string, or false if it couldn't be performed.
 		*/
 		function coerceToString(fn, left, right) {
-			if (typeof left  === "string" && "TwineScript_ToString" in right) {
+			if (    typeof left  === "string" &&
+					typeof right === "object" &&
+					"TwineScript_ToString" in right) {
 				return fn(left, right.TwineScript_ToString());
 			}
 			/*
@@ -44,7 +46,9 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 				canCoerceToString, passing (fn, right, left), because fn
 				may not be symmetric.
 			*/
-			if (typeof right  === "string" && "TwineScript_ToString" in left) {
+			if (    typeof right === "string" &&
+					typeof left  === "object" &&
+					"TwineScript_ToString" in left) {
 				return fn(left.TwineScript_ToString(), right);
 			}
 			return false;
@@ -174,7 +178,29 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 				fn = Macros.get(name.toLowerCase());
 				
 				return fn(thunk);
-			}
+			},
+			
+			/*
+				This micro-class takes a plain function that is assumed to be a thunk,
+				and attaches some thunk methods and properties to it.
+			*/
+			makeThunk: function(fn) {
+				return Object.assign(fn, {
+					thunk: true,
+				});
+			},
+			
+			makeAssignmentRequest: function(left, right) {
+				// Using Object.create(null) here for no particular reason.
+				return Object.assign(Object.create(null), {
+					assignmentRequest: true,
+					object:            left[0],
+					propertyChain:     [left[1]],
+					value:             right,
+					TwineScript_ObjectName:
+						"an assignment operation",
+				});
+			},
 		};
 		return Object.freeze(Operation);
 	}
@@ -208,47 +234,79 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 	}
 	
 	/*
-		This mixin function takes a plain function that is assumed to be a thunk,
-		and attaches some thunk methods and properties to it.
-	*/
-	function makeThunk(fn) {
-		return Object.assign(fn, {
-			thunk: true
-		});
-	}
-	
-	/*
 		A helper function for compile(). This takes some compiled
 		Javascript values in string form, and joins them into a compiled
 		Javascript thunk function.
 	*/
-	function thunkJS(/* variadic */) {
-		return 'makeThunk(function argsThunk(){return ['
+	function compileThunk(/* variadic */) {
+		return 'Operation.makeThunk(function(){return ['
 			+ Array.from(arguments).join()
 			+ ']})';
 	}
 	
 	/**
-		This takes an array from TwineMarkup, rooted at a macro,
-		and returns raw Javascript code for the macro's execution.
+		This takes a single TwineMarkup token being used in an assignmentRequest, 
+		and returns a tuple that contains an object reference, and a property name or chain.
+		
+		Currently, when given multiple tokens, it simply glibly drills down
+	*/
+	function compileLValue(token) {
+		if (token.type === "identifier") {
+			/*
+				I don't think this is correct...
+			*/
+			return "[Identifiers, '" + token.text + "' ";
+		}
+		if (token.type === "hookRef") {
+			/*
+				Assignments to hookRefs assign text to all of their matching hooks.
+				
+				TwineScript_Assignee is a setter accessor used as a TwineScript
+				assignment interface.
+			*/
+			return "[section.selectHook('?" + token.name + "'), 'TwineScript_Assignee']";
+		}
+		else if (token.type === "variable") {
+			/*
+				We're escaping the token.name string using JSON.stringify...
+				Note that the output is enclosed in " marks, so these must
+				not be included in the concatenated string.
+			*/
+			return "[State.variables, " + JSON.stringify(token.name) + "]";
+		}
+		return "";
+	}
+	
+	function compileAssignmentRequest(left, right) {
+		return 'Operation.makeAssignmentRequest('
+			+ left + ","
+			+ right
+			+")";
+	}
+	
+	/**
+		This takes an array from TwineMarkup, rooted at an expression,
+		and returns raw Javascript code for the expression's execution.
 		
 		@method compile
 		@param {Array} tokens The tokens array.
+		@param {Boolean} lvalue Whether the returned expression should be an lvalue.
 		@return {String} String of Javascript code.
 	*/
-	function compile(tokens) {
+	function compile(tokens, lvalue) {
 		var i, left, right, type,
 			/*
 				Hoisted temp variables
 			*/
 			compiledLeft, token,
 			/*
-				Setting values to either of these two variables
-				determines the code to emit: for midString, a plain
-				JS infix operation between left and right; for operation, an
-				Operation method call with left and right as arguments.
+				Setting values to either of these variables
+				determines the code to emit: 
+				- for midString, a plain JS infix operation between left and right; 
+				- for operation, an Operation method call with left and right as arguments.
+				- for assignment... 
 			*/
-			midString, operation,
+			midString, operation, assignment,
 			/*
 				Some operators, like >, don't work when the other side is absent,
 				even when people expect them to. e.g. $var > 3 and < 5 (which is
@@ -268,7 +326,10 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 		*/
 		if (tokens.length === 1) {
 			token = tokens[0];
-			if (token.type === "identifier") {
+			if (lvalue) {
+				return compileLValue(token);
+			}
+			else if (token.type === "identifier") {
 				return " Identifiers." + token.text + " ";
 			}
 			else if (token.type === "hookRef") {
@@ -317,10 +378,19 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 			midString = ",";
 		}
 		else if ((i = indexOfType(tokens, "to")) >-1) {
-			midString = "=";
+			assignment = "to";
+			left = compile(tokens.slice (0,  i), "lvalue");
 		}
 		else if ((i = indexOfType(tokens, "augmentedAssign")) >-1) {
-			midString = tokens[i].type;
+			assignment = tokens[i].operator;
+			left = compile(tokens.slice (0,  i), "lvalue");
+			/*
+				This line converts the "b" in "a += b" into "a + b", thus partially 
+				de-sugaring the augmented assignment.
+				
+				Note that the left tokens must be compiled again, as a non-lvalue this time.
+			*/
+			right = (compile(tokens.slice (0,  i)) + assignment + compile(tokens.splice(i + 1)));
 		}
 		else if ((i = indexOfType(tokens, "and", "or")) >-1) {
 			midString =
@@ -351,7 +421,7 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 				possible by just transpiling the macro instance into a JS function call.
 			*/
 			midString = 'Operation.runMacro("'
-				+ tokens[i].name + '", ' + thunkJS(
+				+ tokens[i].name + '", ' + compileThunk(
 					/*
 						The first argument to macros must be the current section,
 						so as to give the macros' functions access to data
@@ -369,7 +439,7 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 				) + ')';
 		}
 		else if ((i = indexOfType(tokens, "grouping")) >-1) {
-			midString = "(" + compile(tokens[i].children) + ")";
+			midString = "(" + compile(tokens[i].children, lvalue) + ")";
 		}
 		
 		/*
@@ -382,7 +452,7 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 				values for left and right, but usually they will just be
 				the tokens to the left and right of the matched one.
 			*/
-			left  = left  || (compile(tokens.slice (0,  i))).trim();
+			left  = left  || (compile(tokens.slice (0,  i), lvalue)).trim();
 			right = right || (compile(tokens.splice(i + 1))).trim();
 			/*
 				The compiler should implicitly insert the "it" keyword when the 
@@ -393,6 +463,9 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 			}
 			if (midString) {
 				return left + midString + right;
+			}
+			else if (assignment) {
+				return compileAssignmentRequest(left, right);
 			}
 			else if (operation) {
 				return " Operation." + operation + "(" + left + "," + right + ") ";
@@ -405,7 +478,7 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 			return (token.value || token.text) + "";
 		}
 		else {
-			return tokens.reduce(function(a, token) { return a + compile(token); }, "");
+			return tokens.reduce(function(a, token) { return a + compile(token, lvalue); }, "");
 		}
 		return "";
 	}

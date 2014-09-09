@@ -147,15 +147,36 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 	
 	addValue
 		/*
-			set(), run(): set Twine variables.
+			set(): set Twine variables.
 			Evaluates to nothing.
 		*/
-		/*
-			TODO: At present, all of the work in this macro is done
-			within JavaScript's = operator in the act of evaluating the
-			expression. Hmm.
-		*/
-		(["set", "run"], function set() {
+		("set", function set(_, ar) {
+			var obj, property;
+			/*
+				Reject the arguments if they're not an assignment
+				request.
+			*/
+			if (!ar.assignmentRequest) {
+				return new SyntaxError("This isn't how you use the 'set' macro.");
+			}
+			obj = ar.object;
+			if (!Array.isArray(ar.propertyChain)) {
+				Utils.impossible("MacroLib.set", "The assignmentRequest's property chain was "
+					+ typeof ar.propertyChain + " instead of an array");
+			}
+			/*
+				Get to the farthest object in the chain, by advancing through all
+				but the last part of the chain (which must be withheld and used
+				for the assignment operation.
+			*/
+			obj = ar.propertyChain.slice(0, -1).reduce(function(obj, f) {
+				return obj[f];
+			}, obj);
+			/*
+				Now, perform the operation.
+			*/
+			property = ar.propertyChain.slice(-1)[0];
+			obj[property] = ar.value;
 			return "";
 		})
 
@@ -163,7 +184,7 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 			print(), text(): convert the expression to text.
 			Evaluates to a text string.
 		*/
-		(["print", "string"], function print(_, expr) {
+		(["print", "text"], function print(_, expr) {
 			return expr+"";
 		})
 		

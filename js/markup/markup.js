@@ -334,6 +334,13 @@
 						};
 					},
 				},
+				augmentedAssign: {
+					fn: function(match) {
+						return {
+							operator: match[1],
+						};
+					},
+				},
 			},
 			["string", "boolean", "identifier", "is", "to", "and", "or", "not", "isNot", "comma",
 			"add", "subtract", "multiply", "divide", "modulo", "lt", "lte", "gt", "gte",

@@ -342,7 +342,7 @@
 		simpleLinkOpener: opener("[["),
 		
 		macroFront: macro.opener + macro.name,
-		groupingFront: "\\(",
+		groupingFront: "\\(" + notBefore(macro.name),
 		groupingBack:  "\\)",
 		
 		paragraph:
@@ -409,7 +409,7 @@
 		*/
 		
 		is:        wb + caseInsensitive("is") + notBefore(" not", " in") + wb,
-		to:        wb + either(caseInsensitive("to"), "=") + wb,
+
 		and:       wb + either(caseInsensitive("and"), "&&") + wb,
 		or:        wb + either(caseInsensitive("or"), "\\|\\|") + wb,
 		not:       wb + either(caseInsensitive("not"), "!") + wb,
@@ -423,12 +423,16 @@
 		isIn:      wb + caseInsensitive("is in") + wb,
 		contains:  wb + caseInsensitive("contains") + wb,
 
-		add:       "\\+",
-		subtract:  "\\-",
-		multiply:  "\\*",
-		divide:    "\\\/",
-		modulo:    "%",
+		add:       "\\+"  + notBefore("="),
+		subtract:  "\\-"  + notBefore("="),
+		multiply:  "\\*"  + notBefore("="),
+		divide:    "\\\/" + notBefore("="),
+		modulo:    "%"    + notBefore("="),
 		comma:     ",",
+
+		to:        either(wb + caseInsensitive("to") + wb, "="),
+		
+		augmentedAssign: "(\\+|\\-|\\*|\\/|%)\\=",
 	};
 	
 	if(typeof module === 'object') {

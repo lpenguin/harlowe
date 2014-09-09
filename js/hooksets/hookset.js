@@ -88,6 +88,15 @@ define(['hookutils', 'jquery'],function(HookUtils, $) {
 		},
 		
 		/**
+			TwineScript_Assignee is used when this object is an lvalue
+			in an AssignmentRequest.
+		*/
+		get TwineScript_Assignee() {},
+		set TwineScript_Assignee(value) {
+			return jQueryCall.call(this, "text", value);
+		},
+		
+		/**
 			Creates a new HookSet. It has a selector and a section
 			which determine what hooks to select, and from where.
 			

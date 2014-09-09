@@ -121,7 +121,6 @@ function($, Utils, Selectors, Renderer, TwineScript, Story, State, HookUtils, Ho
 				*/
 			}
 		}
-		console.log(result instanceof Error);
 		// Having run that, print any error that resulted.
 		if (result instanceof Error) {
 			expr.replaceWith("<tw-error class='error' title='" + expr.attr('title') + "'>" + result.message + "</tw-error>");
