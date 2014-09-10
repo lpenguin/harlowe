@@ -334,17 +334,24 @@
 						};
 					},
 				},
+				arithmetic: {
+					fn: function(match) {
+						return {
+							operator: match[0],
+						};
+					},
+				},
 				augmentedAssign: {
 					fn: function(match) {
 						return {
-							operator: match[1],
+							// This selects just the first character, like the + of +=.
+							operator: match[0][0],
 						};
 					},
 				},
 			},
 			["string", "boolean", "identifier", "is", "to", "and", "or", "not", "isNot", "comma",
-			"add", "subtract", "multiply", "divide", "modulo", "lt", "lte", "gt", "gte",
-			"contains", "isIn"].reduce(function(a, e) {
+			"lt", "lte", "gt", "gte", "contains", "isIn"].reduce(function(a, e) {
 				a[e] = { fn: Object };
 				return a;
 			},{})

@@ -423,16 +423,11 @@
 		isIn:      wb + caseInsensitive("is in") + wb,
 		contains:  wb + caseInsensitive("contains") + wb,
 
-		add:       "\\+"  + notBefore("="),
-		subtract:  "\\-"  + notBefore("="),
-		multiply:  "\\*"  + notBefore("="),
-		divide:    "\\\/" + notBefore("="),
-		modulo:    "%"    + notBefore("="),
-		comma:     ",",
+		arithmetic: either("\\+", "\\-", "\\*", "\\\/", "%") + notBefore("="),
+		comma:      ",",
 
 		to:        either(wb + caseInsensitive("to") + wb, "="),
-		
-		augmentedAssign: "(\\+|\\-|\\*|\\/|%)\\=",
+		augmentedAssign: either("\\+", "\\-", "\\*", "\\\/", "%") + "=",
 	};
 	
 	if(typeof module === 'object') {

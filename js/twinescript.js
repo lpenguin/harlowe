@@ -36,7 +36,7 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 			This returns the resulting string, or false if it couldn't be performed.
 		*/
 		function coerceToString(fn, left, right) {
-			if (    typeof left  === "string" &&
+			if     (typeof left  === "string" &&
 					typeof right === "object" &&
 					"TwineScript_ToString" in right) {
 				return fn(left, right.TwineScript_ToString());
@@ -46,7 +46,7 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 				canCoerceToString, passing (fn, right, left), because fn
 				may not be symmetric.
 			*/
-			if (    typeof right === "string" &&
+			if     (typeof right === "string" &&
 					typeof left  === "object" &&
 					"TwineScript_ToString" in left) {
 				return fn(left.TwineScript_ToString(), right);
@@ -59,7 +59,7 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 			string to the error message facilities.
 		*/
 		function objectName(obj) {
-			return (obj && typeof obj === "object" && "TwineScript_ObjectName" in obj)
+			return (obj && (typeof obj === "object" || typeof obj === "function") && "TwineScript_ObjectName" in obj)
 				? obj.TwineScript_ObjectName()
 				: obj;
 		}
@@ -71,6 +71,12 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 		*/
 		function doNotCoerce(fn) {
 			return function(left, right) {
+				var error;
+				// LValues cannot have operations performed on them.
+				// TODO: Except &&, perhaps?
+				if (left && left.lvalue) {
+					return new TypeError("I can't give an expression a new value.");
+				}
 				if (typeof left !== typeof right) {
 					/*
 						Attempt to coerce to string using TwineScript specific
@@ -84,13 +90,14 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 						|| new TypeError(
 							objectName(left)
 							+ " isn't the same type of data as "
-							+ objectName(right));
+							+ objectName(right)
+						);
 				}
 				/*
 					This part allows errors to propagate up the TwineScript stack.
 				*/
-				else if (Utils.containsError([left, right])) {
-					return left;
+				else if ((error = Utils.containsError([left, right]))) {
+					return error;
 				}
 				return fn(left, right);
 			};
@@ -140,11 +147,11 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 		
 		Operation = {
 			
-			add:      doNotCoerce(function(l, r) { return l + r; }),
-			subtract: doNotCoerce(function(l, r) { return l - r; }),
-			multiply: doNotCoerce(function(l, r) { return l * r; }),
-			divide:   doNotCoerce(function(l, r) { return l / r; }),
-			modulo:   doNotCoerce(function(l, r) { return l % r; }),
+			"+":  doNotCoerce(function(l, r) { return l + r; }),
+			"-":  doNotCoerce(function(l, r) { return l - r; }),
+			"*":  doNotCoerce(function(l, r) { return l * r; }),
+			"/":  doNotCoerce(function(l, r) { return l / r; }),
+			"%":  doNotCoerce(function(l, r) { return l % r; }),
 			
 			lt:  comparisonOp(doNotCoerce(function(l,r) { return l <  r; })),
 			gt:  comparisonOp(doNotCoerce(function(l,r) { return l >  r; })),
@@ -181,7 +188,7 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 			},
 			
 			/*
-				This micro-class takes a plain function that is assumed to be a thunk,
+				This takes a plain function that is assumed to be a thunk,
 				and attaches some thunk methods and properties to it.
 			*/
 			makeThunk: function(fn) {
@@ -190,13 +197,45 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 				});
 			},
 			
-			makeAssignmentRequest: function(left, right) {
+			makeLValue: function(object, propertyChain) {
+				/*
+					This allows (set: $red to it + 2)
+				*/
+				Identifiers.it = object[propertyChain];
+				/*
+					TODO: Split the propertyChain into a proper
+					array of properties. This will involve TwineMarkup work.
+				*/
+				return Object.assign(Object.create(null), {
+					lvalue: true,
+					object: object,
+					propertyChain: [propertyChain],
+				});
+			},
+			
+			makeAssignmentRequest: function(lvalue, value) {
+				/*
+					Refuse if the object or value is an error.
+				*/
+				var error = Utils.containsError([lvalue, value]);
+				if (error) {
+					return error;
+				}
+				/*
+					Also refuse if the lvalue is not, actually, an lvalue.
+				*/
+				if (!lvalue || lvalue.lvalue !== true) {
+					return new TypeError(
+						"I can't give "
+						+ objectName(lvalue)
+						+ " a new value.");
+				}
 				// Using Object.create(null) here for no particular reason.
 				return Object.assign(Object.create(null), {
 					assignmentRequest: true,
-					object:            left[0],
-					propertyChain:     [left[1]],
-					value:             right,
+					object:            lvalue.object,
+					propertyChain:     lvalue.propertyChain,
+					value:             value,
 					TwineScript_ObjectName:
 						"an assignment operation",
 				});
@@ -255,7 +294,7 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 			/*
 				I don't think this is correct...
 			*/
-			return "[Identifiers, '" + token.text + "' ";
+			return "Operation.makeLValue(Identifiers, '" + token.text + "' )";
 		}
 		if (token.type === "hookRef") {
 			/*
@@ -264,7 +303,7 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 				TwineScript_Assignee is a setter accessor used as a TwineScript
 				assignment interface.
 			*/
-			return "[section.selectHook('?" + token.name + "'), 'TwineScript_Assignee']";
+			return "Operation.makeLValue(section.selectHook('?" + token.name + "'), 'TwineScript_Assignee')";
 		}
 		else if (token.type === "variable") {
 			/*
@@ -272,13 +311,17 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 				Note that the output is enclosed in " marks, so these must
 				not be included in the concatenated string.
 			*/
-			return "[State.variables, " + JSON.stringify(token.name) + "]";
+			return "Operation.makeLValue(State.variables, " + JSON.stringify(token.name) + ")";
 		}
 		return "";
 	}
 	
+	/*
+		This helper function for compile() emits code for a makeAssignmentRequest call.
+		Placing it here is a bit clearer than being cloistered deep in compile().
+	*/
 	function compileAssignmentRequest(left, right) {
-		return 'Operation.makeAssignmentRequest('
+		return "Operation.makeAssignmentRequest("
 			+ left + ","
 			+ right
 			+")";
@@ -344,7 +387,7 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 				return " section.selectHook('?" + token.name + "') ";
 			}
 			else if (token.type === "variable") {
-				return " State.variables." + token.name + " ";
+				return " State.variables." + token.name;
 			}
 		}
 		
@@ -385,12 +428,17 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 			assignment = tokens[i].operator;
 			left = compile(tokens.slice (0,  i), "lvalue");
 			/*
-				This line converts the "b" in "a += b" into "a + b", thus partially 
-				de-sugaring the augmented assignment.
+				This line converts the "b" in "a += b" into "a + b" (for instance),
+				thus partially de-sugaring the augmented assignment.
 				
 				Note that the left tokens must be compiled again, as a non-lvalue this time.
+				
+				Note also that this assumes the token's assignment property corresponds to
+				a binary-arity Operation method name.
 			*/
-			right = (compile(tokens.slice (0,  i)) + assignment + compile(tokens.splice(i + 1)));
+			right = "Operation['" + assignment + "']("
+				+ (compile(tokens.slice (0,  i)) + ","
+				+  compile(tokens.splice(i + 1))) + ")";
 		}
 		else if ((i = indexOfType(tokens, "and", "or")) >-1) {
 			midString =
@@ -404,8 +452,8 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 			implicitLeftIt = true;
 			operation = tokens[i].type;
 		}
-		else if ((i = indexOfType(tokens, "add", "subtract", "multiply", "divide", "modulo")) >-1) {
-			operation = tokens[i].type;
+		else if ((i = indexOfType(tokens, "arithmetic")) >-1) {
+			operation = tokens[i].operator;
 		}
 		else if ((i = indexOfType(tokens, "not")) >-1) {
 			midString = "!";
@@ -468,7 +516,8 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 				return compileAssignmentRequest(left, right);
 			}
 			else if (operation) {
-				return " Operation." + operation + "(" + left + "," + right + ") ";
+				// Note that this assumes no operation value will contain a ' symbol.
+				return " Operation['" + operation + "'](" + left + "," + right + ") ";
 			}
 		}
 		/*

@@ -82,7 +82,7 @@ define(['story', 'utils', 'lzstring'], function(Story, Utils, LZString) {
 
 		/**
 			Get the current passage ID.
-			Used by <<set>> and other state-altering macros.
+			Used as a common argument to Engine.showPassage()
 			
 			@property {String} passage
 			@for State

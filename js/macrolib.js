@@ -136,8 +136,11 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 		or something. (Relying on a function's inner name for anything other than metadata is,
 		I feel, overly ad-hoc.) 
 	*/
-	function changerFn(fn) {
+	function changerFn(fn, name) {
 		fn.changer = true;
+		fn.TwineScript_ObjectName = function() {
+			return "a ("  +name + ":) command";
+		};
 		return fn;
 	}
 	
@@ -212,7 +215,7 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 			Evaluates to a boolean.
 		*/
 		("unless", function unless(section, expr) {
-			return !(section.stack[0].lastIf = !!expr);
+			return !!(section.stack[0].lastIf = !expr);
 		})
 		
 		/*
@@ -285,21 +288,21 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 	addChanger
 		// transition()
 		(["transition", "t8n"], function transition(_, name, time) {
-			return changerFn(function(d) {
+			return changerFn(function transition(d) {
 				d.transition = name;
 				d.transitionTime = time;
-			});
+			}, "transition");
 		})
 
 		// nobr()
 		// Remove line breaks from the hook.
 		// Manual line breaks can be inserted with <br>.
 		("nobr", function nobr() {
-			return changerFn(function(_, d) {
+			return changerFn(function nobr(_, d) {
 				// To prevent keywords from being created by concatenating lines,
 				// replace the line breaks with a zero-width space.
 				d.code = d.code.replace(/\n/g, "&zwnj;");
-			});
+			}, "nobr");
 		})
 
 		// style()
@@ -307,14 +310,14 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 		// duration of the current passage only.
 		// contents: raw CSS.
 		("style", function style() {
-			return changerFn(function(_, d) {
+			return changerFn(function style(_, d) {
 				var selector = 'style#macro';
 				if (!$(selector).length) {
 					$(document.head).append($('<style id="macro">'));
 				}
 				$(selector).text(Utils.unescape(d.code));
 				d.code = "";
-			});
+			}, "style");
 		});
 	
 	/*
@@ -374,7 +377,7 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 				}
 				desc.append = e;
 				desc.target = scope;
-			});
+			}, e);
 		});
 	});
 	
@@ -398,7 +401,8 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 		"click("house")[...]", and every instance of "house" in the section becomes
 		a link that does something.
 		
-		The enchantDesc object describes the enchantment. It contains the following:
+		The enchantDesc object is a purely internal structure which describes the
+		enchantment. It contains the following:
 		
 		* {String} event The DOM event that triggers the rendering of this macro's contents.
 		* {String} classList The list of classes to 'enchant' the hook with, to denote that it 
@@ -414,7 +418,7 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 		@param  {Object}  [enchantDesc]  An enchantment description object, or null.
 		@return {Function}               An enchantment macro function.
 	*/
-	function newEnchantmentMacroFn(enchantDesc) {
+	function newEnchantmentMacroFn(enchantDesc, name) {
 		// enchantDesc is a mandatory argument.
 		Utils.assert(enchantDesc);
 		
@@ -640,7 +644,9 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 					Enchant the scope for the first time.
 				*/
 				enchantData.enchantScope();
-			});
+			},
+			// All the way down here, we supply the author-facing debugging name for this macro.
+			name);
 		};
 	}
 	
@@ -682,7 +688,7 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 	//TODO: hover()
 	
 	interactionTypes.forEach(function(e) {
-		addChanger(e.name, newEnchantmentMacroFn(e.enchantDesc));
+		addChanger(e.name, newEnchantmentMacroFn(e.enchantDesc, e.name));
 	});
 
 	
@@ -694,11 +700,9 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 		interactionTypes.forEach(function(interactionType) {
 			var enchantDesc = Object.assign({}, interactionType.enchantDesc, {
 					rerender: revisionType
-				});
-			addChanger(
-				interactionType.name + "-" + revisionType,
-				newEnchantmentMacroFn(enchantDesc)
-			);
+				}),
+				name = interactionType.name + "-" + revisionType;
+			addChanger(name, newEnchantmentMacroFn(enchantDesc, name));
 		});
 	});
 	

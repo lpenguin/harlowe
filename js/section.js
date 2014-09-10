@@ -128,15 +128,17 @@ function($, Utils, Selectors, Renderer, TwineScript, Story, State, HookUtils, Ho
 		else if (HookSet.isPrototypeOf(result)) {
 			this.renderInto(result.text(), expr);
 		}
-		else if (typeof result === "string") {
+		else if (typeof result !== "object"  && typeof result !== "function"
+			&&   typeof result !== "boolean" && result !== null) {
 			/*
 				Transition the resulting Twine code into the expression's element.
 			*/
 			this.renderInto(result + '', expr);
 		}
 		// And finally, the falsy primitive case
-		else if (nextHook && (result === false
-				|| result === null || result === undefined)) {
+		else if   (result === false
+				|| result === null
+				|| result === undefined) {
 			nextHook.removeAttr('code');
 			expr.addClass("false");
 		}

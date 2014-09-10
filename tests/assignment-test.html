@@ -5,9 +5,13 @@
 <tw-storydata options="debug" startnode="1">
 <tw-passagedata pid="1" name="1" position="512,384" data-t8n="instant">
 |hook>[...] (= chairs!)
-(set: $variable to "frogs") $variable (= frogs)
-(set: ($variable) to "air") $variable (= air)
+(set: $wordy to "frogs") $wordy (= frogs)
+(set: ($wordy) to "air") $wordy (= air)
 (set: ?hook to "bees") ?hook (= bees)
+(set: $wordy to it + "strip") $wordy (= airstrip)
+(set: $wordy += "s") $wordy (= airstrips)
 (set: (?hook) to "chairs") ?hook (= chairs)
-(set: $variable += "strip") $variable (= airstrip)
-(set: ?hook += "!") $variable (= chairs!)
+(set: ?hook += "!") ?hook (= chairs!)
+<!--
+
+-->
