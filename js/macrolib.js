@@ -151,7 +151,7 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 	
 	addValue
 		/*
-			set(): set Twine variables.
+			(set:) Set Twine variables.
 			Evaluates to nothing.
 		*/
 		("set", function set(_, ar) {

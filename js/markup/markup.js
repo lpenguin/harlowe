@@ -23,6 +23,7 @@
 			blockRules,
 			inlineRules,
 			expressionRules,
+			variableRules,
 			macroRules,
 			// ..and, this is the union of them.
 			allRules,
@@ -34,15 +35,28 @@
 				A "top-level" mode in which most all text is inside paragraphs.
 				Currently unused, as paragraphs don't really work.
 			*/
-			blockMode  = [],
+			blockMode    = [],
 			/*
 				A mode that features most syntax structures, but excludes
 				block structures like lists and 
 				Also currently unused, but used to define Flat Mode.
 			*/
-			inlineMode = [],
-			flatMode   = [],
-			macroMode  = [];
+			inlineMode   = [],
+			/*
+				The combination of the above two modes, minus paragraphs (which
+				are otherwise the only structures that enable a descent from blockMode
+				to inlineMode.
+			*/
+			flatMode     = [],
+			/*
+				The interior of variables (which comprise identifier references
+				like "$chair", and property references like ".peach").
+			*/
+			variableMode = [],
+			/*
+				The contents of macro tags - expressions and other macros.
+			*/
+			macroMode    = [];
 		
 		/*
 			Creates a function that pushes a token with innerText;
@@ -306,7 +320,23 @@
 				},
 			},
 			hookRef:  { fn: textTokenFn("name") },
-			variable: { fn: textTokenFn("name") },
+			
+			variable: {
+				fn: function(match) {
+					return {
+						innerText: match[0],
+						innerMode: variableMode,
+					};
+				},
+			},
+		});
+		
+		/*
+			The two variable rules.
+		*/
+		variableRules = setupRules(variableMode, {
+			simpleVariable:   { fn: textTokenFn("name") },
+			variableProperty: { fn: textTokenFn("name") },
 		});
 		
 		/*
@@ -366,6 +396,7 @@
 		[].push.apply(blockMode,        Object.keys(blockRules));
 		[].push.apply(inlineMode,       Object.keys(inlineRules)
 								.concat(Object.keys(expressionRules)));
+		[].push.apply(variableMode,     Object.keys(variableRules));
 		[].push.apply(macroMode,        Object.keys(macroRules)
 								.concat(Object.keys(expressionRules)));
 		/*
@@ -378,7 +409,7 @@
 		/*
 			Merge all of the categories together.
 		*/
-		allRules = Object.assign({}, blockRules, inlineRules, expressionRules, macroRules);
+		allRules = Object.assign({}, blockRules, inlineRules, variableRules, expressionRules, macroRules);
 		
 		/*
 			Add the 'pattern' property to each rule

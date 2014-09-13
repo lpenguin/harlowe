@@ -11,7 +11,7 @@
 		/* Show the IDs of hooks */
 		&::after {
 			@include tiny-annotation();
-			content: "?" attr(name)
+			content: attr(name)
 		}
 	}
 	tw-expression[type=variable] {
@@ -20,7 +20,7 @@
 		/* Show the IDs of hooks */
 		&::after {
 			@include tiny-annotation();
-			content: "$" attr(name)
+			content: attr(name)
 		}
 	}
 	tw-expression[type=macro] {

@@ -199,7 +199,7 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 			
 			makeLValue: function(object, propertyChain) {
 				/*
-					This allows (set: $red to it + 2)
+					This allows "it" to be used in e.g. (set: $red to it + 2)
 				*/
 				Identifiers.it = object[propertyChain];
 				/*
@@ -209,7 +209,7 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 				return Object.assign(Object.create(null), {
 					lvalue: true,
 					object: object,
-					propertyChain: [propertyChain],
+					propertyChain: [].concat(propertyChain),
 				});
 			},
 			
@@ -287,9 +287,11 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 		This takes a single TwineMarkup token being used in an assignmentRequest, 
 		and returns a tuple that contains an object reference, and a property name or chain.
 		
-		Currently, when given multiple tokens, it simply glibly drills down
+		Currently, when given multiple tokens, it simply glibly drills down.
 	*/
 	function compileLValue(token) {
+		var propertyNames;
+		
 		if (token.type === "identifier") {
 			/*
 				I don't think this is correct...
@@ -306,12 +308,16 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 			return "Operation.makeLValue(section.selectHook('?" + token.name + "'), 'TwineScript_Assignee')";
 		}
 		else if (token.type === "variable") {
-			/*
-				We're escaping the token.name string using JSON.stringify...
-				Note that the output is enclosed in " marks, so these must
-				not be included in the concatenated string.
-			*/
-			return "Operation.makeLValue(State.variables, " + JSON.stringify(token.name) + ")";
+			propertyNames = token.children.map(function(e){
+				return e.name;
+			});
+			
+			return "Operation.makeLValue(State.variables, "
+				/*
+					Print the propertyNames array literal using JSON.stringify.
+				*/
+				+ JSON.stringify(propertyNames)
+				+ ")";
 		}
 		return "";
 	}
@@ -351,8 +357,8 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 			*/
 			midString, operation, assignment,
 			/*
-				Some operators, like >, don't work when the other side is absent,
-				even when people expect them to. e.g. $var > 3 and < 5 (which is
+				Some operators, like >, don't automatically work when the other side
+				is absent, even when people expect them to. e.g. $var > 3 and < 5 (which is
 				legal in Inform 6). To cope, I implicitly convert a blank left side to
 				"it", which is the nearest previous left-hand operand.
 			*/
@@ -387,7 +393,10 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 				return " section.selectHook('?" + token.name + "') ";
 			}
 			else if (token.type === "variable") {
-				return " State.variables." + token.name;
+				return compile(token.children);
+			}
+			else if (token.type === "root") {
+				return compile(token.children);
 			}
 		}
 		
@@ -396,6 +405,7 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 			order of precedence:
 			
 			grouping ()
+			property []
 			macro
 			not
 			multiply
@@ -457,6 +467,15 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 		}
 		else if ((i = indexOfType(tokens, "not")) >-1) {
 			midString = "!";
+		}
+		else if ((i = indexOfType(tokens, "variableProperty")) >-1) {
+			/*
+				JSON.stringify() is used to both escape the name string and wrap it in quotes.
+			*/
+			midString = "[" + JSON.stringify(tokens[i].name) + "]";
+		}
+		else if ((i = indexOfType(tokens, "simpleVariable")) >-1) {
+			midString = " State.variables." + tokens[i].name;
 		}
 		else if ((i = indexOfType(tokens, "macro")) >-1) {
 			/*
@@ -584,9 +603,11 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 						Array.from(arguments).join('')
 					);
 				} catch(e) {
-					Utils.impossible("TwineScript.environ().eval",
-						"Javascript error:\n\t" + Array.from(arguments).join('')
-						+ "\n" + e.message);
+					/*
+						This returns the Javascript error object verbatim
+						to the author, as a last-ditch and probably
+						unhelpful error message.
+					*/
 					return e;
 				}
 			}

@@ -229,7 +229,7 @@ define(['utils', 'twinemarkup', 'twinescript'], function(Utils, TwineMarkup, Twi
 					case "hookRef":
 					case "variable": 
 					case "macro": {
-						out += '<tw-expression type="' + token.type + '" name="' + token.name + '"'
+						out += '<tw-expression type="' + token.type + '" name="' + token.text + '"'
 							// Debug mode: show the macro name as a title.
 							+ (Renderer.options.debug ? ' title="' + escape(token.text) + '"' : '')
 							+ ' js="' + escape(TwineScript.compile(token)) + '">'
@@ -253,7 +253,7 @@ define(['utils', 'twinemarkup', 'twinescript'], function(Utils, TwineMarkup, Twi
 	/*
 	DEBUG
 	*/
-	window.REPL = function(a) { var r = TwineScript.compile(TwineMarkup.lex("print("+a+")"));console.log(r);return TwineScript.environ({}).eval(r);};
+	window.REPL = function(a) { var r = TwineScript.compile(TwineMarkup.lex("(print:"+a+")"));console.log(r);return TwineScript.environ({}).eval(r);};
 	window.LEX = function(a) { var r = TwineMarkup.lex(a); return (r.length===1 ? r[0] : r); };
 	
 	return Object.freeze(Renderer);

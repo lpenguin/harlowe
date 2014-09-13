@@ -186,6 +186,10 @@
 			legacyText:        "(" + notChars("]|") + "?)"
 		},
 		
+		variable = "\\$(" + anyLetter.replace("\\-", "") + "+)",
+		
+		variableProperty = "\\.(" + anyLetter.replace("\\-", "") + "+)",
+		
 		macro = {
 			opener:            "\\(",
 			name:              "(" + anyLetter.replace("]","\\/]") + anyLetter + "*):",
@@ -358,16 +362,17 @@
 			Macro code
 		*/
 		
-		variable:
-			"\\$((?:" + anyLetter.replace("\\-", "\\.") + "*"
-			// Disallow -, but allow . property indexing
-			+ anyLetter.replace("\\w\\-", "a-zA-Z\\.") + "+"
-			+ anyLetter.replace("\\-", "\\.") + "*"
-			// Array indexing syntax
-			+ "|\\[[^\\]]+\\])+)",
+		simpleVariable:
+			variable,
 		
 		variableOpener:
 			opener("$"),
+		
+		variableProperty:
+			variableProperty,
+		
+		variable:
+			"(" + variable + "(?:" + variableProperty + ")*)",
 		
 		hookRef: "\\?(" + anyLetter + "+)\\b",
 		
@@ -409,7 +414,7 @@
 		*/
 		
 		is:        wb + caseInsensitive("is") + notBefore(" not", " in") + wb,
-
+		
 		and:       wb + either(caseInsensitive("and"), "&&") + wb,
 		or:        wb + either(caseInsensitive("or"), "\\|\\|") + wb,
 		not:       wb + either(caseInsensitive("not"), "!") + wb,
