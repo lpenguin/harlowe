@@ -74,7 +74,7 @@ function($, Utils, Selectors, Renderer, TwineScript, Story, State, HookUtils, Ho
 			/*
 				Execute the expression.
 			*/
-			result = this.eval(Utils.unescape(expr.popAttr('js')));
+			result = this.eval(Utils.unescape(expr.popAttr('js') || ''));
 		
 		/*
 			The result can be any of these values, and
