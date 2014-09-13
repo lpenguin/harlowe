@@ -73,11 +73,8 @@ function($, Utils, Selectors, Renderer, TwineScript, Story, State, HookUtils, Ho
 		var nextHook = expr.next("tw-hook"),
 			/*
 				Execute the expression.
-				Ideally I'd use $.fn.popAttr() here, if I made a jQuery plugin of it.
 			*/
-			result = this.eval(Utils.unescape(expr.attr('js')));
-		
-		expr.removeAttr('js');
+			result = this.eval(Utils.unescape(expr.popAttr('js')));
 		
 		/*
 			The result can be any of these values, and
@@ -97,34 +94,50 @@ function($, Utils, Selectors, Renderer, TwineScript, Story, State, HookUtils, Ho
 				Run it, passing the nearest hook and innerInstance.
 		*/
 		if (typeof result === "function") {
-			if (nextHook.length) {
-				if (result.sensor) {
-					runSensorFunction.call(this,result, nextHook);
-				}
-				else if (result.changer) {
-					this.renderInto(nextHook.attr('code'), nextHook, result);
-					/*
-						Prevent the hook from executing normally if it wasn't
-						actually the eventual target of the changer function.
-						
-						(I really want $.fn.popAttr() here, too...)
-					*/
-					nextHook.removeAttr('code');
+			if (result.sensor) {
+				/*
+					Sensors, unlike changers, require a hook to be present.
+				*/
+				if (!nextHook.length) {
+					result = new TypeError(
+						"The (" + result.macroName + ":) macro must be attached to a hook."
+					);
 				}
 				else {
-					result(nextHook, this);
+					runSensorFunction.call(this,result, nextHook);
 				}
 			}
+			else if (result.changer) {
+				this.renderInto(
+					/*
+						The use of popAttr prevents the hook from executing normally
+						if it wasn't actually the eventual target of the changer function.
+					*/
+					nextHook.popAttr('code'),
+					/*
+						Don't forget: nextHook may actually be empty.
+						This is acceptable - the result changer could alter the
+						target appropriately.
+					*/
+					nextHook,
+					result
+				);
+			}
 			else {
-				/*
-					TODO: An author-facing error message.
-				*/
+				result(nextHook, this);
 			}
 		}
-		// Having run that, print any error that resulted.
+		/*
+			Print any error that resulted.
+			This must of course run after the sensor/changer function was run,
+			in case that provided an error.
+		*/
 		if (result instanceof Error) {
 			expr.replaceWith("<tw-error class='error' title='" + expr.attr('title') + "'>" + result.message + "</tw-error>");
 		}
+		/*
+			If the expression was a hookRef, clone the text of the first matched hook.
+		*/
 		else if (HookSet.isPrototypeOf(result)) {
 			this.renderInto(result.text(), expr);
 		}
@@ -164,20 +177,17 @@ function($, Utils, Selectors, Renderer, TwineScript, Story, State, HookUtils, Ho
 		/*
 			Remember the code of the target hook
 			that will be run if the sensor triggers.
+			
+			(We also remove (pop) the code from the hook
+			so that doExpressions() doesn't render it.)
 		*/
-		var code = target.attr('code'),
-			recursiveSensing,
+		var code = target.popAttr('code') || "",
 			/*
 				This stores the current state of the target
 				hook - whether its code is rendered, or removed.
 			*/
-			on;
-		
-		/*
-			Having stored the code, we remove it from the hook
-			so that doExpressions() doesn't render it.
-		*/
-		target.removeAttr('code');
+			on,
+			recursiveSensing;
 		
 		/*
 			This closure runs every frame from now on, until 
@@ -186,7 +196,7 @@ function($, Utils, Selectors, Renderer, TwineScript, Story, State, HookUtils, Ho
 			Notice that as this is bound, giving it a name isn't
 			all that useful.
 		*/
-		recursiveSensing = function() {
+		recursiveSensing = (function() {
 			/*
 				Check if the sensor has triggered.
 			*/
@@ -217,7 +227,7 @@ function($, Utils, Selectors, Renderer, TwineScript, Story, State, HookUtils, Ho
 			if (!result.done || !this.inDOM()) {
 				requestAnimationFrame(recursiveSensing);
 			}
-		}.bind(this);
+		}.bind(this));
 		
 		recursiveSensing();
 	}
@@ -242,8 +252,11 @@ function($, Utils, Selectors, Renderer, TwineScript, Story, State, HookUtils, Ho
 				You may notice that the design of this and renderInto() means
 				that, when a HookSet has multiple targets, each target has
 				its own distinct rendering of the same TwineMarkup.
+				
+				(Note: code may be '' if the descriptor's append method is "remove".
+				In which case, let it be an empty set.)
 			*/
-			dom = $(Renderer.exec(desc.code));
+			dom = (desc.code && $(Renderer.exec(desc.code))) || $();
 		
 		/*
 			First, check to see that the given jQuery method in the descriptor
@@ -288,7 +301,10 @@ function($, Utils, Selectors, Renderer, TwineScript, Story, State, HookUtils, Ho
 			section is disconnected from Utils.storyElement, and if they initially
 			run without being connected, they will immediately deactivate.
 		*/
-		target[desc.append](dom);
+		target[desc.append](
+			// As mentioned above, dom may be empty if desc.append is "remove".
+			dom.length ? dom : undefined
+		);
 		
 		/*
 			Before executing the expressions, put a fresh object on the
@@ -312,7 +328,7 @@ function($, Utils, Selectors, Renderer, TwineScript, Story, State, HookUtils, Ho
 			+ Selectors.internalLink).each(function doExpressions () {
 			var expr = $(this);
 			
-			switch(this.tagName.toLowerCase()) {
+			switch(expr.tag()) {
 				case Selectors.hook:
 				{
 					if (expr.attr('code')) {
@@ -486,7 +502,7 @@ function($, Utils, Selectors, Renderer, TwineScript, Story, State, HookUtils, Ho
 				construct a fully-conforming one themselves.
 			*/
 			var desc = {
-				code:             source || target.attr('code'),
+				code:             source || target.attr('code') || '',
 				transition:       "dissolve",
 				target:           target,
 				append:           "append"
@@ -528,7 +544,7 @@ function($, Utils, Selectors, Renderer, TwineScript, Story, State, HookUtils, Ho
 				If there's code but no target, something
 				incorrect has transpired.
 			*/
-			if (!desc.code) {
+			if (!desc.code && desc.append !== "remove") {
 				return;
 			}
 			else if (!desc.target) {

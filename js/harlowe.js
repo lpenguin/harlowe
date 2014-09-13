@@ -10,6 +10,7 @@ require.config({
 		selectors: './utils/selectors',
 		regexstrings: './utils/regexstrings',
 		customelements: './utils/customelements',
+		jqueryplugins: './utils/jqueryplugins',
 		// Markup
 		twinemarkup: './markup/markup',
 		lexer: './markup/lexer',

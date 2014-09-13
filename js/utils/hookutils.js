@@ -32,7 +32,7 @@ define(['jquery', 'utils', 'selectors'], function($, Utils, Selectors) {
 
 	*/
 	function _elementGetChar(elem) {
-		return (elem.tagName === "br" ? "\n" : elem.getAttribute("value"));
+		return (elem.tagName.toLowerCase() === "br" ? "\n" : elem.getAttribute("value"));
 	}
 	
 	/**

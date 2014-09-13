@@ -91,6 +91,7 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 	*/
 	function addSensor(name, fn) {
 		fn.sensor = true;
+		fn.macroName = name;
 		Macros.add(name,
 			"sensor",
 			deferred(fn)
@@ -371,12 +372,11 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 	revisionTypes.forEach(function(e) {
 		addChanger(e, function(section, scope) {
 			return changerFn(function(desc) {
+				desc.target = scope;
 				if (e === "remove") {
 					desc.code = "";
-					return;
 				}
 				desc.append = e;
-				desc.target = scope;
 			}, e);
 		});
 	});
