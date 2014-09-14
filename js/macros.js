@@ -23,6 +23,13 @@ function($, Story, Utils) {
 			@return {Boolean} Whether the name is registered.
 		*/
 		has: function (e) {
+			/*
+				Macro names are case-insensitive, AND dash-insensitive.
+				(There is a slight risk that eliminating dashes may cause
+				certain two-word names to collide with one-word names,
+				but... nah, it couldn't possibly happen.)
+			*/
+			e = e.toLowerCase().replace(/-|_/g, "");
 			return macroRegistry.hasOwnProperty(e);
 		},
 		
@@ -34,9 +41,13 @@ function($, Story, Utils) {
 			@return Macro definition object, or false
 		*/
 		get: function (e) {
+			/*
+				Macro names are case-insensitive, AND dash-insensitive.
+			*/
+			e = e.toLowerCase().replace(/-|_/g, "");
 			return (macroRegistry.hasOwnProperty(e) && macroRegistry[e]);
 		},
-
+		
 		/**
 			Register a new macro.
 			If an array of names is given, an identical macro is created under each name.
@@ -73,7 +84,7 @@ function($, Story, Utils) {
 		getType: function(name) {
 			var m = Macros.get(name);
 			return (m ? m.type : "");
-		}
+		},
 	};
 	
 	Utils.log("Macros module ready!");

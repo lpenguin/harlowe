@@ -24,6 +24,10 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 		The operation object is a list of operations which TwineScript proxies
 		for JavaScript. Most of these have implicit type coercion or silent errors 
 		which must be dealt with.
+		
+		@class Operation
+		@private
+		@for TwineScript
 	*/
 	function operations(Identifiers) {
 		var Operation;
@@ -34,6 +38,7 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 			matching hook.
 			
 			This returns the resulting string, or false if it couldn't be performed.
+			@return {String|Boolean}
 		*/
 		function coerceToString(fn, left, right) {
 			if     (typeof left  === "string" &&
@@ -57,24 +62,26 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 		/*
 			Some TwineScript objects have an ObjectName method which supplies a name
 			string to the error message facilities.
+			@return {String}
 		*/
 		function objectName(obj) {
 			return (obj && (typeof obj === "object" || typeof obj === "function") && "TwineScript_ObjectName" in obj)
-				? obj.TwineScript_ObjectName()
+				? obj.TwineScript_ObjectName
 				: Array.isArray(obj) ? "an array"
-				: obj;
+				: obj + "";
 		}
 		
 		/*
 			This filter checks if a property name is valid for the user to set, and returns
 			an error instead if it is not.
 			Currently, property names beginning with '__' or 'TwineScript' are not valid.
+			@return {String|Error}
 		*/
 		function validatePropertyName(prop) {
 			if(prop.startsWith("__")) {
 				return new Error("Only I can use data keys beginning with '__'.");
 			}
-			if(prop.startsWith("TwineScript")) {
+			if(prop.startsWith("TwineScript") && prop !== "TwineScript_Assignee") {
 				return new Error("Only I can use data keys beginning with 'TwineScript'.");
 			}
 			return prop;
@@ -83,7 +90,7 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 		/*
 			Converts a function to type-check its two arguments before
 			execution, and thus suppress JS type coercion.
-			
+			@return {Function}
 		*/
 		function doNotCoerce(fn) {
 			return function(left, right) {
@@ -121,6 +128,7 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 		
 		/*
 			Converts a function to set Identifiers.it after it is done.
+			@return {Function}
 		*/
 		function comparisonOp(fn) {
 			return function(left, right) {
@@ -133,6 +141,7 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 			As the base function for Operation.contains,
 			this implements the "x contains y" and "y is in x" keywords.
 			This is placed outside so that Operation.isIn can call it.
+			@return {String}
 		*/
 		function contains(container,obj) {
 			var i, keys;
@@ -187,6 +196,8 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 				A wrapper around Javascript's [[get]], which
 				throws an error if a property is absent rather than
 				returning undefined.
+				@method get
+				@return {Error|Anything}
 			*/
 			get: function(obj, prop) {
 				if (Utils.containsError(obj)) {
@@ -224,9 +235,9 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 				
 				name = name.toLowerCase();
 				if (!Macros.has(name)) {
-					return new ReferenceError("Unknown macro: " + name);
+					return new ReferenceError("I can't run the macro '" + name + "' because it doesn't exist.");
 				}
-				fn = Macros.get(name.toLowerCase());
+				fn = Macros.get(name);
 				
 				return fn(thunk);
 			},
@@ -234,6 +245,8 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 			/*
 				This takes a plain function that is assumed to be a thunk,
 				and attaches some thunk methods and properties to it.
+				
+				Currently, it just attaches an identifying "thunk" property.
 			*/
 			makeThunk: function(fn) {
 				return Object.assign(fn, {
@@ -241,7 +254,18 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 				});
 			},
 			
+			/*
+				To provide (set:) with a proper, live reference to the object
+				to set to (as well as preventing the non-setter macros from performing
+				assignments), two kinds of structures are needed: AssignmentRequests,
+				which comprise a request to change a variable, and LValues, which represent
+				the variable within the AssignmentRequest. This here creates the LValue,
+				by first checking that the author's chosen property chain is valid,
+				and then returning an object that pairs the chain with the variable.
+			*/
 			makeLValue: function(object, propertyChain) {
+				// Convert a single passed string to an array of itself.
+				propertyChain = [].concat(propertyChain);
 				// Forbid access to internal properties
 				propertyChain = propertyChain.map(validatePropertyName);
 				/*
@@ -255,10 +279,16 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 					lvalue: true,
 					object: object,
 					// Coerce the propertyChain to an array.
-					propertyChain: [].concat(propertyChain),
+					propertyChain: propertyChain,
+					TwineScript_ObjectName:
+						"the left half of an assignment operation",
 				});
 			},
 			
+			/*
+				And here is the function for creating AssignmentRequests. It
+				takes an LValue and adds to it a value to assign to it.
+			*/
 			makeAssignmentRequest: function(lvalue, value) {
 				/*
 					Refuse if the object or value is an error.

@@ -139,9 +139,7 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 	*/
 	function changerFn(fn, name) {
 		fn.changer = true;
-		fn.TwineScript_ObjectName = function() {
-			return "a ("  +name + ":) command";
-		};
+		fn.TwineScript_ObjectName = "a ("  +name + ":) command";
 		return fn;
 	}
 	
@@ -258,7 +256,7 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 					Test for the existence of the named passage in the story.
 				*/
 				if (!Story.passageNamed(name)) {
-					return new ReferenceError('Can\'t display passage "' + name + '" because it doesn\'t exist');
+					return new ReferenceError('I can\'t display passage "' + name + '" because it doesn\'t exist');
 				}
 				
 				/*
@@ -657,7 +655,7 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 	}
 	
 	var interactionTypes = [
-		// click()
+		// (click:)
 		// Reveal the enclosed hook only when the scope is clicked.
 		{
 			name: "click",
@@ -668,7 +666,7 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 				classList: "link enchantment-link"
 			}
 		},
-		// mouseover()
+		// (mouseover:)
 		// Perform the enclosed macros when the scope is moused over.
 		{
 			name: "mouseover",
@@ -679,7 +677,7 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 				classList: "enchantment-mouseover"
 			}
 		},
-		// mouseout()
+		// (mouseout:)
 		// Perform the enclosed macros when the scope is moused away.
 		{
 			name: "mouseout", 
@@ -691,7 +689,7 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 			}
 		}];
 	
-	//TODO: hover()
+	//TODO: (hover:)
 	
 	interactionTypes.forEach(function(e) {
 		addChanger(e.name, newEnchantmentMacroFn(e.enchantDesc, e.name));
@@ -730,7 +728,14 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 			return result;
 		};
 	}
-		
+	
+	/*
+		Choose one argument, up to 16. Can be used as such: (either: "pantry", "larder", "cupboard" )
+	*/
+	function either() {
+		return arguments[~~(Math.random() * arguments.length)];
+	}
+	
 	({
 		/*
 			Wrappers for Date
@@ -791,10 +796,13 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 			Basic randomness
 		*/
 
-		// A random integer function
-		// 1 argument: random int from 0 to a inclusive
-		// 2 arguments: random int from a to b inclusive (order irrelevant)
-		random: function (a, b) {
+		/*
+			A random integer function
+			1 argument: random int from 0 to a inclusive
+			2 arguments: random int from a to b inclusive (order irrelevant)
+			Identical to Twine 1's version.
+		*/
+		random: function random(a, b) {
 			var from, to;
 			if (!b) {
 				from = 0;
@@ -806,13 +814,20 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 			to += 1;
 			return~~ ((Math.random() * (to - from))) + from;
 		},
-
-		// Choose one argument, up to 16. Can be used as such: <<display either( "pantry", "larder", "cupboard" )>>
-		either: function either() {
+		
+		either: either,
+		
+		/*
+			Similar to (either:), but flattens arrays to retrieve values from them.
+			(either:) originally implicitly did this in Twine 1, but now it's 
+			more explicit, to enable better-sounding expressions,
+			like (print: (any-of: $bag))
+		*/
+		"any-of": function any_of() {
 			if (Array.isArray(arguments[0]) && arguments.length === 1) {
-				return either.apply(this,arguments[0]);
+				return either.apply(this, arguments[0]);
 			}
-			return arguments[~~(Math.random() * arguments.length)];
+			return any_of(either.apply(this, arguments));
 		},
 
 		/*
@@ -833,7 +848,7 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 		},
 		
 		// Return the name of the previous visited passage.
-		previous: function () {
+		previous: function previous() {
 			return Story.getPassageName(State.previousPassage() || Story.startPassage);
 		},
 

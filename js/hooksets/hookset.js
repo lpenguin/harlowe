@@ -83,7 +83,7 @@ define(['hookutils', 'jquery'],function(HookUtils, $) {
 		/**
 			TwineScript_ObjectName is used for error messages.
 		*/
-		TwineScript_ObjectName: function() {
+		get TwineScript_ObjectName() {
 			return this.selector + " (a hook reference)";
 		},
 		
