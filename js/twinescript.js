@@ -395,6 +395,16 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 			else if (token.type === "variable") {
 				return compile(token.children);
 			}
+			else if (token.type === "string") {
+				return JSON.stringify(
+					// Trim off the enclosing " or ' or ` characters.
+					token.text.slice(1,-1)
+				);
+			}
+			/*
+				Root tokens are usually never passed in, but let's
+				harmlessly handle them anyway.
+			*/
 			else if (token.type === "root") {
 				return compile(token.children);
 			}

@@ -208,12 +208,11 @@
 			// The empty strings
 			emptyDouble: '""(?!")',
 			emptySingle: "''(?!')",
+			emptyBacktick: "``(?!`)",
 			// Javascript strings
-			single: "'" + either(notChars("\\'"),"\\\\.") + "+'",
-			double: '"' + either(notChars('\\"'),'\\\\.') + '+"',
-			// Python's triple-quoted strings.
-			tripleSingle: "'''" + either(notChars("\\'"),'\\\\.',"''(?!')") + "+'''",
-			tripleDouble: '"""' + either(notChars('\\"'),'\\\\.','""(?!")') + '+"""',
+			single:   "'" + either(notChars("\\'"),"\\\\.") + "+'",
+			double:   '"' + either(notChars('\\"'),'\\\\.') + '+"',
+			backtick: '`' + either(notChars('\\`'),'\\\\.') + '+`',
 		},
 		
 		// This includes NaN, but I wonder if it should.
@@ -399,15 +398,15 @@
 		// when an unclosed ' or " is in the source text.
 		// Better make it a recursive regex or something?
 		string: 
-			"(" + either(
+			either(
 				// Single strings					
-				//string.tripleSingle,
-				string.tripleDouble,
-				//string.emptySingle,
+				string.emptySingle,
 				string.emptyDouble,
-				//string.single,
-				string.double
-			) + ")",
+				string.emptyBacktick,
+				string.single,
+				string.double,
+				string.backtick
+			),
 		
 		/*
 			Macro operators
