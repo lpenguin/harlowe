@@ -61,7 +61,23 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 		function objectName(obj) {
 			return (obj && (typeof obj === "object" || typeof obj === "function") && "TwineScript_ObjectName" in obj)
 				? obj.TwineScript_ObjectName()
+				: Array.isArray(obj) ? "an array"
 				: obj;
+		}
+		
+		/*
+			This filter checks if a property name is valid for the user to set, and returns
+			an error instead if it is not.
+			Currently, property names beginning with '__' or 'TwineScript' are not valid.
+		*/
+		function validatePropertyName(prop) {
+			if(prop.startsWith("__")) {
+				return new Error("Only I can use data keys beginning with '__'.");
+			}
+			if(prop.startsWith("TwineScript")) {
+				return new Error("Only I can use data keys beginning with 'TwineScript'.");
+			}
+			return prop;
 		}
 		
 		/*
@@ -96,7 +112,7 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 				/*
 					This part allows errors to propagate up the TwineScript stack.
 				*/
-				else if ((error = Utils.containsError([left, right]))) {
+				else if ((error = Utils.containsError(left, right))) {
 					return error;
 				}
 				return fn(left, right);
@@ -166,6 +182,34 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 			isIn: comparisonOp(function(l,r) {
 				return contains(r,l);
 			}),
+
+			/*
+				A wrapper around Javascript's [[get]], which
+				throws an error if a property is absent rather than
+				returning undefined.
+			*/
+			get: function(obj, prop) {
+				if (Utils.containsError(obj)) {
+					return obj;
+				}
+				/*
+					Check that the property is valid, and replace it with
+					an error if it is not valid.
+				*/
+				prop = validatePropertyName(prop);
+				if (Utils.containsError(prop)) {
+					return prop;
+				}
+				/*
+					An additional error condition exists for get(): if the property
+					doesn't exist, don't just return undefined.
+				*/
+				if (!Object.hasOwnProperty.call(obj, prop)) {
+					return new Error("I can't find a '" + prop + "' data key in "
+						+ objectName(obj));
+				}
+				return obj[prop];
+			},
 			
 			/*
 				Runs a macro.
@@ -198,17 +242,19 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 			},
 			
 			makeLValue: function(object, propertyChain) {
+				// Forbid access to internal properties
+				propertyChain = propertyChain.map(validatePropertyName);
 				/*
-					This allows "it" to be used in e.g. (set: $red to it + 2)
+					This allows "it" to be used in e.g. (set: $red.x to it + 2)
 				*/
-				Identifiers.it = object[propertyChain];
-				/*
-					TODO: Split the propertyChain into a proper
-					array of properties. This will involve TwineMarkup work.
-				*/
+				Identifiers.it = propertyChain.reduce(function(object,e) {
+					return object[e];
+				}, object);
+				
 				return Object.assign(Object.create(null), {
 					lvalue: true,
 					object: object,
+					// Coerce the propertyChain to an array.
 					propertyChain: [].concat(propertyChain),
 				});
 			},
@@ -217,7 +263,7 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 				/*
 					Refuse if the object or value is an error.
 				*/
-				var error = Utils.containsError([lvalue, value]);
+				var error = Utils.containsError(lvalue, value);
 				if (error) {
 					return error;
 				}
@@ -415,7 +461,7 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 			order of precedence:
 			
 			grouping ()
-			property []
+			property . []
 			macro
 			not
 			multiply
@@ -480,9 +526,16 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 		}
 		else if ((i = indexOfType(tokens, "variableProperty")) >-1) {
 			/*
-				JSON.stringify() is used to both escape the name string and wrap it in quotes.
+				This is somewhat tricky - we need to manually wrap the left side
+				inside the Operation.get call, while leaving the right side as is.
 			*/
-			midString = "[" + JSON.stringify(tokens[i].name) + "]";
+			left = "Operation.get(" + compile(tokens.slice (0,  i))
+				/*
+					JSON.stringify() is used to both escape the name
+					string and wrap it in quotes.
+				*/
+				+ "," + JSON.stringify(tokens[i].name) + ")";
+			midString = " ";
 		}
 		else if ((i = indexOfType(tokens, "simpleVariable")) >-1) {
 			midString = " State.variables." + tokens[i].name;

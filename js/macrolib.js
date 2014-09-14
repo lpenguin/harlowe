@@ -155,7 +155,7 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 			Evaluates to nothing.
 		*/
 		("set", function set(_, ar) {
-			var obj, property;
+			var obj, property, error;
 			/*
 				Reject the arguments if they're not an assignment
 				request.
@@ -167,6 +167,12 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 			if (!Array.isArray(ar.propertyChain)) {
 				Utils.impossible("MacroLib.set", "The assignmentRequest's property chain was "
 					+ typeof ar.propertyChain + " instead of an array");
+			}
+			/*
+				Print the first error to result, if one exists.
+			*/
+			if ((error = Utils.containsError(ar.propertyChain))) {
+				return error;
 			}
 			/*
 				Get to the farthest object in the chain, by advancing through all

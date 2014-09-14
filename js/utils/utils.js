@@ -100,9 +100,10 @@ define(['jquery', 'twinemarkup', 'selectors', 'customelements', 'jqueryplugins']
 		containsError: function(/*variadic*/) {
 			return Array.from(arguments).reduce(
 				function(last, e) {
-					return e instanceof Error ? e
+					return last ? last
+						: e instanceof Error ? e
 						: Array.isArray(e) ? Utils.containsError.apply(this, e)
-						: last;
+						: false;
 					}, false);
 		},
 		

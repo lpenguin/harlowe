@@ -1,0 +1,13 @@
+<!DOCTYPE html><meta charset="utf-8">
+<title>Object Property Test</title>
+<link rel="stylesheet" href="../build/harlowe-css.css"/>
+<tw-story></tw-story><script data-main="../js/harlowe.js" src="../node_modules/requirejs/require.js"></script>
+<tw-storydata options="debug" startnode="1">
+<tw-passagedata pid="1" name="1" position="512,384" data-t8n="instant">
+(set: $a to [])
+(print: $a.1) (= error)
+(print: $a.$e) (= error)
+(print: $a.__proto__) (= error)
+(set: $a.1 to 2)
+(print: $a.1) (= 2)
+(set: $a.__proto__ to 1) (= error)
