@@ -305,9 +305,9 @@
 			macroFront: {
 				fn: function(match) {
 					return {
-						name: match[1]
+						name: match[1],
 					};
-				}
+				},
 			},
 			groupingBack: {
 				fn: function() {
@@ -343,6 +343,29 @@
 			Now, macro code rules.
 		*/
 		macroRules = setupRules(macroMode, Object.assign({
+				/*
+					The macroName must be a separate token, because it could
+					be a method call (which in itself contains a variable token
+					and 0+ property tokens).
+				*/
+				macroName: {
+					// This must be the first token inside a macro.
+					canFollow: [null],
+					fn: function(match) {
+						/*
+							If match[2] is present, then it matched a variable.
+							Thus, it's a method call.
+						*/
+						if (match[2]) {
+							return {
+								isMethodCall:   true,
+								innerText:      match[2],
+							};
+						}
+						return { isMethodCall:   false };
+					},
+				},
+				
 				groupingFront: { fn: Object },
 				
 				cssTime: {
@@ -380,8 +403,8 @@
 					},
 				},
 			},
-			["string", "boolean", "identifier", "is", "to", "and", "or", "not", "isNot", "comma",
-			"lt", "lte", "gt", "gte", "contains", "isIn"].reduce(function(a, e) {
+			["string", "boolean", "identifier", "is", "to", "and", "or", "not", "isNot",
+			"comma", "lt", "lte", "gt", "gte", "contains", "isIn"].reduce(function(a, e) {
 				a[e] = { fn: Object };
 				return a;
 			},{})

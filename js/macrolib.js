@@ -824,10 +824,23 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 			like (print: (any-of: $bag))
 		*/
 		"any-of": function any_of() {
-			if (Array.isArray(arguments[0]) && arguments.length === 1) {
-				return either.apply(this, arguments[0]);
+			if(arguments.length === 1) {
+				if (Array.isArray(arguments[0])) {
+					return either.apply(this, arguments[0]);
+				}
+				return arguments[0];
 			}
 			return any_of(either.apply(this, arguments));
+		},
+		
+		/*
+			Returns a new copy of the array with a randomly altered order.
+		*/
+		shuffled: function shuffled(val) {
+			if (!Array.isArray(val)) {
+				return new TypeError("(shuffled:) can only shuffle arrays.");
+			}
+			return Array.from(val).sort(function(){ return Math.random() > 0.5; });
 		},
 
 		/*
@@ -880,6 +893,7 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 		pageURL: function () {
 			return window.location.href;
 		},
+		array: Array.of,
 		/*
 			This method takes all of the above and registers them
 			as Twine macros.

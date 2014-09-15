@@ -186,13 +186,15 @@
 			legacyText:        "(" + notChars("]|") + "?)"
 		},
 		
-		variable = "\\$(" + anyLetter.replace("\\-", "") + "+)",
+		simpleVariable = "\\$(" + anyLetter.replace("\\-", "") + "+)",
 		
 		variableProperty = "\\.(" + anyLetter.replace("\\-", "") + "+)",
 		
+		variable = "(" + simpleVariable + "(?:" + variableProperty + ")*)",
+		
 		macro = {
 			opener:            "\\(",
-			name:              "(" + anyLetter.replace("]","\\/]") + anyLetter + "*):",
+			name:              "(" + either(anyLetter.replace("]","\\/]") + anyLetter + "*", variable) + "):",
 			closer:            "\\)"
 		},
 		
@@ -344,7 +346,9 @@
 		
 		simpleLinkOpener: opener("[["),
 		
-		macroFront: macro.opener + macro.name,
+		macroFront: macro.opener + before(macro.name),
+		macroName: macro.name,
+		
 		groupingFront: "\\(" + notBefore(macro.name),
 		groupingBack:  "\\)",
 		
@@ -362,7 +366,7 @@
 		*/
 		
 		simpleVariable:
-			variable,
+			simpleVariable,
 		
 		variableOpener:
 			opener("$"),
@@ -371,7 +375,7 @@
 			variableProperty,
 		
 		variable:
-			"(" + variable + "(?:" + variableProperty + ")*)",
+			variable,
 		
 		hookRef: "\\?(" + anyLetter + "+)\\b",
 		
@@ -413,11 +417,11 @@
 		*/
 		
 		is:        wb + caseInsensitive("is") + notBefore(" not", " in") + wb,
+		isNot:     either(wb + caseInsensitive("is not") + wb, "!="),
 		
-		and:       wb + either(caseInsensitive("and"), "&&") + wb,
-		or:        wb + either(caseInsensitive("or"), "\\|\\|") + wb,
-		not:       wb + either(caseInsensitive("not"), "!") + wb,
-		isNot:     wb + either(caseInsensitive("is not"), "!==") + wb,
+		and:       either(wb + caseInsensitive("and") + wb, "&&"),
+		or:        either(wb + caseInsensitive("or")  + wb, "\\|\\|"),
+		not:       either(wb + caseInsensitive("not") + wb, "!" + notBefore("=")),
 		
 		lt:        "<(?!=)",
 		lte:       "<=",

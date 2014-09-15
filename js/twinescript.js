@@ -200,6 +200,9 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 				@return {Error|Anything}
 			*/
 			get: function(obj, prop) {
+				if (obj === null || obj === undefined) {
+					return new Error("I can't get a property named '" + prop + "' from " + typeof obj + ".");
+				}
 				if (Utils.containsError(obj)) {
 					return obj;
 				}
@@ -232,7 +235,17 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 			*/
 			runMacro: function(name, thunk) {
 				var fn, error;
-				
+				// First and least, the error rejection check.
+				if (Utils.containsError(name)) {
+					return name;
+				}
+				/*
+					If the macro name was actually a variable method, like ($a.pop: 2), then
+					simply run that method and return.
+				*/
+				if (typeof name === "function") {
+					return name(thunk);
+				}
 				name = name.toLowerCase();
 				if (!Macros.has(name)) {
 					return new ReferenceError("I can't run the macro '" + name + "' because it doesn't exist.");
@@ -423,7 +436,7 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 			/*
 				Hoisted temp variables
 			*/
-			compiledLeft, token,
+			macroNameToken, token,
 			/*
 				Setting values to either of these variables
 				determines the code to emit: 
@@ -572,16 +585,32 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 		}
 		else if ((i = indexOfType(tokens, "macro")) >-1) {
 			/*
-				The arguments given to a macro instance must be converted to a thunk.
-				The reason is that "live" macros need to be reliably called again and
-				again, using the same variable bindings in their original invocations.
-				
-				For instance, consider the macro instance "(when: time > 2s)". The "time"
-				variable needs to be re-evaluated every time - something which isn't
-				possible by just transpiling the macro instance into a JS function call.
+				The first child token in a macro is always the method name.
 			*/
-			midString = 'Operation.runMacro("'
-				+ tokens[i].name + '", ' + compileThunk(
+			macroNameToken = tokens[i].children[0];
+			Utils.assert(macroNameToken.type === "macroName");
+			
+			midString = 'Operation.runMacro('
+				/*
+					The macro name, if it constitutes a method call, contains a
+					variable expression representing which function should be called.
+					Operation.runMacro will, if given a function instead of a string
+					identifier, run the function in place of a macro's fn.
+				*/
+				+ (macroNameToken.isMethodCall
+					? compile(macroNameToken.children)
+					: '"' + tokens[i].name + '"'
+				)
+				/*
+					The arguments given to a macro instance must be converted to a thunk.
+					The reason is that "live" macros need to be reliably called again and
+					again, using the same variable bindings in their original invocations.
+					
+					For instance, consider the macro instance "(when: time > 2s)". The "time"
+					variable needs to be re-evaluated every time - something which isn't
+					possible by just transpiling the macro instance into a JS function call.
+				*/
+				+ ', ' + compileThunk(
 					/*
 						The first argument to macros must be the current section,
 						so as to give the macros' functions access to data
@@ -595,7 +624,7 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 						(That, of course, being the comma - (macro: 1,2,3) vs [1,2,3].)
 						This is currently true, but it is nonetheless a fairly bold assumption.
 					*/
-					compile(tokens[i].children)
+					compile(tokens[i].children.slice(1))
 				) + ')';
 		}
 		else if ((i = indexOfType(tokens, "grouping")) >-1) {
@@ -701,6 +730,7 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 						to the author, as a last-ditch and probably
 						unhelpful error message.
 					*/
+					Utils.log(e);
 					return e;
 				}
 			}
