@@ -435,6 +435,7 @@
 		comma:      ",",
 
 		to:        either(wb + caseInsensitive("to") + wb, "="),
+		into:      wb + "into" + wb,
 		augmentedAssign: either("\\+", "\\-", "\\*", "\\\/", "%") + "=",
 	};
 	

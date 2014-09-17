@@ -30,7 +30,13 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 		@for TwineScript
 	*/
 	function operations(Identifiers) {
-		var Operation;
+		var Operation, VarRefProto,
+			/*
+				Used to determine if a property name is an array index.
+				If negative indexing sugar is ever added, this could
+				be replaced with a function.
+			*/
+			numericIndex = /^(?:[1-9]\d*|0)$/;
 		
 		/*
 			Some TwineScript objects can, in fact, be coerced to string.
@@ -95,12 +101,13 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 		function doNotCoerce(fn) {
 			return function(left, right) {
 				var error;
-				// LValues cannot have operations performed on them.
+				// VarRefs cannot have operations performed on them.
 				// TODO: Except &&, perhaps?
-				if (left && left.lvalue) {
+				if (left && left.varref) {
 					return new TypeError("I can't give an expression a new value.");
 				}
-				if (typeof left !== typeof right) {
+				if (typeof left !== typeof right
+				    || Array.isArray(left) !== Array.isArray(right)) {
 					/*
 						Attempt to coerce to string using TwineScript specific
 						methods, and return an error if it fails.
@@ -111,6 +118,7 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 							so don't throw this error, please.
 						*/
 						|| new TypeError(
+							// BUG: This isn't capitalised.
 							objectName(left)
 							+ " isn't the same type of data as "
 							+ objectName(right)
@@ -170,9 +178,63 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 			return Operation.is(container,obj);
 		}
 		
+		/*
+			The prototype object for VarRefs. Currently only has
+			one method on it.
+		*/
+		VarRefProto = Object.freeze({
+			varref: true,
+			TwineScript_ObjectName:
+				"the left half of an assignment operation",
+			
+			/*
+				Get to the farthest object in the chain, by advancing through all
+				but the last part of the chain (which must be withheld and used
+				for the assignment operation.)
+			*/
+			get deepestObject() {
+				return this.propertyChain.slice(0, -1).reduce(function(obj, f) {
+					return obj[f];
+				}, this.object);
+			},
+			
+			/*
+				Shortcut to the final property from the chain.
+			*/
+			get deepestProperty() {
+				return this.propertyChain.slice(-1)[0];
+			},
+			
+			/*
+				These three tiny methods allow macros given this VarRef
+				(such as (set:)) to perform [[Get]]s and [[Set]]s on this VarRef.
+			*/
+			get: function() {
+				return Operation.get(this.deepestObject, this.deepestProperty);
+			},
+			set: function(value) {
+				this.deepestObject[this.deepestProperty] = value;
+			},
+			delete: function() {
+				Operation.delete(this.deepestObject, this.deepestProperty);
+			}
+		});
+		
 		Operation = {
 			
-			"+":  doNotCoerce(function(l, r) { return l + r; }),
+			"+":  doNotCoerce(function(l, r) {
+				/*
+					I'm not a fan of the fact that + is both concatenator and 
+					arithmetic op, but I guess it's close to what people expect.
+					Nevertheless, applying the logic that a string is just as much a
+					collection as an array, I feel I can overload + on arrays to mean
+					"create a new array concatenating the first with the second".
+				*/
+				if (Array.isArray(l)) {
+					return [].concat(l, r);
+				}
+				return l + r;
+			}),
 			"-":  doNotCoerce(function(l, r) { return l - r; }),
 			"*":  doNotCoerce(function(l, r) { return l * r; }),
 			"/":  doNotCoerce(function(l, r) { return l / r; }),
@@ -194,14 +256,20 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 
 			/*
 				A wrapper around Javascript's [[get]], which
-				throws an error if a property is absent rather than
+				returns an error if a property is absent rather than
 				returning undefined.
 				@method get
 				@return {Error|Anything}
 			*/
 			get: function(obj, prop) {
 				if (obj === null || obj === undefined) {
-					return new Error("I can't get a property named '" + prop + "' from " + typeof obj + ".");
+					return new ReferenceError(
+						"I can't get a property named '"
+						+ prop
+						+ "' from "
+						+ typeof obj
+						+ "."
+					);
 				}
 				if (Utils.containsError(obj)) {
 					return obj;
@@ -226,6 +294,31 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 			},
 			
 			/*
+				A wrapper around Javascript's delete operation, which
+				returns an error if the deletion failed, and also removes holes in
+				arrays caused by the deletion.
+			*/
+			delete: function(obj, prop) {
+				/*
+					If it's an array, and the prop is an index,
+					we should remove the item in-place without creating a hole.
+				*/
+				if (Array.isArray(obj) && numericIndex.exec(prop)) {
+					obj.splice(prop, 1);
+					return;
+				}
+				if (!delete obj[prop]) {
+					return new ReferenceError(
+						"I couldn't delete '"
+						+ prop
+						+ "' from "
+						+ objectName(obj)
+						+ "."
+					);
+				}
+			},
+			
+			/*
 				Runs a macro.
 				
 				In TwineScript.compile(), the myriad arguments given to a macro invocation are converted to 2 parameters to runMacro:
@@ -240,8 +333,9 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 					return name;
 				}
 				/*
-					If the macro name was actually a variable method, like ($a.pop: 2), then
+					If the macro name was actually a variable method, then
 					simply run that method and return.
+					NOTE (September 2014): This is unlikely to ever occur.
 				*/
 				if (typeof name === "function") {
 					return name(thunk);
@@ -271,12 +365,12 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 				To provide (set:) with a proper, live reference to the object
 				to set to (as well as preventing the non-setter macros from performing
 				assignments), two kinds of structures are needed: AssignmentRequests,
-				which comprise a request to change a variable, and LValues, which represent
-				the variable within the AssignmentRequest. This here creates the LValue,
+				which comprise a request to change a variable, and VarRef, which represent
+				the variable within the AssignmentRequest. This here creates the VarRef,
 				by first checking that the author's chosen property chain is valid,
 				and then returning an object that pairs the chain with the variable.
 			*/
-			makeLValue: function(object, propertyChain) {
+			makeVarRef: function(object, propertyChain) {
 				// Convert a single passed string to an array of itself.
 				propertyChain = [].concat(propertyChain);
 				// Forbid access to internal properties
@@ -288,43 +382,63 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 					return object[e];
 				}, object);
 				
-				return Object.assign(Object.create(null), {
-					lvalue: true,
+				return Object.assign(Object.create(VarRefProto), {
 					object: object,
 					// Coerce the propertyChain to an array.
 					propertyChain: propertyChain,
-					TwineScript_ObjectName:
-						"the left half of an assignment operation",
 				});
 			},
 			
 			/*
 				And here is the function for creating AssignmentRequests. It
-				takes an LValue and adds to it a value to assign to it.
+				takes an VarRef and does something to it with a value (which
+				could be another VarRef, in case a macro wished to manipulate
+				it somehow).
 			*/
-			makeAssignmentRequest: function(lvalue, value) {
-				/*
-					Refuse if the object or value is an error.
-				*/
-				var error = Utils.containsError(lvalue, value);
+			makeAssignmentRequest: function(dest, src, operator) {
+				var propertyChain,
+					/*
+						Refuse if the object or value is an error.
+					*/
+					error = Utils.containsError(dest, src);
+				
 				if (error) {
+					return error;
+				}			
+				/*
+					Also refuse if the propertyChain contains an error.
+				*/
+				propertyChain = dest.propertyChain;
+				if ((error = Utils.containsError(propertyChain))) {
 					return error;
 				}
 				/*
-					Also refuse if the lvalue is not, actually, an lvalue.
+					Also refuse if the dest is not, actually, a VarRef.
 				*/
-				if (!lvalue || lvalue.lvalue !== true) {
+				if (!dest || dest.varref !== true) {
 					return new TypeError(
 						"I can't give "
-						+ objectName(lvalue)
+						+ objectName(dest)
 						+ " a new value.");
 				}
+				/*
+					Refuse if the dest is an Array and the property chain's
+					first property is not a numeric index.
+				*/
+				if (Array.isArray(dest.object[propertyChain[0]])
+						&& propertyChain[1] && !numericIndex.exec(propertyChain[1])) {
+					return new RangeError(
+						"Arrays can only have number data keys (not '"
+						+ propertyChain[1] + "')."
+					);
+				}
+				
 				// Using Object.create(null) here for no particular reason.
 				return Object.assign(Object.create(null), {
 					assignmentRequest: true,
-					object:            lvalue.object,
-					propertyChain:     lvalue.propertyChain,
-					value:             value,
+					dest:              dest,
+					src:               src,
+					operator:          operator,
 					TwineScript_ObjectName:
 						"an assignment operation",
 				});
@@ -378,14 +492,14 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 		
 		Currently, when given multiple tokens, it simply glibly drills down.
 	*/
-	function compileLValue(token) {
+	function compileVarRef(token) {
 		var propertyNames;
 		
 		if (token.type === "identifier") {
 			/*
 				I don't think this is correct...
 			*/
-			return "Operation.makeLValue(Identifiers, '" + token.text + "' )";
+			return "Operation.makeVarRef(Identifiers, '" + token.text + "' )";
 		}
 		if (token.type === "hookRef") {
 			/*
@@ -394,14 +508,14 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 				TwineScript_Assignee is a setter accessor used as a TwineScript
 				assignment interface.
 			*/
-			return "Operation.makeLValue(section.selectHook('?" + token.name + "'), 'TwineScript_Assignee')";
+			return "Operation.makeVarRef(section.selectHook('?" + token.name + "'), 'TwineScript_Assignee')";
 		}
 		else if (token.type === "variable") {
 			propertyNames = token.children.map(function(e){
 				return e.name;
 			});
 			
-			return "Operation.makeLValue(State.variables, "
+			return "Operation.makeVarRef(State.variables, "
 				/*
 					Print the propertyNames array literal using JSON.stringify.
 				*/
@@ -415,10 +529,11 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 		This helper function for compile() emits code for a makeAssignmentRequest call.
 		Placing it here is a bit clearer than being cloistered deep in compile().
 	*/
-	function compileAssignmentRequest(left, right) {
+	function compileAssignmentRequest(left, right, operator) {
 		return "Operation.makeAssignmentRequest("
 			+ left + ","
-			+ right
+			+ right + ","
+			+ JSON.stringify(operator)
 			+")";
 	}
 	
@@ -428,10 +543,10 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 		
 		@method compile
 		@param {Array} tokens The tokens array.
-		@param {Boolean} lvalue Whether the returned expression should be an lvalue.
+		@param {Boolean} isVarRef Whether the returned expression should be a VarRef.
 		@return {String} String of Javascript code.
 	*/
-	function compile(tokens, lvalue) {
+	function compile(tokens, isVarRef) {
 		var i, left, right, type,
 			/*
 				Hoisted temp variables
@@ -464,8 +579,8 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 		*/
 		if (tokens.length === 1) {
 			token = tokens[0];
-			if (lvalue) {
-				return compileLValue(token);
+			if (isVarRef) {
+				return compileVarRef(token);
 			}
 			else if (token.type === "identifier") {
 				return " Identifiers." + token.text + " ";
@@ -526,21 +641,27 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 			We must check these in reverse, so that the least-precedent
 			is associated last.
 		*/
+		
 		if ((i = indexOfType(tokens, "comma")) >-1) {
 			midString = ",";
 		}
 		else if ((i = indexOfType(tokens, "to")) >-1) {
 			assignment = "to";
-			left = compile(tokens.slice (0,  i), "lvalue");
+			left  = compile(tokens.slice(0,  i), "varRef");
+		}
+		else if ((i = indexOfType(tokens, "into")) >-1) {
+			assignment = "into";
+			right = compile(tokens.slice(0,  i), "varRef");
+			left  = compile(tokens.slice(i + 1), "varRef");
 		}
 		else if ((i = indexOfType(tokens, "augmentedAssign")) >-1) {
 			assignment = tokens[i].operator;
-			left = compile(tokens.slice (0,  i), "lvalue");
+			left  = compile(tokens.slice(0,  i), "varRef");
 			/*
 				This line converts the "b" in "a += b" into "a + b" (for instance),
 				thus partially de-sugaring the augmented assignment.
 				
-				Note that the left tokens must be compiled again, as a non-lvalue this time.
+				Note that the left tokens must be compiled again, as a non-varRef this time.
 				
 				Note also that this assumes the token's assignment property corresponds to
 				a binary-arity Operation method name.
@@ -628,7 +749,7 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 				) + ')';
 		}
 		else if ((i = indexOfType(tokens, "grouping")) >-1) {
-			midString = "(" + compile(tokens[i].children, lvalue) + ")";
+			midString = "(" + compile(tokens[i].children, isVarRef) + ")";
 		}
 		
 		/*
@@ -641,7 +762,7 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 				values for left and right, but usually they will just be
 				the tokens to the left and right of the matched one.
 			*/
-			left  = left  || (compile(tokens.slice (0,  i), lvalue)).trim();
+			left  = left  || (compile(tokens.slice (0,  i), isVarRef)).trim();
 			right = right || (compile(tokens.splice(i + 1))).trim();
 			/*
 				The compiler should implicitly insert the "it" keyword when the 
@@ -654,7 +775,7 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 				return left + midString + right;
 			}
 			else if (assignment) {
-				return compileAssignmentRequest(left, right);
+				return compileAssignmentRequest(left, right, assignment);
 			}
 			else if (operation) {
 				// Note that this assumes no operation value will contain a ' symbol.
@@ -668,7 +789,7 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 			return (token.value || token.text) + "";
 		}
 		else {
-			return tokens.reduce(function(a, token) { return a + compile(token, lvalue); }, "");
+			return tokens.reduce(function(a, token) { return a + compile(token, isVarRef); }, "");
 		}
 		return "";
 	}

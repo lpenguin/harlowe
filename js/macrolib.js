@@ -150,46 +150,79 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 	addValue
 		/*
 			(set:) Set Twine variables.
-			Evaluates to nothing.
+			Evaluates to nothing if no error occurred.
 		*/
 		("set", function set(_, ar) {
-			var obj, property, error;
+			var propertyChain;
 			/*
 				Reject the arguments if they're not an assignment
-				request.
+				request, or if it incorrectly uses the "into" operator
 			*/
-			if (!ar.assignmentRequest) {
+			if (!ar.assignmentRequest || ar.operator === "into") {
 				return new SyntaxError("This isn't how you use the 'set' macro.");
 			}
-			obj = ar.object;
-			if (!Array.isArray(ar.propertyChain)) {
-				Utils.impossible("MacroLib.set", "The assignmentRequest's property chain was "
-					+ typeof ar.propertyChain + " instead of an array");
-			}
-			/*
-				Print the first error to result, if one exists.
-			*/
-			if ((error = Utils.containsError(ar.propertyChain))) {
-				return error;
-			}
-			/*
-				Get to the farthest object in the chain, by advancing through all
-				but the last part of the chain (which must be withheld and used
-				for the assignment operation.
-			*/
-			obj = ar.propertyChain.slice(0, -1).reduce(function(obj, f) {
-				return obj[f];
-			}, obj);
+			propertyChain = ar.dest.propertyChain;
+			
 			/*
 				Now, perform the operation.
 			*/
-			property = ar.propertyChain.slice(-1)[0];
-			obj[property] = ar.value;
+			ar.dest.set(ar.src);
+			return "";
+		})
+		
+		/*
+			(put:) A left-to-right version of (set:) that requires the "into" operator.
+			Evaluates to nothing if no error occured.
+		*/
+		("put", function set(_, ar) {
+			var propertyChain;
+			/*
+				Reject the arguments if they're not an assignment
+				request, or if it doesn't use the "into" operator
+			*/
+			if (!ar.assignmentRequest || ar.operator !== "into") {
+				return new SyntaxError("Please say 'into' when using the (put:) macro.");
+			}
+			propertyChain = ar.dest.propertyChain;
+			
+			/*
+				Now, perform the operation.
+			*/
+			ar.dest.set(ar.src);
+			return "";
+		})
+		
+		/*
+			(move:) A variant of (put:) that deletes the source's binding after
+			performing the operation. Ideally used as an equivalent
+			to Javascript's "x = arr.pop();"
+		*/
+		("move", function move(_, ar) {
+			var get, error;
+			if (!ar.assignmentRequest) {
+				return new SyntaxError("This isn't how you use the 'move' macro.");
+			}
+			if (ar.src && ar.src.varref) {
+				get = ar.src.get();
+				if ((error = Utils.containsError(get))) {
+					return error;
+				}
+				ar.dest.set(get);
+				ar.src.delete();
+			}
+			else {
+				/*
+					Fallback behaviour: when phrased as
+					(move: 2 into $red)
+				*/
+				ar.dest.set(ar.src);
+			}
 			return "";
 		})
 
 		/*
-			print(), text(): convert the expression to text.
+			(print:), (text:): convert the expression to text.
+			This provides explicit coercion to string for TwineScript values.
 			Evaluates to a text string.
 		*/
 		(["print", "text"], function print(_, expr) {
@@ -216,7 +249,7 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 		})
 		
 		/*
-			unless(): the negated form of if().
+			(unless:) the negated form of if().
 			Evaluates to a boolean.
 		*/
 		("unless", function unless(section, expr) {
@@ -224,7 +257,7 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 		})
 		
 		/*
-			elseif(): only true if the previous if() was false,
+			(elseif:) only true if the previous if() was false,
 			and its own expression is true.
 			Evaluates to a boolean.
 		*/
@@ -237,7 +270,7 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 		})
 		
 		/*
-			else(): only true if the previous if() was false.
+			(else:) only true if the previous if() was false.
 			Evaluates to a boolean.
 		*/
 		("else", function _else(section) {
@@ -245,7 +278,7 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 		})
 	
 		/*
-			display(): evaluates to the TwineMarkup source of the passage
+			(display:) evaluates to the TwineMarkup source of the passage
 			with the given name.
 			Evaluates to a string.
 		*/
@@ -818,12 +851,24 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 		either: either,
 		
 		/*
-			Similar to (either:), but flattens arrays to retrieve values from them.
+			Array/Sequence macros
+		*/
+		
+		/*
+			(a:)
+			Used for creating Array literals.
+			TODO: Make it "concat-spread" arrays passed into it??
+		*/
+		a: Array.of,
+		
+		/*
+			(any-of:)
+			Similar to (either:), but flattens arrays to retrieve a random value.
 			(either:) originally implicitly did this in Twine 1, but now it's 
 			more explicit, to enable better-sounding expressions,
 			like (print: (any-of: $bag))
 		*/
-		"any-of": function any_of() {
+		anyof: function any_of() {
 			if(arguments.length === 1) {
 				if (Array.isArray(arguments[0])) {
 					return either.apply(this, arguments[0]);
@@ -831,16 +876,6 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 				return arguments[0];
 			}
 			return any_of(either.apply(this, arguments));
-		},
-		
-		/*
-			Returns a new copy of the array with a randomly altered order.
-		*/
-		shuffled: function shuffled(val) {
-			if (!Array.isArray(val)) {
-				return new TypeError("(shuffled:) can only shuffle arrays.");
-			}
-			return Array.from(val).sort(function(){ return Math.random() > 0.5; });
 		},
 
 		/*
@@ -893,7 +928,7 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 		pageURL: function () {
 			return window.location.href;
 		},
-		array: Array.of,
+		
 		/*
 			This method takes all of the above and registers them
 			as Twine macros.

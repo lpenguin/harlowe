@@ -403,7 +403,7 @@
 					},
 				},
 			},
-			["string", "boolean", "identifier", "is", "to", "and", "or", "not", "isNot",
+			["string", "boolean", "identifier", "is", "to", "into", "and", "or", "not", "isNot",
 			"comma", "lt", "lte", "gt", "gte", "contains", "isIn"].reduce(function(a, e) {
 				a[e] = { fn: Object };
 				return a;
