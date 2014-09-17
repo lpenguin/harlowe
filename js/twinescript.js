@@ -333,15 +333,10 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 					return name;
 				}
 				/*
-					If the macro name was actually a variable method, then
-					simply run that method and return.
-					NOTE (September 2014): This is unlikely to ever occur.
+					If the name is "" or undefined, don't bother
+					checking if the macro exists.
 				*/
-				if (typeof name === "function") {
-					return name(thunk);
-				}
-				name = name.toLowerCase();
-				if (!Macros.has(name)) {
+				if (!name || !Macros.has(name)) {
 					return new ReferenceError("I can't run the macro '" + name + "' because it doesn't exist.");
 				}
 				fn = Macros.get(name);
@@ -551,7 +546,7 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 			/*
 				Hoisted temp variables
 			*/
-			macroNameToken, token,
+			macroNameToken, token, varRefTemp,
 			/*
 				Setting values to either of these variables
 				determines the code to emit: 
@@ -580,7 +575,14 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 		if (tokens.length === 1) {
 			token = tokens[0];
 			if (isVarRef) {
-				return compileVarRef(token);
+				/*
+					If we can make a varRef out of this token,
+					return the varRef code.
+				*/
+				varRefTemp = compileVarRef(token);
+				if (varRefTemp) {
+					return varRefTemp;
+				}
 			}
 			else if (token.type === "identifier") {
 				return " Identifiers." + token.text + " ";

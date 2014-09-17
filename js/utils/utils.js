@@ -345,9 +345,9 @@ define(['jquery', 'twinemarkup', 'selectors', 'customelements', 'jqueryplugins']
 			Replaces oldElem with newElem while transitioning between both.
 
 			@method transitionReplace
-			@param oldElem          a jQuery object currently in the DOM or a DOM structure
-			@param newElem          an unattached jQuery object to attach
-			@param transIndex       transition to use
+			@param oldElem     a jQuery object currently in the DOM or a DOM structure
+			@param [newElem]   an unattached jQuery object to attach
+			@param transIndex  transition to use
 			@return this
 		*/
 
@@ -359,7 +359,7 @@ define(['jquery', 'twinemarkup', 'selectors', 'customelements', 'jqueryplugins']
 			// Create a transition-main-container
 			container1 = $('<tw-transition-container>').css('position', 'relative');
 
-			// Connect to DOM
+			// Insert said container into the DOM (next to oldElem)
 			container1.insertBefore(oldElem.first());
 
 			if (newElem) {
@@ -371,11 +371,11 @@ define(['jquery', 'twinemarkup', 'selectors', 'customelements', 'jqueryplugins']
 			}
 
 			// Create a transition-out-container
-			// while inserting it into the transition-main-container.
+			// and insert it into the transition-main-container.
 			container2b = $('<tw-transition-container>').css('position', 'absolute')
 				.prependTo(container1);
 
-			// Insert old element
+			// Insert the old element into the transition-out-container
 			oldElem.detach().appendTo(container2b);
 
 			// Transition-out the old element, removing it
@@ -390,42 +390,53 @@ define(['jquery', 'twinemarkup', 'selectors', 'customelements', 'jqueryplugins']
 					container2a.unwrap().children().first().unwrap();
 				});
 			}
-			return this;
 		},
 
 		/**
 			Transition an element out.
 		
 			@method transitionOut
-			@param {jQuery} el			element to transition out
-			@param (String) transIndex		transition to use			
-			@param {Function} onComplete	function to call when completed
+			@param {jQuery} el            jQuery collection to transition out
+			@param (String) transIndex    transition to use			
+			@param {Function} onComplete  function to call when completed
 			@return this
 		*/
 
 		transitionOut: function (el, transIndex, onComplete) {
 			var delay;
-
+			/*
+				Wrap the elements in a <tw-transition-container>.
+				This is less expensive than setting the attr of every
+				element that was passed.
+			*/
+			el = el.wrapAll('<tw-transition-container>').parent();
+			/*
+				And, when the transition is complete, unwrap them.
+			*/
 			onComplete = onComplete || function () {
 				el.remove();
 			};
+			/*
+				But, for now, apply the transition.
+			*/
 			el.attr("data-t8n", transIndex).addClass("transition-out");
 
-			// Ideally I'd use this:
-			//.one("animationend webkitAnimationEnd MSAnimationEnd oAnimationEnd", function(){ oldElem.remove(); });
-			// but in the event of CSS being off, these events won't trigger - whereas the below method will simply occur immedately.
-
+			/*
+				Ideally I'd use this:
+				.one("animationend webkitAnimationEnd MSAnimationEnd", function(){ oldElem.remove(); });
+				but in the event of CSS being off, these events won't trigger
+				- whereas the below method will simply occur immedately.
+			*/
 			delay = Utils.transitionTime(transIndex, "transition-out");
 			
 			!delay ? onComplete() : window.setTimeout(onComplete, delay);
-			return this;
 		},
 
 		/**
-			Transition an element in.
+			Transition several elements in.
 		
 			@method transitionIn
-			@param {jQuery} el			element to transition out
+			@param {jQuery} el			    jQuery collection to transition out
 			@param (String) transIndex		transition to use		
 			@param {Function} onComplete	function to call when completed
 			@return this
@@ -433,15 +444,25 @@ define(['jquery', 'twinemarkup', 'selectors', 'customelements', 'jqueryplugins']
 
 		transitionIn: function (el, transIndex, onComplete) {
 			var delay;
-
+			/*
+				Wrap the elements in a <tw-transition-container>.
+				This is less expensive than setting the attr of every
+				element that was passed.
+			*/
+			el = el.wrapAll('<tw-transition-container>').parent();
+			/*
+				And, when the transition is complete, unwrap them.
+			*/
 			onComplete = onComplete || function () {
-				el.removeClass("transition-in");
+				el.children().unwrap();
 			};
+			/*
+				But, for now, apply the transition.
+			*/
 			el.attr("data-t8n", transIndex).addClass("transition-in");
 			delay = Utils.transitionTime(transIndex, "transition-in");
 			
 			!delay ? onComplete() : window.setTimeout(onComplete, delay);
-			return this;
 		},
 		
 		/**
@@ -449,8 +470,8 @@ define(['jquery', 'twinemarkup', 'selectors', 'customelements', 'jqueryplugins']
 			to save on costly $css() lookups.
 		
 			@method transitionTime
-			@param (String) transIndex		Transition to use		
-			@param {String} className	Either "transition-in" or "transition-out"
+			@param (String) transIndex   Transition to use		
+			@param {String} className    Either "transition-in" or "transition-out"
 			@return this
 		*/
 		

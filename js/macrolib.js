@@ -174,7 +174,7 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 			(put:) A left-to-right version of (set:) that requires the "into" operator.
 			Evaluates to nothing if no error occured.
 		*/
-		("put", function set(_, ar) {
+		("put", function put(_, ar) {
 			var propertyChain;
 			/*
 				Reject the arguments if they're not an assignment
@@ -184,7 +184,6 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 				return new SyntaxError("Please say 'into' when using the (put:) macro.");
 			}
 			propertyChain = ar.dest.propertyChain;
-			
 			/*
 				Now, perform the operation.
 			*/

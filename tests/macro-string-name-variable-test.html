@@ -1,0 +1,12 @@
+<!DOCTYPE html><meta charset="utf-8">
+<title>Macro String Name Variable Test</title>
+<link rel="stylesheet" href="../build/harlowe-css.css"/>
+<tw-story></tw-story><script data-main="../js/harlowe.js" src="../node_modules/requirejs/require.js"></script>
+<tw-storydata options="debug" startnode="1">
+<tw-passagedata pid="1" name="1" position="512,384">
+(set: $b to "print")
+($b: $b) (= print)
+(put: "set" into $a)
+($a: $a to "put")
+($a: (a:$b) into $b)
+($b.0: $a) (= put)
