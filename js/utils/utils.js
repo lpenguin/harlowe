@@ -443,7 +443,7 @@ define(['jquery', 'twinemarkup', 'selectors', 'customelements', 'jqueryplugins']
 				class. (#maybe this should always be performed???)
 			*/
 			onComplete = onComplete || function () {
-				el.removeClass("transition-in");
+				el.removeClass("transition-in").removeAttr("data-t8n");
 			};
 			/*
 				For now, perform the transition.

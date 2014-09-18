@@ -1,0 +1,18 @@
+<!DOCTYPE html><meta charset="utf-8">
+<title>Append-Prepend Test</title>
+<link rel="stylesheet" href="../build/harlowe-css.css"/>
+<tw-story></tw-story><script data-main="../js/harlowe.js" src="../node_modules/requirejs/require.js"></script>
+<tw-storydata options="debug" startnode="1">
+<tw-passagedata pid="1" name="1" position="512,384">
+[Good]<1|
+(click: ?1)[(append: ?1)[ gravy!]]
+
+[Good]<2|
+(click: ?2)[(prepend: ?2)[Perfect is the enemy of ]]
+
+[Bad]<3|
+(click-append: ?3)[ sector!]
+
+[Bad]<4|
+(click-prepend: ?4)[The Good serve the ]
+

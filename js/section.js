@@ -360,7 +360,21 @@ function($, Utils, Selectors, Renderer, TwineScript, Story, State, HookUtils, Ho
 			Transition it using the descriptor's given transition.
 		*/
 		if (desc.transition) {
-			Utils.transitionIn(target, desc.transition);
+			Utils.transitionIn(
+				/*
+					There's a slightly problem: when we want to replace the
+					target, we don't need to apply a transition to every
+					element, so we just transition the target itself.
+					
+					But, when we're *appending* to the target, we don't want
+					the existing material in it to be transitioned, so
+					then we must resort to transitioning every element.
+					
+					This is #awkward, I know...
+				*/
+				desc.append === "replace" ? target : dom,
+				desc.transition
+			);
 		}
 		/*
 			Finally, update the enchantments now that the DOM is modified.

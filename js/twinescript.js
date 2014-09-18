@@ -257,11 +257,13 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 			/*
 				A wrapper around Javascript's [[get]], which
 				returns an error if a property is absent rather than
-				returning undefined.
+				returning undefined. (Or, in the case of State.variables,
+				uses a default value instead of returning the error.)
+				
 				@method get
 				@return {Error|Anything}
 			*/
-			get: function(obj, prop) {
+			get: function(obj, prop, defaultValue) {
 				if (obj === null || obj === undefined) {
 					return new ReferenceError(
 						"I can't get a property named '"
@@ -285,9 +287,24 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 				/*
 					An additional error condition exists for get(): if the property
 					doesn't exist, don't just return undefined.
+					
+					I wanted to use hasOwnProperty here, but it didn't work
+					with the State.variables object, which, as you know, uses
+					differential properties on the prototype chain. Oh well,
+					it's probably not that good an idea anyway.
 				*/
-				if (!Object.hasOwnProperty.call(obj, prop)) {
-					return new Error("I can't find a '" + prop + "' data key in "
+				if (!(prop in obj)) {
+					/*
+						If a default value is given (only for State.variables,
+						currently) then return that.
+					*/
+					if (defaultValue !== undefined) {
+						return defaultValue;
+					}
+					/*
+						Otherwise, produce an error message.
+					*/
+					return new ReferenceError("I can't find a '" + prop + "' data key in "
 						+ objectName(obj));
 				}
 				return obj[prop];
@@ -704,7 +721,12 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 			midString = " ";
 		}
 		else if ((i = indexOfType(tokens, "simpleVariable")) >-1) {
-			midString = " State.variables." + tokens[i].name;
+			midString = " Operation.get(State.variables,"
+				+ JSON.stringify(tokens[i].name)
+				/*
+					Here is where the default value for variables is passed!
+				*/
+				+ ", 0)";
 		}
 		else if ((i = indexOfType(tokens, "macro")) >-1) {
 			/*
@@ -853,7 +875,7 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 						to the author, as a last-ditch and probably
 						unhelpful error message.
 					*/
-					Utils.log(e);
+					console.log(e);
 					return e;
 				}
 			}
