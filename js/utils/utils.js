@@ -399,19 +399,13 @@ define(['jquery', 'twinemarkup', 'selectors', 'customelements', 'jqueryplugins']
 			@param {jQuery} el            jQuery collection to transition out
 			@param (String) transIndex    transition to use			
 			@param {Function} onComplete  function to call when completed
-			@return this
 		*/
 
 		transitionOut: function (el, transIndex, onComplete) {
 			var delay;
+			
 			/*
-				Wrap the elements in a <tw-transition-container>.
-				This is less expensive than setting the attr of every
-				element that was passed.
-			*/
-			el = el.wrapAll('<tw-transition-container>').parent();
-			/*
-				And, when the transition is complete, unwrap them.
+				The default transition callback is to remove the element.
 			*/
 			onComplete = onComplete || function () {
 				el.remove();
@@ -433,31 +427,26 @@ define(['jquery', 'twinemarkup', 'selectors', 'customelements', 'jqueryplugins']
 		},
 
 		/**
-			Transition several elements in.
+			Transition an element in.
 		
 			@method transitionIn
 			@param {jQuery} el			    jQuery collection to transition out
 			@param (String) transIndex		transition to use		
 			@param {Function} onComplete	function to call when completed
-			@return this
 		*/
-
+		
 		transitionIn: function (el, transIndex, onComplete) {
 			var delay;
+
 			/*
-				Wrap the elements in a <tw-transition-container>.
-				This is less expensive than setting the attr of every
-				element that was passed.
-			*/
-			el = el.wrapAll('<tw-transition-container>').parent();
-			/*
-				And, when the transition is complete, unwrap them.
+				The default transition callback is to remove the transition-in
+				class. (#maybe this should always be performed???)
 			*/
 			onComplete = onComplete || function () {
-				el.children().unwrap();
+				el.removeClass("transition-in");
 			};
 			/*
-				But, for now, apply the transition.
+				For now, perform the transition.
 			*/
 			el.attr("data-t8n", transIndex).addClass("transition-in");
 			delay = Utils.transitionTime(transIndex, "transition-in");

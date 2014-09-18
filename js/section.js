@@ -358,11 +358,9 @@ function($, Utils, Selectors, Renderer, TwineScript, Story, State, HookUtils, Ho
 		
 		/*
 			Transition it using the descriptor's given transition.
-			This should ideally come last to avoid making the DOM structure needlessly
-			complicated with <tw-transition> elements.
 		*/
 		if (desc.transition) {
-			Utils.transitionIn(dom, desc.transition);
+			Utils.transitionIn(target, desc.transition);
 		}
 		/*
 			Finally, update the enchantments now that the DOM is modified.
@@ -378,6 +376,10 @@ function($, Utils, Selectors, Renderer, TwineScript, Story, State, HookUtils, Ho
 		
 		/**
 			Creates a new Section which inherits from this one.
+			Note: while all Section use the methods on this Section prototype,
+			there isn't really much call for a Section to delegate to its
+			parent Section.
+			
 			@method create
 			@param {jQuery} newDom The DOM that comprises this section.
 			@return {Section} Object that inherits from this one.

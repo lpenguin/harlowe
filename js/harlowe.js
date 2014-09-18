@@ -118,7 +118,7 @@ require(['jquery', 'renderer', 'story', 'state', 'engine', 'utils', 'selectors',
 		// Load the hash if it's present
 		if (window.location.hash && !window.location.hash.contains("stories")) {
 			if (State.load(window.location.hash)) {
-				Engine.showPassage(State.passage);
+				Engine.goToPassage(State.passage);
 				return;
 			}
 		}
