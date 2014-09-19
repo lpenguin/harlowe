@@ -309,11 +309,10 @@ define(['story', 'utils', 'lzstring'], function(Story, Utils, LZString) {
 			A smaller alternative to an LZString compressed JSON.stringify()
 			-First line: comma-separated variable names array
 			-Then, for each Moment:
-				- passage name + newline,
+				- passage ID + newline,
 				- then for each variable, index into variable names array : variable data JSON, then newline.
 				- then, newline.
-			-Then, present passage.
-			Note: this currently doesn't record the future (the redo cache).
+			-Then newline, recent index, newline, present passage.
 			
 			@method save
 			@return {String} Serialised string representing the game state.
@@ -321,21 +320,33 @@ define(['story', 'utils', 'lzstring'], function(Story, Utils, LZString) {
 		save: function() {
 			var i, ret = "", error = 0,
 				variableKeys = [],
+				// #ASSUMPTION: variables can never be deleted once added.
 				futuremostVariables = timeline[timeline.length-1].variables;
-			// Assemble variableKeys
-			// Intentionally unguarded for-in, thanks to Object.create(null)
+			/*
+				To save space, variable names are recorded only once, and referenced
+				by IDs in the remainder of the data.
+				
+				First, we assemble the variableKeys array.
+				This is an intentionally unguarded for-in, thanks to Object.create(null)
+				having been used to create the variables object (futuremostVariables)
+			*/
 			for (i in futuremostVariables) {
 				variableKeys.push(i);
 			}
-			// Intentional array->string coercion
-			// ASSUMPTION: variable names cannot contain commas or newlines.
-			ret += variableKeys + '\n';
-			// Only record the past
-			timeline.slice(0,recent+1).forEach(function(t) {
+			/*
+				Then, we convert variableKeys to a comma-separated list string.
+				#ASSUMPTION: variable names cannot contain commas or newlines.
+			*/
+			ret += variableKeys.join() + '\n';
+			/*
+				Now, serialise each Moment in the timeline.
+				First, the passage ID, then a line for each variable.
+			*/
+			timeline.forEach(function(t) {
 				var key, keys = Object.keys(t.variables), i = 0;
-				// Add the passage name
+				// Add the passage ID
 				ret += t.passage + '\n';
-				while(i++ < keys.length) {
+				while(i < keys.length) {
 					// Only get the own variables for this moment.
 					key = keys[i];
 					ret += variableKeys.indexOf(key) + ":";
@@ -345,6 +356,8 @@ define(['story', 'utils', 'lzstring'], function(Story, Utils, LZString) {
 						error += 1;
 						ret += 'null\n';
 					}
+					// Perform the next loop iteration.
+					i += 1;
 				}
 				ret += '\n';
 			});
@@ -352,7 +365,9 @@ define(['story', 'utils', 'lzstring'], function(Story, Utils, LZString) {
 				Utils.impossible("State.save", "failed to serialise " + error + " variable" + (error>1 ? "s" : "") + "!\n");
 			}
 			ret += "\n" + recent + "\n" + present.passage;
-			// Compress the string
+			/*
+				Compress the string into a base64 hash using LZString.
+			*/
 			return LZString.compressToBase64(ret);
 		},
 		
@@ -364,17 +379,36 @@ define(['story', 'utils', 'lzstring'], function(Story, Utils, LZString) {
 			@return {Boolean} Whether or not the load succeded.
 		*/
 		load: function(string) {
-			var // RegExp matches,
+			var
+				// RegExp matches,
 				momentMatch, variableMatch, tempMatch,
-				// Temps
+				// Hoisted temporary variables.
 				variableTemp, lastPushedObject, variableKeys,
+				/*
+					These store the results of the parsing algorithm,
+					before they're applied to the timeline and recent variables.
+					If an error is thrown, these are safely disregarded.
+				*/
 				newTimeline = [],
 				newRecent = -1,
 				newPresentPassage = "",
-				variableRE,
-				momentRE = /\n(.+)\n(.(?:.|\n(?!\n))*)?/g;
+				/*
+					This RegExp captures the (passage name), then
+					(each variable definition), terminated with
+					double-newlines.
+				*/
+				momentRE = /^(.+)\n((?:.+\n)*)\n/,
+				/*
+					This RegExp matches individual lines of variable records within
+					a particular Moment.
+					
+					Each variable is a "digit variable name index : JSON value" pair.
+				*/
+				variableRE = /(\d+):(.*)/g;
 			
-			// Decompress the string
+			/*
+				Try to decompress the string, assuming it is valid base64.
+			*/
 			if (!(string = LZString.decompressFromBase64(string))) {
 				//Failed to load - exit in disgrace.
 				// Since this could be human input error, this isn't really "impossible"
@@ -382,27 +416,51 @@ define(['story', 'utils', 'lzstring'], function(Story, Utils, LZString) {
 				Utils.impossible("State.load", "couldn't decompress!");
 				return false;
 			}
-			// Now read it
+			/*
+				Next, attempt to parse the data in the strings.
+			*/
 			try {
-				variableKeys = string.match(/^.*/)[0].split(',');
-				// Read the value of recent and presentPassage
-				tempMatch = string.match(/\n\n(\d+)\n(.*)$/);
-				newRecent = +tempMatch[1];
-				newPresentPassage = tempMatch[2];
-				// Read each of the Moments
-				while ((momentMatch = momentRE.exec(string))) {
+				/*
+					Retrieve the variable name keys in the first line of the string
+				*/
+				tempMatch = string.match(/^.*/)[0];
+				variableKeys = tempMatch.split(',');
+				string = string.slice(tempMatch.length+1);
+				
+				/*
+					Read each of the Moments.
+				*/
+				while ((momentMatch = string.match(momentRE))) {
 					variableTemp = {};
-					// A fresh regexp for each moment
-					variableRE = /(\d+):(.*)/g;
-					// Read the variables
+					/*
+						Read the variables using a successive RegExp#exec loop.
+						Each variable is a "digit variable name index : JSON value" pair.
+					*/
 					while ((variableMatch = variableRE.exec(momentMatch[2]))) {
 						// Restore the variable name from the key
 						variableTemp[variableKeys[variableMatch[1]]] = JSON.parse(variableMatch[2]);
 					}
-					// Push into newTimeline, restoring the prototype chain
+					/*
+						Because variableRE persists between iterations, the lastIndex
+						property must be reset afterwards.
+					*/
+					variableRE.lastIndex = 0;
+					
+					/*
+						Push it into newTimeline, restoring the prototype chain
+						by using the previous Moment as the prototype of the current.
+					*/
 					newTimeline.push(lastPushedObject =
 						(lastPushedObject || Moment).create(momentMatch[1], variableTemp));
+					// Move the string up.
+					string = string.slice(momentMatch[0].length);
 				}
+				/*
+					Read the value of recent and presentPassage.
+				*/
+				tempMatch = string.match(/\n(\d+)\n(.*)$/);
+				newRecent = +tempMatch[1];
+				newPresentPassage = tempMatch[2];
 			} catch(e) {
 				// Same as above regarding this not being "impossible"
 				Utils.impossible("State.load", "couldn't parse!");
@@ -411,7 +469,7 @@ define(['story', 'utils', 'lzstring'], function(Story, Utils, LZString) {
 			recent = newRecent;
 			timeline = newTimeline;
 			this.newPresent(newPresentPassage);
-			Utils.log("Loaded a game state (" + timeline.length-1 + " moments)"); 
+			Utils.log("Loaded a game state (" + (timeline.length-1) + " moments)");
 			return true;
 		},
 	};

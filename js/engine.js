@@ -164,8 +164,13 @@ function ($, Story, Utils, Selectors, State, Section) {
 			// Update the state.
 			State.play(id);
 			showPassage(id, stretch);
-		}
+		},
 		
+		/*
+			Displays a new passage WITHOUT changing the game state.
+			Used exclusively by state-loading routines.
+		*/
+		showPassage: showPassage,
 	};
 	
 	Utils.log("Engine module ready!");
