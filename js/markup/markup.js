@@ -226,14 +226,19 @@
 				},
 			},
 			
-			hookAppendedFront: {
-				fn: Object,
-				cannotFollow: ["macro", "groupingBack"],
-			},
-			
 			hookAnonymousFront: {
 				fn: Object,
-				canFollow: ["macro", "groupingBack"],
+				canFollow: ["macro", "variable"],
+			},
+			
+			hookAppendedFront: {
+				fn: Object,
+				/*
+					Because hookAnonymousFront's and hookAppendedFront's
+					rules are identical, the canFollow of one must match
+					the cannotFollow of the other.
+				*/
+				cannotFollow: ["macro", "variable"],
 			},
 			
 			hookBack: {

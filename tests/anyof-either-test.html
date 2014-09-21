@@ -5,9 +5,7 @@
 <tw-storydata options="debug" startnode="1">
 <tw-passagedata pid="1" name="1" position="512,384">
 (set: $a to (array: 2,4,6,8))
-(either: $a)
-(any-of: $a)
-(either: 1,3,5)
-(any-of: 1,3,5)
-(set: $a to (shuffled: $a))
-($a.pop: )
+(either: $a) (= nothing)
+(any-of: $a) (= 2, 4, 6 or 8)
+(either: 1,3,5) (= 1, 3 or 5)
+(any-of: 1,3,5) (= 1, 3 or 5)

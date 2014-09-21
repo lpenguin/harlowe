@@ -233,6 +233,29 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 				if (Array.isArray(l)) {
 					return [].concat(l, r);
 				}
+				/*
+					Function composition is the basis for advanced use of "changer"
+					macros - (transition:), (gradient:), etc. Currently, the means
+					of performing composition is to add the returned changer
+					functions together.
+				*/
+				if (typeof l === "function") {
+					var ret = function() {
+						/*
+							In what order should the functions be composed?
+							I think right-as-innermost is more intuitive, but
+							I'm none too sure...
+						*/
+						return l(r.apply(0, arguments));
+					};
+					/*
+						It's best to think of the returned function as a 'modified'
+						version of l - it has the same expando properties, etc.
+						as it, but a different [[call]].
+					*/
+					Object.assign(ret, l);
+					return ret;
+				}
 				return l + r;
 			}),
 			"-":  doNotCoerce(function(l, r) { return l - r; }),
@@ -875,7 +898,6 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 						to the author, as a last-ditch and probably
 						unhelpful error message.
 					*/
-					console.log(e);
 					return e;
 				}
 			}

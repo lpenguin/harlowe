@@ -104,12 +104,12 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 		Takes a function, and registers it as a live Changer macro.
 		
 		Changers return a transformation function that is used to mutate
-		a ChangerDescriptor object.
+		a ChangerDescriptor object, that itself is used to alter a Section's rendering.
 		
 		A ChangerDescriptor is a plain object with the following values:
 					
 		{String} transition      Which transition to use.
-		{Number} transitionTime  The duration of the transition, in ms.
+		{Number} transitionTime  The duration of the transition, in ms. CURRENTLY UNUSED.
 		{String} code            Transformations made on the hook's code before it is run.
 		{jQuery} target          Where to render the code, if not the hookElement.
 		{String} append          Which jQuery method to append the code to the dest with.
@@ -159,7 +159,7 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 				request, or if it incorrectly uses the "into" operator
 			*/
 			if (!ar.assignmentRequest || ar.operator === "into") {
-				return new SyntaxError("This isn't how you use the 'set' macro.");
+				return new SyntaxError("This isn't how you use the (set:) macro.");
 			}
 			propertyChain = ar.dest.propertyChain;
 			
@@ -328,6 +328,7 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 			return changerFn(function transition(d) {
 				d.transition = name;
 				d.transitionTime = time;
+				return d;
 			}, "transition");
 		})
 
@@ -335,10 +336,11 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 		// Remove line breaks from the hook.
 		// Manual line breaks can be inserted with <br>.
 		("nobr", function nobr() {
-			return changerFn(function nobr(_, d) {
+			return changerFn(function nobr(d) {
 				// To prevent keywords from being created by concatenating lines,
 				// replace the line breaks with a zero-width space.
 				d.code = d.code.replace(/\n/g, "&zwnj;");
+				return d;
 			}, "nobr");
 		})
 
@@ -347,13 +349,14 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 		// duration of the current passage only.
 		// contents: raw CSS.
 		("style", function style() {
-			return changerFn(function style(_, d) {
+			return changerFn(function style(d) {
 				var selector = 'style#macro';
 				if (!$(selector).length) {
 					$(document.head).append($('<style id="macro">'));
 				}
 				$(selector).text(Utils.unescape(d.code));
 				d.code = "";
+				return d;
 			}, "style");
 		});
 	
@@ -413,6 +416,7 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 					desc.code = "";
 				}
 				desc.append = e;
+				return desc;
 			}, e);
 		});
 	});
@@ -680,6 +684,7 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 					Enchant the scope for the first time.
 				*/
 				enchantData.enchantScope();
+				return desc;
 			},
 			// All the way down here, we supply the author-facing debugging name for this macro.
 			name);
@@ -854,11 +859,12 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 		*/
 		
 		/*
-			(a:)
+			(a:), (array:)
 			Used for creating Array literals.
 			TODO: Make it "concat-spread" arrays passed into it??
 		*/
 		a: Array.of,
+		array: Array.of,
 		
 		/*
 			(any-of:)

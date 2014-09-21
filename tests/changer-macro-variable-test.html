@@ -1,0 +1,10 @@
+<!DOCTYPE html><meta charset="utf-8">
+<title>Changer Macro Variable Test</title>
+<link rel="stylesheet" href="../build/harlowe-css.css"/>
+<tw-story></tw-story><script data-main="../js/harlowe.js" src="../node_modules/requirejs/require.js"></script>
+<tw-storydata options="debug" startnode="1">
+<tw-passagedata pid="1" name="1" position="512,384">
+(set: $x to (transition: "shudder"))
+$x[Shivering and shaking!] (= Shivering and shaking! with shudder)
+(set: $x to it + (click: ?cool))
+|cool>[Yeep!] $x[Yikes!] (= Yikes! with shudder)

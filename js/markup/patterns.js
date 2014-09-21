@@ -169,7 +169,7 @@
 		/*
 			Markdown setext headers conflict with the hr syntax, and are thus gone.
 		*/
-		heading = ws + "(#{1,6})" + ws + "([^\\n]+?)" + ws + "#*" + ws + eol,
+		heading = "\n" + ws + "(#{1,6})" + ws + "([^\\n]+?)" + ws + "#*" + ws + eol,
 		
 		/*
 			New text alignment syntax.
@@ -273,6 +273,10 @@
 		sup:                   stylerSyntax("^^"),
 		supOpener:                   opener("^^"),
 		
+		/*
+			The verbatim syntax does not "nest", but terminals can be
+			differentiated by adding more ` marks to each pair.
+		*/
 		verbatim:        "(`+)" + ws + "([^]*?[^`])" + ws + "\\1(?!`)",
 		verbatimOpener:                                    opener("`"),
 		
@@ -286,11 +290,16 @@
 				[The hook's text]<tag|
 		*/
 		hookAppendedFront:  "\\[",
-		hookAnonymousFront: "\\[",
-		hookBack:  "\\](?!<)",
-		
 		hookPrependedFront:
 			hookTagFront + "\\[",
+		/*
+			The anonymous hook is a contextual production: it may only occur
+			after macros and variables. Similarly, the hookAppendedFront
+			may NOT occur after macros and variables. The reason these rules are
+			not united is because their names are used to identify them in Lexer.
+		*/
+		hookAnonymousFront: "\\[",
+		hookBack:  "\\](?!<)",
 		
 		hookAppendedBack:
 			"\\]" + hookTagBack,
