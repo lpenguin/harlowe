@@ -18,7 +18,7 @@
 				These objects contain each ordered category of rules.
 				(blockRules and inlineRules are currently only differentiated
 				for categorisation purposes - they are both equally usable in
-				Flat Mode.)
+				Markup Mode.)
 			*/
 			blockRules,
 			inlineRules,
@@ -32,22 +32,9 @@
 				arrays of string keys of the allRules object.
 			*/
 			/*
-				A "top-level" mode in which most all text is inside paragraphs.
-				Currently unused, as paragraphs don't really work.
+				The standard TwineMarkup mode.
 			*/
-			blockMode    = [],
-			/*
-				A mode that features most syntax structures, but excludes
-				block structures like lists and 
-				Also currently unused, but used to define Flat Mode.
-			*/
-			inlineMode   = [],
-			/*
-				The combination of the above two modes, minus paragraphs (which
-				are otherwise the only structures that enable a descent from blockMode
-				to inlineMode.
-			*/
-			flatMode     = [],
+			markupMode     = [],
 			/*
 				The interior of variables (which comprise identifier references
 				like "$chair", and property references like ".peach").
@@ -117,13 +104,10 @@
 			return target;
 		}
 		
-		blockRules = setupRules(flatMode, {
+		blockRules = setupRules(markupMode, {
 			/*
 				First, the block rules.
 			*/
-			paragraph: {
-				fn: textTokenFn(),
-			},
 			hr: {
 				fn: Object,
 			},
@@ -190,7 +174,7 @@
 		/*
 			Now, the inline rules.
 		*/
-		inlineRules = setupRules(flatMode, {
+		inlineRules = setupRules(markupMode, {
 			
 			/*
 				Like GitHub-Flavoured Markdown, Twine preserves line breaks
@@ -277,10 +261,10 @@
 				},
 			},
 			
-			code: {
+			verbatim: {
 				fn: function(match) {
 					return {
-						code: match[2]
+						verbatim: match[2]
 					};
 				},
 			},
@@ -416,18 +400,12 @@
 			Note: as the mode arrays are passed by reference by the above,
 			the arrays must now be modified in-place, using [].push.apply().
 		*/
-		[].push.apply(blockMode,        Object.keys(blockRules));
-		[].push.apply(inlineMode,       Object.keys(inlineRules)
+		[].push.apply(markupMode,       Object.keys(blockRules)
+								.concat(Object.keys(inlineRules))
 								.concat(Object.keys(expressionRules)));
 		[].push.apply(variableMode,     Object.keys(variableRules));
 		[].push.apply(macroMode,        Object.keys(macroRules)
 								.concat(Object.keys(expressionRules)));
-		/*
-			"Flat Mode" is something of a kludge - a combination of block and inline,
-			but without the paragraph.
-		*/
-		[].push.apply(flatMode, blockMode.concat(inlineMode)
-								.filter(function(e){ return e !== "paragraph"; }));
 
 		/*
 			Merge all of the categories together.
@@ -473,7 +451,7 @@
 			Declare that the starting mode for lexing, before any
 			tokens are appraised, is...
 		*/
-		Lexer.startMode = flatMode;
+		Lexer.startMode = markupMode;
 		return Lexer;
 	}
 	

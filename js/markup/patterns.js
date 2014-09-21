@@ -273,8 +273,8 @@
 		sup:                   stylerSyntax("^^"),
 		supOpener:                   opener("^^"),
 		
-		code:        "(`+)" + ws + "([^]*?[^`])" + ws + "\\1(?!`)",
-		codeOpener:                                    opener("`"),
+		verbatim:        "(`+)" + ws + "([^]*?[^`])" + ws + "\\1(?!`)",
+		verbatimOpener:                                    opener("`"),
 		
 		bulleted:    bulleted,
 		numbered:    numbered,
@@ -351,15 +351,6 @@
 		
 		groupingFront: "\\(" + notBefore(macro.name),
 		groupingBack:  "\\)",
-		
-		paragraph:
-			/*
-				Every block regex that separates paragraphs should be included in
-				the negative lookahead in this regex.
-			*/
-			"((?:[^\\n]+(?:\\n" 
-			+ notBefore(heading, align, hr, bulleted, numbered, "\\n")
-			+ ")?)+)",
 		
 		/*
 			Macro code

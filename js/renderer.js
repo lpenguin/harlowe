@@ -172,14 +172,6 @@ define(['utils', 'twinemarkup', 'twinescript'], function(Utils, TwineMarkup, Twi
 						out += '<' + token.type + '>';
 						break;
 					}
-					case "code": {
-						out += '<pre>' + escape(token.code) + '</pre>';
-						break;
-					}
-					case "paragraph": {
-						out += renderTag(token, "p");
-						break;
-					}
 					case "comment": {
 						break;
 					}
@@ -221,6 +213,10 @@ define(['utils', 'twinemarkup', 'twinescript'], function(Utils, TwineMarkup, Twi
 							// and used in a Scope.
 							+'&#8203;'
 							+'</tw-hook>';
+						break;
+					}
+					case "verbatim": {
+						out += '<span>' + escape(token.verbatim) + '</span>';
 						break;
 					}
 					/*

@@ -256,7 +256,12 @@ function($, Utils, Selectors, Renderer, TwineScript, Story, State, HookUtils, Ho
 				(Note: code may be '' if the descriptor's append method is "remove".
 				In which case, let it be an empty set.)
 			*/
-			dom = (desc.code && $(Renderer.exec(desc.code))) || $();
+			dom = (desc.code &&
+				/*
+					We can't use $.parseHTML here, since that returns an
+					Array instead of a jQuery collection.
+				*/
+				$(Renderer.exec(desc.code))) || $();
 		
 		/*
 			First, check to see that the given jQuery method in the descriptor
