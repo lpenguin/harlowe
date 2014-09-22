@@ -30,7 +30,7 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 		@for TwineScript
 	*/
 	function operations(Identifiers) {
-		var Operation, VarRefProto,
+		var Operation, VarRefProto, ColourProto,
 			/*
 				Used to determine if a property name is an array index.
 				If negative indexing sugar is ever added, this could
@@ -220,6 +220,15 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 			}
 		});
 		
+		/*
+			This is used primarily for type-checking Colour objects,
+			as well as giving them an ObjectName.
+		*/
+		ColourProto = Object.freeze({
+			colour: true,
+			TwineScript_ObjectName: "a colour",
+		});
+		
 		Operation = {
 			
 			"+":  doNotCoerce(function(l, r) {
@@ -255,6 +264,21 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 					*/
 					Object.assign(ret, l);
 					return ret;
+				}
+				/*
+					New colours can be created by addition.
+				*/
+				if (Object.getPrototypeOf(l) === ColourProto) {
+					return Object.assign(Object.create(ColourProto), {
+						/*
+							You may notice this is a fairly glib blending
+							algorithm. It's the same one from Game Maker, though, so I'm hard-pressed to think of a more
+							intuitive one.
+						*/
+						r : Math.min(Math.round((l.r + r.r) * 0.6), 0xFF),
+						g : Math.min(Math.round((l.g + r.g) * 0.6), 0xFF),
+						b : Math.min(Math.round((l.b + r.b) * 0.6), 0xFF),
+					});
 				}
 				return l + r;
 			}),
@@ -478,6 +502,28 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 						"an assignment operation",
 				});
 			},
+			
+			/*
+				Colours are first-class objects in TwineScript.
+				You can't do much with them, though - just add them.
+			*/
+			makeColour: function(str) {
+				// Trim off the "#"
+				str = str.replace("#",'');
+				/*
+					If a 3-char hex colour was passed...
+				*/
+				if (str.length === 3) {
+					str = str[0] + str[0]
+						+ str[1] + str[1]
+						+ str[2] + str[2];
+				}
+				return Object.assign(Object.create(ColourProto), {
+					r: parseInt(str.slice(0,2), 16),
+					g: parseInt(str.slice(2,4), 16),
+					b: parseInt(str.slice(4,6), 16),
+				});
+			},
 		};
 		return Object.freeze(Operation);
 	}
@@ -646,6 +692,11 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 					// Trim off the enclosing " or ' or ` characters.
 					token.text.slice(1,-1)
 				);
+			}
+			else if (token.type === "colour") {
+				return "Operation.makeColour("
+					+ JSON.stringify(token.colour)
+					+ ")";
 			}
 			/*
 				Root tokens are usually never passed in, but let's

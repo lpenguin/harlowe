@@ -366,6 +366,51 @@
 					},
 				},
 				
+				colour: {
+					/*
+						The colour names are translated into hex codes here,
+						rather than later in TwineScript.
+					*/
+					fn: function(match) {
+						var colour,
+							m = match[0].toLowerCase(),
+							/*
+								These colours are only at 80% saturation, so that
+								authors using them as bare colours aren't unwittingly
+								using horridly oversaturated shades.
+							*/
+							mapping = {
+								"red"    : "e61919",
+								"orange" : "e68019",
+								"yellow" : "e5e619",
+								"lime"   : "80e619",
+								"green"  : "19e619",
+								"cyan"   : "19e5e6",
+								"aqua"   : "19e5e6",
+								"blue"   : "197fe6",
+								"navy"   : "1919e6",
+								"purple" : "7f19e6",
+								"fuchsia": "e619e5",
+								"magenta": "e619e5",
+								"white"  : "fff",
+								"black"  : "000",
+								"gray"   : "888",
+								"grey"   : "888",
+							};
+						
+						if (Object.hasOwnProperty.call(mapping, m)) {
+							colour = "#" + mapping[m];
+						}
+						else {
+							colour = m;
+						}
+						
+						return {
+							colour: colour,
+						};
+					},
+				},
+				
 				number: {
 					fn: function(match) {
 						/*

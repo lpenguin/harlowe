@@ -140,6 +140,12 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 	function changerFn(fn, name) {
 		fn.changer = true;
 		fn.TwineScript_ObjectName = "a ("  +name + ":) command";
+		/*
+			Unlike most TwineScript objects, this is author-facing.
+		*/
+		fn.toString = function() {
+			return "[A " + name + " command]";
+		};
 		return fn;
 	}
 	
@@ -323,7 +329,8 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 		the passed-in one.
 	*/
 	addChanger
-		// transition()
+		// (transition:)
+		// Apply a CSS transition to a hook as it is inserted.
 		(["transition", "t8n"], function transition(_, name, time) {
 			return changerFn(function transition(d) {
 				d.transition = name;
@@ -331,8 +338,45 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 				return d;
 			}, "transition");
 		})
-
-		// nobr()
+		
+		// (font:)
+		// A shortcut for applying a font to a span of text.
+		("font", function font(_, family) {
+			return changerFn(function nobr(d) {
+				// To prevent keywords from being created by concatenating lines,
+				// replace the line breaks with a zero-width space.
+				d.code = "<span style='font-family:" + family + "'>" + d.code + "</span>";
+				return d;
+			}, "font");
+		})
+		
+		// (colour:)
+		// A shortcut for applying a colour to a span of text.
+		(["colour", "color"], function colour(_, CSScolour) {
+			/*
+				Convert TwineScript CSS colours to bad old hexadecimal.
+			*/
+			if (CSScolour.colour) {
+				CSScolour = "#"
+					/*
+						Number.toString() won't have a leading 0 unless
+						we manually insert it.
+					*/
+					+ (CSScolour.r < 16 ? "0" : "") + CSScolour.r.toString(16)
+					+ (CSScolour.g < 16 ? "0" : "") + CSScolour.g.toString(16)
+					+ (CSScolour.b < 16 ? "0" : "") + CSScolour.b.toString(16);
+			}
+			return changerFn(function nobr(d) {
+				/*
+					To prevent keywords from being created by concatenating lines,
+					replace the line breaks with a zero-width space.
+				*/
+				d.code = "<span style='color:" + CSScolour + "'>" + d.code + "</span>";
+				return d;
+			}, "colour");
+		})
+		
+		// (nobr:)
 		// Remove line breaks from the hook.
 		// Manual line breaks can be inserted with <br>.
 		("nobr", function nobr() {
@@ -344,7 +388,7 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 			}, "nobr");
 		})
 
-		// style()
+		// (style:)
 		// Insert the enclosed raw CSS into a <style> tag that exists for the
 		// duration of the current passage only.
 		// contents: raw CSS.
@@ -359,6 +403,19 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 				return d;
 			}, "style");
 		});
+	
+	/*
+		Add changers for Twine-unique styles.
+	*/
+	["outline", "shadow", "emboss", "condense", "expand", "blur", "blurrier", "smear",
+	"mirror", "upside-down", "fade-in-out", "rumble", "shudder"].forEach(function(e) {
+		addChanger(e, function() {
+			return changerFn(function(d) {
+				d.code = "<x-" + e + ">" + d.code + "</x-" + e + ">";
+				return d;
+			}, e);
+		});
+	});
 	
 	/*
 		Standard sensor macros.
