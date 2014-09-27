@@ -139,6 +139,7 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 	*/
 	function changerFn(fn, name) {
 		fn.changer = true;
+		fn.macroName = name;
 		fn.TwineScript_ObjectName = "a ("  +name + ":) command";
 		/*
 			Unlike most TwineScript objects, this is author-facing.
@@ -321,6 +322,14 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 			} catch (e) {
 				return e;
 			}
+		})
+		/*
+			(remove:) Removes the given hook or pseudo-hook from the section.
+			It accepts a standard selector, does a side-effect, and returns "".
+		*/
+		("remove", function remove(section, selector) {
+			section.selectHook(selector).forEach(function(e) { e.remove(); });
+			return "";
 		});
 	
 	/*
@@ -376,9 +385,11 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 			}, "colour");
 		})
 		
-		// (nobr:)
-		// Remove line breaks from the hook.
-		// Manual line breaks can be inserted with <br>.
+		/*
+			(nobr:)
+			Remove line breaks from the hook.
+			Manual line breaks can be inserted with <br>.
+		*/
 		("nobr", function nobr() {
 			return changerFn(function nobr(d) {
 				// To prevent keywords from being created by concatenating lines,
@@ -388,11 +399,13 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 			}, "nobr");
 		})
 
-		// (style:)
-		// Insert the enclosed raw CSS into a <style> tag that exists for the
-		// duration of the current passage only.
-		// contents: raw CSS.
-		("style", function style() {
+		/*
+			(CSS:)
+			Insert the enclosed raw CSS into a <style> tag that exists for the
+			duration of the current passage only.
+			contents: raw CSS.
+		*/
+		("CSS", function CSS() {
 			return changerFn(function style(d) {
 				var selector = 'style#macro';
 				if (!$(selector).length) {
@@ -401,21 +414,70 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 				$(selector).text(Utils.unescape(d.code));
 				d.code = "";
 				return d;
-			}, "style");
-		});
-	
-	/*
-		Add changers for Twine-unique styles.
-	*/
-	["outline", "shadow", "emboss", "condense", "expand", "blur", "blurrier", "smear",
-	"mirror", "upside-down", "fade-in-out", "rumble", "shudder"].forEach(function(e) {
-		addChanger(e, function() {
-			return changerFn(function(d) {
-				d.code = "<x-" + e + ">" + d.code + "</x-" + e + ">";
-				return d;
-			}, e);
-		});
-	});
+			}, "CSS");
+		})
+		
+		/*
+			(text-style:)
+		*/
+		("text-style", (function() {
+			/*
+				This is a closure designed solely to cache the style-tagname mappings,
+				because I'm #paranoid.
+				
+				These map style names, as input by the author as this macro's first argument,
+				to HTML element tag names to wrap them with.
+			*/
+			var styleTagNames = Object.assign(Object.create(null), {
+					bold:         "b",
+					italic:       "i",
+					underline:    "u",
+					superscript:  "sup",
+					subscript:    "sub",
+					blink:        "blink",
+				},
+				/*
+					These are the Twine extra styles.
+				*/
+				["outline", "shadow", "emboss", "condense", "expand", "blur", "blurrier",
+					"smear", "mirror", "upside-down", "fade-in-out", "rumble", "shudder"]
+					.reduce(function(obj, e) {
+						obj[Utils.insensitiveName(e)] = "tw-" + e;
+						return obj;
+					}, {})
+				);
+			
+			return function text_style(_, styleName) {
+				var
+					/*
+						A pair of HTML strings to wrap the hook in. 
+					*/
+					wrapperHTML = ['', ''];
+				
+				/*
+					The name should be insensitive to normalise both capitalisation,
+					and hyphenation of names like "upside-down".
+				*/
+				styleName = Utils.insensitiveName(styleName);
+				
+				if (styleName in styleTagNames) {
+					/*
+						This is a bit of a hack to split the return value of
+						wrapHTMLTag into an array of just the wrapper components.
+					*/
+					wrapperHTML = Utils.wrapHTMLTag("_", styleTagNames[styleName]).split("_");
+				}
+				
+				return changerFn(function text_style(d) {
+					/*
+						This is an equivalent hack that inserts d.code into
+						the middle.
+					*/
+					d.code = wrapperHTML.join(d.code);
+					return d;
+				}, "text-style");
+			};
+		}()));
 	
 	/*
 		Standard sensor macros.
@@ -459,30 +521,18 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 		"append",
 		// prepend()
 		// Similar to replace, but prepends the contents to the scope(s).
-		"prepend",
-		// remove()
-		// Removes the scope(s).
-		"remove"
+		"prepend"
 	];
 	
 	revisionTypes.forEach(function(e) {
 		addChanger(e, function(section, scope) {
 			return changerFn(function(desc) {
 				desc.target = scope;
-				if (e === "remove") {
-					desc.code = "";
-				}
 				desc.append = e;
 				return desc;
 			}, e);
 		});
 	});
-	
-	// TODO: script()
-
-	// TODO: key()
-	// Perform the enclosed macros after the given keyboard letter is pushed
-	
 	
 	/*
 		This large routine generates a function for enchantment macros, to ideally be used
@@ -551,7 +601,7 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 		/*
 			Return the macro function. Note that its "selector" argument
 			is that which the author passes to it when invoking the
-			macro (in the case of "macro(?1)", selector will be "?1").
+			macro (in the case of "(macro: ?1)", selector will be "?1").
 		*/
 		return function enchantmentMacroFn(section, selector, target) {
 			/*
@@ -640,8 +690,7 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 						scope = section.selectHook(selector);
 						
 						/*
-							In the unlikely event that no scope could be
-							created, call it quits.
+							In the unlikely event that no scope could be created, call it quits.
 							Q: should it make a fuss?
 						*/
 						if (!scope) {
@@ -649,44 +698,38 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 						}
 						
 						/*
-							Reset the enchantments store, to prepare for the
-							insertion of a fresh set of <tw-enchantment>s.
+							Reset the enchantments store, to prepare for the insertion of
+							a fresh set of <tw-enchantment>s.
 						*/
 						enchantments = $();
 						
 						/*
-							Now, enchant each selected word 
-							or hook within the scope.
+							Now, enchant each selected word or hook within the scope.
 						*/
 						scope.forEach(function(e) {
 							var wrapping;
 							
 							/*
-								Create a fresh <tw-enchantment>,
-								and wrap the elements in it.
+								Create a fresh <tw-enchantment>, and wrap the elements in it.
 							*/
 							e.wrapAll("<tw-enchantment class='"
 								+ enchantDesc.classList +"'>");
 							/*
-								It's a little odd that the generated wrapper
-								must be retrieved in this roundabout fashion,
-								but oh well. That's how jQuery works.
+								It's a little odd that the generated wrapper must be retrieved in
+								this roundabout fashion, but oh well. That's how jQuery works.
 							*/
 							wrapping = e.parent();
 							
 							/*
-								Store the wrapping in the Section's
-								enchantments list.
+								Store the wrapping in the Section's enchantments list.
 							*/
 							enchantments = enchantments.add(wrapping);
 							/*
-								Affix to it an event function, to run when
-								it experiences the enchantment event.
+								Affix to it an event function, to run when it experiences the
+								enchantment event.
 								
-								Alas, this is a #kludge to allow the
-								jQuery event handler function above
-								to access this inner data (as in, call
-								this.event).
+								Alas, this is a #kludge to allow the jQuery event handler
+								function above to access this inner data (as in, call this.event).
 							*/
 							e.parent().data('enchantmentEvent', 
 								function specificEnchantmentEvent() {
@@ -793,7 +836,6 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 	/*
 		Combos
 	*/
-	
 	revisionTypes.forEach(function(revisionType) {
 		interactionTypes.forEach(function(interactionType) {
 			var enchantDesc = Object.assign({}, interactionType.enchantDesc, {

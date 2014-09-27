@@ -108,20 +108,27 @@ function($, Utils, Selectors, Renderer, TwineScript, Story, State, HookUtils, Ho
 				}
 			}
 			else if (result.changer) {
-				this.renderInto(
-					/*
-						The use of popAttr prevents the hook from executing normally
-						if it wasn't actually the eventual target of the changer function.
-					*/
-					nextHook.popAttr('code'),
-					/*
-						Don't forget: nextHook may actually be empty.
-						This is acceptable - the result changer could alter the
-						target appropriately.
-					*/
-					nextHook,
-					result
-				);
+				if (!nextHook.length) {
+					result = new TypeError(
+						"The (" + result.macroName + ":) macro should be assigned to a variable or attached to a hook."
+					);
+				}
+				else {
+					this.renderInto(
+						/*
+							The use of popAttr prevents the hook from executing normally
+							if it wasn't actually the eventual target of the changer function.
+						*/
+						nextHook.popAttr('code'),
+						/*
+							Don't forget: nextHook may actually be empty.
+							This is acceptable - the result changer could alter the
+							target appropriately.
+						*/
+						nextHook,
+						result
+					);
+				}
 			}
 			else {
 				result(nextHook, this);

@@ -59,69 +59,69 @@ tw-align
 	display:block;
 }
 
-x-outline
+tw-outline
 {
 	color: white; // Should be computed to equal text color
 	text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
 }
 
-x-shadow
+tw-shadow
 {
 	text-shadow: 0.08em 0.08em 0.08em #000; // Should be computed to equal text color
 }
 
-x-emboss
+tw-emboss
 {
 	text-shadow: 0.08em 0.08em 0em #000;
 	color:white; // Should be computed to equal background color
 }
 
-x-condense
+tw-condense
 {
 	letter-spacing: -0.08em;
 }
 
-x-expand
+tw-expand
 {
 	letter-spacing: 0.1em;
 }
 
-x-blur
+tw-blur
 {
 	color:transparent;
 	text-shadow: 0em 0em 0.08em #000; // Should be computed to equal text color
 }
 
-x-blurrier
+tw-blurrier
 {
 	color:transparent;
 	text-shadow: 0em 0em 0.2em #000; // Should be computed to equal text color
 }
 
-x-blurrier::selection {
+tw-blurrier::selection {
 	background-color:transparent;
 	color:transparent;
 }
 
-x-blurrier::-moz-selection {
+tw-blurrier::-moz-selection {
 	background-color:transparent;
 	color:transparent;
 }
 
-x-smear
+tw-smear
 {
 	color:transparent;
 	text-shadow: 0em 0em 0.02em rgba(0,0,0,0.75), -0.2em 0em 0.5em rgba(0,0,0,0.5), 0.2em 0em 0.5em rgba(0,0,0,0.5);
 }
 
-x-mirror
+tw-mirror
 {
 	display:inline-block;
 	transform: scaleX(-1);
 	-webkit-transform: scaleX(-1);
 }
 
-x-upside-down
+tw-upside-down
 {
 	display:inline-block;
 	transform: scaleY(-1);
@@ -130,21 +130,21 @@ x-upside-down
 
 /* Animated effects follow */
 
-x-fade-in-out
+tw-fade-in-out
 {
 	text-decoration: none;
 	animation: fade-in-out 2s ease-in-out infinite alternate;
 	-webkit-animation: fade-in-out 2s ease-in-out infinite alternate;
 }
 
-x-rumble 
+tw-rumble 
 {
 	-webkit-animation: rumble linear 0.1s 0s infinite;
 	animation: rumble linear 0.1s 0s infinite;
 	display:inline-block;
 }
 
-x-shudder 
+tw-shudder 
 {
 	-webkit-animation: shudder linear 0.1s 0s infinite;
 	animation: shudder linear 0.1s 0s infinite;
@@ -153,7 +153,7 @@ x-shudder
 
 /* Insertion effects */
 
-x-shudder-in
+tw-shudder-in
 {
     animation: shudder-in 1s ease-out;
     -webkit-animation: shudder-in 1s ease-out;

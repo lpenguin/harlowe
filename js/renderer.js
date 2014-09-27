@@ -12,7 +12,7 @@ define(['utils', 'twinemarkup', 'twinescript'], function(Utils, TwineMarkup, Twi
 		and renders the contained text.
 	*/
 	function renderTag(token, tagName) {
-		return '<' + tagName + '>' + Renderer.render(token.children) + '</' + tagName + '>';
+		return Utils.wrapHTMLTag(Renderer.render(token.children), tagName);
 	}
 	
 	/*

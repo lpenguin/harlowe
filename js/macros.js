@@ -11,16 +11,6 @@ function($, Story, Utils) {
 	var Macros,
 		// Private collection of registered macros.
 		macroRegistry = {};
-		
-	/*
-		Macro names are case-insensitive, AND dash-insensitive.
-		(There is a slight risk that eliminating dashes may cause
-		certain two-word names to collide with one-word names,
-		but... nah, it couldn't possibly happen.)
-	*/
-	function insensitiveName(e) {
-		return (e + "").toLowerCase().replace(/-|_/g, "");
-	}
 	
 	/*
 		The object containing all the macros available to a story.
@@ -33,7 +23,7 @@ function($, Story, Utils) {
 			@return {Boolean} Whether the name is registered.
 		*/
 		has: function (e) {
-			e = insensitiveName(e);
+			e = Utils.insensitiveName(e);
 			return macroRegistry.hasOwnProperty(e);
 		},
 		
@@ -45,7 +35,7 @@ function($, Story, Utils) {
 			@return Macro definition object, or false
 		*/
 		get: function (e) {
-			e = insensitiveName(e);
+			e = Utils.insensitiveName(e);
 			return (macroRegistry.hasOwnProperty(e) && macroRegistry[e]);
 		},
 		
@@ -66,10 +56,10 @@ function($, Story, Utils) {
 			// Add the fn to the macroRegistry, plus aliases (if name is an array of aliases)
 			if (Array.isArray(name)) {
 				name.forEach(function (n) {
-					Utils.lockProperty(macroRegistry, insensitiveName(n), fn);
+					Utils.lockProperty(macroRegistry, Utils.insensitiveName(n), fn);
 				});
 			} else {
-				Utils.lockProperty(macroRegistry, insensitiveName(name), fn);
+				Utils.lockProperty(macroRegistry, Utils.insensitiveName(name), fn);
 			}
 			return this;
 		},

@@ -106,6 +106,12 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 				if (left && left.varref) {
 					return new TypeError("I can't give an expression a new value.");
 				}
+				/*
+					This part allows errors to propagate up the TwineScript stack.
+				*/
+				if ((error = Utils.containsError(left, right))) {
+					return error;
+				}
 				if (typeof left !== typeof right
 				    || Array.isArray(left) !== Array.isArray(right)) {
 					/*
@@ -123,12 +129,6 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 							+ " isn't the same type of data as "
 							+ objectName(right)
 						);
-				}
-				/*
-					This part allows errors to propagate up the TwineScript stack.
-				*/
-				else if ((error = Utils.containsError(left, right))) {
-					return error;
 				}
 				return fn(left, right);
 			};

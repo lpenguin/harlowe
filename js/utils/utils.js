@@ -266,6 +266,30 @@ define(['jquery', 'twinemarkup', 'selectors', 'customelements', 'jqueryplugins']
 				.replace(/>/g, '&gt;'  ).replace(/</g, '&lt;' )
 				.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 		},
+		
+		/**
+			Some names are case-insensitive, AND dash-insensitive.
+			This method converts such names to all-lowercase and lacking
+			underscores and hyphens.
+			
+			@method insensitiveName
+			@param {String} text Text to convert.
+			@return {String} converted text
+		*/
+		insensitiveName: function (e) {
+			return (e + "").toLowerCase().replace(/-|_/g, "");
+		},
+		
+		/**
+			
+			@method wrapHTMLTag
+			@param {String} text Text to wrap.
+			@param {String} tagName Name of the HTML tag to wrap in.
+			@return {String} The wrapped text.
+		*/
+		wrapHTMLTag: function(text, tagName) {
+			return '<' + tagName + '>' + text + '</' + tagName + '>';
+		},
 
 		/**
 			Takes a string containing a character or HTML entity, and wraps it into a

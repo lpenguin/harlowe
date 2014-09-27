@@ -1,0 +1,28 @@
+<!DOCTYPE html><meta charset="utf-8">
+<title>Style Changer Test</title>
+<link rel="stylesheet" href="../build/harlowe-css.css"/>
+<tw-story></tw-story><script data-main="../js/harlowe.js" src="../node_modules/requirejs/require.js"></script>
+<tw-storydata options="debug" startnode="1">
+<tw-passagedata pid="1" name="1" position="512,384">
+(text-style:"italic")[italic]
+(text-style:"bold")[bold]
+(text-style:"mark")[marker]
+(text-style:"outline")[outline]
+(text-style:"shadow")[shadow]
+(text-style:"emboss")[emboss]
+(text-style:"condense")[condense]
+(text-style:"expand")[expand]
+(text-style:"blur")[blur]
+(text-style:"blurrier")[blurrier]
+(text-style:"smear")[smear]
+(text-style:"mirror")[mirror]
+(text-style:"upside-down")[upside-down]
+(text-style:"blink")[blink]
+(text-style:"fade-in-out")[fade-in-out]
+(text-style:"rumble")[rumble]
+(text-style:"shudder")[shudder]
+
+(set: $x to (text-style:"shadow") + (text-style:"mirror") + (color: magenta + red + white))
+$x[Reverse shadow]
+(set: $x to (text-style:"rumble") + (text-style:"shudder"))
+$x[Rumble shudder]
