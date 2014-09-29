@@ -1,23 +1,26 @@
 require.config({ 
 	paths: {
 		// External libraries
-		jquery: './lib/jquery',
-		lzstring: './lib/lzstring',
-		es6shims: './lib/es6shims',
+		jquery:          './lib/jquery',
+		lzstring:        './lib/lzstring',
+		es6shims:        './lib/es6shims',
 		// Utils
-		utils: './utils/utils',
-		hookutils: './utils/hookutils',
-		selectors: './utils/selectors',
-		regexstrings: './utils/regexstrings',
-		customelements: './utils/customelements',
-		jqueryplugins: './utils/jqueryplugins',
+		utils:           './utils/utils',
+		hookutils:       './utils/hookutils',
+		selectors:       './utils/selectors',
+		regexstrings:    './utils/regexstrings',
+		customelements:  './utils/customelements',
+		jqueryplugins:   './utils/jqueryplugins',
 		// Markup
-		twinemarkup: './markup/markup',
-		lexer: './markup/lexer',
-		patterns: './markup/patterns',
-		// Hook sets
-		hookset: './hooksets/hookset',
-		pseudohookset: './hooksets/pseudohookset',
+		twinemarkup:     './markup/markup',
+		lexer:           './markup/lexer',
+		patterns:        './markup/patterns',
+		// Data types
+		hookset:            './datatypes/hookset',
+		pseudohookset:      './datatypes/pseudohookset',
+		changercommand:     './datatypes/changerCommand',
+		assignmentRequest:  './datatypes/assignmentRequest',
+		colour:             './datatypes/colour',
 	}
 });
 require(['jquery', 'renderer', 'story', 'state', 'engine', 'utils', 'selectors', 'macrolib'],

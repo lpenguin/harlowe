@@ -1,5 +1,5 @@
 /*jshint unused:false */
-define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State) {
+define(['jquery', 'utils', 'macros', 'state', 'colour', 'assignmentRequest'], function($, Utils, Macros, State, Colour, AssignmentRequest) {
 	"use strict";
 	
 	// JShint's "unused" variables accessible to eval()
@@ -30,7 +30,7 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 		@for TwineScript
 	*/
 	function operations(Identifiers) {
-		var Operation, VarRefProto, ColourProto,
+		var Operation, VarRefProto,
 			/*
 				Used to determine if a property name is an array index.
 				If negative indexing sugar is ever added, this could
@@ -218,15 +218,10 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 			delete: function() {
 				Operation.delete(this.deepestObject, this.deepestProperty);
 			}
-		});
-		
-		/*
-			This is used primarily for type-checking Colour objects,
-			as well as giving them an ObjectName.
-		*/
-		ColourProto = Object.freeze({
-			colour: true,
-			TwineScript_ObjectName: "a colour",
+			/*
+				It's impossible for VarRefs to be stored by the author, so
+				there's no toJSON() needed here.
+			*/
 		});
 		
 		Operation = {
@@ -268,8 +263,8 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 				/*
 					New colours can be created by addition.
 				*/
-				if (Object.getPrototypeOf(l) === ColourProto) {
-					return Object.assign(Object.create(ColourProto), {
+				if (Object.getPrototypeOf(l) === Colour) {
+					return Colour.create({
 						/*
 							You may notice this is a fairly glib blending
 							algorithm. It's the same one from Game Maker, though, so I'm hard-pressed to think of a more
@@ -449,10 +444,10 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 			},
 			
 			/*
-				And here is the function for creating AssignmentRequests. It
-				takes an VarRef and does something to it with a value (which
-				could be another VarRef, in case a macro wished to manipulate
-				it somehow).
+				And here is the function for creating AssignmentRequests.
+				Because a lot of error checking must be performed, and
+				appropriate error messages must be generated, all of this
+				is part of TwineScript instead of the AssignmentRequest module.
 			*/
 			makeAssignmentRequest: function(dest, src, operator) {
 				var propertyChain,
@@ -463,22 +458,22 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 				
 				if (error) {
 					return error;
-				}			
+				}
+				/*
+					Also refuse if the dest is not, actually, a VarRef.
+				*/
+				if (!dest || !("propertyChain" in dest)) {
+					return new TypeError(
+						"I can't give "
+						+ objectName(dest)
+						+ " a new value.");
+				}
 				/*
 					Also refuse if the propertyChain contains an error.
 				*/
 				propertyChain = dest.propertyChain;
 				if ((error = Utils.containsError(propertyChain))) {
 					return error;
-				}
-				/*
-					Also refuse if the dest is not, actually, a VarRef.
-				*/
-				if (!dest || dest.varref !== true) {
-					return new TypeError(
-						"I can't give "
-						+ objectName(dest)
-						+ " a new value.");
 				}
 				/*
 					Refuse if the dest is an Array and the property chain's
@@ -491,38 +486,8 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 						+ propertyChain[1] + "')."
 					);
 				}
-				
-				// Using Object.create(null) here for no particular reason.
-				return Object.assign(Object.create(null), {
-					assignmentRequest: true,
-					dest:              dest,
-					src:               src,
-					operator:          operator,
-					TwineScript_ObjectName:
-						"an assignment operation",
-				});
-			},
-			
-			/*
-				Colours are first-class objects in TwineScript.
-				You can't do much with them, though - just add them.
-			*/
-			makeColour: function(str) {
-				// Trim off the "#"
-				str = str.replace("#",'');
-				/*
-					If a 3-char hex colour was passed...
-				*/
-				if (str.length === 3) {
-					str = str[0] + str[0]
-						+ str[1] + str[1]
-						+ str[2] + str[2];
-				}
-				return Object.assign(Object.create(ColourProto), {
-					r: parseInt(str.slice(0,2), 16),
-					g: parseInt(str.slice(2,4), 16),
-					b: parseInt(str.slice(4,6), 16),
-				});
+				// The input is all clear, it seems.
+				return AssignmentRequest.create(dest, src, operator);
 			},
 		};
 		return Object.freeze(Operation);
@@ -694,7 +659,7 @@ define(['jquery', 'utils', 'macros', 'state'], function($, Utils, Macros, State)
 				);
 			}
 			else if (token.type === "colour") {
-				return "Operation.makeColour("
+				return "Colour.create("
 					+ JSON.stringify(token.colour)
 					+ ")";
 			}

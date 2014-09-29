@@ -1,5 +1,5 @@
-define(['jquery', 'twinemarkup', 'story', 'state', 'macros', 'engine', 'utils'],
-function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
+define(['jquery', 'twinemarkup', 'story', 'state', 'macros', 'engine', 'utils', 'changercommand', 'colour'],
+function($, TwineMarkup, Story, State, Macros, Engine, Utils, ChangerCommand, Colour) {
 	"use strict";
 	/*
 		Twine macro standard library.
@@ -92,6 +92,9 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 	function addSensor(name, fn) {
 		fn.sensor = true;
 		fn.macroName = name;
+		fn.toString = function() {
+			return "[A '" + name + "' sensor]";
+		};
 		Macros.add(name,
 			"sensor",
 			deferred(fn)
@@ -103,7 +106,7 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 	/*
 		Takes a function, and registers it as a live Changer macro.
 		
-		Changers return a transformation function that is used to mutate
+		Changers return a transformation function (a ChangerCommand) that is used to mutate
 		a ChangerDescriptor object, that itself is used to alter a Section's rendering.
 		
 		A ChangerDescriptor is a plain object with the following values:
@@ -121,33 +124,6 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 		);
 		// Return the function to enable "bubble chaining".
 		return addChanger;
-	}
-	
-	/*
-		One problem is that doExpressions() has no easy way of determining
-		if a function it acquired by evaluating an expression is a changer function - unlike
-		for sensor functions, which aren't wrapped in this manner.
-		
-		So, by tagging all changer functions with an expando property, they can be duck-typed.
-		
-		It's mandatory that all changer functions' return values pass through
-		this function, sadly.
-		
-		Alternative solution rejected: all changer functions must have the name 'changerFn'
-		or something. (Relying on a function's inner name for anything other than metadata is,
-		I feel, overly ad-hoc.) 
-	*/
-	function changerFn(fn, name) {
-		fn.changer = true;
-		fn.macroName = name;
-		fn.TwineScript_ObjectName = "a ("  +name + ":) command";
-		/*
-			Unlike most TwineScript objects, this is author-facing.
-		*/
-		fn.toString = function() {
-			return "[A " + name + " command]";
-		};
-		return fn;
 	}
 	
 	/*
@@ -334,14 +310,14 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 	
 	/*
 		TODO: Maybe it would be better, or at least more functional, if
-		changerFns returned a fresh ChangerDescriptor instead of permuting
+		ChangerCommands returned a fresh ChangerDescriptor instead of permuting
 		the passed-in one.
 	*/
 	addChanger
 		// (transition:)
 		// Apply a CSS transition to a hook as it is inserted.
 		(["transition", "t8n"], function transition(_, name, time) {
-			return changerFn(function transition(d) {
+			return ChangerCommand(function transition(d) {
 				d.transition = name;
 				d.transitionTime = time;
 				return d;
@@ -351,7 +327,7 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 		// (font:)
 		// A shortcut for applying a font to a span of text.
 		("font", function font(_, family) {
-			return changerFn(function nobr(d) {
+			return ChangerCommand(function nobr(d) {
 				// To prevent keywords from being created by concatenating lines,
 				// replace the line breaks with a zero-width space.
 				d.code = "<span style='font-family:" + family + "'>" + d.code + "</span>";
@@ -362,20 +338,10 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 		// (colour:)
 		// A shortcut for applying a colour to a span of text.
 		(["colour", "color"], function colour(_, CSScolour) {
-			/*
-				Convert TwineScript CSS colours to bad old hexadecimal.
-			*/
-			if (CSScolour.colour) {
-				CSScolour = "#"
-					/*
-						Number.toString() won't have a leading 0 unless
-						we manually insert it.
-					*/
-					+ (CSScolour.r < 16 ? "0" : "") + CSScolour.r.toString(16)
-					+ (CSScolour.g < 16 ? "0" : "") + CSScolour.g.toString(16)
-					+ (CSScolour.b < 16 ? "0" : "") + CSScolour.b.toString(16);
-			}
-			return changerFn(function nobr(d) {
+			//Convert TwineScript CSS colours to bad old hexadecimal.
+			CSScolour = Colour.RGBToHex(CSScolour);
+			
+			return ChangerCommand(function nobr(d) {
 				/*
 					To prevent keywords from being created by concatenating lines,
 					replace the line breaks with a zero-width space.
@@ -391,7 +357,7 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 			Manual line breaks can be inserted with <br>.
 		*/
 		("nobr", function nobr() {
-			return changerFn(function nobr(d) {
+			return ChangerCommand(function nobr(d) {
 				// To prevent keywords from being created by concatenating lines,
 				// replace the line breaks with a zero-width space.
 				d.code = d.code.replace(/\n/g, "&zwnj;");
@@ -406,7 +372,7 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 			contents: raw CSS.
 		*/
 		("CSS", function CSS() {
-			return changerFn(function style(d) {
+			return ChangerCommand(function style(d) {
 				var selector = 'style#macro';
 				if (!$(selector).length) {
 					$(document.head).append($('<style id="macro">'));
@@ -468,7 +434,7 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 					wrapperHTML = Utils.wrapHTMLTag("_", styleTagNames[styleName]).split("_");
 				}
 				
-				return changerFn(function text_style(d) {
+				return ChangerCommand(function text_style(d) {
 					/*
 						This is an equivalent hack that inserts d.code into
 						the middle.
@@ -526,7 +492,7 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 	
 	revisionTypes.forEach(function(e) {
 		addChanger(e, function(section, scope) {
-			return changerFn(function(desc) {
+			return ChangerCommand(function(desc) {
 				desc.target = scope;
 				desc.append = e;
 				return desc;
@@ -623,7 +589,7 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils) {
 				proper task of altering a ChangerDescriptor. Alas... it is something of
 				a #kludge that it piggybacks off the changer macro concept.
 			*/
-			return changerFn(function makeEnchanter(desc) {
+			return ChangerCommand(function makeEnchanter(desc) {
 				var enchantData,
 					/*
 						The scope is shared with both enchantData methods:

@@ -148,8 +148,12 @@ function($, Utils, Selectors, Renderer, TwineScript, Story, State, HookUtils, Ho
 		else if (HookSet.isPrototypeOf(result)) {
 			this.renderInto(result.text(), expr);
 		}
-		else if (typeof result !== "object"  && typeof result !== "function"
-			&&   typeof result !== "boolean" && result !== null) {
+		/*
+			This prints an object if it's a string, number, or has a custom toString method
+			and isn't a function.
+		*/
+		else if (typeof result === "string"  || typeof result === "number"
+			|| (typeof result === "object" && result && result.toString !== ({}).toString)) {
 			/*
 				Transition the resulting Twine code into the expression's element.
 			*/
