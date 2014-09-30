@@ -43,6 +43,8 @@ define(['jquery', 'utils', 'macros', 'state', 'colour', 'assignmentRequest'], fu
 			HookRefs, for instance, coerce to the string value of their first
 			matching hook.
 			
+			(Will I pay for this later???)
+			
 			This returns the resulting string, or false if it couldn't be performed.
 			@return {String|Boolean}
 		*/
@@ -91,6 +93,20 @@ define(['jquery', 'utils', 'macros', 'state', 'colour', 'assignmentRequest'], fu
 				return new Error("Only I can use data keys beginning with 'TwineScript'.");
 			}
 			return prop;
+		}
+		
+		/*
+			Converts a function to refuse its arguments if one
+			of them is not a number.
+			@return {Function}
+		*/
+		function onlyNumbers(fn, operationVerb) {
+			operationVerb = operationVerb || "do this to";
+			return function(left, right) {
+				if (typeof left !== "number" || typeof right !== "number") {
+					return new TypeError("I can only " + operationVerb + " numbers.");
+				}
+			};
 		}
 		
 		/*
@@ -155,18 +171,18 @@ define(['jquery', 'utils', 'macros', 'state', 'colour', 'assignmentRequest'], fu
 			var i, keys;
 			if (container) {
 				/*
-					Basic array or string indexOf check
+					Basic array or string indexOf check.
 				*/
 				if (typeof container === "string" || Array.isArray(container)) {
 					return container.indexOf(obj) > -1;
 				}
 				/*
-					Controversially, for plain object containers, it returns true if
-					the obj is a stored value OR a string key.
+					For plain object containers, it returns true if
+					the obj is a stored value.
 				*/
 				if (container.constructor === Object) {
 					for (i = 0, keys = Object.keys(container); i < keys.length; i+=1) {
-						if (keys === obj || container[keys] === obj) {
+						if (container[keys] === obj) {
 							return true;
 						}
 					}
@@ -190,7 +206,7 @@ define(['jquery', 'utils', 'macros', 'state', 'colour', 'assignmentRequest'], fu
 			/*
 				Get to the farthest object in the chain, by advancing through all
 				but the last part of the chain (which must be withheld and used
-				for the assignment operation.)
+				for the assignment operation).
 			*/
 			get deepestObject() {
 				return this.propertyChain.slice(0, -1).reduce(function(obj, f) {
@@ -235,6 +251,10 @@ define(['jquery', 'utils', 'macros', 'state', 'colour', 'assignmentRequest'], fu
 					"create a new array concatenating the first with the second".
 				*/
 				if (Array.isArray(l)) {
+					/*
+						Note that the doNotCoerce wrapper above requires that
+						the right side also be an array.
+					*/
 					return [].concat(l, r);
 				}
 				/*
@@ -243,7 +263,7 @@ define(['jquery', 'utils', 'macros', 'state', 'colour', 'assignmentRequest'], fu
 					of performing composition is to add the returned changer
 					functions together.
 				*/
-				if (typeof l === "function") {
+				else if (typeof l === "function") {
 					var ret = function() {
 						/*
 							In what order should the functions be composed?
@@ -263,11 +283,12 @@ define(['jquery', 'utils', 'macros', 'state', 'colour', 'assignmentRequest'], fu
 				/*
 					New colours can be created by addition.
 				*/
-				if (Object.getPrototypeOf(l) === Colour) {
+				else if (Object.getPrototypeOf(l) === Colour) {
 					return Colour.create({
 						/*
 							You may notice this is a fairly glib blending
-							algorithm. It's the same one from Game Maker, though, so I'm hard-pressed to think of a more
+							algorithm. It's the same one from Game Maker,
+							though, so I'm hard-pressed to think of a more
 							intuitive one.
 						*/
 						r : Math.min(Math.round((l.r + r.r) * 0.6), 0xFF),
@@ -277,10 +298,37 @@ define(['jquery', 'utils', 'macros', 'state', 'colour', 'assignmentRequest'], fu
 				}
 				return l + r;
 			}),
-			"-":  doNotCoerce(function(l, r) { return l - r; }),
-			"*":  doNotCoerce(function(l, r) { return l * r; }),
-			"/":  doNotCoerce(function(l, r) { return l / r; }),
-			"%":  doNotCoerce(function(l, r) { return l % r; }),
+			"-":  doNotCoerce(function(l, r) {
+				/*
+					Overloading - to mean "remove all instances from".
+					So, "reed" - "e" = "rd", and [1,3,5,3] - 3 = [1,5].
+				*/
+				if (Array.isArray(l)) {
+					/*
+						Note that the doNotCoerce wrapper above requires that
+						the right side also be an array. Subtracting 1 element
+						from an array requires it be wrapped in an (a:) macro.
+					*/
+					return l.filter(function(e) { return r.indexOf(e) === -1; });
+				}
+				else if (typeof l === "string") {
+					/*
+						This is an easy but cheesy way to remove all instances
+						of the right string from the left string.
+					*/
+					return l.split(r).join('');
+				}
+				return l - r;
+			}),
+			"*":  onlyNumbers(doNotCoerce(function(l, r) {
+				return l * r;
+			}), "multiply"),
+			"/":  onlyNumbers(doNotCoerce(function(l, r) {
+				return l / r;
+			}), "divide"),
+			"%":  onlyNumbers(doNotCoerce(function(l, r) {
+				return l % r;
+			}), "modulus"),
 			
 			lt:  comparisonOp(doNotCoerce(function(l,r) { return l <  r; })),
 			gt:  comparisonOp(doNotCoerce(function(l,r) { return l >  r; })),
