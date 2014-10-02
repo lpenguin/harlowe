@@ -283,7 +283,7 @@ define(['jquery', 'utils', 'macros', 'state', 'colour', 'assignmentRequest'], fu
 				/*
 					New colours can be created by addition.
 				*/
-				else if (Object.getPrototypeOf(l) === Colour) {
+				else if (l && typeof l === "object" && Object.getPrototypeOf(l) === Colour) {
 					return Colour.create({
 						/*
 							You may notice this is a fairly glib blending

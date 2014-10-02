@@ -92,9 +92,9 @@ function ($, Story, Utils, Selectors, State, Section) {
 
 		/*
 			Identify which transition this passage is associated with.
-			Use the default transition, "dissolve", if none specified.
+			Use the default transition, "fade-in", if none specified.
 		*/
-		t8n = passageData.attr("data-t8n") || "dissolve";
+		t8n = passageData.attr("data-t8n") || "fade-in";
 
 		/*
 			If this isn't a stretchtext transition, send away all of the
