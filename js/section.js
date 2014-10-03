@@ -280,19 +280,18 @@ function($, Utils, Selectors, Renderer, TwineScript, Story, State, HookUtils, Ho
 		*/
 		if (!(desc.append in target)) {
 			/*
-				jQuery doesn't have a .replace method, but its .replaceAll is what
-				we desire.
-				
-				You might wonder why, exactly, the discrepancy between the Twine
-				"replace" macro and jQuery's "replaceWith" is allowed to trickle all
-				the way up to here. I just don't feel like the camelCase of replaceWith
-				(one of jQuery's rare camelCase cases) should have to be present
-				in the remainder of the Harlowe codebase, when the exterior API
-				uses "replace" for this DOM transformation action instead.
+				(replace:) should actually replace the interior of the hook with the
+				content, not replace the hook itself (which is what .replaceWith() does).
+				So, we need to do .empty() beforehand, then change the method to "append" (though "prepend" will work too).
 			*/
 			if (desc.append === "replace") {
-				desc.append += "With";
+				target.empty();
+				desc.append = "append";
 			}
+			/*
+				If I wished to add a variant of (replace:) that did remove the entire
+				hook, then I'd change desc.append to "replaceWith".
+			*/
 			else {
 				Utils.impossible("Section.render", "The target jQuery doesn't have a '" + desc.append + "' method.");
 				return;
