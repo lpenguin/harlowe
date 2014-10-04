@@ -243,10 +243,9 @@ function($, Utils, Selectors, Renderer, TwineScript, Story, State, HookUtils, Ho
 		recursiveSensing();
 	}
 	
-	
 	/**
 		This method renders TwineMarkup, executing the TwineScript expressions
-		within, and returns the rendered HTML. The expressions only have visibility
+		within. The expressions only have visibility
 		within this passage.
 
 		@method render
@@ -255,8 +254,7 @@ function($, Utils, Selectors, Renderer, TwineScript, Story, State, HookUtils, Ho
 		@return {jQuery} The rendered passage.
 	*/
 	function render(desc) {
-		var section,
-			target = desc.target,
+		var target = desc.target,
 			/*
 				Render the TwineMarkup prose into a HTML DOM structure.
 				
@@ -325,18 +323,11 @@ function($, Utils, Selectors, Renderer, TwineScript, Story, State, HookUtils, Ho
 			Before executing the expressions, put a fresh object on the
 			expression data stack.
 		*/
-		this.stack.unshift(Object.create(null));
+		desc.section.stack.unshift(Object.create(null));
 		
 		/*
 			Execute the expressions immediately.
-			
-			Now, I could .bind doExpressions to this, but since
-			jQuery .each() is consistently dogmatic about 'this' binding,
-			overruling it in this instance would be too unusual.
-			
-			So, instead...
 		*/
-		section = this;
 		
 		Utils.findAndFilter(dom, Selectors.hook + ","
 			+ Selectors.expression + ","
@@ -347,19 +338,19 @@ function($, Utils, Selectors, Renderer, TwineScript, Story, State, HookUtils, Ho
 				case Selectors.hook:
 				{
 					if (expr.attr('code')) {
-						section.renderInto(expr.attr('code'), expr);
+						desc.section.renderInto(expr.attr('code'), expr);
 						expr.removeAttr('code');
 					}
 					break;
 				}
 				case Selectors.expression:
 				{
-					runExpression.call(section, expr);
+					runExpression.call(desc.section, expr);
 					break;
 				}
 				case Selectors.internalLink:
 				{
-					runLink.call(section, expr);
+					runLink.call(desc.section, expr);
 					break;
 				}
 			}
@@ -369,7 +360,7 @@ function($, Utils, Selectors, Renderer, TwineScript, Story, State, HookUtils, Ho
 			After evaluating the expressions, pop the expression data stack.
 			The data is purely temporary and can be safely discarded.
 		*/
-		this.stack.shift();
+		desc.section.stack.shift();
 		
 		/*
 			Transition it using the descriptor's given transition.
@@ -396,7 +387,7 @@ function($, Utils, Selectors, Renderer, TwineScript, Story, State, HookUtils, Ho
 			TODO: this really should not be run more than once per frame,
 			so some way of throttled debouncing is necessary.
 		*/
-		this.updateEnchantments();
+		desc.section.updateEnchantments();
 	}
 	
 	Section = {	
@@ -515,6 +506,11 @@ function($, Utils, Selectors, Renderer, TwineScript, Story, State, HookUtils, Ho
 			modify the ChangerDescriptor object that controls how the code
 			is rendered.
 			
+			This is used primarily by Engine.showPassage() to render
+			passage data into a fresh <tw-passage>, but is also used to
+			render TwineMarkup into <tw-expression>s (by runExpression())
+			and <tw-hook>s (by render() and runSensorFunction()).
+			
 			@method renderInto
 			@param {String} code The TwineMarkup code to render into the target.
 			@param target The render destination. Usually a HookSet, PseudoHookSet or jQuery.
@@ -538,6 +534,12 @@ function($, Utils, Selectors, Renderer, TwineScript, Story, State, HookUtils, Ho
 				target:           target,
 				append:           "append"
 			};
+			/*
+				Also define a non-writable property linking it back to this section.
+				This is used by enchantment macros to determine where to register
+				their enchantments to.
+			*/
+			Object.defineProperty(desc, "section", { value:this });
 			
 			/*
 				Run all the changer functions.

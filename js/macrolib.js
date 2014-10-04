@@ -569,10 +569,20 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils, ChangerCommand, Co
 			is that which the author passes to it when invoking the
 			macro (in the case of "(macro: ?1)", selector will be "?1").
 		*/
-		return function enchantmentMacroFn(section, selector, target) {
+		return function enchantmentMacroFn(_, selector, target) {
 			/*
-				This changer function registers a new enchantment
-				in the passed-in Section.
+				If the selector is a HookRef (which it usually is), we must unwrap it
+				and extract its plain selector string, as this ChangerCommand
+				could be used far from the hooks that this HookRef selects,
+				and we'll need to re-run the desc's section's selectHook() anyway.
+			*/
+			if ("selector" in selector) {
+				selector = selector.selector;
+			}
+			
+			/*
+				This ChangerCommand registers a new enchantment on the Section that the
+				ChangerDescriptor belongs to.
 				
 				It must perform the following tasks:
 				1. Silence the passed-in ChangerDescriptor.
@@ -637,7 +647,7 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils, ChangerCommand, Co
 				}
 				
 				/*
-					This enchantData object is stored in the Section's enchantments
+					This enchantData object is stored in the descriptor's Section's enchantments
 					list, to allow the Section to easily enchant and re-enchant this
 					scope whenever its DOM is altered (e.g. words matching this enchantment's
 					selector are added or removed from the DOM).
@@ -653,7 +663,7 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils, ChangerCommand, Co
 							Create the scope, which is a HookSet or PseudoHookSet
 							depending on the selector.
 						*/
-						scope = section.selectHook(selector);
+						scope = desc.section.selectHook(selector);
 						
 						/*
 							In the unlikely event that no scope could be created, call it quits.
@@ -662,7 +672,6 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils, ChangerCommand, Co
 						if (!scope) {
 							return;
 						}
-						
 						/*
 							Reset the enchantments store, to prepare for the insertion of
 							a fresh set of <tw-enchantment>s.
@@ -707,8 +716,8 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils, ChangerCommand, Co
 											it calls updateEnchantments(), will not re-enchant
 											the scope using this very enchantment.
 										*/
-										index = section.enchantments.indexOf(enchantData);
-										section.enchantments.splice(index,1);
+										index = desc.section.enchantments.indexOf(enchantData);
+										desc.section.enchantments.splice(index,1);
 										/*
 											Of course, the <tw-enchantment>s
 											must also be removed.
@@ -724,7 +733,7 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils, ChangerCommand, Co
 										all its values are assigned, not just the target.
 										The second argument may be extraneous. #awkward
 									*/
-									section.renderInto(code + '', null, desc);
+									desc.section.renderInto(code + '', null, desc);
 								}
 							);
 						});
@@ -745,7 +754,7 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils, ChangerCommand, Co
 				/*
 					Add the above object to the section's enchantments.
 				*/
-				section.enchantments.push(enchantData);
+				desc.section.enchantments.push(enchantData);
 				/*
 					Enchant the scope for the first time.
 				*/
