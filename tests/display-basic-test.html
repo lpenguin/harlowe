@@ -4,6 +4,10 @@
 <tw-story></tw-story><script data-main="../js/harlowe.js" src="../node_modules/requirejs/require.js"></script>
 <tw-storydata options="debug" startnode="1">
 <tw-passagedata pid="1" name="1" position="512,384" data-t8n="instant">
+(set: $animal to "Chicken")
 (display: "2") (= Chicken)
-(set: $red to (display: "2") + "s!") $red (= Chickens)
-</tw-passagedata><tw-passagedata pid="2" name="2" position="512,384" data-t8n="instant">Chicken
+(set: $red to (display: "2")) $red (= Chicken)
+(set: $pass to "2") (set: $red to (display: $pass)) $red (= Chicken)
+(set: $animal to "Sheep") $red (= Sheep)
+(set: $red to (display: "2") + "s!") (= Error)
+</tw-passagedata><tw-passagedata pid="2" name="2" position="512,384" data-t8n="instant">$animal

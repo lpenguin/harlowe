@@ -62,20 +62,7 @@ function($, Story, Utils) {
 				Utils.lockProperty(macroRegistry, Utils.insensitiveName(name), fn);
 			}
 			return this;
-		},
-		
-		/**
-			Given the name of a registered macro definition,
-			retrieves its type.
-			
-			@method getType
-			@param {String} Name of the macro definition to get
-			@return {String} The result.
-		*/
-		getType: function(name) {
-			var m = Macros.get(name);
-			return (m ? m.type : "");
-		},
+		}
 	};
 	
 	Utils.log("Macros module ready!");

@@ -12,6 +12,9 @@ define(['hookutils'],function(HookUtils) {
 		This is a powerful construct!
 		
 		PseudoHookSets, like HookSets, are exclusively created by Section.selectHook.
+		But, unlike the former, they cannot be created as literals - only as a by-product
+		of providing a string to certain enchantment macros. Hence, they are unobservable
+		by the author, and have no TwineScript methods.
 		
 		@class PseudoHookSet
 		@static

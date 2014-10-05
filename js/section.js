@@ -484,6 +484,7 @@ function($, Utils, Selectors, Renderer, TwineScript, Story, State, HookUtils, Ho
 		selectHook: function(selectorString) {
 			/*
 				If a HookSet or PseudoHookSet was passed in, return it unmodified.
+				TODO: Should this be a bug?
 			*/
 			if (HookSet.isPrototypeOf(selectorString)
 				|| PseudoHookSet.isPrototypeOf(selectorString)) {

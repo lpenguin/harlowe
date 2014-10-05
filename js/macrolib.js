@@ -258,46 +258,35 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils, ChangerCommand, Co
 		("else", function _else(section) {
 			return !section.stack[0].lastIf;
 		})
-	
+		
 		/*
 			(display:) evaluates to the TwineMarkup source of the passage
 			with the given name.
-			Evaluates to a string.
+			Evaluates to a DisplayCommand, an object which is by-and-large
+			unusable as a stored value, but renders to the full TwineMarkup
+			source of the given passage.
 		*/
-		("display", function display(section, name) {
-			try {
-				
-				/*
-					Test for the existence of the named passage in the story.
-				*/
-				if (!Story.passageNamed(name)) {
-					return new ReferenceError('I can\'t display passage "' + name + '" because it doesn\'t exist');
-				}
-				
-				/*
-					Make a much-needed check that this display() isn't being
-					recursively called without end. A limit of 5 recursions is set.
-				*/
-				if (section.stack.reduce(function(count,e) {
-					return count + ((e.display && e.display.indexOf(name) >-1) || 0);
-				},0) >= 25) {
-					return new RangeError('Display loop: ' + name + ' is displaying itself 25+ times.');
-				}
-				
-				/*
-					In order to make the above check work, of course,
-					each call to display() must set a property on the expression
-					stack of the section. So, we do it now:
-				*/
-				section.stack[0].display = (section.stack[0].display || []).concat(name);
-
-				/*
-					Having concluded those checks, 
-				*/
-				return (Story.passageNamed(name).html());
-			} catch (e) {
-				return e;
+		("display", function display(_, name) {
+			/*
+				Test for the existence of the named passage in the story.
+			*/
+			if (!Story.passageNamed(name)) {
+				return new ReferenceError(
+					"I can't display the passage '"
+					+ name
+					+ "' because it doesn't exist."
+				);
 			}
+			/*
+				Create a DisplayCommand.
+			*/
+			return {
+				TwineScript_ObjectName: "a (display:) command",
+				toString: function() {
+					// TODO: Reimplement the (display:) loop.
+					return Story.passageNamed(name).html();
+				}
+			};
 		})
 		/*
 			(remove:) Removes the given hook or pseudo-hook from the section.

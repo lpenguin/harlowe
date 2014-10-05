@@ -1,5 +1,5 @@
 /*jshint unused:false */
-define(['jquery', 'utils', 'macros', 'state', 'colour', 'assignmentRequest'], function($, Utils, Macros, State, Colour, AssignmentRequest) {
+define(['jquery', 'utils', 'macros', 'state', 'story', 'colour', 'assignmentRequest'], function($, Utils, Macros, State, Story, Colour, AssignmentRequest) {
 	"use strict";
 	
 	// JShint's "unused" variables accessible to eval()
@@ -14,20 +14,40 @@ define(['jquery', 'utils', 'macros', 'state', 'colour', 'assignmentRequest'], fu
 	*/
 	
 	/*
-		What follows from here are runtime functions and variables that
-		Script.environ() relies on to be in scope.
-	*/
-	
-	/*
-		Generates an operation object, given an identifiers object.
+		This generates an Operations object, given an identifiers object.
 		
-		The operation object is a list of operations which TwineScript proxies
-		for JavaScript. Most of these have implicit type coercion or silent errors 
-		which must be dealt with.
+		The Operations object is a table of operations which TwineScript proxies
+		for/sugars over JavaScript. These include basic fixes like the elimination
+		of implicit type coercion and the addition of certain early errors, but also
+		includes support for new TwineScript operators, overloading of old operators,
+		and other things.
 		
 		@class Operation
 		@private
 		@for TwineScript
+	*/
+	/*
+		Before I continue, I'd like to explain the API for "TwineScript datatype" objects.
+		This is an otherwise plain object that may implement any of the following:
+		
+		{Function|String} TwineScript_ObjectName:
+			returns a string that's used when TwineScript needs to
+			name the object in error messages or the debug menu.
+		
+		{Function} TwineScript_ToString:
+			returns a string that's used when the object CAN be implicitly
+			coerced to string. This should be used very sparingly.
+		
+		{Function} set TwineScript_Assignee:
+			a setter function that, if present, proxies the act of setting a value to
+			this object, if it's usable as an lvalue. Currently hardcoded to only
+			work for hookRefs!!
+		
+		{Function} toString:
+			if this is present and !== Object.prototype.toString, then this is
+			used by Section to convert this datatype to renderable TwineMarkup code.
+			This is named "toString" so that Array, Function and other objects can be
+			interpreted by Section.
 	*/
 	function operations(Identifiers) {
 		var Operation, VarRefProto,
@@ -428,7 +448,8 @@ define(['jquery', 'utils', 'macros', 'state', 'colour', 'assignmentRequest'], fu
 			/*
 				Runs a macro.
 				
-				In TwineScript.compile(), the myriad arguments given to a macro invocation are converted to 2 parameters to runMacro:
+				In TwineScript.compile(), the myriad arguments given to a macro invocation are
+				converted to 2 parameters to runMacro:
 				
 				@param {String} name     The macro's name.
 				@param {Function} thunk  A thunk enclosing the expressions 
@@ -440,13 +461,25 @@ define(['jquery', 'utils', 'macros', 'state', 'colour', 'assignmentRequest'], fu
 					return name;
 				}
 				/*
-					If the name is "" or undefined, don't bother
-					checking if the macro exists.
+					Check if the macro exists as a built-in.
 				*/
-				if (!name || !Macros.has(name)) {
-					return new ReferenceError("I can't run the macro '" + name + "' because it doesn't exist.");
+				if (!Macros.has(name)) {
+					/*
+						If not, then try and find an author-defined passage to run.
+						Unlike macros, this uses the exact name (no insensitivity).
+						That's a bit of a discrepancy, I know...
+					*/
+					if (!Story.passageNamed(name)) {
+						return new ReferenceError(
+							"I can't run the macro '"
+							+ name
+							+ "' because it doesn't exist."
+						);
+					}
+					// TODO: Implement passage macros.
+					return new Error("Passage macros are not implemented yet.");
 				}
-				fn = Macros.get(name);
+				else fn = Macros.get(name);
 				
 				return fn(thunk);
 			},
@@ -507,6 +540,7 @@ define(['jquery', 'utils', 'macros', 'state', 'colour', 'assignmentRequest'], fu
 				if (error) {
 					return error;
 				}
+				
 				/*
 					Also refuse if the dest is not, actually, a VarRef.
 				*/
