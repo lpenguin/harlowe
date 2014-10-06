@@ -7,130 +7,10 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils, ChangerCommand, Co
 	*/
 	
 	/*
-		Operation.runMacro() in TwineScript passes its arguments as a thunk.
-		See that page for the formal explanation. These two functions, eager and deferred,
-		convert regular Javascript functions to accept a such a thunk as its sole argument.
-		
-		Non-live macros ("eager" macros) don't actually need the thunk - they take it,
-		unwrap it, and discard it. Live macros, however, need to retain
-		it and re-evaluate it over and over.
-		
-		These should currently (August 2014) only be called by addChanger and addValue.
-	*/
-	function eager(fn) {
-		return function macroResult(argsThunk) {
-			var args = argsThunk(),
-				// Do the error check now.
-				error = Utils.containsError(args);
-
-			if (error) {
-				return error;
-			}
-			return fn.apply(0, args);
-		};
-	}
-	
-	/*
-		Conversely, this one wrap the function, fn, in an outer function, O,
-		which takes argsThunk and returns another thunk that calls the args
-		on fn.
-		
-		Hence, this converts fn into a function that joins the argsThunk
-		with the macro's call, creating a combined thunk.
-		
-		Again, this should currently (August 2014) only be called by addSensor.
-	*/
-	function deferred(fn) {
-		return function deferredMacroResult(argsThunk) {
-			/*
-				While macroResultThunk's interior is similar to macroResult,
-				returned up above in eagerFunction(),
-				note that the scope binding of argsThunk is different,
-				and thus it can't really be abstracted out.
-			*/
-			var t = function macroResultThunk() {
-				var args = argsThunk(),
-					// Do the error check now.
-					error = Utils.containsError(args);
-				
-				if (error) {
-					return error;
-				}
-				return fn.apply(0, args);
-			};
-			/*
-				The combined thunk should have the same expando properties
-				("changer", "sensor", etc.) as the initial function.
-			*/
-			Object.assign(t, fn);
-			return t;
-		};
-	}
-	
-	/*
-		Takes a function, and registers it as a value macro.
-	*/
-	function addValue(name, fn) {
-		Macros.add(name,
-			"value",
-			eager(fn)
-		);
-		// Return the function to enable "bubble chaining".
-		return addValue;
-	}
-	
-	/*
-		Takes a function, and registers it as a live sensor macro.
-		
-		Sensors return an object signifying whether to display the
-		attached hook, and whether to continue sensing.
-		
-		The returned object has:
-			{Boolean} value Whether to display or not
-			{Boolean} done Whether to stop sensing.
-	*/
-	function addSensor(name, fn) {
-		fn.sensor = true;
-		fn.macroName = name;
-		fn.toString = function() {
-			return "[A '" + name + "' sensor]";
-		};
-		Macros.add(name,
-			"sensor",
-			deferred(fn)
-		);
-		// Return the function to enable "bubble chaining".
-		return addSensor;
-	}
-	
-	/*
-		Takes a function, and registers it as a live Changer macro.
-		
-		Changers return a transformation function (a ChangerCommand) that is used to mutate
-		a ChangerDescriptor object, that itself is used to alter a Section's rendering.
-		
-		A ChangerDescriptor is a plain object with the following values:
-					
-		{String} transition      Which transition to use.
-		{Number} transitionTime  The duration of the transition, in ms. CURRENTLY UNUSED.
-		{String} code            Transformations made on the hook's code before it is run.
-		{jQuery} target          Where to render the code, if not the hookElement.
-		{String} append          Which jQuery method to append the code to the dest with.
-	*/
-	function addChanger(name, fn) {
-		Macros.add(name,
-			"changer",
-			eager(fn)
-		);
-		// Return the function to enable "bubble chaining".
-		return addChanger;
-	}
-	
-	/*
 		Basic Macros
 	*/
 	
-	addValue
+	Macros.addValue
 		/*
 			(set:) Set Twine variables.
 			Evaluates to nothing if no error occurred.
@@ -142,7 +22,7 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils, ChangerCommand, Co
 				request, or if it incorrectly uses the "into" operator
 			*/
 			if (!ar.assignmentRequest || ar.operator === "into") {
-				return new SyntaxError("This isn't how you use the (set:) macro.");
+				return new SyntaxError("This isn't how you should use the (set:) macro.");
 			}
 			propertyChain = ar.dest.propertyChain;
 			
@@ -302,57 +182,66 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils, ChangerCommand, Co
 		ChangerCommands returned a fresh ChangerDescriptor instead of permuting
 		the passed-in one.
 	*/
-	addChanger
+	Macros.addChanger
 		// (transition:)
 		// Apply a CSS transition to a hook as it is inserted.
-		(["transition", "t8n"], function transition(_, name, time) {
-			return ChangerCommand(function transition(d) {
-				d.transition = name;
+		(["transition", "t8n"],
+			function transition(_, name, time) {
+				return Macros.ChangerCommand("transition", name, time);
+			},
+			function(d, name, time) {
+				d.transition     = name;
 				d.transitionTime = time;
 				return d;
-			}, "transition");
-		})
+			}
+		)
 		
 		// (font:)
 		// A shortcut for applying a font to a span of text.
-		("font", function font(_, family) {
-			return ChangerCommand(function nobr(d) {
-				// To prevent keywords from being created by concatenating lines,
-				// replace the line breaks with a zero-width space.
+		("font",
+			function font(_, family) {
+				return Macros.ChangerCommand("font", family);
+			},
+			function(d, family) {
 				d.code = "<span style='font-family:" + family + "'>" + d.code + "</span>";
 				return d;
-			}, "font");
-		})
+			}
+		)
 		
 		// (colour:)
 		// A shortcut for applying a colour to a span of text.
-		(["colour", "color"], function colour(_, CSScolour) {
-			//Convert TwineScript CSS colours to bad old hexadecimal.
-			CSScolour = Colour.RGBToHex(CSScolour);
-			
-			return ChangerCommand(function nobr(d) {
+		(["colour", "color"],
+			function colour(_, CSScolour) {
+				//Convert TwineScript CSS colours to bad old hexadecimal.
+				CSScolour = Colour.RGBToHex(CSScolour);
+				return Macros.ChangerCommand("colour", CSScolour);
+			},
+			function (d, CSScolour) {
 				/*
 					To prevent keywords from being created by concatenating lines,
 					replace the line breaks with a zero-width space.
 				*/
 				d.code = "<span style='color:" + CSScolour + "'>" + d.code + "</span>";
 				return d;
-			}, "colour");
-		})
+			}
+		)
 		
 		/*
 			(nobr:)
 			Remove line breaks from the hook.
 			Manual line breaks can be inserted with <br>.
 		*/
-		("nobr", function nobr() {
-			return ChangerCommand(function nobr(d) {
+		("nobr",
+			function nobr() {
+				return Macros.ChangerCommand("nobr");
+			},
+			function(d) {
 				// To prevent keywords from being created by concatenating lines,
 				// replace the line breaks with a zero-width space.
 				d.code = d.code.replace(/\n/g, "&zwnj;");
 				return d;
-			}, "nobr");
-		})
+			}
+		)
 
 		/*
 			(CSS:)
@@ -360,8 +249,11 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils, ChangerCommand, Co
 			duration of the current passage only.
 			contents: raw CSS.
 		*/
-		("CSS", function CSS() {
-			return ChangerCommand(function style(d) {
+		("CSS",
+			function CSS() {
+				return Macros.ChangerCommand("CSS");
+			},
+			function style(d) {
 				var selector = 'style#macro';
 				if (!$(selector).length) {
 					$(document.head).append($('<style id="macro">'));
@@ -369,75 +261,74 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils, ChangerCommand, Co
 				$(selector).text(Utils.unescape(d.code));
 				d.code = "";
 				return d;
-			}, "CSS");
-		})
+			}
+		)
 		
 		/*
 			(text-style:)
 		*/
-		("text-style", (function() {
-			/*
-				This is a closure designed solely to cache the style-tagname mappings,
-				because I'm #paranoid.
-				
-				These map style names, as input by the author as this macro's first argument,
-				to HTML element tag names to wrap them with.
-			*/
-			var styleTagNames = Object.assign(Object.create(null), {
-					bold:         "b",
-					italic:       "i",
-					underline:    "u",
-					superscript:  "sup",
-					subscript:    "sub",
-					blink:        "blink",
-				},
+		("text-style",
+			function textstyle(_, styleName) {
+				return Macros.ChangerCommand("text-style", styleName);
+			},
+			(function() {
 				/*
-					These are the Twine extra styles.
+					This is a closure in which to cache the style-tagname mappings.
+					
+					These map style names, as input by the author as this macro's first argument,
+					to HTML element tag names to wrap them with.
 				*/
-				["outline", "shadow", "emboss", "condense", "expand", "blur", "blurrier",
-					"smear", "mirror", "upside-down", "fade-in-out", "rumble", "shudder"]
-					.reduce(function(obj, e) {
-						obj[Utils.insensitiveName(e)] = "tw-" + e;
-						return obj;
-					}, {})
-				);
-			
-			return function text_style(_, styleName) {
-				var
+				var styleTagNames = Object.assign(Object.create(null), {
+						bold:         "b",
+						italic:       "i",
+						underline:    "u",
+						superscript:  "sup",
+						subscript:    "sub",
+						blink:        "blink",
+						mark:         "mark",
+						delete:       "del",
+					},
 					/*
-						A pair of HTML strings to wrap the hook in. 
+						These are the Twine extra styles.
 					*/
-					wrapperHTML = ['', ''];
+					["outline", "shadow", "emboss", "condense", "expand", "blur", "blurrier",
+						"smear", "mirror", "upside-down", "fade-in-out", "rumble", "shudder"]
+						.reduce(function(obj, e) {
+							obj[Utils.insensitiveName(e)] = "tw-" + e;
+							return obj;
+						}, {})
+					);
 				
-				/*
-					The name should be insensitive to normalise both capitalisation,
-					and hyphenation of names like "upside-down".
-				*/
-				styleName = Utils.insensitiveName(styleName);
-				
-				if (styleName in styleTagNames) {
+				return function text_style(d, styleName) {
+					var
+						/*
+							A pair of HTML strings to wrap the hook in. 
+						*/
+						wrapperHTML = ['', ''];
+					
 					/*
-						This is a bit of a hack to split the return value of
-						wrapHTMLTag into an array of just the wrapper components.
+						The name should be insensitive to normalise both capitalisation,
+						and hyphenation of names like "upside-down".
 					*/
-					wrapperHTML = Utils.wrapHTMLTag("_", styleTagNames[styleName]).split("_");
-				}
-				
-				return ChangerCommand(function text_style(d) {
-					/*
-						This is an equivalent hack that inserts d.code into
-						the middle.
-					*/
+					styleName = Utils.insensitiveName(styleName);
+					
+					if (styleName in styleTagNames) {
+						/*
+							This is a bit of a hack to split the return value of
+							wrapHTMLTag into an array of just the wrapper components.
+						*/
+						wrapperHTML = Utils.wrapHTMLTag("_", styleTagNames[styleName]).split("_");
+					}
 					d.code = wrapperHTML.join(d.code);
 					return d;
-				}, "text-style");
-			};
-		}()));
+				};
+			}())
+		);
 	
 	/*
 		Standard sensor macros.
 	*/
-	addSensor
+	Macros.addSensor
 		// when()
 		("when", function(_, expr) {
 			return {
@@ -480,18 +371,21 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils, ChangerCommand, Co
 	];
 	
 	revisionTypes.forEach(function(e) {
-		addChanger(e, function(section, scope) {
-			return ChangerCommand(function(desc) {
+		Macros.addChanger(e,
+			function(_, scope) {
+				return Macros.ChangerCommand(e, scope);
+			},
+			function(desc, scope) {
 				desc.target = scope;
 				desc.append = e;
 				return desc;
-			}, e);
-		});
+			}
+		);
 	});
 	
 	/*
-		This large routine generates a function for enchantment macros, to ideally be used
-		as the second argument to addChanger().
+		This large routine generates functions for enchantment macros, to be applied to
+		Macros.addChanger().
 		
 		An "enchantment" is a process by which selected hooks in a passage are
 		automatically wrapped in <tw-enchantment> elements that have certain styling classes,
@@ -518,7 +412,7 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils, ChangerCommand, Co
 		@method newEnchantmentMacroFn
 		@param  {Function} innerFn       The function to perform on the macro's hooks
 		@param  {Object}  [enchantDesc]  An enchantment description object, or null.
-		@return {Function}               An enchantment macro function.
+		@return {Function[]}             A pair of functions.
 	*/
 	function newEnchantmentMacroFn(enchantDesc, name) {
 		// enchantDesc is a mandatory argument.
@@ -554,21 +448,24 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils, ChangerCommand, Co
 		);
 		
 		/*
-			Return the macro function. Note that its "selector" argument
+			Return the macro function AND the ChangerCommand function.
+			Note that the macro function's "selector" argument
 			is that which the author passes to it when invoking the
 			macro (in the case of "(macro: ?1)", selector will be "?1").
 		*/
-		return function enchantmentMacroFn(_, selector, target) {
-			/*
-				If the selector is a HookRef (which it usually is), we must unwrap it
-				and extract its plain selector string, as this ChangerCommand
-				could be used far from the hooks that this HookRef selects,
-				and we'll need to re-run the desc's section's selectHook() anyway.
-			*/
-			if ("selector" in selector) {
-				selector = selector.selector;
-			}
-			
+		return [
+			function enchantmentMacroFn(_, selector, target) {
+				/*
+					If the selector is a HookRef (which it usually is), we must unwrap it
+					and extract its plain selector string, as this ChangerCommand
+					could be used far from the hooks that this HookRef selects,
+					and we'll need to re-run the desc's section's selectHook() anyway.
+				*/
+				if ("selector" in selector) {
+					selector = selector.selector;
+				}
+				return Macros.ChangerCommand(name, selector, target);
+			},
 			/*
 				This ChangerCommand registers a new enchantment on the Section that the
 				ChangerDescriptor belongs to.
@@ -588,7 +485,7 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils, ChangerCommand, Co
 				proper task of altering a ChangerDescriptor. Alas... it is something of
 				a #kludge that it piggybacks off the changer macro concept.
 			*/
-			return ChangerCommand(function makeEnchanter(desc) {
+			function makeEnchanter(desc, selector, target) {
 				var enchantData,
 					/*
 						The scope is shared with both enchantData methods:
@@ -626,7 +523,7 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils, ChangerCommand, Co
 				if (enchantDesc.rerender) {
 					/*
 						The target can either be a separate selector passed as an
-						additional argument to the macro (e.g. click-replace(?1, ?2) )
+						additional argument to the macro (e.g. (click-replace: ?1, ?2) )
 						or, if absent, the enchantment selector.
 						
 						TODO: Need a way to target just the triggering enchantment.
@@ -749,10 +646,8 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils, ChangerCommand, Co
 				*/
 				enchantData.enchantScope();
 				return desc;
-			},
-			// All the way down here, we supply the author-facing debugging name for this macro.
-			name);
-		};
+			}
+		];
 	}
 	
 	var interactionTypes = [
@@ -793,7 +688,7 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils, ChangerCommand, Co
 	//TODO: (hover:)
 	
 	interactionTypes.forEach(function(e) {
-		addChanger(e.name, newEnchantmentMacroFn(e.enchantDesc, e.name));
+		Macros.addChanger.apply(0, [e.name].concat(newEnchantmentMacroFn(e.enchantDesc, e.name)));
 	});
 
 	
@@ -806,7 +701,7 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils, ChangerCommand, Co
 					rerender: revisionType
 				}),
 				name = interactionType.name + "-" + revisionType;
-			addChanger(name, newEnchantmentMacroFn(enchantDesc, name));
+			Macros.addChanger.apply(0, [name].concat(newEnchantmentMacroFn(enchantDesc, name)));
 		});
 	});
 	
@@ -1012,7 +907,7 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils, ChangerCommand, Co
 						functions is section, so we have to convert the above
 						to use a contract that's amenable to this requirement.
 					*/
-					addValue(key, function(/* variadic */) {
+					Macros.addValue(key, function(/* variadic */) {
 						/*
 							As none of the above actually need or use section,
 							we can safely discard it.

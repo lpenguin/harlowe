@@ -216,7 +216,7 @@ define(['utils', 'twinemarkup', 'twinescript'], function(Utils, TwineMarkup, Twi
 						break;
 					}
 					case "verbatim": {
-						out += '<span>' + escape(token.verbatim) + '</span>';
+						out += escape(token.verbatim);
 						break;
 					}
 					/*

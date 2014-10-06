@@ -9,13 +9,13 @@ You can apply text styles to passage text using macros like these:
 
 	(colour:"#e74")[This text is red.]
 
-	(shudder:)[This text is shuddering.]
+	(text-style:"shudder")[This text is shuddering.]
 
 	(font:"Courier New")[This text is in Courier New.]
 
 These macros actually return "changer" functions which transform their text input. In the above cases, as they are not enclosed by other macros, they are immediately evaluated and applied to the text hooks after them.
 
-You can actually store one of these functions within a Twine 2 variable, using the (set:) macro:
+You can actually store one of these functions within a Twine 2 variable, using the `(set:)` macro:
 
 	(set: $red to (colour:"#e74"))
 	$red[This text is red.]
@@ -23,7 +23,7 @@ You can actually store one of these functions within a Twine 2 variable, using t
 
 Furthermore, you can compose these functions by adding them together, and save the composition to a variable:
 
-	(set: $alertText to (font:"Courier New") + (shudder:) + (colour:"#e74"))
+	(set: $alertText to (font:"Courier New") + (text-style:"shudder") + (colour:"#e74"))
 	$alertText[This text is red shuddering Courier New.]
 
 You can then re-use it as a custom text style throughout your story:
