@@ -12,20 +12,14 @@ define(['jquery', 'utils', 'macros', 'state', 'story', 'colour', 'assignmentRequ
 		@class TwineScript
 		@static
 	*/
-	
+
 	/*
-		This generates an Operations object, given an identifiers object.
-		
-		The Operations object is a table of operations which TwineScript proxies
-		for/sugars over JavaScript. These include basic fixes like the elimination
-		of implicit type coercion and the addition of certain early errors, but also
-		includes support for new TwineScript operators, overloading of old operators,
-		and other things.
-		
-		@class Operation
-		@private
-		@for TwineScript
+		In some places, it's necessary to print numbers, strings and arrays of primitives
+		as JS literals. This is a semantic shortcut for a certain
+		built-in method that can accomplish this easily.
 	*/
+	var toJSLiteral = JSON.stringify;
+	
 	/*
 		Before I continue, I'd like to explain the API for "TwineScript datatype" objects.
 		This is an otherwise plain object that may implement any of the following:
@@ -49,6 +43,19 @@ define(['jquery', 'utils', 'macros', 'state', 'story', 'colour', 'assignmentRequ
 			This is named "toString" so that Array, Function and other objects can be
 			interpreted by Section.
 	*/
+	/*
+		This generates an Operations object, given an identifiers object.
+		
+		The Operations object is a table of operations which TwineScript proxies
+		for/sugars over JavaScript. These include basic fixes like the elimination
+		of implicit type coercion and the addition of certain early errors, but also
+		includes support for new TwineScript operators, overloading of old operators,
+		and other things.
+		
+		@class Operation
+		@private
+		@for TwineScript
+	*/
 	function operations(Identifiers) {
 		var Operation, VarRefProto,
 			/*
@@ -58,6 +65,15 @@ define(['jquery', 'utils', 'macros', 'state', 'story', 'colour', 'assignmentRequ
 			*/
 			numericIndex = /^(?:[1-9]\d*|0)$/;
 		
+		/*
+			First, a quick shortcut to determine whether the
+			given value is an object (i.e. whether the "in"
+			operator can be used on a given value).
+		*/
+		function isObject(value) {
+			return !!value && (typeof value === "object" || typeof value === "function");
+		}
+
 		/*
 			Some TwineScript objects can, in fact, be coerced to string.
 			HookRefs, for instance, coerce to the string value of their first
@@ -69,8 +85,7 @@ define(['jquery', 'utils', 'macros', 'state', 'story', 'colour', 'assignmentRequ
 			@return {String|Boolean}
 		*/
 		function coerceToString(fn, left, right) {
-			if     (typeof left  === "string" &&
-					typeof right === "object" &&
+			if     (typeof left  === "string" && isObject(right) &&
 					"TwineScript_ToString" in right) {
 				return fn(left, right.TwineScript_ToString());
 			}
@@ -79,8 +94,7 @@ define(['jquery', 'utils', 'macros', 'state', 'story', 'colour', 'assignmentRequ
 				canCoerceToString, passing (fn, right, left), because fn
 				may not be symmetric.
 			*/
-			if     (typeof right === "string" &&
-					typeof left  === "object" &&
+			if     (typeof right === "string" && isObject(left) &&
 					"TwineScript_ToString" in left) {
 				return fn(left.TwineScript_ToString(), right);
 			}
@@ -93,10 +107,15 @@ define(['jquery', 'utils', 'macros', 'state', 'story', 'colour', 'assignmentRequ
 			@return {String}
 		*/
 		function objectName(obj) {
-			return (obj && (typeof obj === "object" || typeof obj === "function") && "TwineScript_ObjectName" in obj)
+			return (isObject(obj) && "TwineScript_ObjectName" in obj)
 				? obj.TwineScript_ObjectName
 				: Array.isArray(obj) ? "an array"
-				: obj + "";
+				: (typeof obj === "string" || typeof obj === "number") ? 'the ' + typeof obj + " " + toJSLiteral(obj)
+				/*
+					For ES6 symbol compatibility, we must use String(obj) here instead of obj + "".
+					I don't actually expect symbols to enter the TwineScript userland, but better safe.
+				*/
+				: String(obj);
 		}
 		
 		/*
@@ -106,14 +125,22 @@ define(['jquery', 'utils', 'macros', 'state', 'story', 'colour', 'assignmentRequ
 			@return {String|Error}
 		*/
 		function validatePropertyName(prop) {
+			var onlyIcan = "Only I can use data keys beginning with ";
 			if(prop.startsWith("__")) {
-				return new Error("Only I can use data keys beginning with '__'.");
+				return new Error(onlyIcan + "'__'.");
 			}
 			if(prop.startsWith("TwineScript") && prop !== "TwineScript_Assignee") {
-				return new Error("Only I can use data keys beginning with 'TwineScript'.");
+				return new Error(onlyIcan + "'TwineScript'.");
 			}
 			return prop;
 		}
+		
+		/*
+			Having defined those under-the-skin abstract operations, I now move on
+			to author-facing operations.
+			But first, here are some wrapping functions which will be applied to
+			the Operations methods, providing type-checking and such to their arguments.
+		*/
 		
 		/*
 			Converts a function to refuse its arguments if one
@@ -213,53 +240,10 @@ define(['jquery', 'utils', 'macros', 'state', 'story', 'colour', 'assignmentRequ
 			*/
 			return Operation.is(container,obj);
 		}
-		
+
 		/*
-			The prototype object for VarRefs. Currently only has
-			one method on it.
+			Now, let's define the operations themselves.
 		*/
-		VarRefProto = Object.freeze({
-			varref: true,
-			TwineScript_ObjectName:
-				"the left half of an assignment operation",
-			
-			/*
-				Get to the farthest object in the chain, by advancing through all
-				but the last part of the chain (which must be withheld and used
-				for the assignment operation).
-			*/
-			get deepestObject() {
-				return this.propertyChain.slice(0, -1).reduce(function(obj, f) {
-					return obj[f];
-				}, this.object);
-			},
-			
-			/*
-				Shortcut to the final property from the chain.
-			*/
-			get deepestProperty() {
-				return this.propertyChain.slice(-1)[0];
-			},
-			
-			/*
-				These three tiny methods allow macros given this VarRef
-				(such as (set:)) to perform [[Get]]s and [[Set]]s on this VarRef.
-			*/
-			get: function() {
-				return Operation.get(this.deepestObject, this.deepestProperty);
-			},
-			set: function(value) {
-				this.deepestObject[this.deepestProperty] = value;
-			},
-			delete: function() {
-				Operation.delete(this.deepestObject, this.deepestProperty);
-			}
-			/*
-				It's impossible for VarRefs to be stored by the author, so
-				there's no toJSON() needed here.
-			*/
-		});
-		
 		Operation = {
 			
 			"+":  doNotCoerce(function(l, r) {
@@ -340,20 +324,20 @@ define(['jquery', 'utils', 'macros', 'state', 'story', 'colour', 'assignmentRequ
 				}
 				return l - r;
 			}),
-			"*":  onlyNumbers(doNotCoerce(function(l, r) {
+			"*":  onlyNumbers( doNotCoerce(function(l, r) {
 				return l * r;
 			}), "multiply"),
-			"/":  onlyNumbers(doNotCoerce(function(l, r) {
+			"/":  onlyNumbers( doNotCoerce(function(l, r) {
 				return l / r;
 			}), "divide"),
-			"%":  onlyNumbers(doNotCoerce(function(l, r) {
+			"%":  onlyNumbers( doNotCoerce(function(l, r) {
 				return l % r;
 			}), "modulus"),
 			
-			lt:  comparisonOp(doNotCoerce(function(l,r) { return l <  r; })),
-			gt:  comparisonOp(doNotCoerce(function(l,r) { return l >  r; })),
-			lte: comparisonOp(doNotCoerce(function(l,r) { return l <= r; })),
-			gte: comparisonOp(doNotCoerce(function(l,r) { return l >= r; })),
+			lt:  comparisonOp( onlyNumbers( doNotCoerce(function(l,r) { return l <  r; }))),
+			gt:  comparisonOp( onlyNumbers( doNotCoerce(function(l,r) { return l >  r; }))),
+			lte: comparisonOp( onlyNumbers( doNotCoerce(function(l,r) { return l <= r; }))),
+			gte: comparisonOp( onlyNumbers( doNotCoerce(function(l,r) { return l >= r; }))),
 			
 			is: comparisonOp(Object.is),
 			isNot: comparisonOp(function(l,r) {
@@ -501,28 +485,78 @@ define(['jquery', 'utils', 'macros', 'state', 'story', 'colour', 'assignmentRequ
 				to set to (as well as preventing the non-setter macros from performing
 				assignments), two kinds of structures are needed: AssignmentRequests,
 				which comprise a request to change a variable, and VarRef, which represent
-				the variable within the AssignmentRequest. This here creates the VarRef,
-				by first checking that the author's chosen property chain is valid,
-				and then returning an object that pairs the chain with the variable.
+				the variable within the AssignmentRequest.
+
+				This here creates the VarRef, by first checking that the author's chosen
+				property chain is valid, and then returning an object that pairs the chain
+				with the variable.
 			*/
-			makeVarRef: function(object, propertyChain) {
-				// Convert a single passed string to an array of itself.
-				propertyChain = [].concat(propertyChain);
-				// Forbid access to internal properties
-				propertyChain = propertyChain.map(validatePropertyName);
+			makeVarRef: (function(){
 				/*
-					This allows "it" to be used in e.g. (set: $red.x to it + 2)
+					The prototype object for VarRefs. Currently only has
+					one method on it.
 				*/
-				Identifiers.it = propertyChain.reduce(function(object,e) {
-					return object[e];
-				}, object);
-				
-				return Object.assign(Object.create(VarRefProto), {
-					object: object,
-					// Coerce the propertyChain to an array.
-					propertyChain: propertyChain,
+				var VarRefProto = Object.freeze({
+					varref: true,
+					TwineScript_ObjectName:
+						"the left half of an assignment operation",
+					
+					/*
+						Get to the farthest object in the chain, by advancing through all
+						but the last part of the chain (which must be withheld and used
+						for the assignment operation).
+					*/
+					get deepestObject() {
+						return this.propertyChain.slice(0, -1).reduce(function(obj, f) {
+							return obj[f];
+						}, this.object);
+					},
+					
+					/*
+						Shortcut to the final property from the chain.
+					*/
+					get deepestProperty() {
+						return this.propertyChain.slice(-1)[0];
+					},
+					
+					/*
+						These three tiny methods allow macros given this VarRef
+						(such as (set:)) to perform [[Get]]s and [[Set]]s on this VarRef.
+					*/
+					get: function() {
+						return Operation.get(this.deepestObject, this.deepestProperty);
+					},
+					set: function(value) {
+						this.deepestObject[this.deepestProperty] = value;
+					},
+					delete: function() {
+						Operation.delete(this.deepestObject, this.deepestProperty);
+					}
+					/*
+						It's impossible for VarRefs to be stored by the author, so
+						there's no toJSON() needed here.
+					*/
 				});
-			},
+
+				return function(object, propertyChain) {
+					// Convert a single passed string to an array of itself.
+					propertyChain = [].concat(propertyChain);
+					// Forbid access to internal properties
+					propertyChain = propertyChain.map(validatePropertyName);
+					/*
+						This allows "it" to be used in e.g. (set: $red.x to it + 2)
+					*/
+					Identifiers.it = propertyChain.reduce(function(object,e) {
+						return object[e];
+					}, object);
+					
+					return Object.assign(Object.create(VarRefProto), {
+						object: object,
+						// Coerce the propertyChain to an array.
+						propertyChain: propertyChain,
+					});
+				};
+			}()),
 			
 			/*
 				And here is the function for creating AssignmentRequests.
@@ -544,7 +578,7 @@ define(['jquery', 'utils', 'macros', 'state', 'story', 'colour', 'assignmentRequ
 				/*
 					Also refuse if the dest is not, actually, a VarRef.
 				*/
-				if (!dest || !("propertyChain" in dest)) {
+				if (!isObject(dest) || !("propertyChain" in dest)) {
 					return new TypeError(
 						"I can't give "
 						+ objectName(dest)
@@ -574,6 +608,12 @@ define(['jquery', 'utils', 'macros', 'state', 'story', 'colour', 'assignmentRequ
 		};
 		return Object.freeze(Operation);
 	}
+
+	/*
+		Everything preceding was concerned with runtime TwineScript operations.
+		From here on are functions concerned with compile-time TwineScript -
+		that is, compiling TwineScript into JS.
+	*/
 
 	/*
 		A helper function for compile(). When given a token array, and a
@@ -645,9 +685,9 @@ define(['jquery', 'utils', 'macros', 'state', 'story', 'colour', 'assignmentRequ
 			
 			return "Operation.makeVarRef(State.variables, "
 				/*
-					Print the propertyNames array literal using JSON.stringify.
+					Print the propertyNames array literal.
 				*/
-				+ JSON.stringify(propertyNames)
+				+ toJSLiteral(propertyNames)
 				+ ")";
 		}
 		return "";
@@ -661,7 +701,7 @@ define(['jquery', 'utils', 'macros', 'state', 'story', 'colour', 'assignmentRequ
 		return "Operation.makeAssignmentRequest("
 			+ left + ","
 			+ right + ","
-			+ JSON.stringify(operator)
+			+ toJSLiteral(operator)
 			+")";
 	}
 	
@@ -675,7 +715,13 @@ define(['jquery', 'utils', 'macros', 'state', 'story', 'colour', 'assignmentRequ
 		@return {String} String of Javascript code.
 	*/
 	function compile(tokens, isVarRef) {
-		var i, left, right, type,
+		var i, type,
+			/*
+				These hold the returned compilations of the tokens
+				surrounding a currently matched token, as part of this function's
+				recursive descent. 
+			*/
+			left, right,
 			/*
 				Hoisted temp variables
 			*/
@@ -685,9 +731,13 @@ define(['jquery', 'utils', 'macros', 'state', 'story', 'colour', 'assignmentRequ
 				determines the code to emit: 
 				- for midString, a plain JS infix operation between left and right; 
 				- for operation, an Operation method call with left and right as arguments.
-				- for assignment... 
+				- for assignment, an AssignmentRequest.
 			*/
 			midString, operation, assignment,
+			/*
+				Some operators should present a simple error when one of their sides is missing.
+			*/
+			needsLeft = true, needsRight = true,
 			/*
 				Some operators, like >, don't automatically work when the other side
 				is absent, even when people expect them to. e.g. $var > 3 and < 5 (which is
@@ -696,6 +746,11 @@ define(['jquery', 'utils', 'macros', 'state', 'story', 'colour', 'assignmentRequ
 			*/
 			implicitLeftIt = false;
 		
+		/*
+			Recursive base case: no tokens.
+			Any behaviour that should be done in the event of no tokens
+			must be performed elsewhere.
+		*/
 		if (!tokens) {
 			return "";
 		}
@@ -735,14 +790,14 @@ define(['jquery', 'utils', 'macros', 'state', 'story', 'colour', 'assignmentRequ
 				return compile(token.children);
 			}
 			else if (token.type === "string") {
-				return JSON.stringify(
+				return toJSLiteral(
 					// Trim off the enclosing " or ' or ` characters.
 					token.text.slice(1,-1)
 				);
 			}
 			else if (token.type === "colour") {
 				return "Colour.create("
-					+ JSON.stringify(token.colour)
+					+ toJSLiteral(token.colour)
 					+ ")";
 			}
 			/*
@@ -782,6 +837,11 @@ define(['jquery', 'utils', 'macros', 'state', 'story', 'colour', 'assignmentRequ
 			is associated last.
 		*/
 		
+		/*
+			I'll admit it: I'm not yet sure what place the JS comma will have in
+			TwineScript. As of right now, let's just pass it through
+			at the correct precedence, and require both sides.
+		*/
 		if ((i = indexOfType(tokens, "comma")) >-1) {
 			midString = ",";
 		}
@@ -794,6 +854,10 @@ define(['jquery', 'utils', 'macros', 'state', 'story', 'colour', 'assignmentRequ
 			right = compile(tokens.slice(0,  i), "varRef");
 			left  = compile(tokens.slice(i + 1), "varRef");
 		}
+		/*
+			I'm also not sure if augmented assignment is strictly necessary given that
+			one can do (set: $x to it+1), and += is sort of an overly abstract token.
+		*/
 		else if ((i = indexOfType(tokens, "augmentedAssign")) >-1) {
 			assignment = tokens[i].operator;
 			left  = compile(tokens.slice(0,  i), "varRef");
@@ -824,9 +888,23 @@ define(['jquery', 'utils', 'macros', 'state', 'story', 'colour', 'assignmentRequ
 		}
 		else if ((i = indexOfType(tokens, "arithmetic")) >-1) {
 			operation = tokens[i].operator;
+
+			/*
+				Since arithmetic can also be the unary - and + tokens,
+				we must, in those cases, change the left token to 0 if
+				it doesn't exist.
+				This would ideally be an "implicitLeftZero", but, well...
+			*/
+			if ("+-".contains(tokens[i].text)) {
+				left  = compile(tokens.slice(0,  i));
+				if (!left) {
+					left = "0";
+				}
+			}
 		}
 		else if ((i = indexOfType(tokens, "not")) >-1) {
 			midString = "!";
+			needsLeft = false;
 		}
 		else if ((i = indexOfType(tokens, "variableProperty")) >-1) {
 			/*
@@ -835,19 +913,21 @@ define(['jquery', 'utils', 'macros', 'state', 'story', 'colour', 'assignmentRequ
 			*/
 			left = "Operation.get(" + compile(tokens.slice (0,  i))
 				/*
-					JSON.stringify() is used to both escape the name
+					toJSLiteral() is used to both escape the name
 					string and wrap it in quotes.
 				*/
-				+ "," + JSON.stringify(tokens[i].name) + ")";
+				+ "," + toJSLiteral(tokens[i].name) + ")";
 			midString = " ";
+			needsLeft = needsRight = false;
 		}
 		else if ((i = indexOfType(tokens, "simpleVariable")) >-1) {
 			midString = " Operation.get(State.variables,"
-				+ JSON.stringify(tokens[i].name)
+				+ toJSLiteral(tokens[i].name)
 				/*
 					Here is where the default value for variables is passed!
 				*/
 				+ ", 0)";
+			needsLeft = needsRight = false;
 		}
 		else if ((i = indexOfType(tokens, "macro")) >-1) {
 			/*
@@ -892,9 +972,11 @@ define(['jquery', 'utils', 'macros', 'state', 'story', 'colour', 'assignmentRequ
 					*/
 					compile(tokens[i].children.slice(1))
 				) + ')';
+			needsLeft = needsRight = false;
 		}
 		else if ((i = indexOfType(tokens, "grouping")) >-1) {
 			midString = "(" + compile(tokens[i].children, isVarRef) + ")";
+			needsLeft = needsRight = false;
 		}
 		
 		/*
@@ -916,6 +998,19 @@ define(['jquery', 'utils', 'macros', 'state', 'story', 'colour', 'assignmentRequ
 			if (implicitLeftIt && !(left)) {
 				left = " Identifiers.it ";
 			}
+			/*
+				If there is no implicitLeftIt, produce an error message.
+			*/
+			if ((needsLeft && !left) || (needsRight && !right)) {
+				return "new SyntaxError('I need some code to be "
+					+ (needsLeft ? "left " : "")
+					+ (needsLeft && needsRight ? "and " : "")
+					+ (needsRight ? "right " : "")
+					+ "of "
+					+ '"' + tokens[i].text + '"'
+					+ "')";
+			}
+
 			if (midString) {
 				return left + midString + right;
 			}
@@ -923,15 +1018,14 @@ define(['jquery', 'utils', 'macros', 'state', 'story', 'colour', 'assignmentRequ
 				return compileAssignmentRequest(left, right, assignment);
 			}
 			else if (operation) {
-				// Note that this assumes no operation value will contain a ' symbol.
-				return " Operation['" + operation + "'](" + left + "," + right + ") ";
+				return " Operation[" + toJSLiteral(operation) + "](" + left + "," + right + ") ";
 			}
 		}
 		/*
 			Base case: just convert the tokens back into text.
 		*/
 		else if (tokens.length === 1) {
-			return (token.value || token.text) + "";
+			return ((token.value || token.text) + "").trim();
 		}
 		else {
 			return tokens.reduce(function(a, token) { return a + compile(token, isVarRef); }, "");

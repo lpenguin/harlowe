@@ -217,8 +217,12 @@
 			backtick: '`' + either(notChars('\\`'),'\\\\.') + '+`',
 		},
 		
-		// This includes NaN, but I wonder if it should.
-		number = '\\b(\\-?\\d+\\.?(?:[eE][+\\-]?\\d+)?|NaN)' + notBefore("m?s") + '\\b'
+		/*
+			This includes NaN, but I wonder if it should.
+			This doesn't include the - sign because arithmetic's pattern will trump it.
+			Negative numerals are handled in TwineScript as unary uses of arithmetic.
+		*/
+		number = '\\b(\\d+\\.?(?:[eE][+\\-]?\\d+)?|NaN)' + notBefore("m?s") + '\\b'
 		;
 	/*
 		Return the Patterns object.

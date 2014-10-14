@@ -1,0 +1,17 @@
+<!DOCTYPE html><meta charset="utf-8">
+<title>Expression Operator SyntaxError Test</title>
+<link rel="stylesheet" href="../build/harlowe-css.css"/>
+<tw-story></tw-story><script data-main="../js/harlowe.js" src="../node_modules/requirejs/require.js"></script>
+<tw-storydata options="debug" startnode="1">
+<tw-passagedata pid="1" name="1" position="512,384" data-t8n="instant">
+(print: 2 is) (= error)
+(print: and true) (= error)
+(print: not true) (= false)
+(print: not) (= error)
+(print: (either:1,2)) (= 1 or 2)
+(print: + 2) (= 2)
+(print: - 2) (= -2)
+(print: * 2) (= error)
+(print: / 2) (= error)
+(print: +++++2) (= 2)
+(print: 5-++2) (= 3)
