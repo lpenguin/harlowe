@@ -1,99 +1,67 @@
 /*** Animations ***/
 
-@keyframes appear
+@mixin keyframes($animation-name) {
+  @-webkit-keyframes $animation-name {
+    @content;
+  }
+  @keyframes $animation-name {
+    @content;
+  }
+}
+@mixin transform($transforms) {
+	-webkit-transform: $transforms;
+            transform: $transforms;
+}
+
+@include keyframes(appear)
 {
 	0% { opacity: 0 }
 	to { opacity: 1 }
 }
-@-webkit-keyframes appear
-{
-	0% { opacity: 0 }
-	to { opacity: 1 }
-}
 
-@keyframes fade-in-out
-{
-	0%,to { opacity: 0 }
-	50% { opacity: 1 }
-}
-@-webkit-keyframes fade-in-out
+@include keyframes(fade-in-out)
 {
 	0%,to { opacity: 0 }
 	50% { opacity: 1 }
 }
 
-@keyframes rumble
+@include keyframes(rumble)
 {
 	0%,to {}
-	50% { transform: translateY(-0.2em) }
-}
-@-webkit-keyframes rumble 
-{
-	0%,to {}
-	50% { -webkit-transform: translateY(-0.2em) }
+	50% { @include transform(translateY(-0.2em)) }
 }
 
-@keyframes shudder 
+@include keyframes(shudder)
 {
 	0%,to {}
-	50% { transform: translateX(0.2em) }
-}
-@-webkit-keyframes shudder 
-{
-	0%,to {}
-	50% { -webkit-transform: translateX(0.2em) }
+	50% { @include transform(translateX(0.2em)) }
 }
 
-@keyframes box-flash
+@include keyframes(box-flash)
 {
 	0% { background-color: white; color: white; }
 	to {}
 }
 
-@-webkit-keyframes box-flash
+@include keyframes(pulse)
 {
-	0% { background-color: white; color: white; }
-	to  {}
-}
-
-@keyframes pulse
-{
-	0% { transform: scale(0,0) }
-	20% { transform: scale(1.2,1.2) }
-	40% { transform: scale(0.9,0.9) }
-	60% { transform: scale(1.05,1.05) }
-	80% { transform: scale(0.925,0.925) }
-	to { transform: scale(1,1) }
-}
-@-webkit-keyframes pulse
-{
-	0% { -webkit-transform: scale(0,0); transform: scale(0,0); }
-	20% { -webkit-transform: scale(1.2,1.2); transform: scale(1.2,1.2); }
-	40% { -webkit-transform: scale(0.9,0.9); transform: scale(0.9,0.9); }
-	60% { -webkit-transform: scale(1.05,1.05); transform: scale(1.05,1.05); }
-	80% { -webkit-transform: scale(0.925,0.925); transform: scale(0.925,0.925); }
-	to { -webkit-transform: scale(1,1); transform: scale(1,1); }
+	0%  { @include transform(scale(0,0)) }
+	20% { @include transform(scale(1.2,1.2)) }
+	40% { @include transform(scale(0.9,0.9)) }
+	60% { @include transform(scale(1.05,1.05)) }
+	80% { @include transform(scale(0.925,0.925)) }
+	to  { @include transform(scale(1,1)) }
 }
 
 /* Slightly eased-out shudders */
 
-@keyframes shudder-in
+@include keyframes(shudder-in)
 {
-   0%, to { transform: translateX(0em); }
-   5%, 25%, 45% { transform: translateX(-1em); }
-   15%, 35%, 55% { transform: translateX(1em); }
-   65% { transform: translateX(-0.6em); }
-   75% { transform: translateX(0.6em); }
-   85% { transform: translateX(-0.2em); }
-   95% { transform: translateX(0.2em); }
-}
-@-webkit-keyframes shudder-in
-{
-   0%, to { -webkit-transform: translateX(0em); transform: translateX(0em); }
-   5%, 25%, 45% { -webkit-transform: translateX(-1em); transform: translateX(-1em); }
-   15%, 35%, 55% { -webkit-transform: translateX(1em); transform: translateX(1em); }
-   65% { -webkit-transform: translateX(-0.6em); transform: translateX(-0.6em); }
-   75% { -webkit-transform: translateX(0.6em); transform: translateX(0.6em); }
-   85% { -webkit-transform: translateX(-0.2em); transform: translateX(-0.2em); }
-   95% { -webkit-transform: translateX(0.2em); transform: translateX(0.2em); }
+   0%, to {        @include transform(translateX(0em));    }
+   5%, 25%, 45% {  @include transform(translateX(-1em));   }
+   15%, 35%, 55% { @include transform(translateX(1em));    }
+   65% {           @include transform(translateX(-0.6em));  }
+   75% {           @include transform(translateX(0.6em));  }
+   85% {           @include transform(translateX(-0.2em)); }
+   95% {           @include transform(translateX(0.2em));  }
 }

@@ -84,18 +84,26 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils, ChangerCommand, Co
 
 		/*
 			(print:), (text:): convert the expression to text.
-			This provides explicit coercion to string for TwineScript values.
+			This provides explicit coercion to String for TwineScript values.
 			Evaluates to a text string.
 		*/
 		(["print", "text"], function print(_, expr) {
 			return expr+"";
 		})
+
+		/*
+			(num:), (number:)
+			This provides explicit coercion to Number.
+		*/
+		(["num", "number"], function number(_, expr) {
+			return +expr;
+		})
 		
 		/*
-			if(): converts the expression to boolean, affecting subsequent
+			(if:) converts the expression to boolean, affecting subsequent
 			else() and elseif() calls. Evaluates to a boolean.
 		
-			The if() macro family currently determines else() and elseif()
+			The (if:) macro family currently determines (else:) and (elseif:)
 			by remembering the previous if() result. By "remembering", I
 			mean it puts a fresh expando property, "lastIf", on the section's
 			expression stack.
@@ -208,20 +216,60 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils, ChangerCommand, Co
 			}
 		)
 		
-		// (colour:)
-		// A shortcut for applying a colour to a span of text.
-		(["colour", "color"],
-			function colour(_, CSScolour) {
-				//Convert TwineScript CSS colours to bad old hexadecimal.
-				CSScolour = Colour.RGBToHex(CSScolour);
-				return Macros.ChangerCommand("colour", CSScolour);
+		/*
+			(text-colour:)
+			A shortcut for applying a colour to a span of text.
+			The (colour:) alias is one I feel a smidge less comfortable with. It
+			should easily also refer to a value macro that coerces string to colour...
+			But, I suppose this is the more well-trod use-case for this keyword.
+		*/
+		(["text-colour", "text-color", "color", "colour"],
+			function textcolour(_, CSScolour) {
+				/*
+					Convert TwineScript CSS colours to bad old hexadecimal.
+					This is important as it enables the ChangerCommand to be serialised
+					as a string more easily.
+				*/
+				if (CSScolour && CSScolour.colour) {
+					CSScolour = CSScolour.toHexString(CSScolour);
+				}
+				return Macros.ChangerCommand("text-colour", CSScolour);
 			},
 			function (d, CSScolour) {
-				/*
-					To prevent keywords from being created by concatenating lines,
-					replace the line breaks with a zero-width space.
-				*/
 				d.code = "<span style='color:" + CSScolour + "'>" + d.code + "</span>";
+				return d;
+			}
+		)
+		/*
+			(background:)
+			This sets the changer's background-color or background-image,
+			depending on what is supplied.
+		*/
+		("background",
+			function backgroundcolour(_, value) {
+				//Convert TwineScript CSS colours to bad old hexadecimal.
+				if (value && value.colour) {
+					value = value.toHexString(value);
+				}
+				return Macros.ChangerCommand("background", value);
+			},
+			function (d, value) {
+				var property;
+				/*
+					Different kinds of values can be supplied to this macro
+				*/
+				if (Colour.isHexString(value)) {
+					property = "background-color";
+				}
+				else {
+					/*
+						When Harlowe can handle base64 image passages,
+						this will invariably have to be re-worked.
+					*/
+					property = "background-image";
+					value = "url(" + value + ")";
+				}
+				d.code = "<span style='" + property + ":" + value + "'>" + d.code + "</span>";
 				return d;
 			}
 		)
@@ -282,6 +330,7 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils, ChangerCommand, Co
 						bold:         "b",
 						italic:       "i",
 						underline:    "u",
+						strike:       "s",
 						superscript:  "sup",
 						subscript:    "sub",
 						blink:        "blink",
@@ -329,7 +378,10 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils, ChangerCommand, Co
 		Standard sensor macros.
 	*/
 	Macros.addSensor
-		// when()
+		/*
+			(when:)
+			Triggers once when the expression is true.
+		*/
 		("when", function(_, expr) {
 			return {
 				value: expr,
@@ -337,7 +389,10 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils, ChangerCommand, Co
 			};
 		})
 		
-		// until()
+		/*
+			(until:)
+			Triggers once when the expression is false.
+		*/
 		("until", function(_, expr) {
 			return {
 				value: !expr,
@@ -345,7 +400,10 @@ function($, TwineMarkup, Story, State, Macros, Engine, Utils, ChangerCommand, Co
 			};
 		})
 		
-		// whenever()
+		/*
+			(whenever:)
+			Triggers any time the expression changes from false to true.
+		*/
 		("whenever", function(_, expr) {
 			return {
 				value: expr,

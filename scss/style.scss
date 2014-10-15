@@ -1,4 +1,6 @@
 
+@import '_flex';
+
 /*** Main formatting ***/
 
 html {
@@ -21,6 +23,9 @@ html {
 		background-color: #000;
 		color: #fcfcfc;
 	}
+}
+body {
+	margin: 0;
 }
 
 h1
@@ -48,7 +53,7 @@ h1, h2, h3, h4, h5, h6
 }
 
 /* The story data div */
-tw-storydata, [data-role="twinestory"]
+tw-storydata
 {
 	display: none;
 }
@@ -56,16 +61,28 @@ tw-storydata, [data-role="twinestory"]
 tw-story
 {
 	width: 60%;
-	margin: 4% auto;
 	font-size: 1.5em;
 	line-height: 1.5em;
-	display:block;
+	@media screen and (max-width: 1280px)
+	{
+		font-size: 1.25em;
+	}
+	@media screen and (max-width: 960px)
+	{
+		font-size: 1em;
+	}
+	@media screen and (max-width: 640px)
+	{
+		font-size: 0.8em;
+	}
+	margin: 4% auto;
+	@include flexbox;
+	@include flex-direction(column);
 }
 
 tw-passage
 {
-	position: absolute;
-	width: 60%;
+	position: relative;
 	display:block;
 }
 
@@ -74,29 +91,6 @@ tw-passage *
 	position: relative;
 }
 
-@media screen and (max-width: 1280px)
-{
-	tw-story
-	{
-		font-size: 1.25em;
-	}
-}
-
-@media screen and (max-width: 960px)
-{
-	tw-story
-	{
-		font-size: 1em;
-	}
-}
-
-@media screen and (max-width: 640px)
-{
-	tw-story
-	{
-		font-size: 0.8em;
-	}
-}
 
 
 /* Sidebar */
