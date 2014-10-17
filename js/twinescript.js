@@ -1,5 +1,4 @@
-/*jshint unused:false */
-define(['jquery', 'utils', 'macros', 'state', 'story', 'colour', 'assignmentRequest'], function($, Utils, Macros, State, Story, Colour, AssignmentRequest) {
+define(['utils', 'macros', 'state', 'story', 'colour', 'assignmentRequest'], function(Utils, Macros, State, Story, Colour, AssignmentRequest) {
 	"use strict";
 	
 	// JShint's "unused" variables accessible to eval()
@@ -57,7 +56,7 @@ define(['jquery', 'utils', 'macros', 'state', 'story', 'colour', 'assignmentRequ
 		@for TwineScript
 	*/
 	function operations(Identifiers) {
-		var Operation, VarRefProto,
+		var Operation,
 			/*
 				Used to determine if a property name is an array index.
 				If negative indexing sugar is ever added, this could
@@ -439,7 +438,7 @@ define(['jquery', 'utils', 'macros', 'state', 'story', 'colour', 'assignmentRequ
 				@param {Function} thunk  A thunk enclosing the expressions 
 			*/
 			runMacro: function(name, thunk) {
-				var fn, error;
+				var fn;
 				// First and least, the error rejection check.
 				if (Utils.containsError(name)) {
 					return name;
@@ -715,7 +714,7 @@ define(['jquery', 'utils', 'macros', 'state', 'story', 'colour', 'assignmentRequ
 		@return {String} String of Javascript code.
 	*/
 	function compile(tokens, isVarRef) {
-		var i, type,
+		var i,
 			/*
 				These hold the returned compilations of the tokens
 				surrounding a currently matched token, as part of this function's
@@ -1073,6 +1072,12 @@ define(['jquery', 'utils', 'macros', 'state', 'story', 'colour', 'assignmentRequ
 				*/
 			},
 			Operation = operations(Identifiers);
+
+		/*
+			This suppresses the JSHint unused warning.
+			In reality, this is used by the eval()'d code.
+		*/
+		Operation;
 			
 		return Object.assign(section, {
 			eval: function(/* variadic */) {
@@ -1103,5 +1108,4 @@ define(['jquery', 'utils', 'macros', 'state', 'story', 'colour', 'assignmentRequ
 	
 	Utils.log("TwineScript module ready!");
 	return TwineScript;
-	/*jshint unused:true */
 });

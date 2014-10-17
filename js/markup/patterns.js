@@ -185,6 +185,8 @@
 			legacySeparator:   "\\|",
 			legacyText:        "(" + notChars("]|") + "?)"
 		},
+
+		identifier = "it|time",
 		
 		simpleVariable = "\\$(" + anyLetter.replace("\\-", "") + "+)",
 		
@@ -411,7 +413,7 @@
 		boolean: "(true|false|null|undefined)",
 		
 		// Special identifiers
-		identifier: "it|time",
+		identifier: identifier,
 		
 		// TODO: this generated regex is horrendously slow
 		// when an unclosed ' or " is in the source text.
