@@ -472,6 +472,7 @@ define(['utils', 'macros', 'state', 'story', 'colour', 'assignmentRequest'], fun
 				and attaches some thunk methods and properties to it.
 				
 				Currently, it just attaches an identifying "thunk" property.
+				Thunks should not be observable to TwineScript authors.
 			*/
 			makeThunk: function(fn) {
 				return Object.assign(fn, {
@@ -625,6 +626,7 @@ define(['utils', 'macros', 'state', 'story', 'colour', 'assignmentRequest'], fun
 	*/
 	function indexOfType(array, type /* variadic */) {
 		var i,
+			/* This is equivalent to ES6 rest ("...types") */
 			types = (arguments.length === 1
 				? type
 				: Array.from(arguments).slice(1));

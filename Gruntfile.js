@@ -4,7 +4,7 @@ module.exports = function (grunt) {
 		
 		// Source files
 		sourceHTML = ['template.html'],
-		jsFileList = ['js/*.js', 'js/utils/*.js', 'js/datatypes/*.js', 'js/markup/*.js'],
+		jsFileList = ['js/*.js', 'js/utils/*.js', 'js/datatypes/*.js', 'js/markup/*.js', 'js/macrolib/*.js'],
 		jsFullFileList = ['js/lib/*.js'].concat(jsFileList),
 		
 		// Destinations
