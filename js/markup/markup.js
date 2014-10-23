@@ -490,13 +490,7 @@
 				allRules[key].opener = Patterns[key + "Opener"];
 			}
 		});
-		Object.assign(Lexer.rules, allRules, 
-			/*
-				The final "text" rule is a dummy, exempt from being a proper
-				rule key, and with no pattern property. 
-				TODO: Can we remove it?
-			*/
-			{ text:     { fn:     Object }});
+		Object.assign(Lexer.rules, allRules);
 		/*
 			Declare that the starting mode for lexing, before any
 			tokens are appraised, is...

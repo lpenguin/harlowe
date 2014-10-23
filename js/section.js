@@ -140,7 +140,15 @@ function($, Utils, Selectors, Renderer, TwineScript, Story, State, HookUtils, Ho
 			in case that provided an error.
 		*/
 		if (result instanceof Error) {
-			expr.replaceWith("<tw-error class='error' title='" + expr.attr('title') + "'>" + result.message + "</tw-error>");
+			/*
+				Warning messages are special: they are only displayed in debug mode.
+			*/
+			if (result.name === "TwineWarning" && !Story.options.debug) {
+				return;
+			}
+			expr.replaceWith("<tw-error class='"
+				+ ((result.name === "TwineWarning") ? "warning" : "error")
+				+ "' title='" + expr.attr('title') + "'>" + result.message + "</tw-error>");
 		}
 		/*
 			If the expression was a hookRef, clone the text of the first matched hook.

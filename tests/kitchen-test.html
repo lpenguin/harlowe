@@ -1,0 +1,27 @@
+<!DOCTYPE html><meta charset="utf-8">
+<title>Kitchen Test</title>
+<link rel="stylesheet" href="../build/harlowe-css.css"/>
+<tw-story></tw-story><script data-main="../js/harlowe.js" src="../node_modules/requirejs/require.js"></script>
+<tw-storydata options="debug" startnode="1">
+<tw-passagedata pid="1" name="1" position="512,384" data-t8n="instant">
+|light>[
+You're in the kitchen.
+
+|ls>[Light switch]
+==>
+(set: $slices to 0)
+|toaster>[Toaster] |bd>[Bread #1] |bd2>[Bread #2]
+(click: ?bd)[(remove: ?bd)(set: $slices to it + 1)]
+(click: ?bd2)[(remove: ?bd2)(set: $slices to it + 1)]
+(whenever: $slices is 1)[(set: ?toaster to "Toaster (with 1 slice)")]
+(whenever: $slices is 2)[(set: ?toaster to "Toaster (with 2 slices)")]
+&lt;==
+(click:?ls)[(uncloak: ?dark)(cloak: ?light)]
+]
+|dark>[
+You can't see a danged thing.
+
+|ls2>[Light switch]
+(click:?ls2)[(cloak: ?dark)(uncloak: ?light)]
+]
+(cloak: ?dark)

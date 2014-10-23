@@ -1,6 +1,6 @@
-define(['jquery', 'twinemarkup', 'story', 'macros', 'utils',
+define(['jquery', 'twinemarkup', 'story', 'macros', 'utils', 'datatypes/twineWarning',
 'macrolib/values', 'macrolib/styleChangers', 'macrolib/sensors', 'macrolib/enchantments'],
-function($, TwineMarkup, Story, Macros, Utils) {
+function($, TwineMarkup, Story, Macros, Utils, TwineWarning) {
 	"use strict";
 	/*
 		Twine macro standard library.
@@ -43,13 +43,43 @@ function($, TwineMarkup, Story, Macros, Utils) {
 		})
 		/*
 			(remove:) Removes the given hook or pseudo-hook from the section.
-			It accepts a standard selector, does a side-effect, and returns "".
+			It accepts a standard selector, emits a side-effect, and returns "".
 		*/
 		("remove", function remove(section, selector) {
 			section.selectHook(selector).forEach(function(e) { e.remove(); });
 			return "";
 		});
 	
+	/*
+		(cloak:) Hides the given hook or pseudo-hook.
+		(uncloak:) Shows the given hook or pseudo-hook.
+		They accept a standard selector, emits a side-effect, and returns "".
+	*/
+	["cloak","uncloak"].forEach(function(name) {
+		Macros.addValue(name, function cloak(section, selector) {
+			var selection = section.selectHook(selector);
+			/*
+				To my regret, I must use a side-effect here for tracking
+				how many elements were affected by the macro.
+			*/
+			var count = 0;
+			selection.forEach(function(hook) {
+				/*
+					Let's just use the jQuery hide/show methods for now.
+				*/
+				hook[name === "cloak" ? "hide" : "show"]();
+				count += 1;
+			});
+			/*
+				If nothing was changed, provide a warning to the user, in case they
+				mistyped a hook name.
+			*/
+			if (!count) {
+				return new TwineWarning("The '" + selector.TwineScript_ObjectName + "' selector didn't select anything.");
+			}
+			return "";
+		});
+	});
 	/*
 		TODO: Maybe it would be better, or at least more functional, if
 		ChangerCommands returned a fresh ChangerDescriptor instead of permuting

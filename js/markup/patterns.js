@@ -160,11 +160,7 @@
 		
 		numbered = ws + "(" + numberPoint + "+)([^\\n]*)" + eol,
 		
-		/*
-			FIXME: The {3,} selector currently enables a string of four ---- to be
-			parsed as 1 - of text followed by --- hr.
-		*/
-		hr = ws + "([-*_]){3,}" + ws + eol,
+		hr = ws + "[-*_]{3,}" + ws + eol,
 		
 		/*
 			Markdown setext headers conflict with the hr syntax, and are thus gone.
