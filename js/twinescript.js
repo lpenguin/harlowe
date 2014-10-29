@@ -72,6 +72,13 @@ define(['utils', 'macros', 'state', 'story', 'colour', 'assignmentRequest'], fun
 		function isObject(value) {
 			return !!value && (typeof value === "object" || typeof value === "function");
 		}
+		/*
+			Next, a shortcut to determine whether a given value should have
+			sequential collection functionality (e.g. Array, String, other stuff).
+		*/
+		function isSequential(value) {
+			return typeof value === "string" || Array.isArray(value);
+		}
 
 		/*
 			Some TwineScript objects can, in fact, be coerced to string.
@@ -118,18 +125,52 @@ define(['utils', 'macros', 'state', 'story', 'colour', 'assignmentRequest'], fun
 		}
 		
 		/*
-			This filter checks if a property name is valid for the user to set, and returns
+			This converts a TwineScript property index into a JavaScript property indexing
+			operation.
+			
+			While doing so, it checks if a property name is valid, and returns
 			an error instead if it is not.
 			Currently, property names beginning with '__' or 'TwineScript' are not valid.
 			@return {String|Error}
 		*/
-		function validatePropertyName(prop) {
-			var onlyIcan = "Only I can use data keys beginning with ";
+		function compilePropertyIndex(obj, prop) {
+			var 
+				// A cached error message fragment.
+				onlyIcan = "Only I can use data keys beginning with ",
+				// Hoisted variable.
+				match;
+			
 			if(prop.startsWith("__")) {
 				return new Error(onlyIcan + "'__'.");
 			}
 			if(prop.startsWith("TwineScript") && prop !== "TwineScript_Assignee") {
 				return new Error(onlyIcan + "'TwineScript'.");
+			}
+			/*
+				Sequentials have special sugar property indices:
+				
+				.length: this falls back to JS's length property for Arrays and Strings.
+				.last: antonym of .1st
+				.1st, .2nd etc.: 1-indexed synonyms for .0, .1, .2.
+				
+				As you can see, .n is 0-indexed and falls back to JS,
+				and .nth is 1-indexed sugar above it.
+			*/
+			if (isSequential(obj)) {
+				if (prop === "last") {
+					prop = obj.length - 1 + "";
+				}
+				/*
+					This should generously allow "1rd" or "2st".
+				*/
+				if ((match = /(\d+)(?:st|[nr]d|th)/.exec(prop))) {
+					prop = match[1];
+					// Notice that this guards against NaN (which is not > or < anything).
+					if (+prop > 0) {
+						prop = prop - 1 + "";
+					}
+				}
+
 			}
 			return prop;
 		}
@@ -174,6 +215,10 @@ define(['utils', 'macros', 'state', 'story', 'colour', 'assignmentRequest'], fun
 				if ((error = Utils.containsError(left, right))) {
 					return error;
 				}
+				/*
+					This checks that left and right are generally different types
+					(both different typeof or, if both are object, different Arrayness)
+				*/
 				if (typeof left !== typeof right
 				    || Array.isArray(left) !== Array.isArray(right)) {
 					/*
@@ -219,7 +264,7 @@ define(['utils', 'macros', 'state', 'story', 'colour', 'assignmentRequest'], fun
 				/*
 					Basic array or string indexOf check.
 				*/
-				if (typeof container === "string" || Array.isArray(container)) {
+				if (isSequential(container)) {
 					return container.indexOf(obj) > -1;
 				}
 				/*
@@ -250,8 +295,8 @@ define(['utils', 'macros', 'state', 'story', 'colour', 'assignmentRequest'], fun
 					I'm not a fan of the fact that + is both concatenator and 
 					arithmetic op, but I guess it's close to what people expect.
 					Nevertheless, applying the logic that a string is just as much a
-					collection as an array, I feel I can overload + on arrays to mean
-					"create a new array concatenating the first with the second".
+					sequential collection as an array, I feel I can overload +
+					on arrays to mean immutable array concatenation.
 				*/
 				if (Array.isArray(l)) {
 					/*
@@ -370,10 +415,10 @@ define(['utils', 'macros', 'state', 'story', 'colour', 'assignmentRequest'], fun
 					return obj;
 				}
 				/*
-					Check that the property is valid, and replace it with
-					an error if it is not valid.
+					Compile the property index - returning the error if
+					one was produced during compilation.
 				*/
-				prop = validatePropertyName(prop);
+				prop = compilePropertyIndex(obj, prop);
 				if (Utils.containsError(prop)) {
 					return prop;
 				}
@@ -539,14 +584,53 @@ define(['utils', 'macros', 'state', 'story', 'colour', 'assignmentRequest'], fun
 				});
 
 				return function(object, propertyChain) {
-					// Convert a single passed string to an array of itself.
+					/*
+						This function accepts both arrays of strings, and single strings.
+						Convert a single passed string to an array of itself.
+					*/
 					propertyChain = [].concat(propertyChain);
-					// Forbid access to internal properties
-					propertyChain = propertyChain.map(validatePropertyName);
+					/*
+						Desugar TwineScript-specific properties and check for errors.
+						This must go through and resolve every object
+						in the property chain, running compilePropertyIndex on them
+						instead of just the root object.
+					*/
+					propertyChain = propertyChain.reduce(function(objectAndChain, e) {
+						var chain = objectAndChain.chain,
+							object = objectAndChain.object;
+						
+						/*
+							Convert the currently passed chain element, e,
+							using compilePropertyIndex in the context of the
+							current object. 
+							For instance, if object is an array, and e is "1st",
+							this converts e to "0".
+						*/
+						e = compilePropertyIndex(object, e);
+						
+						// Add it to the returned chain.
+						chain.push(e);
+						
+						/*
+							Move to the next object in the chain (which is, as you know,
+							another object property of the current object).
+						*/
+						object = object[e];
+						
+						return {
+							chain:  chain,
+							object: object
+						};
+					}, {chain:[], object: object}).chain;
+					
 					/*
 						This allows "it" to be used in e.g. (set: $red.x to it + 2)
+						by setting it to the correct object value ($red.x instead of $red).
 					*/
 					Identifiers.it = propertyChain.reduce(function(object,e) {
+						/*
+							Reference down the chain until it's at an end.
+						*/
 						return object[e];
 					}, object);
 					
@@ -644,6 +728,17 @@ define(['utils', 'macros', 'state', 'story', 'colour', 'assignmentRequest'], fun
 		return NaN;
 	}
 	
+	function rightAssociativeIndexOfType(array /* variadic */) {
+		/*
+			What this does is tricky: it reverses the passed-in array,
+			calls the normal indexOfType, then inverts the returned index
+			(converting, say, 3/10 on the reversed array into 7/10 on
+			the original array).
+		*/
+		arguments[0] = Array.from(array).reverse();
+		return (array.length - 1) - indexOfType.apply(0, Array.from(arguments));
+	}
+	
 	/*
 		A helper function for compile(). This takes some compiled
 		Javascript values in string form, and joins them into a compiled
@@ -658,8 +753,6 @@ define(['utils', 'macros', 'state', 'story', 'colour', 'assignmentRequest'], fun
 	/**
 		This takes a single TwineMarkup token being used in an assignmentRequest, 
 		and returns a tuple that contains an object reference, and a property name or chain.
-		
-		Currently, when given multiple tokens, it simply glibly drills down.
 	*/
 	function compileVarRef(token) {
 		var propertyNames;
@@ -740,7 +833,7 @@ define(['utils', 'macros', 'state', 'story', 'colour', 'assignmentRequest'], fun
 			*/
 			needsLeft = true, needsRight = true,
 			/*
-				Some operators, like >, don't automatically work when the other side
+				Some JS operators, like >, don't automatically work when the other side
 				is absent, even when people expect them to. e.g. $var > 3 and < 5 (which is
 				legal in Inform 6). To cope, I implicitly convert a blank left side to
 				"it", which is the nearest previous left-hand operand.
@@ -907,7 +1000,10 @@ define(['utils', 'macros', 'state', 'story', 'colour', 'assignmentRequest'], fun
 			midString = "!";
 			needsLeft = false;
 		}
-		else if ((i = indexOfType(tokens, "variableProperty")) >-1) {
+		/*
+			Notice that this one is right-associative instead of left-associative.
+		*/
+		else if ((i = rightAssociativeIndexOfType(tokens, "variableProperty")) >-1) {
 			/*
 				This is somewhat tricky - we need to manually wrap the left side
 				inside the Operation.get call, while leaving the right side as is.

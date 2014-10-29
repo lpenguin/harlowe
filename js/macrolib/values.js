@@ -165,6 +165,9 @@ define(['macros', 'utils', 'state', 'story', 'engine'], function(Macros, Utils, 
 			by remembering the previous if() result. By "remembering", I
 			mean it puts a fresh expando property, "lastIf", on the section's
 			expression stack.
+			
+			TODO: Should this actually be a Changer?? For instance:
+			(set: $robotAdvice to (font:Consolas) + (if: $choseTheRobot))
 		*/
 		("if", function _if(section, expr) {
 			/*
