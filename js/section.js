@@ -104,7 +104,7 @@ function($, Utils, Selectors, Renderer, TwineScript, Story, State, HookUtils, Ho
 					);
 				}
 				else {
-					runSensorFunction.call(this,result, nextHook);
+					runSensorFunction.call(this, result, nextHook);
 				}
 			}
 			else if (result.changer) {
@@ -221,6 +221,16 @@ function($, Utils, Selectors, Renderer, TwineScript, Story, State, HookUtils, Ho
 			*/
 			var result = sensor();
 			
+			/*
+				If an error resulted (which may occur if re-evaluating the
+				sensor's condition caused a TypeError or something) then
+				just use that error as the result value.
+			*/
+			if (Utils.containsError(result)) {
+				// TODO: Replace this with a general printHTMLError()-type call
+				this.renderInto(result+"", target);
+				return;
+			}
 			/*
 				Act on the data given - if the value differs from the previous,
 				alter the target hook.

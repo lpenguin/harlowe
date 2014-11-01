@@ -14,6 +14,7 @@ define([], function() {
 		
 		assignmentRequest: true,
 		
+		TwineScript_TypeName: "an assignment operation",
 		TwineScript_ObjectName: "an assignment operation",
 		
 		toString: function() {

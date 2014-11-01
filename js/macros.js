@@ -1,5 +1,5 @@
-define(['jquery', 'story', 'utils', 'changercommand'],
-function($, Story, Utils, ChangerCommand) {
+define(['jquery', 'story', 'utils', 'operations', 'changercommand'],
+function($, Story, Utils, Operations, ChangerCommand) {
 	"use strict";
 	/**
 		This contains a registry of macro definitions, and methods to add to that registry.
@@ -15,7 +15,7 @@ function($, Story, Utils, ChangerCommand) {
 		changerCommandRegistry = {};
 		
 	/*
-		Operation.runMacro() in TwineScript passes its arguments as a thunk.
+		Operations.runMacro() passes its arguments as a thunk.
 		See that page for the formal explanation. These two functions, eager and deferred,
 		convert regular Javascript functions to accept a such a thunk as its sole argument.
 		
@@ -27,7 +27,7 @@ function($, Story, Utils, ChangerCommand) {
 		Macros.addChanger() and Macros.addValue().
 	*/
 	function eager(fn) {
-		return function macroResult(argsThunk) {
+		return function eagerMacroResult(argsThunk) {
 			var args = argsThunk(),
 				// Do the error check now.
 				error = Utils.containsError(args);
@@ -77,8 +77,178 @@ function($, Story, Utils, ChangerCommand) {
 	}
 	
 	/*
-		The object containing all the macros available to a story.
+		This function checks the type of a single argument. It's run
+		for every argument passed into a type-signed macro.
+		
+		@param {Anything}     arg  The plain JS argument value to check.
+		@param {Array|Object} type A type description to compare the argument with.
+		@return {Boolean} True if the argument passes the check, false otherwise.
 	*/
+	function singleTypeCheck(arg, type) {		
+		/*
+			First, check if it's a None type.
+		*/
+		if (type === null) {
+			return arg === undefined;
+		}
+		/*
+			Now, check if the signature is an Optional or Either.
+		*/
+		if (type.innerType) {
+			/*
+				Optional signatures can exit early if the arg is absent.
+			*/
+			if (type.pattern === "optional" || type.pattern === "zero or more") {
+				if (arg === undefined) {
+					return true;
+				}
+				type = type.innerType;
+			}
+			/*
+				Either signatures must check every available type.
+			*/
+			else if (type.pattern === "either") {
+				return type.innerType.every(function(type) {
+					return singleTypeCheck(arg, type);
+				});
+			}
+		}
+		
+		// If Type but no Arg, then return an error.	
+		if(type !== undefined && arg === undefined) {
+			return false;
+		}
+				
+		// The Any type permits any argument, as long as it's present.
+		if (type === Macros.TypeSignature.Any && arg !== undefined) {
+			return true;
+		}
+		/*
+			The built-in types. Let's not get tricky here.
+		*/
+		if (type === String) {
+			return typeof arg === "string";
+		}
+		if (type === Boolean) {
+			return typeof arg === "boolean";
+		}
+		if (type === Number) {
+			return typeof arg === "number";
+		}
+		if (type === Array) {
+			return Array.isArray(arg);
+		}
+		/*
+			For TwineScript-specific types, this check should mostly suffice.
+			TODO: I really need to replace those duck-typing properties.
+		*/
+		return Object.isPrototypeOf.call(type,arg);
+	}
+	
+	/*
+		This converts a passed macro function into one that performs type-checking
+		on its inputs before running. It provides macro authors with another layer of
+		error feedback.
+		
+		@param {String|Array}      name            The macro's name(s).
+		@param {Function}          fn              A macro function that does NOT receive a thunk.
+		@param {Array|Object|null} typeSignature   An array of Twine macro parameter type data.
+	*/
+	function typeSignatureCheck(name, fn, typeSignature) {
+		/*
+			Return early if no signature was present for this macro.
+		*/
+		if (!typeSignature) {
+			return fn;
+		}
+		/*
+			The typeSignature *should* be an Array, but if it's just one item,
+			we can normalise it to Array form.
+		*/
+		typeSignature = [].concat(typeSignature);
+		
+		/*
+			The name is used solely for error message generation. It can be a String or
+			an Array of Strings. If it's the latter, let's not bother with the name
+			and not try and guess incorrectly which variant the author used.
+			
+			Otherwise, let's wrap the name with macro syntax for display purposes.
+		*/
+		name = Array.isArray(name) ? "" : "(" + name + ":) ";
+		
+		// That being done, we now have the wrapping function.
+		return function typeCheckedMacro() {
+			var args = Array.from(arguments)
+				// The first argument is the Section, not a user-provided argument.
+				// We discard it thus.
+					.slice(1),
+				type, arg, ind, end, rest;
+			
+			for(ind = 0, end = Math.max(args.length, typeSignature.length); ind < end; ind += 1) {
+				type = typeSignature[ind];
+				arg = args[ind];
+				
+				/*
+					A rare early error check can be made up here: if ind >= typeSignature.length,
+					and Rest is not in effect, then too many params were supplied.
+				*/
+				if (ind >= typeSignature.length && !rest) {
+					return new TypeError((args.length - typeSignature.length) +
+						" too many values were given to this " + name + "macro.");
+				}
+				
+				/*
+					If a Rest type has already come before, then it will fill in for
+					the absence of a type now.
+				*/
+				type || (type = rest);
+				/*
+					Conversely, if the rest type is being introduced now,
+					we now note it down and extract the type parameter...
+				*/
+				if (type.innerType && (type.pattern === "rest" || type.pattern === "zero or more")) {
+					rest = type.innerType;
+					/*
+						...but, we only extract the type parameter if it's a Rest.
+						ZeroOrMore is used in singleTypeCheck as a synonym for Optional,
+						and should remain boxed.
+					*/
+					if (type.pattern === "rest") {
+						type = type.innerType;
+					}
+				}
+				// Now do the check.
+				if (!singleTypeCheck(arg,type)) {
+					/*
+						If the check failed, an error message must be supplied.
+						We can infer the reason why singleTypeCheck returned just by
+						examining arg.
+						
+						For instance, if the arg is undefined, then the problem is a
+						"not enough values" error.
+					*/
+					
+					if (arg === undefined) {
+						return new TypeError("The " + name + "macro needs "
+							+ Utils.plural((typeSignature.length - ind), "more value") + ".");
+					}
+					
+					/*
+						Otherwise, it was the most common case: an invalid data type.
+					*/
+					return new TypeError(name + "'s " +
+						Utils.nth(ind + 1) + " value is " + Operations.objectName(arg) +
+						", but should be " +
+						Operations.typeName(type.innerType || type) + ".");
+				}
+			}
+			/*
+				Type checking has passed - now let the macro run.
+			*/
+			return fn.apply(0, arguments);
+		};
+	}
+	
 	Macros = {
 		/**
 			Checks if a given macro name is registered.
@@ -113,8 +283,6 @@ function($, Story, Utils, ChangerCommand) {
 			@param {Function} fn  The function.
 		*/
 		add: function (name, type, fn) {
-			type = type || "value";
-			fn.type = type;
 			
 			// Add the fn to the macroRegistry, plus aliases (if name is an array of aliases)
 			if (Array.isArray(name)) {
@@ -136,10 +304,10 @@ function($, Story, Utils, ChangerCommand) {
 			@param {String} name
 			@param {Function} fn
 		*/
-		addValue: function addValue(name, fn) {
+		addValue: function addValue(name, fn, typeSignature) {
 			Macros.add(name,
 				"value",
-				eager(fn)
+				eager(typeSignatureCheck(name, fn, typeSignature))
 			);
 			// Return the function to enable "bubble chaining".
 			return addValue;
@@ -160,7 +328,7 @@ function($, Story, Utils, ChangerCommand) {
 			@param {String} name
 			@param {Function} fn
 		*/
-		addSensor: function addSensor(name, fn) {
+		addSensor: function addSensor(name, fn, typeSignature) {
 			fn.sensor = true;
 			fn.macroName = name;
 			fn.toString = function() {
@@ -168,7 +336,7 @@ function($, Story, Utils, ChangerCommand) {
 			};
 			Macros.add(name,
 				"sensor",
-				deferred(fn)
+				deferred(typeSignatureCheck(name, fn, typeSignature))
 			);
 			// Return the function to enable "bubble chaining".
 			return addSensor;
@@ -201,12 +369,12 @@ function($, Story, Utils, ChangerCommand) {
 			@param {Function} fn
 			@param {Function} changerCommand
 		*/
-		addChanger: function addChanger(name, fn, changerCommandFn) {
+		addChanger: function addChanger(name, fn, changerCommandFn, typeSignature) {
 			Utils.assert(changerCommandFn);
 			
 			Macros.add(name,
 				"changer",
-				eager(fn)
+				eager(typeSignatureCheck(name, fn, typeSignature))
 			);
 			// I'll explain later. It involves registering the changerCommand implementation.
 			changerCommandRegistry[Array.isArray(name) ? name[0] : name] = changerCommandFn;
@@ -226,6 +394,75 @@ function($, Story, Utils, ChangerCommand) {
 		ChangerCommand: function(name, params) {
 			return ChangerCommand(changerCommandRegistry[name], name, params);
 		},
+		
+		/*
+			These helper functions/constants are used for defining semantic type signatures for
+			standard library macros.
+		*/
+		TypeSignature: {
+			
+			optional: function(type) {
+				return {pattern: "optional",         innerType: type };
+			},
+			
+			zeroOrMore: function(type) {
+				return {pattern: "zero or more",     innerType: type };
+			},
+			
+			either: function(/*variadic*/) {
+				return {pattern: "either",           innerType: Array.from(arguments)};
+			},
+			
+			rest: function(type) {
+				return {pattern: "rest",             innerType: type };
+			},
+			
+			Any: {
+				TwineScript_TypeName: "anything",
+			}, // In ES6, this would be a Symbol.
+			
+		},
+		
+		/**
+			Runs a macro.
+			
+			In TwineScript.compile(), the myriad arguments given to a macro invocation are
+			converted to 2 parameters to runMacro:
+			
+			@param {String} name     The macro's name.
+			@param {Function} thunk  A thunk enclosing the expressions
+			@return The result of the macro function.
+		*/
+		run: function(name, thunk) {
+			var fn;
+			// First and least, the error rejection check.
+			if (Utils.containsError(name)) {
+				return name;
+			}
+			/*
+				Check if the macro exists as a built-in.
+			*/
+			if (!Macros.has(name)) {
+				/*
+					If not, then try and find an author-defined passage to run.
+					Unlike macros, this uses the exact name (no insensitivity).
+					That's a bit of a discrepancy, I know...
+				*/
+				if (!Story.passageNamed(name)) {
+					return new ReferenceError(
+						"I can't run the macro '"
+						+ name
+						+ "' because it doesn't exist."
+					);
+				}
+				// TODO: Implement passage macros.
+				return new Error("Passage macros are not implemented yet.");
+			}
+			else fn = Macros.get(name);
+			
+			return fn(thunk);
+		},
+		
 	};
 	
 	Utils.log("Macros module ready!");

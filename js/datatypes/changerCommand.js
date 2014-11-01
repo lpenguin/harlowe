@@ -20,16 +20,18 @@ define([], function() {
 			This creates a partially-applied version of the function
 			that pre-fills all but the first argument (the ChangerDescriptor).
 		*/
-		var fn = function(d) {
+		var fn = Object.assign(function(d) {
 			return impl.apply(0, [d].concat(params));
-		};
-		fn.changer = true;
-		fn.macroName = name;
-		fn.params = params;
-		fn.TwineScript_ObjectName = "a ("  +name + ":) command";
-		fn.toString = function() {
-			return "[A '" + name + "' command]";
-		};
+		}, {
+			changer:                  true,
+			macroName:                name,
+			params:                   params,
+			TwineScript_ObjectName:   "a ("  +name + ":) command",
+			TwineScript_TypeName:     "a changer command",
+			toString: function() {
+				return "[A '" + name + "' command]";
+			},
+		});
 		return fn;
 	};
 });

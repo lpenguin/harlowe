@@ -40,6 +40,7 @@ define(['utils'], function(Utils){
 
 	Colour = Object.freeze({
 		colour: true,
+		TwineScript_TypeName: "a colour",
 		TwineScript_ObjectName: "a colour",
 		toString: function() {
 			return "<tw-colour style='background-color:rgb("

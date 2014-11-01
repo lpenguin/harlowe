@@ -214,6 +214,34 @@ define(['jquery', 'twinemarkup', 'selectors', 'customelements', 'jqueryplugins']
 			return (typeof str === "string" && str.startsWith("t8n-") && str.slice(4))
 				|| "dissolve";
 		},
+		
+		/**
+			A quick method for turning a number into an "nth" string.
+			
+			@method nth
+			@param {String|Number} num
+			@return {String}
+		*/
+		nth: function (num) {
+			var lastDigit = (num + '').slice(-1);
+			return num + (
+				lastDigit === "1" ? "st" :
+				lastDigit === "2" ? "nd" :
+				lastDigit === "3" ? "rd" : "th");
+		},
+		
+		/**
+			A quick method for adding an 's' to the end of a string
+			that comes in the form "[num] [noun]".
+			
+			@method plural
+			@param {Number} num   The quantity
+			@param {String} noun  The noun to possibly pluralise
+			@return {String}
+		*/
+		plural: function (num, noun) {
+			return num + " " + noun + (num > 1 ? "s" : "");
+		},
 
 		/*
 			HTML utilities

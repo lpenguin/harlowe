@@ -1,4 +1,5 @@
-define(['macros', 'utils', 'state', 'story', 'engine'], function(Macros, Utils, State, Story, Engine) {
+define(['macros', 'utils', 'state', 'story', 'engine', 'assignmentRequest'],
+function(Macros, Utils, State, Story, Engine, AssignmentRequest) {
 	"use strict";
 	/*
 		Built-in value macros.
@@ -68,6 +69,12 @@ define(['macros', 'utils', 'state', 'story', 'engine'], function(Macros, Utils, 
 		gotoURL
 	*/
 	
+	var
+		rest = Macros.TypeSignature.rest,
+		optional = Macros.TypeSignature.optional,
+		zeroOrMore = Macros.TypeSignature.zeroOrMore,
+		Any = Macros.TypeSignature.Any;
+	
 	Macros.addValue
 		/*
 			(set:) Set Twine variables.
@@ -89,7 +96,8 @@ define(['macros', 'utils', 'state', 'story', 'engine'], function(Macros, Utils, 
 			*/
 			ar.dest.set(ar.src);
 			return "";
-		})
+		},
+		[rest(AssignmentRequest)])
 		
 		/*
 			(put:) A left-to-right version of (set:) that requires the "into" operator.
@@ -110,7 +118,9 @@ define(['macros', 'utils', 'state', 'story', 'engine'], function(Macros, Utils, 
 			*/
 			ar.dest.set(ar.src);
 			return "";
-		})
+		},
+		// (put: is variadic)
+		[rest(AssignmentRequest)])
 		
 		/*
 			(move:) A variant of (put:) that deletes the source's binding after
@@ -138,7 +148,9 @@ define(['macros', 'utils', 'state', 'story', 'engine'], function(Macros, Utils, 
 				ar.dest.set(ar.src);
 			}
 			return "";
-		})
+		},
+		// (put: is variadic)
+		[rest(AssignmentRequest)])
 
 		/*
 			(print:), (text:): convert the expression to text.
@@ -147,7 +159,9 @@ define(['macros', 'utils', 'state', 'story', 'engine'], function(Macros, Utils, 
 		*/
 		(["print", "text"], function print(_, expr) {
 			return expr+"";
-		})
+		},
+		// (print: accepts 1 anything)
+		[Any])
 
 		/*
 			(num:), (number:)
@@ -155,7 +169,9 @@ define(['macros', 'utils', 'state', 'story', 'engine'], function(Macros, Utils, 
 		*/
 		(["num", "number"], function number(_, expr) {
 			return +expr;
-		})
+		},
+		// (num: accepts 1 anything)
+		[Any])
 		
 		/*
 			(if:) converts the expression to boolean, affecting subsequent
@@ -177,7 +193,9 @@ define(['macros', 'utils', 'state', 'story', 'engine'], function(Macros, Utils, 
 				bearing on one another.
 			*/
 			return !!(section.stack[0].lastIf = !!expr);
-		})
+		},
+		// (if: accepts 1 anything)
+		[Any])
 		
 		/*
 			(unless:) the negated form of if().
@@ -185,7 +203,8 @@ define(['macros', 'utils', 'state', 'story', 'engine'], function(Macros, Utils, 
 		*/
 		("unless", function unless(section, expr) {
 			return !!(section.stack[0].lastIf = !expr);
-		})
+		},
+		[Any])
 		
 		/*
 			(elseif:) only true if the previous if() was false,
@@ -198,7 +217,8 @@ define(['macros', 'utils', 'state', 'story', 'engine'], function(Macros, Utils, 
 				property, if present.
 			*/
 			return (!section.stack[0].lastIf && (section.stack[0].lastIf = !!expr));
-		})
+		},
+		[Any])
 		
 		/*
 			(else:) only true if the previous if() was false.
@@ -206,7 +226,8 @@ define(['macros', 'utils', 'state', 'story', 'engine'], function(Macros, Utils, 
 		*/
 		("else", function _else(section) {
 			return !section.stack[0].lastIf;
-		});
+		},
+		[Any]);
 
 	/*
 		JS library wrapper macros
@@ -240,55 +261,60 @@ define(['macros', 'utils', 'state', 'story', 'engine'], function(Macros, Utils, 
 		*/
 
 		// The current weekday, in full
-		weekday: function () {
+		weekday: [function () {
 			return ['Sun', 'Mon', 'Tues', 'Wednes', 'Thurs', 'Fri', 'Satur'][new Date().getDay()] + "day";
 		},
+		// 0 args
+		null],
 
 		// The current day number
-		monthday: function () {
+		monthday: [function () {
 			return new Date().getDate();
 		},
+		null],
 
 		// The current time in 12-hour hours:minutes format.
-		currenttime: function () {
+		currenttime: [function () {
 			var d = new Date(),
 				am = d.getHours() < 12;
 
 			return d.getHours() % 12 + ":" + d.getMinutes() + " " + (am ? "A" : "P") + "M";
 		},
+		null],
 
 		// The current date in DateString format (eg. "Thu Jan 01 1970").
-		currentdate: function () {
+		currentdate: [function () {
 			return new Date().toDateString();
 		},
+		null],
 
 		/*
 			Wrappers for basic Math
 			(includes ES6 polyfills)
 		*/
 
-		min: Math.min,
-		max: Math.max,
-		abs: Math.abs,
-		sign: Math.sign || function (val) {
+		min: [Math.min, rest(Number)],
+		max: [Math.max, rest(Number)],
+		abs: [Math.abs, Number],
+		sign: [Math.sign || function (val) {
 			return (typeof val !== "number" || isNaN(val)) ? val : Math.max(-1, Math.min(1, Math.ceil(val)));
-		},
-		sin: Math.sin,
-		cos: Math.cos,
-		tan: Math.tan,
-		floor: Math.floor,
-		round: Math.round,
-		ceil: Math.ceil,
-		pow: Math.pow,
-		exp: Math.exp,
-		sqrt: mathFilter(Math.sqrt),
-		log: mathFilter(Math.log),
-		log10: mathFilter(Math.log10 || function (value) {
+		}, Number],
+		sin:    [Math.sin, Number],
+		cos:    [Math.cos, Number],
+		tan:    [Math.tan, Number],
+		floor:  [Math.floor, Number],
+		round:  [Math.round, Number],
+		ceil:   [Math.ceil, Number],
+		pow:    [Math.pow, Number],
+		exp:    [Math.exp, Number],
+		sqrt:   [mathFilter(Math.sqrt), Number],
+		log:    [mathFilter(Math.log), Number],
+		log10:  [mathFilter(Math.log10 || function (value) {
 			return Math.log(value) * (1 / Math.LN10);
-		}),
-		log2: mathFilter(Math.log2 || function (value) {
+		}), Number],
+		log2:   [mathFilter(Math.log2 || function (value) {
 			return Math.log(value) * (1 / Math.LN2);
-		}),
+		}), Number],
 
 		/*
 			Basic randomness
@@ -300,7 +326,7 @@ define(['macros', 'utils', 'state', 'story', 'engine'], function(Macros, Utils, 
 			2 arguments: random int from a to b inclusive (order irrelevant)
 			Identical to Twine 1's version.
 		*/
-		random: function random(a, b) {
+		random: [function random(a, b) {
 			var from, to;
 			if (!b) {
 				from = 0;
@@ -311,9 +337,9 @@ define(['macros', 'utils', 'state', 'story', 'engine'], function(Macros, Utils, 
 			}
 			to += 1;
 			return ~~((Math.random() * (to - from))) + from;
-		},
+		}, [Number, Number]],
 		
-		either: either,
+		either: [either, rest(Any)],
 		
 		/*
 			Array/Sequence macros
@@ -324,8 +350,8 @@ define(['macros', 'utils', 'state', 'story', 'engine'], function(Macros, Utils, 
 			Used for creating Array literals.
 			TODO: Make it "concat-spread" arrays passed into it??
 		*/
-		a: Array.of,
-		array: Array.of,
+		a:     [Array.of, zeroOrMore(Any)],
+		array: [Array.of, zeroOrMore(Any)],
 		
 		/*
 			(any-of:)
@@ -334,7 +360,7 @@ define(['macros', 'utils', 'state', 'story', 'engine'], function(Macros, Utils, 
 			more explicit, to enable better-sounding expressions,
 			like (print: (any-of: $bag))
 		*/
-		anyof: function any_of() {
+		anyof: [function any_of() {
 			if(arguments.length === 1) {
 				if (Array.isArray(arguments[0])) {
 					return either.apply(this, arguments[0]);
@@ -343,6 +369,7 @@ define(['macros', 'utils', 'state', 'story', 'engine'], function(Macros, Utils, 
 			}
 			return any_of(either.apply(this, arguments));
 		},
+		Array],
 
 		/*
 			Wrappers for state
@@ -350,7 +377,7 @@ define(['macros', 'utils', 'state', 'story', 'engine'], function(Macros, Utils, 
 
 		// Return the number of times the named passage was visited.
 		// For multiple arguments, return the smallest visited value.
-		visited: function visited(name) {
+		visited: [function visited(name) {
 			var ret, i;
 			if (arguments.length > 1) {
 				for (i = 0, ret = State.pastLength; i < arguments.length; i++) {
@@ -360,41 +387,52 @@ define(['macros', 'utils', 'state', 'story', 'engine'], function(Macros, Utils, 
 			}
 			return name ? State.passageNameVisited(name) : State.passageIDVisited(State.passage);
 		},
+		// TODO: Ugh, why is this the only macro with 0-1 arity?
+		optional(String)],
 		
 		// Return the name of the previous visited passage.
-		previous: function previous() {
+		previous: [function previous() {
 			return Story.getPassageName(State.previousPassage() || Story.startPassage);
 		},
+		null],
 
 		/*
 			Wrappers for engine.
 			I kinda want to make this lazily return a "GotoCommand" or something.
 		*/
 
-		goto: function (name) {
+		goto: [function (name) {
+			name = Story.passageNamed(name);
+			if (!name) {
+				return new RangeError("There's no passage named '" + name + "'.");
+			}
 			return Engine.goToPassage(name);
 		},
+		String],
 
 		/*
 			Wrappers for Window
 		*/
 
 		// Keep "undefined" from being the default text.
-		alert: function (text) {
+		alert: [function (text) {
 			return window.alert(text || "");
 		},
-		prompt: function (text, value) {
+		String],
+		prompt: [function (text, value) {
 			return window.prompt(text || "", value || "") || "";
 		},
-		confirm: function (text) {
+		String, String],
+		confirm: [function (text) {
 			return window.confirm(text || "");
 		},
-		openURL: window.open,
-		reload: window.location.reload,
-		gotoURL: window.location.assign,
-		pageURL: function () {
+		String],
+		openURL: [window.open, String],
+		reload: [window.location.reload, null],
+		gotoURL: [window.location.assign, String],
+		pageURL: [function () {
 			return window.location.href;
-		},
+		}, null],
 		
 		/*
 			This method takes all of the above and registers them
@@ -405,7 +443,12 @@ define(['macros', 'utils', 'state', 'story', 'engine'], function(Macros, Utils, 
 		*/
 		"": function() {
 			Object.keys(this).forEach(function(key) {
+				var fn, typeSignature;
+				
 				if (key) {
+					fn = this[key][0],
+					typeSignature = this[key][1];
+					
 					/*
 						Of course, the mandatory first argument of all macro
 						functions is section, so we have to convert the above
@@ -419,8 +462,8 @@ define(['macros', 'utils', 'state', 'story', 'engine'], function(Macros, Utils, 
 							Aside: in ES6 this function would be:
 							(section, ...rest) => this[key](...rest)
 						*/
-						return this[key].apply(0, Array.from(arguments).slice(1));
-					}.bind(this));
+						return fn.apply(0, Array.from(arguments).slice(1));
+					}.bind(this), typeSignature);
 				}
 			}.bind(this));
 		}
