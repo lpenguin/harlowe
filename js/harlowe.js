@@ -34,6 +34,9 @@ require(['jquery', 'renderer', 'story', 'state', 'engine', 'utils', 'selectors',
 		@module Harlowe
 		@main Harlowe
 	*/
+	var debugHTML =
+		"<tw-debugger><button class='show-invisibles'>&#9903; Debug View</button></tw-debugger>";
+		
 	
 	// Used to execute custom scripts
 	function _eval(text) {
@@ -62,12 +65,13 @@ require(['jquery', 'renderer', 'story', 'state', 'engine', 'utils', 'selectors',
 			e.preventDefault();
 		});
 
-		// If the debug option is on, add the debug button.
+		// If the debug option is on, add the debugger.
 
 		if (Story.options.debug) {
-			$(document.body).append($('<div class="debug-button">').click(function() {
-				html.toggleClass('debug-mode');
-			}));
+			$(document.body).append(debugHTML);
+			$('.show-invisibles').click(function() {
+				html.toggleClass('debug-mode').is(".debug-mode");
+			});
 		}
 		installHandlers = null;
 	};

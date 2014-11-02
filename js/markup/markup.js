@@ -313,6 +313,7 @@
 			variable: {
 				fn: function(match) {
 					return {
+						name:      match[1],
 						innerText: match[0],
 						innerMode: variableMode,
 					};

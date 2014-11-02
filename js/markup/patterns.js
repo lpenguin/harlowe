@@ -188,7 +188,7 @@
 		
 		variableProperty = "\\.(" + anyLetter.replace("\\-", "") + "+)",
 		
-		variable = "(" + simpleVariable + "(?:" + variableProperty + ")*)",
+		variable = simpleVariable + "(?:" + variableProperty + ")*",
 		
 		macro = {
 			opener:            "\\(",

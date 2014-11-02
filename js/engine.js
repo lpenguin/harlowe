@@ -21,17 +21,22 @@ function ($, Story, Utils, Selectors, State, Section) {
 		container = $('<tw-passage><tw-sidebar>'),
 		sidebar = container.children(Selectors.sidebar);
 		
-		// Permalink
-		sidebar.append('<tw-icon class="permalink" title="Permanent link to this passage"><a href="#' + State.save() + '">&sect;');
+		/*
+			Generate the HTML for the permalink. 
+			(This is currently unavailable as of Harlowe 1.0)
+		*/
+		if (Story.options.permalink) {
+			sidebar.append('<tw-icon class="permalink" title="Permanent link to this passage"><a href="#' + State.save() + '">&sect;');
+		}
 		// Apart from the Permalink, the sidebar buttons consist of Undo (Back) and Redo (Forward) buttons.
 		back = $('<tw-icon class="undo" title="Undo">&#8630;</tw-icon>').click(Engine.goBack);
-		fwd = $('<tw-icon class="redo" title="Redo">&#8631;</tw-icon>').click(Engine.goForward);
+		fwd  = $('<tw-icon class="redo" title="Redo">&#8631;</tw-icon>').click(Engine.goForward);
 
 		if (State.pastLength <= 0) {
 			back.css("visibility", "hidden");
 		}
 		if (State.futureLength <= 0) {
-			fwd.css("visibility", "hidden");
+			fwd.css( "visibility", "hidden");
 		}
 		sidebar.append(back).append(fwd);
 

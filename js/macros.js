@@ -108,7 +108,10 @@ function($, Story, Utils, Operations, ChangerCommand) {
 				Either signatures must check every available type.
 			*/
 			else if (type.pattern === "either") {
-				return type.innerType.every(function(type) {
+				/*
+					The arg passes the test if it matches some of the types.
+				*/
+				return type.innerType.some(function(type) {
 					return singleTypeCheck(arg, type);
 				});
 			}
