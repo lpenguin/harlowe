@@ -78,23 +78,25 @@ function(Macros, Utils, State, Story, Engine, AssignmentRequest) {
 	Macros.addValue
 		/*
 			(set:) Set Twine variables.
-			Evaluates to nothing if no error occurred.
+			Evaluates to nothing.
 		*/
-		("set", function set(_, ar) {
-			var propertyChain;
-			/*
-				Reject the arguments if they're not an assignment
-				request, or if it incorrectly uses the "into" operator
-			*/
-			if (!ar.assignmentRequest || ar.operator === "into") {
-				return new SyntaxError("This isn't how you should use the (set:) macro.");
-			}
-			propertyChain = ar.dest.propertyChain;
+		("set", function set(_, assignmentRequests /*variadic*/) {
+			var i, ar;
+			
+			assignmentRequests = Array.prototype.slice.call(arguments, 1);
 			
 			/*
-				Now, perform the operation.
+				This has to be a plain for-loop so that an early return
+				is possible.
 			*/
-			ar.dest.set(ar.src);
+			for(i = 0; i < assignmentRequests.length; i+=1) {
+				ar = assignmentRequests[i];
+				
+				if (ar.operator === "into") {
+					return new SyntaxError("Please say 'to' when using the (set:) macro.");
+				}
+				ar.dest.set(ar.src);
+			}
 			return "";
 		},
 		[rest(AssignmentRequest)])
@@ -102,24 +104,27 @@ function(Macros, Utils, State, Story, Engine, AssignmentRequest) {
 		/*
 			(put:) A left-to-right version of (set:) that requires the "into" operator.
 			Evaluates to nothing if no error occured.
+			TODO: mix this into the (set:) definition.
 		*/
-		("put", function put(_, ar) {
-			var propertyChain;
+		("put", function put(_, assignmentRequests) {
+			var i, ar;
+			
+			assignmentRequests = Array.prototype.slice.call(arguments, 1);
+			
 			/*
-				Reject the arguments if they're not an assignment
-				request, or if it doesn't use the "into" operator
+				This has to be a plain for-loop so that an early return
+				is possible.
 			*/
-			if (!ar.assignmentRequest || ar.operator !== "into") {
-				return new SyntaxError("Please say 'into' when using the (put:) macro.");
+			for(i = 0; i < assignmentRequests.length; i+=1) {
+				ar = assignmentRequests[i];
+				
+				if (ar.operator === "to") {
+					return new SyntaxError("Please say 'into' when using the (put:) macro.");
+				}
+				ar.dest.set(ar.src);
 			}
-			propertyChain = ar.dest.propertyChain;
-			/*
-				Now, perform the operation.
-			*/
-			ar.dest.set(ar.src);
 			return "";
 		},
-		// (put: is variadic)
 		[rest(AssignmentRequest)])
 		
 		/*
@@ -129,9 +134,7 @@ function(Macros, Utils, State, Story, Engine, AssignmentRequest) {
 		*/
 		("move", function move(_, ar) {
 			var get, error;
-			if (!ar.assignmentRequest) {
-				return new SyntaxError("This isn't how you should use the 'move' macro.");
-			}
+			
 			if (ar.src && ar.src.varref) {
 				get = ar.src.get();
 				if ((error = Utils.containsError(get))) {

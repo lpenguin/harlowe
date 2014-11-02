@@ -1,4 +1,4 @@
-define(['jquery', 'utils', 'macros'], function($, Utils, Macros) {
+define(['jquery', 'utils', 'macros', 'hookset'], function($, Utils, Macros, HookSet) {
 	"use strict";
 	/*
 		Built-in Revision, Interaction and Enchantment macros.
@@ -9,18 +9,20 @@ define(['jquery', 'utils', 'macros'], function($, Utils, Macros) {
 		Revision macros produce ChangerCommands that redirect where the attached hook's
 		text is rendered - usually rendering inside an entirely different hook.
 	*/
-
-	var revisionTypes = [
-		// replace()
-		// A macro that replaces the scope element(s) with its contents.
-		"replace",
-		// append()
-		// Similar to replace, but appends the contents to the scope(s).
-		"append",
-		// prepend()
-		// Similar to replace, but prepends the contents to the scope(s).
-		"prepend"
-	];
+	var
+		either = Macros.TypeSignature.either,
+		
+		revisionTypes = [
+			// replace()
+			// A macro that replaces the scope element(s) with its contents.
+			"replace",
+			// append()
+			// Similar to replace, but appends the contents to the scope(s).
+			"append",
+			// prepend()
+			// Similar to replace, but prepends the contents to the scope(s).
+			"prepend"
+		];
 	
 	revisionTypes.forEach(function(e) {
 		Macros.addChanger(e,
@@ -31,7 +33,8 @@ define(['jquery', 'utils', 'macros'], function($, Utils, Macros) {
 				desc.target = scope;
 				desc.append = e;
 				return desc;
-			}
+			},
+			either(HookSet,String)
 		);
 	});
 	

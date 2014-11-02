@@ -239,7 +239,7 @@ function($, Story, Utils, Operations, ChangerCommand) {
 					return new TypeError(name + "'s " +
 						Utils.nth(ind + 1) + " value is " + Operations.objectName(arg) +
 						", but should be " +
-						Operations.typeName(type.innerType || type) + ".");
+						Operations.typeName(type) + ".");
 				}
 			}
 			/*

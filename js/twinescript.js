@@ -57,7 +57,6 @@ define(['utils', 'state', 'colour', 'operations', 'macros'], function(Utils, Sta
 	*/
 	function indexOfType(array, type /* variadic */) {
 		var i,
-			/* This is equivalent to ES6 rest ("...types") */
 			types = (arguments.length === 1
 				? type
 				: Array.prototype.slice.call(arguments, 1));
@@ -81,9 +80,16 @@ define(['utils', 'state', 'colour', 'operations', 'macros'], function(Utils, Sta
 			calls the normal indexOfType, then inverts the returned index
 			(converting, say, 3/10 on the reversed array into 7/10 on
 			the original array).
+			
+			For browser optimisation purposes, arguments is copied into an
+			array 
 		*/
 		var a = Array.prototype.slice.call(arguments, 0);
-		a[0] = array.reverse();
+		/*
+			Regrettably, .reverse() is an in-place method, so a copy must be
+			manually made.
+		*/
+		a[0] = Array.from(array).reverse();
 		return (array.length - 1) - indexOfType.apply(0, a);
 	}
 	
@@ -196,7 +202,7 @@ define(['utils', 'state', 'colour', 'operations', 'macros'], function(Utils, Sta
 		if (!tokens) {
 			return "";
 		}
-		// Convert non-arrays to arrays;
+		// Convert tokens to a 1-size array if it's just a single non-array.
 		tokens = [].concat(tokens);
 		
 		/*

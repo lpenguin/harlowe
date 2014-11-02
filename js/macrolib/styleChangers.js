@@ -7,6 +7,9 @@ define(['macros', 'utils', 'colour'], function(Macros, Utils, Colour) {
 		
 		This module modifies the Macros module only, and exports nothing.
 	*/
+	var
+		either = Macros.TypeSignature.either;
+	
 	Macros.addChanger
 
 		// (transition:)
@@ -19,7 +22,8 @@ define(['macros', 'utils', 'colour'], function(Macros, Utils, Colour) {
 				d.transition     = name;
 				d.transitionTime = time;
 				return d;
-			}
+			},
+			[String]
 		)
 		
 		// (font:)
@@ -31,7 +35,8 @@ define(['macros', 'utils', 'colour'], function(Macros, Utils, Colour) {
 			function(d, family) {
 				d.code = "<span style='font-family:" + family + "'>" + d.code + "</span>";
 				return d;
-			}
+			},
+			[String]
 		)
 		
 		/*
@@ -56,7 +61,8 @@ define(['macros', 'utils', 'colour'], function(Macros, Utils, Colour) {
 			function (d, CSScolour) {
 				d.code = "<span style='color:" + CSScolour + "'>" + d.code + "</span>";
 				return d;
-			}
+			},
+			[either(String,Colour)]
 		)
 		/*
 			(background:)
@@ -93,7 +99,8 @@ define(['macros', 'utils', 'colour'], function(Macros, Utils, Colour) {
 				}
 				d.code = "<span style='" + property + ":" + value + "'>" + d.code + "</span>";
 				return d;
-			}
+			},
+			[either(String,Colour)]
 		)
 		
 		/*
@@ -155,6 +162,7 @@ define(['macros', 'utils', 'colour'], function(Macros, Utils, Colour) {
 					d.code = wrapperHTML.join(d.code);
 					return d;
 				};
-			}())
+			}()),
+			[String]
 		);
 });

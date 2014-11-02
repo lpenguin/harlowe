@@ -4,6 +4,7 @@ define(['macros'], function(Macros) {
 		Built-in sensor macros.
 		This module modifies the Macros module only, and exports nothing.
 	*/
+	var Any = Macros.TypeSignature.Any;
 
 	/*
 		Standard sensor macros.
@@ -18,7 +19,8 @@ define(['macros'], function(Macros) {
 				value: expr,
 				done: expr
 			};
-		})
+		},
+		[Any])
 		
 		/*
 			(until:)
@@ -29,7 +31,8 @@ define(['macros'], function(Macros) {
 				value: !expr,
 				done: expr
 			};
-		})
+		},
+		[Any])
 		
 		/*
 			(whenever:)
@@ -40,5 +43,6 @@ define(['macros'], function(Macros) {
 				value: expr,
 				done: false
 			};
-		});
+		},
+		[Any]);
 });
