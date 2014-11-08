@@ -1,4 +1,4 @@
-define(['jquery', 'twinemarkup', 'selectors', 'customelements', 'jqueryplugins'], function($, TwineMarkup, Selectors) {
+define(['jquery', 'markup/markup', 'selectors', 'customelements', 'jqueryplugins'], function($, TwineMarkup, Selectors) {
 	"use strict";
 
 	var 
@@ -592,8 +592,6 @@ define(['jquery', 'twinemarkup', 'selectors', 'customelements', 'jqueryplugins']
 		
 		storyElement: $("tw-story")
 	};
-	
-	Utils.log("Utils module ready!");
 	
 	return Object.freeze(Utils);
 });

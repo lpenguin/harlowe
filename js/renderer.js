@@ -1,7 +1,12 @@
-define(['utils', 'twinemarkup', 'twinescript'], function(Utils, TwineMarkup, TwineScript) {
+define(['utils', 'markup/markup', 'twinescript/compiler'], function(Utils, TwineMarkup, Compiler) {
 	"use strict";
 	/**
 		The Renderer takes the syntax tree from TwineMarkup and returns a HTML string.
+		
+		Among other responsibilities, it's the intermediary between TwineMarkup and TwineScript -
+		macros and expressions become <tw-expression> and <tw-macro> elements alongside other
+		markup syntax (with their compiled JS code attached as attributes), and the consumer of
+		the HTML (usually Section) can run that code in the Environ.
 		
 		@class Renderer
 		@static
@@ -228,7 +233,7 @@ define(['utils', 'twinemarkup', 'twinescript'], function(Utils, TwineMarkup, Twi
 						out += '<tw-expression type="' + token.type + '" name="' + escape(token.name || token.text) + '"'
 							// Debug mode: show the macro name as a title.
 							+ (Renderer.options.debug ? ' title="' + escape(token.text) + '"' : '')
-							+ ' js="' + escape(TwineScript.compile(token)) + '">'
+							+ ' js="' + escape(Compiler(token)) + '">'
 							+ '</tw-expression>';
 						break;
 					}
@@ -244,13 +249,6 @@ define(['utils', 'twinemarkup', 'twinescript'], function(Utils, TwineMarkup, Twi
 			return out;
 		}
 	};
-	Utils.log("Renderer module ready!");
-	
-	/*
-	DEBUG
-	*/
-	window.REPL = function(a) { var r = TwineScript.compile(TwineMarkup.lex("(print:"+a+")"));console.log(r);return TwineScript.environ({}).eval(r);};
-	window.LEX = function(a) { var r = TwineMarkup.lex(a); return (r.length===1 ? r[0] : r); };
 	
 	return Object.freeze(Renderer);
 });

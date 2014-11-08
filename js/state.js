@@ -473,7 +473,7 @@ define(['story', 'utils', 'lzstring'], function(Story, Utils, LZString) {
 			return true;
 		},
 	};
-	Utils.log("State module ready!");
+	
 	Object.seal(Moment);
 	return Object.freeze(State);
 });

@@ -1,5 +1,5 @@
-define(['jquery', 'utils', 'selectors', 'renderer', 'twinescript', 'story', 'state', 'hookutils', 'hookset', 'pseudohookset'],
-function($, Utils, Selectors, Renderer, TwineScript, Story, State, HookUtils, HookSet, PseudoHookSet) {
+define(['jquery', 'utils', 'selectors', 'renderer', 'twinescript/environ', 'story', 'state', 'hookutils', 'hookset', 'pseudohookset'],
+function($, Utils, Selectors, Renderer, Environ, Story, State, HookUtils, HookSet, PseudoHookSet) {
 	"use strict";
 
 	var Section;
@@ -462,7 +462,7 @@ function($, Utils, Selectors, Renderer, TwineScript, Story, State, HookUtils, Ho
 			/*
 				Add a TwineScript environ and mix in its eval() method.
 			*/
-			ret = TwineScript.environ(ret);
+			ret = Environ(ret);
 			return ret;
 		},
 		
@@ -650,6 +650,5 @@ function($, Utils, Selectors, Renderer, TwineScript, Story, State, HookUtils, Ho
 		
 	};
 	
-	Utils.log("Section module ready!");
 	return Utils.lockProperties(Section);
 });

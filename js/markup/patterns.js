@@ -456,7 +456,7 @@
 		module.exports = Patterns;
 	}
 	else if(typeof define === 'function' && define.amd) {
-		define("patterns", [], function () {
+		define([], function () {
 			return Patterns;
 		});
 	}

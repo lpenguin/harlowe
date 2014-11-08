@@ -1,4 +1,4 @@
-define(['jquery', 'twinemarkup', 'story', 'macros', 'utils', 'datatypes/twineWarning',
+define(['jquery', 'markup/markup', 'story', 'macros', 'utils', 'datatypes/twineWarning',
 'macrolib/values', 'macrolib/styleChangers', 'macrolib/sensors', 'macrolib/enchantments'],
 function($, TwineMarkup, Story, Macros, Utils, TwineWarning) {
 	"use strict";
@@ -125,5 +125,5 @@ function($, TwineMarkup, Story, Macros, Utils, TwineWarning) {
 			}
 		);
 	
-	Utils.log("Macrolib module ready!");
+	Utils.log("Loaded the built-in macros.");
 });

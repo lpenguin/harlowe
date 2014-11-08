@@ -11,10 +11,6 @@ require.config({
 		regexstrings:    './utils/regexstrings',
 		customelements:  './utils/customelements',
 		jqueryplugins:   './utils/jqueryplugins',
-		// Markup
-		twinemarkup:     './markup/markup',
-		lexer:           './markup/lexer',
-		patterns:        './markup/patterns',
 		// Data types
 		hookset:            './datatypes/hookset',
 		pseudohookset:      './datatypes/pseudohookset',
@@ -23,7 +19,7 @@ require.config({
 		colour:             './datatypes/colour',
 	}
 });
-require(['jquery', 'renderer', 'story', 'state', 'engine', 'utils', 'selectors', 'macrolib'],
+require(['jquery', 'renderer', 'story', 'state', 'engine', 'utils', 'selectors', 'macrolib', 'repl'],
 		function ($, Renderer, Story, State, Engine, Utils, Selectors) {
 	"use strict";
 	/**

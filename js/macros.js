@@ -1,4 +1,4 @@
-define(['jquery', 'story', 'utils', 'operations', 'changercommand'],
+define(['jquery', 'story', 'utils', 'twinescript/operations', 'changercommand'],
 function($, Story, Utils, Operations, ChangerCommand) {
 	"use strict";
 	/**
@@ -468,6 +468,5 @@ function($, Story, Utils, Operations, ChangerCommand) {
 		
 	};
 	
-	Utils.log("Macros module ready!");
 	return Object.freeze(Macros);
 });

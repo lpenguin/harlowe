@@ -85,7 +85,7 @@ define(['jquery', 'utils', 'selectors'], function($, Utils, Selectors) {
 		}
 	};
 
-	Utils.log("Story module ready! (" + $(Selectors.passageData).length + " passages)");
+	Utils.log("Loaded the story (" + $(Selectors.passageData).length + " passages)");
 	
 	// Story is finally frozen by Harlowe.js, when startPassage is finally set.
 	return Object.seal(Story);

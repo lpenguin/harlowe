@@ -536,7 +536,7 @@
 		module.exports = exporter(require('./lexer'));
 	}
 	else if(typeof define === 'function' && define.amd) {
-		define(['lexer', 'patterns'], function (Lexer, P) {
+		define(['./lexer', './patterns'], function (Lexer, P) {
 			Patterns = P;
 			return exporter(Lexer);
 		});

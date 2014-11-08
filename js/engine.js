@@ -178,6 +178,5 @@ function ($, Story, Utils, Selectors, State, Section) {
 		showPassage: showPassage,
 	};
 	
-	Utils.log("Engine module ready!");
 	return Object.freeze(Engine);
 });
