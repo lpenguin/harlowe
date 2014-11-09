@@ -1,4 +1,4 @@
-define(['macros', 'state', 'utils', 'twinescript/operations'], function(Macros, State, Utils, OperationsProto) {
+define(['macros', 'state', 'utils', 'datatypes/colour', 'twinescript/operations'], function(Macros, State, Utils, Colour, OperationsProto) {
 	"use strict";
 	/**
 		Creates a new script execution environment. This accepts and
