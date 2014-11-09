@@ -11,12 +11,6 @@ require.config({
 		regexstrings:    './utils/regexstrings',
 		customelements:  './utils/customelements',
 		jqueryplugins:   './utils/jqueryplugins',
-		// Data types
-		hookset:            './datatypes/hookset',
-		pseudohookset:      './datatypes/pseudohookset',
-		changercommand:     './datatypes/changerCommand',
-		assignmentRequest:  './datatypes/assignmentRequest',
-		colour:             './datatypes/colour',
 	}
 });
 require(['jquery', 'renderer', 'story', 'state', 'engine', 'utils', 'selectors', 'macrolib', 'repl'],

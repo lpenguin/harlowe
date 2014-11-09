@@ -1,7 +1,7 @@
 define([], function() {
 	"use strict";
 	/*
-		A ChangerCommand is a function that is used to mutate a ChangerDescriptor object,
+		A ChangerCommand is a function that is used to mutate a ChangeDescriptor object,
 		that itself is used to alter a Section's rendering.
 		
 		This decorator function accepts a function (which defines the ChangerCommand's internal
@@ -18,7 +18,7 @@ define([], function() {
 	return function ChangerCommand(impl, name, params) {
 		/*
 			This creates a partially-applied version of the function
-			that pre-fills all but the first argument (the ChangerDescriptor).
+			that pre-fills all but the first argument (the ChangeDescriptor).
 		*/
 		var fn = Object.assign(function(d) {
 			return impl.apply(0, [d].concat(params));

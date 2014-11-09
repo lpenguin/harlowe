@@ -1,5 +1,6 @@
-define(['jquery', 'utils', 'selectors', 'renderer', 'twinescript/environ', 'story', 'state', 'hookutils', 'hookset', 'pseudohookset'],
-function($, Utils, Selectors, Renderer, Environ, Story, State, HookUtils, HookSet, PseudoHookSet) {
+define(['jquery', 'utils', 'selectors', 'renderer', 'twinescript/environ', 'story', 'state', 'hookutils',
+'datatypes/hookset', 'datatypes/pseudohookset', 'datatypes/changedescriptor'],
+function($, Utils, Selectors, Renderer, Environ, Story, State, HookUtils, HookSet, PseudoHookSet, ChangeDescriptor) {
 	"use strict";
 
 	var Section;
@@ -261,153 +262,6 @@ function($, Utils, Selectors, Renderer, Environ, Story, State, HookUtils, HookSe
 		recursiveSensing();
 	}
 	
-	/**
-		This method renders TwineMarkup, executing the TwineScript expressions
-		within. The expressions only have visibility
-		within this passage.
-
-		@method render
-		@private
-		@param {ChangerDescriptor} desc The ChangerDescriptor describing what to do.
-		@return {jQuery} The rendered passage.
-	*/
-	function render(desc) {
-		var target = desc.target,
-			/*
-				Render the TwineMarkup prose into a HTML DOM structure.
-				
-				You may notice that the design of this and renderInto() means
-				that, when a HookSet has multiple targets, each target has
-				its own distinct rendering of the same TwineMarkup.
-				
-				(Note: code may be '' if the descriptor's append method is "remove".
-				In which case, let it be an empty set.)
-			*/
-			dom = (desc.code &&
-				/*
-					We can't use $.parseHTML here, since that returns an
-					Array instead of a jQuery collection.
-				*/
-				$(Renderer.exec(desc.code))) || $();
-		
-		/*
-			First, check to see that the given jQuery method in the descriptor
-			actually exists, and potentially tweak the name if it does not.
-		*/
-		if (!(desc.append in target)) {
-			/*
-				(replace:) should actually replace the interior of the hook with the
-				content, not replace the hook itself (which is what .replaceWith() does).
-				So, we need to do .empty() beforehand, then change the method to "append" (though "prepend" will work too).
-			*/
-			if (desc.append === "replace") {
-				target.empty();
-				desc.append = "append";
-			}
-			/*
-				If I wished to add a variant of (replace:) that did remove the entire
-				hook, then I'd change desc.append to "replaceWith".
-			*/
-			else {
-				Utils.impossible("Section.render", "The target jQuery doesn't have a '" + desc.append + "' method.");
-				return;
-			}
-		}
-		
-		/*
-			Now, insert the DOM structure into the target element.
-			
-			Here are the reasons why the DOM must be connected to the target before the
-			expressions are evaluated:
-			
-			* Various Twine macros perform DOM operations on this pre-inserted jQuery set of
-			rendered elements, but assume that all the elements have a parent item, so that e.g.
-			.insertBefore() can be performed on them.
-			
-			* Also, and perhaps more saliently, the next block uses .find() to select
-			<tw-macro> elements etc., which assumes that the jQuery object has a single
-			container element at its "root level".
-			
-			* Finally, sensor macros' interval functions deactivate themselves if the
-			section is disconnected from Utils.storyElement, and if they initially
-			run without being connected, they will immediately deactivate.
-		*/
-		target[desc.append](
-			// As mentioned above, dom may be empty if desc.append is "remove".
-			dom.length ? dom : undefined
-		);
-		
-		/*
-			Before executing the expressions, put a fresh object on the
-			expression data stack.
-		*/
-		desc.section.stack.unshift(Object.create(null));
-		
-		/*
-			Execute the expressions immediately.
-		*/
-		
-		Utils.findAndFilter(dom, Selectors.hook + ","
-			+ Selectors.expression + ","
-			+ Selectors.internalLink).each(function doExpressions () {
-			var expr = $(this);
-			
-			switch(expr.tag()) {
-				case Selectors.hook:
-				{
-					if (expr.attr('code')) {
-						desc.section.renderInto(expr.attr('code'), expr);
-						expr.removeAttr('code');
-					}
-					break;
-				}
-				case Selectors.expression:
-				{
-					runExpression.call(desc.section, expr);
-					break;
-				}
-				case Selectors.internalLink:
-				{
-					runLink.call(desc.section, expr);
-					break;
-				}
-			}
-		});
-		
-		/*
-			After evaluating the expressions, pop the expression data stack.
-			The data is purely temporary and can be safely discarded.
-		*/
-		desc.section.stack.shift();
-		
-		/*
-			Transition it using the descriptor's given transition.
-		*/
-		if (desc.transition) {
-			Utils.transitionIn(
-				/*
-					There's a slightly problem: when we want to replace the
-					target, we don't need to apply a transition to every
-					element, so we just transition the target itself.
-					
-					But, when we're *appending* to the target, we don't want
-					the existing material in it to be transitioned, so
-					then we must resort to transitioning every element.
-					
-					This is #awkward, I know...
-				*/
-				desc.append === "replace" ? target : dom,
-				desc.transition
-			);
-		}
-		/*
-			Finally, update the enchantments now that the DOM is modified.
-			TODO: this really should not be run more than once per frame,
-			so some way of throttled debouncing is necessary.
-		*/
-		desc.section.updateEnchantments();
-	}
-	
 	Section = {	
 		// Used for duck-typing
 		section: true,
@@ -522,7 +376,7 @@ function($, Utils, Selectors, Renderer, Environ, Story, State, HookUtils, HookSe
 		/**
 			Renders the given TwineMarkup code into a given element,
 			transitioning it in. Changer functions can be provided to
-			modify the ChangerDescriptor object that controls how the code
+			modify the ChangeDescriptor object that controls how the code
 			is rendered.
 			
 			This is used primarily by Engine.showPassage() to render
@@ -535,24 +389,25 @@ function($, Utils, Selectors, Renderer, Environ, Story, State, HookUtils, HookSe
 			@param target The render destination. Usually a HookSet, PseudoHookSet or jQuery.
 			@param {Function|Array} [changers] The changer function(s) to run.
 		*/
-		//#ambiguous with .render
 		renderInto: function(source, target, changers) {
-			/*
-				This is the "default" ChangerDescriptor.
-				It simply takes the 'code' in the target hook,
-				renders it to the target unaltered, appending
-				the elements, with no special transition.
+			var
+				/*
+					This is the ChangeDescriptor that defines this rendering.
+				*/
+				desc = ChangeDescriptor.create({
+					target: target,
+					code: source,
+				}),
+				/*
+					This stores the returned DOM created by rendering the changeDescriptor.
+				*/
+				dom = $(),
+				/*
+					This provides (sigh) a reference to this object usable by the
+					inner doExpressions function, below.
+				*/
+				section = this;
 				
-				We construct a changerDescriptor here and now
-				so that those calling renderInto() need not
-				construct a fully-conforming one themselves.
-			*/
-			var desc = {
-				code:             source || target.attr('code') || '',
-				transition:       "dissolve",
-				target:           target,
-				append:           "append"
-			};
 			/*
 				Also define a non-writable property linking it back to this section.
 				This is used by enchantment macros to determine where to register
@@ -601,7 +456,7 @@ function($, Utils, Selectors, Renderer, Environ, Story, State, HookUtils, HookSe
 			}
 			else if (!desc.target) {
 				Utils.impossible("Section.renderInto",
-					"ChangerDescriptor has code but not a target!");
+					"ChangeDescriptor has code but not a target!");
 				return;
 			}
 			
@@ -621,12 +476,63 @@ function($, Utils, Selectors, Renderer, Environ, Story, State, HookUtils, HookSe
 						but has just this hook/word as its target.
 						Then, render using that descriptor.
 					*/
-					render.call(this, Object.create(desc, { target: { value: e }}));
-				}.bind(this));
+					dom = dom.add(desc.create({ target: e }).render());
+				});
 			}
 			else {
-				render.call(this, desc);
+				dom = desc.render();
 			}
+			
+			/*
+				Before executing the expressions, put a fresh object on the
+				expression data stack.
+			*/
+			this.stack.unshift(Object.create(null));
+			
+			/*
+				Execute the expressions immediately.
+			*/
+			
+			Utils.findAndFilter(dom, Selectors.hook + ","
+				+ Selectors.expression + ","
+				+ Selectors.internalLink).each(function doExpressions () {
+				var expr = $(this);
+			
+				switch(expr.tag()) {
+					case Selectors.hook:
+					{
+						if (expr.attr('code')) {
+							section.renderInto(expr.attr('code'), expr);
+							expr.removeAttr('code');
+						}
+						break;
+					}
+					case Selectors.expression:
+					{
+						runExpression.call(section, expr);
+						break;
+					}
+					case Selectors.internalLink:
+					{
+						runLink.call(section, expr);
+						break;
+					}
+				}
+			});
+			
+			/*
+				After evaluating the expressions, pop the expression data stack.
+				The data is purely temporary and can be safely discarded.
+			*/
+			this.stack.shift();
+			
+			/*
+				Finally, update the enchantments now that the DOM is modified.
+				TODO: this really should not be run more than once per frame,
+				so some way of throttled debouncing is necessary.
+			*/
+			this.updateEnchantments();
+			
 		},
 		
 		/**

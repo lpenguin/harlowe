@@ -1,4 +1,4 @@
-define(['utils', 'state', 'story', 'colour', 'assignmentRequest'], function(Utils, State, Story, Colour, AssignmentRequest) {
+define(['utils', 'state', 'story', 'datatypes/colour', 'datatypes/assignmentRequest'], function(Utils, State, Story, Colour, AssignmentRequest) {
 	"use strict";
 	/**
 		Operation objects are a table of operations which TwineScript proxies

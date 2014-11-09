@@ -1,4 +1,4 @@
-define(['jquery', 'utils', 'macros', 'hookset'], function($, Utils, Macros, HookSet) {
+define(['jquery', 'utils', 'macros', 'datatypes/hookset'], function($, Utils, Macros, HookSet) {
 	"use strict";
 	/*
 		Built-in Revision, Interaction and Enchantment macros.
@@ -123,10 +123,10 @@ define(['jquery', 'utils', 'macros', 'hookset'], function($, Utils, Macros, Hook
 			},
 			/*
 				This ChangerCommand registers a new enchantment on the Section that the
-				ChangerDescriptor belongs to.
+				ChangeDescriptor belongs to.
 				
 				It must perform the following tasks:
-				1. Silence the passed-in ChangerDescriptor.
+				1. Silence the passed-in ChangeDescriptor.
 				2. Call Section.selectHook() to find which hooks are
 				selected by the given selector.
 				3. Set up the <tw-enchantment> elements around the hooks.
@@ -137,7 +137,7 @@ define(['jquery', 'utils', 'macros', 'hookset'], function($, Utils, Macros, Hook
 				2-4 again).
 				
 				You may notice most of these are side-effects to a changer function's
-				proper task of altering a ChangerDescriptor. Alas... it is something of
+				proper task of altering a ChangeDescriptor. Alas... it is something of
 				a #kludge that it piggybacks off the changer macro concept.
 			*/
 			function makeEnchanter(desc, selector, target) {
@@ -267,8 +267,8 @@ define(['jquery', 'utils', 'macros', 'hookset'], function($, Utils, Macros, Hook
 									}
 									/*
 										At last, the target originally specified
-										by the ChangerDescriptor can now be filled with the
-										ChangerDescriptor's original code.
+										by the ChangeDescriptor can now be filled with the
+										ChangeDescriptor's original code.
 										
 										By passing the desc as the third argument,
 										all its values are assigned, not just the target.

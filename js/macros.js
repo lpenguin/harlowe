@@ -1,4 +1,4 @@
-define(['jquery', 'story', 'utils', 'twinescript/operations', 'changercommand'],
+define(['jquery', 'story', 'utils', 'twinescript/operations', 'datatypes/changercommand'],
 function($, Story, Utils, Operations, ChangerCommand) {
 	"use strict";
 	/**
@@ -349,7 +349,7 @@ function($, Story, Utils, Operations, ChangerCommand) {
 			Takes a function, and registers it as a live Changer macro.
 			
 			Changers return a transformation function (a ChangerCommand) that is used to mutate
-			a ChangerDescriptor object, that itself is used to alter a Section's rendering.
+			a ChangeDescriptor object, that itself is used to alter a Section's rendering.
 			
 			The second argument, ChangerCommandFn, is the "base" for the ChangerCommands returned
 			by the macro. The ChangerCommands are partial-applied versions of it, pre-filled
@@ -359,7 +359,7 @@ function($, Story, Utils, Operations, ChangerCommand) {
 			as an argument, augmented with some other values, and returned as the ChangerCommand
 			result.
 			
-			A ChangerDescriptor is a plain object with the following values:
+			A ChangeDescriptor is a plain object with the following values:
 			
 			{String} transition      Which transition to use.
 			{Number} transitionTime  The duration of the transition, in ms. CURRENTLY UNUSED.

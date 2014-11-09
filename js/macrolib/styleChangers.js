@@ -1,4 +1,4 @@
-define(['macros', 'utils', 'colour'], function(Macros, Utils, Colour) {
+define(['macros', 'utils', 'datatypes/colour'], function(Macros, Utils, Colour) {
 	"use strict";
 
 	/*
@@ -11,6 +11,20 @@ define(['macros', 'utils', 'colour'], function(Macros, Utils, Colour) {
 		either = Macros.TypeSignature.either;
 	
 	Macros.addChanger
+	
+		// (hook:)
+		// Allows the author to give a hook a computed tag name.
+		(["hook"],
+			function hook(_, name) {
+				return Macros.ChangerCommand("hook", name);	
+			},
+			function(d, name) {
+				d.attr = Object.assign(d.attr || {}, {
+					name: name
+				});
+			},
+			[String]
+		)
 
 		// (transition:)
 		// Apply a CSS transition to a hook as it is inserted.
