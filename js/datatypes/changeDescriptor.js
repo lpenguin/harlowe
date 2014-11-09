@@ -45,6 +45,7 @@ define(['jquery', 'utils', 'renderer'], function($, Utils, Renderer) {
 				code        = this.code,
 				append      = this.append,
 				transition  = this.transition,
+				attr        = this.attr,
 				dom;
 			
 			/*
@@ -119,6 +120,13 @@ define(['jquery', 'utils', 'renderer'], function($, Utils, Renderer) {
 				// As mentioned above, dom may be empty if append is "remove".
 				dom.length ? dom : undefined
 			);
+			
+			/*
+				If HTML attributes were included in the changerDescriptor, apply them now. 
+			*/
+			if (attr) {
+				target.attr(attr);
+			}
 			
 			/*
 				Transition it using this descriptor's given transition.
