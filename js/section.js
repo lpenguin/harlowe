@@ -10,6 +10,12 @@ function($, Utils, Selectors, Renderer, Environ, Story, State, HookUtils, HookSe
 		It contains its own DOM, a reference to any enclosing Section,
 		and methods and properties related to invoking TwineScript code within it.
 		
+		The big deal of having multiple Section objects (and the name Section itself
+		as compared to "passage" or "screen") is that multiple simultaneous passages
+		(such as (display:)ed passages, or stretchtext mode) code should be
+		hygenically scoped. Hook references in one passage cannot affect another,
+		and so forth.
+		
 		@class Section
 		@static
 	*/
@@ -168,12 +174,29 @@ function($, Utils, Selectors, Renderer, Environ, Story, State, HookUtils, HookSe
 			*/
 			this.renderInto(result + '', expr);
 		}
-		// And finally, the falsy primitive case
+		/*
+			And finally, the falsy primitive case.
+			This is special: as it prevents hooks from being run, an (else:)
+			that follows this will return true.
+		*/
 		else if   (result === false
 				|| result === null
 				|| result === undefined) {
 			nextHook.removeAttr('code');
 			expr.addClass("false");
+			if (nextHook.length) {
+				this.stack[0].lastHookShown = false;
+				return;
+			}
+		}
+		/*
+			The (else:) and (elseif:) macros require a little bit of state to be
+			saved after every hook interaction: whether or not the preceding hook
+			was shown or hidden by the attached expression.
+			Sadly, we must oblige with this overweening demand.
+		*/
+		if (nextHook.length) {
+			this.stack[0].lastHookShown = true;
 		}
 	}
 	

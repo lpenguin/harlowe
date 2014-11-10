@@ -71,7 +71,6 @@ function(Macros, Utils, State, Story, Engine, AssignmentRequest) {
 	
 	var
 		rest = Macros.TypeSignature.rest,
-		optional = Macros.TypeSignature.optional,
 		zeroOrMore = Macros.TypeSignature.zeroOrMore,
 		Any = Macros.TypeSignature.Any;
 	
@@ -177,27 +176,14 @@ function(Macros, Utils, State, Story, Engine, AssignmentRequest) {
 		[Any])
 		
 		/*
-			(if:) converts the expression to boolean, affecting subsequent
-			else() and elseif() calls. Evaluates to a boolean.
-		
-			The (if:) macro family currently determines (else:) and (elseif:)
-			by remembering the previous if() result. By "remembering", I
-			mean it puts a fresh expando property, "lastIf", on the section's
-			expression stack.
+			(if:) converts the expression to boolean.
 			
 			TODO: Should this actually be a Changer?? For instance:
 			(set: $robotAdvice to (font:Consolas) + (if: $choseTheRobot))
 		*/
 		("if", function _if(section, expr) {
-			/*
-				This and unless() both set the lastIf expando
-				property. Whatever was there last is no longer
-				relevant, just as consecutive if()s have no
-				bearing on one another.
-			*/
-			return !!(section.stack[0].lastIf = !!expr);
+			return !!expr;
 		},
-		// (if: accepts 1 anything)
 		[Any])
 		
 		/*
@@ -205,32 +191,38 @@ function(Macros, Utils, State, Story, Engine, AssignmentRequest) {
 			Evaluates to a boolean.
 		*/
 		("unless", function unless(section, expr) {
-			return !!(section.stack[0].lastIf = !expr);
+			return !expr;
 		},
 		[Any])
 		
 		/*
-			(elseif:) only true if the previous if() was false,
+			(elseif:) only true if the previous conditional hook was not shown,
 			and its own expression is true.
 			Evaluates to a boolean.
 		*/
 		("elseif", function elseif(section, expr) {
 			/*
-				This and else() check the lastIf expando
+				This and else() check the lastHookShown expando
 				property, if present.
 			*/
-			return (!section.stack[0].lastIf && (section.stack[0].lastIf = !!expr));
+			if (!("lastHookShown" in section.stack[0])) {
+				return new Error("There's nothing before this to do (else-if:) with.");
+			}
+			return (section.stack[0].lastHookShown === false && !!expr);
 		},
 		[Any])
 		
 		/*
-			(else:) only true if the previous if() was false.
+			(else:) only true if the previous conditional hook was not shown.
 			Evaluates to a boolean.
 		*/
 		("else", function _else(section) {
-			return !section.stack[0].lastIf;
+			if (!("lastHookShown" in section.stack[0])) {
+				return new Error("There's nothing before this to do (else:) with.");
+			}
+			return section.stack[0].lastHookShown === false;
 		},
-		[Any]);
+		null);
 
 	/*
 		JS library wrapper macros
@@ -374,10 +366,6 @@ function(Macros, Utils, State, Story, Engine, AssignmentRequest) {
 		},
 		Array],
 
-		/*
-			Wrappers for state
-		*/
-
 		// Return the number of times the named passage was visited.
 		// For multiple arguments, return the smallest visited value.
 		visited: [function visited(name) {
@@ -390,8 +378,17 @@ function(Macros, Utils, State, Story, Engine, AssignmentRequest) {
 			}
 			return name ? State.passageNameVisited(name) : State.passageIDVisited(State.passage);
 		},
-		// TODO: Ugh, why is this the only macro with 0-1 arity?
-		optional(String)],
+		rest(String)],
+		
+		/*
+			(visit:)
+			A Boolean check for whether this is the nth visit, where
+			n is provided by the user.
+		*/
+		visit: [function visit(num) {
+			return State.passageIDVisited(State.passage) === num;
+		},
+		Number],
 		
 		// Return the name of the previous visited passage.
 		previous: [function previous() {
@@ -400,7 +397,7 @@ function(Macros, Utils, State, Story, Engine, AssignmentRequest) {
 		null],
 
 		/*
-			Wrappers for engine.
+			(goto:)
 			I kinda want to make this lazily return a "GotoCommand" or something.
 		*/
 

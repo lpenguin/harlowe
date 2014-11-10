@@ -8,6 +8,25 @@ function($, TwineMarkup, Story, Macros, Utils, TwineWarning) {
 		
 		Most of the built-in macros are in the categorised submodules.
 		The macros that remain in here are uncategorised at present.
+		
+		
+		MACRO NAMING CONVENTIONS:
+		
+		* Generally stick to single words as much as possible,
+			but take pains to make the word as relevant and precise as possible.
+		* "on"  prefix: Currently reserved.
+		* "at"  prefix: Currently reserved.
+		* "is"  prefix: Currently reserved.
+		* "can" prefix: Currently reserved.
+		* type name: Should denote a type constructor or converter.
+			Constructors include (colour:) and (num:)
+		* verbs:
+			As TwineScript "statements" are expressions, imperative verbs
+			aren't terribly helpful. (print:) remains out of sheer incumbency,
+			as does(?) (display:).
+			
+			Sometimes, such as with (replace:), we get a 'verb' that actually
+			describes what its output does, rather than itself.
 	*/
 
 	Macros.addValue
