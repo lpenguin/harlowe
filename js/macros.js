@@ -1,5 +1,5 @@
-define(['jquery', 'story', 'utils', 'twinescript/operations', 'datatypes/changercommand'],
-function($, Story, Utils, Operations, ChangerCommand) {
+define(['jquery', 'story', 'utils', 'twinescript/operations'],
+function($, Story, Utils, Operations) {
 	"use strict";
 	/**
 		This contains a registry of macro definitions, and methods to add to that registry.
@@ -387,15 +387,18 @@ function($, Story, Utils, Operations, ChangerCommand) {
 		},
 		
 		/**
-			This is basically a wrapper for the ChangerCommand decorator function, but which
-			accesses the changerCommandRegistry.
+			This simple getter should only be called by changerCommand, in its run() method, which
+			allows the registered changer function to finally be invoked.
 			
-			Maybe the changerCommandRegistry should be in the ChangerCommand module.
+			TODO: This makes me wonder if this changer registering business shouldn't be in
+			the changerCommand module instead. 
 			
-			@method ChangerCommand
+			@method getChangerFn
+			@param {String} name
+			@return {Function} the registered changer function.
 		*/
-		ChangerCommand: function(name, params) {
-			return ChangerCommand(changerCommandRegistry[name], name, params);
+		getChangerFn: function getChanger(name) {
+			return changerCommandRegistry[name];
 		},
 		
 		/*

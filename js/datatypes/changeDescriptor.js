@@ -1,7 +1,7 @@
 define(['jquery', 'utils', 'renderer'], function($, Utils, Renderer) {
 	"use strict";
 	/**
-		A ChangeDescriptor is a plain object with the following values:
+		A ChangeDescriptor is a TwineScript internal object with the following values:
 		
 		{String} [transition]      Which transition to use.
 		{Number} [transitionTime]  The duration of the transition, in ms. CURRENTLY UNUSED.

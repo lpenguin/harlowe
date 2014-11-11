@@ -84,6 +84,32 @@ function($, Utils, Selectors, Renderer, Environ, Story, State, HookUtils, HookSe
 			result = this.eval(Utils.unescape(expr.popAttr('js') || ''));
 		
 		/*
+			If result is a ChangerCommand, please run it.
+		*/
+		if (result.changer) {
+			if (!nextHook.length) {
+				result = new TypeError(
+					"The (" + result.macroName + ":) macro should be assigned to a variable or attached to a hook."
+				);
+			}
+			else {
+				this.renderInto(
+					/*
+						The use of popAttr prevents the hook from executing normally
+						if it wasn't actually the eventual target of the changer function.
+					*/
+					nextHook.popAttr('code'),
+					/*
+						Don't forget: nextHook may actually be empty.
+						This is acceptable - the result changer could alter the
+						target appropriately.
+					*/
+					nextHook,
+					result
+				);
+			}
+		}	
+		/*
 			The result can be any of these values, and
 			should be put to use in the following ways:
 			
@@ -100,7 +126,7 @@ function($, Utils, Selectors, Renderer, Environ, Story, State, HookUtils, HookSe
 			function:
 				Run it, passing the nearest hook and innerInstance.
 		*/
-		if (typeof result === "function") {
+		else if (typeof result === "function") {
 			if (result.sensor) {
 				/*
 					Sensors, unlike changers, require a hook to be present.
@@ -114,29 +140,6 @@ function($, Utils, Selectors, Renderer, Environ, Story, State, HookUtils, HookSe
 					runSensorFunction.call(this, result, nextHook);
 				}
 			}
-			else if (result.changer) {
-				if (!nextHook.length) {
-					result = new TypeError(
-						"The (" + result.macroName + ":) macro should be assigned to a variable or attached to a hook."
-					);
-				}
-				else {
-					this.renderInto(
-						/*
-							The use of popAttr prevents the hook from executing normally
-							if it wasn't actually the eventual target of the changer function.
-						*/
-						nextHook.popAttr('code'),
-						/*
-							Don't forget: nextHook may actually be empty.
-							This is acceptable - the result changer could alter the
-							target appropriately.
-						*/
-						nextHook,
-						result
-					);
-				}
-			}
 			else {
 				result(nextHook, this);
 			}
@@ -146,7 +149,7 @@ function($, Utils, Selectors, Renderer, Environ, Story, State, HookUtils, HookSe
 			This must of course run after the sensor/changer function was run,
 			in case that provided an error.
 		*/
-		if (result instanceof Error) {
+		else if (result instanceof Error) {
 			/*
 				Warning messages are special: they are only displayed in debug mode.
 			*/
@@ -445,14 +448,14 @@ function($, Utils, Selectors, Renderer, Environ, Story, State, HookUtils, HookSe
 			*/
 			changers && [].concat(changers).forEach(function(changer) {
 				/*
-					If an object was passed, assign its values,
+					If a non-changer object was passed (how?), assign its values,
 					overwriting the default descriptor's.
 				*/
-				if (typeof changer !== "function") {
-					Object.assign(desc, changer);
+				if (!changer.changer) {
+					Utils.impossible("Section.renderInto", "A non-changer was supplied in the changers list.");
 				}
 				else {
-					changer(desc);
+					changer.run(desc);
 				}
 			});
 			

@@ -125,7 +125,7 @@ function ($, Story, Utils, Selectors, State, Section) {
 			/*
 				...and apply the aforementioned transition.
 			*/
-			function (desc) { desc.transition = t8n; } 
+			[]//function (desc) { desc.transition = t8n; }
 		);
 		$('body').append(el);
 	}

@@ -38,6 +38,47 @@ define(['utils', 'state', 'story', 'datatypes/colour', 'datatypes/assignmentRequ
 	function isSequential(value) {
 		return typeof value === "string" || Array.isArray(value);
 	}
+	/*
+		Now, a function to clone arbitrary values.
+	*/
+	function clone(value) {
+		if (!isObject(value)) {
+			return value;
+		}
+		/*
+			If it has a custom TwineScript clone method, use that.
+		*/
+		if (typeof value.TwineScript_Clone === "function") {
+			return value.TwineScript_Clone();
+		}
+		/*
+			If it's an array, the old standby is on call.
+		*/
+		if (Array.isArray(value)) {
+			return [].concat(value);
+		}
+		/*
+			If it's a function, Function#bind() makes a copy without altering its 'this'.
+		*/
+		if (typeof value === "function") {
+			return value.bind();
+		}
+		/*
+			If it's a plain object or null object, you can rely on Object.assign().
+		*/
+		switch (Object.getPrototypeOf(value)) {
+			case Object.prototype:
+				return Object.assign({}, value);
+			case null:
+				return Object.assign(Object.create(null), value);
+		}
+		/*
+			If we've gotten here, something unusual has been passed in.
+			(If I allow ES6 Maps into Twine userland, I'd better change this function.)
+		*/
+		Utils.impossible("Operations.clone", "The value " + value + " cannot be cloned!");
+		return value;
+	}
 
 	/*
 		Some TwineScript objects can, in fact, be coerced to string.
@@ -50,7 +91,7 @@ define(['utils', 'state', 'story', 'datatypes/colour', 'datatypes/assignmentRequ
 		@return {String|Boolean}
 	*/
 	function coerceToString(fn, left, right) {
-		if     (typeof left  === "string" && isObject(right) &&
+		if (typeof left  === "string" && isObject(right) &&
 				"TwineScript_ToString" in right) {
 			return fn(left, right.TwineScript_ToString());
 		}
@@ -59,7 +100,7 @@ define(['utils', 'state', 'story', 'datatypes/colour', 'datatypes/assignmentRequ
 			canCoerceToString, passing (fn, right, left), because fn
 			may not be symmetric.
 		*/
-		if     (typeof right === "string" && isObject(left) &&
+		if (typeof right === "string" && isObject(left) &&
 				"TwineScript_ToString" in left) {
 			return fn(left.TwineScript_ToString(), right);
 		}
@@ -353,43 +394,10 @@ define(['utils', 'state', 'story', 'datatypes/colour', 'datatypes/assignmentRequ
 				return [].concat(l, r);
 			}
 			/*
-				Function composition is the basis for advanced use of "changer"
-				macros - (transition:), (gradient:), etc. Currently, the means
-				of performing composition is to add the returned changer
-				functions together.
+				If a TwineScript object implements a + method, use that.
 			*/
-			else if (typeof l === "function") {
-				var ret = function() {
-					/*
-						In what order should the functions be composed?
-						I think right-as-innermost is more intuitive, but
-						I'm none too sure...
-					*/
-					return l(r.apply(0, arguments));
-				};
-				/*
-					It's best to think of the returned function as a 'modified'
-					version of l - it has the same expando properties, etc.
-					as it, but a different [[call]].
-				*/
-				Object.assign(ret, l);
-				return ret;
-			}
-			/*
-				New colours can be created by addition.
-			*/
-			else if (l && typeof l === "object" && Object.getPrototypeOf(l) === Colour) {
-				return Colour.create({
-					/*
-						You may notice this is a fairly glib blending
-						algorithm. It's the same one from Game Maker,
-						though, so I'm hard-pressed to think of a more
-						intuitive one.
-					*/
-					r : Math.min(Math.round((l.r + r.r) * 0.6), 0xFF),
-					g : Math.min(Math.round((l.g + r.g) * 0.6), 0xFF),
-					b : Math.min(Math.round((l.b + r.b) * 0.6), 0xFF),
-				});
+			else if (typeof l["TwineScript_+"] === "function") {
+				return l["TwineScript_+"](r);
 			}
 			return l + r;
 		}),
@@ -580,7 +588,15 @@ define(['utils', 'state', 'story', 'datatypes/colour', 'datatypes/assignmentRequ
 					return Operations.get(this.deepestObject, this.deepestProperty);
 				},
 				set: function(value) {
-					this.deepestObject[this.deepestProperty] = value;
+					/*
+						All objects in TwineScript are passed by value.
+					*/
+					if (isObject(value)) {
+						this.deepestObject[this.deepestProperty] = clone(value);
+					}
+					else {
+						this.deepestObject[this.deepestProperty] = value;
+					}
 				},
 				delete: function() {
 					Operations.delete(this.deepestObject, this.deepestProperty);

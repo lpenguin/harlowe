@@ -1,4 +1,4 @@
-define(['macros', 'utils', 'datatypes/colour'], function(Macros, Utils, Colour) {
+define(['macros', 'utils', 'datatypes/colour', 'datatypes/changercommand'], function(Macros, Utils, Colour, ChangerCommand) {
 	"use strict";
 
 	/*
@@ -16,7 +16,7 @@ define(['macros', 'utils', 'datatypes/colour'], function(Macros, Utils, Colour) 
 		// Allows the author to give a hook a computed tag name.
 		(["hook"],
 			function hook(_, name) {
-				return Macros.ChangerCommand("hook", name);	
+				return ChangerCommand.create("hook", name);	
 			},
 			function(d, name) {
 				d.attr = Object.assign(d.attr || {}, {
@@ -30,7 +30,7 @@ define(['macros', 'utils', 'datatypes/colour'], function(Macros, Utils, Colour) 
 		// Apply a CSS transition to a hook as it is inserted.
 		(["transition", "t8n"],
 			function transition(_, name, time) {
-				return Macros.ChangerCommand("transition", name, time);
+				return ChangerCommand.create("transition", name, time);
 			},
 			function(d, name, time) {
 				d.transition     = name;
@@ -44,7 +44,7 @@ define(['macros', 'utils', 'datatypes/colour'], function(Macros, Utils, Colour) 
 		// A shortcut for applying a font to a span of text.
 		("font",
 			function font(_, family) {
-				return Macros.ChangerCommand("font", family);
+				return ChangerCommand.create("font", family);
 			},
 			function(d, family) {
 				d.code = "<span style='font-family:" + family + "'>" + d.code + "</span>";
@@ -70,7 +70,7 @@ define(['macros', 'utils', 'datatypes/colour'], function(Macros, Utils, Colour) 
 				if (CSScolour && CSScolour.colour) {
 					CSScolour = CSScolour.toHexString(CSScolour);
 				}
-				return Macros.ChangerCommand("text-colour", CSScolour);
+				return ChangerCommand.create("text-colour", CSScolour);
 			},
 			function (d, CSScolour) {
 				d.code = "<span style='color:" + CSScolour + "'>" + d.code + "</span>";
@@ -89,7 +89,7 @@ define(['macros', 'utils', 'datatypes/colour'], function(Macros, Utils, Colour) 
 				if (value && value.colour) {
 					value = value.toHexString(value);
 				}
-				return Macros.ChangerCommand("background", value);
+				return ChangerCommand.create("background", value);
 			},
 			function (d, value) {
 				var property;
@@ -122,7 +122,7 @@ define(['macros', 'utils', 'datatypes/colour'], function(Macros, Utils, Colour) 
 		*/
 		("text-style",
 			function textstyle(_, styleName) {
-				return Macros.ChangerCommand("text-style", styleName);
+				return ChangerCommand.create("text-style", styleName);
 			},
 			(function() {
 				/*

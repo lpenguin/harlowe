@@ -40,8 +40,32 @@ define(['utils'], function(Utils){
 
 	Colour = Object.freeze({
 		colour: true,
-		TwineScript_TypeName: "a colour",
+		TwineScript_TypeName:   "a colour",
 		TwineScript_ObjectName: "a colour",
+		
+		/*
+			Colours can be blended by addition.
+		*/
+		"TwineScript_+": function(other) {
+			/*
+				These are just shorthands (for "lvalue" and "rvalue").
+			*/
+			var l = this,
+				r = other;
+			
+			return Colour.create({
+				/*
+					You may notice this is a fairly glib blending
+					algorithm. It's the same one from Game Maker,
+					though, so I'm hard-pressed to think of a more
+					intuitive one.
+				*/
+				r : Math.min(Math.round((l.r + r.r) * 0.6), 0xFF),
+				g : Math.min(Math.round((l.g + r.g) * 0.6), 0xFF),
+				b : Math.min(Math.round((l.b + r.b) * 0.6), 0xFF),
+			});
+		},
+		
 		toString: function() {
 			return "<tw-colour style='background-color:rgb("
 				+ [this.r, this.g, this.b].join(',') + ");'></span>";

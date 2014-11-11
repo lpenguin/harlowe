@@ -24,6 +24,14 @@ define(['utils', 'datatypes/colour'], function(Utils, Colour) {
 			returns a string that's used when TwineScript needs to
 			name the object in error messages or the debug menu.
 		
+		{Function} TwineScript_Clone:
+			a function which clones the value, even if it's an oddly-shaped object.
+			Should be used exclusively by VarRef.set().
+		
+		{Function} TwineScript_+:
+			a function which is used to overload the + operator. Note that TwineScript
+			automatically forces both sides of + to be of identical type.
+		
 		{Function} TwineScript_ToString:
 			returns a string that's used when the object CAN be implicitly
 			coerced to string. This should be used very sparingly.

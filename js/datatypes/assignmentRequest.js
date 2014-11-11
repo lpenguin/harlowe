@@ -28,6 +28,10 @@ define([], function() {
 				operator:          operator,
 			});
 		},
+		
+		TwineScript_Clone: function() {
+			return assignmentRequest.create(this.dest, this.src, this.operator);
+		},
 	});
 	return assignmentRequest;
 });
