@@ -1,6 +1,6 @@
-define(['jquery', 'markup/markup', 'story', 'macros', 'utils', 'datatypes/twineWarning',
-'macrolib/values', 'macrolib/styleChangers', 'macrolib/sensors', 'macrolib/enchantments'],
-function($, TwineMarkup, Story, Macros, Utils, TwineWarning) {
+define(['jquery', 'markup/markup', 'story', 'macros', 'utils', 'datatypes/changercommand', 'internaltypes/twinewarning',
+'macrolib/values', 'macrolib/stylechangers', 'macrolib/sensors', 'macrolib/enchantments'],
+function($, TwineMarkup, Story, Macros, Utils, ChangerCommand, TwineWarning) {
 	"use strict";
 	/*
 		Twine macro standard library.
@@ -113,7 +113,7 @@ function($, TwineMarkup, Story, Macros, Utils, TwineWarning) {
 		*/
 		("nobr",
 			function nobr() {
-				return Macros.ChangerCommand("nobr");
+				return ChangerCommand.create("nobr");
 			},
 			function(d) {
 				// To prevent keywords from being created by concatenating lines,
@@ -131,7 +131,7 @@ function($, TwineMarkup, Story, Macros, Utils, TwineWarning) {
 		*/
 		("CSS",
 			function CSS() {
-				return Macros.ChangerCommand("CSS");
+				return ChangerCommand.create("CSS");
 			},
 			function style(d) {
 				var selector = 'style#macro';
@@ -143,6 +143,6 @@ function($, TwineMarkup, Story, Macros, Utils, TwineWarning) {
 				return d;
 			}
 		);
-	
+		
 	Utils.log("Loaded the built-in macros.");
 });

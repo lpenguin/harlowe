@@ -116,7 +116,6 @@ function($, Story, Utils, Operations) {
 				});
 			}
 		}
-		
 		// If Type but no Arg, then return an error.	
 		if(type !== undefined && arg === undefined) {
 			return false;
@@ -286,7 +285,6 @@ function($, Story, Utils, Operations) {
 			@param {Function} fn  The function.
 		*/
 		add: function (name, type, fn) {
-			
 			// Add the fn to the macroRegistry, plus aliases (if name is an array of aliases)
 			if (Array.isArray(name)) {
 				name.forEach(function (n) {

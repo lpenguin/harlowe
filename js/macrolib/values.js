@@ -1,4 +1,4 @@
-define(['macros', 'utils', 'state', 'story', 'engine', 'datatypes/assignmentRequest'],
+define(['macros', 'utils', 'state', 'story', 'engine', 'datatypes/assignmentrequest'],
 function(Macros, Utils, State, Story, Engine, AssignmentRequest) {
 	"use strict";
 	/*

@@ -1,5 +1,5 @@
 define(['jquery', 'utils', 'selectors', 'renderer', 'twinescript/environ', 'story', 'state', 'hookutils',
-'datatypes/hookset', 'datatypes/pseudohookset', 'datatypes/changedescriptor'],
+'datatypes/hookset', 'internaltypes/pseudohookset', 'internaltypes/changedescriptor'],
 function($, Utils, Selectors, Renderer, Environ, Story, State, HookUtils, HookSet, PseudoHookSet, ChangeDescriptor) {
 	"use strict";
 
@@ -84,13 +84,29 @@ function($, Utils, Selectors, Renderer, Environ, Story, State, HookUtils, HookSe
 			result = this.eval(Utils.unescape(expr.popAttr('js') || ''));
 		
 		/*
+			This is a shortcut for rendering errors that either popped up while evaluating
+			the expression, or performing extra checks as a result.
+		*/
+		function renderError() {
+			/*
+				Warning messages are special: they are only displayed in debug mode.
+			*/
+			if (result.name === "TwineWarning" && !Story.options.debug) {
+				return;
+			}
+			expr.replaceWith("<tw-error class='"
+				+ ((result.name === "TwineWarning") ? "warning" : "error")
+				+ "' title='" + expr.attr('title') + "'>" + result.message + "</tw-error>");
+		}
+		
+		/*
 			If result is a ChangerCommand, please run it.
 		*/
 		if (result.changer) {
 			if (!nextHook.length) {
-				result = new TypeError(
+				renderError(new TypeError(
 					"The (" + result.macroName + ":) macro should be assigned to a variable or attached to a hook."
-				);
+				));
 			}
 			else {
 				this.renderInto(
@@ -129,12 +145,13 @@ function($, Utils, Selectors, Renderer, Environ, Story, State, HookUtils, HookSe
 		else if (typeof result === "function") {
 			if (result.sensor) {
 				/*
-					Sensors, unlike changers, require a hook to be present.
+					Sensors, unlike changers, require a hook to be present - hence the
+					word "must" instead of "should".
 				*/
 				if (!nextHook.length) {
-					result = new TypeError(
+					renderError(new TypeError(
 						"The (" + result.macroName + ":) macro must be attached to a hook."
-					);
+					));
 				}
 				else {
 					runSensorFunction.call(this, result, nextHook);
@@ -150,15 +167,7 @@ function($, Utils, Selectors, Renderer, Environ, Story, State, HookUtils, HookSe
 			in case that provided an error.
 		*/
 		else if (result instanceof Error) {
-			/*
-				Warning messages are special: they are only displayed in debug mode.
-			*/
-			if (result.name === "TwineWarning" && !Story.options.debug) {
-				return;
-			}
-			expr.replaceWith("<tw-error class='"
-				+ ((result.name === "TwineWarning") ? "warning" : "error")
-				+ "' title='" + expr.attr('title') + "'>" + result.message + "</tw-error>");
+			renderError(result);
 		}
 		/*
 			If the expression was a hookRef, clone the text of the first matched hook.

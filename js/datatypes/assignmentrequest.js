@@ -22,6 +22,7 @@ define([], function() {
 		},
 		
 		create: function(dest, src, operator) {
+		console.log("create",this);
 			return Object.assign(Object.create(this), {
 				dest:              dest,
 				src:               src,
