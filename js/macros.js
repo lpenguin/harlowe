@@ -67,6 +67,7 @@ function($, Story, Utils, Operations) {
 				}
 				return fn.apply(0, args);
 			};
+			t.sensor = true;
 			t.TwineScript_Print = function() {
 				return new TypeError("I can't print a sensor macro.");
 			};

@@ -311,7 +311,7 @@ function($, Utils, Selectors, Renderer, Environ, Story, State, HookUtils, HookSe
 		recursiveSensing();
 	}
 	
-	Section = {	
+	Section = {
 		// Used for duck-typing
 		section: true,
 		
@@ -471,11 +471,14 @@ function($, Utils, Selectors, Renderer, Environ, Story, State, HookUtils, HookSe
 			*/
 			changers && [].concat(changers).forEach(function(changer) {
 				/*
-					If a non-changer object was passed (how?), assign its values,
+					If a non-changer object was passed in (such as from
+					specificEnchantmentEvent()), assign its values,
 					overwriting the default descriptor's.
+					Honestly, having non-changer descriptor-altering objects
+					is a bit displeasingly rough-n-ready, but it's convenient...
 				*/
 				if (!changer.changer) {
-					Utils.impossible("Section.renderInto", "A non-changer was supplied in the changers list.");
+					Object.assign(desc, changer);
 				}
 				else {
 					changer.run(desc);
