@@ -308,6 +308,7 @@
 					};
 				},
 			},
+			
 			hookRef:  { fn: textTokenFn("name") },
 			
 			variable: {
@@ -429,6 +430,13 @@
 						};
 					},
 				},
+				inequality: {
+					fn: function(match) {
+						return {
+							operator: match[0],
+						};
+					},
+				},
 				augmentedAssign: {
 					fn: function(match) {
 						return {
@@ -439,7 +447,7 @@
 				},
 			},
 			["string", "boolean", "identifier", "is", "to", "into", "and", "or", "not", "isNot",
-			"comma", "lt", "lte", "gt", "gte", "contains", "isIn"].reduce(function(a, e) {
+			"comma", "contains", "isIn"].reduce(function(a, e) {
 				a[e] = { fn: Object };
 				return a;
 			},{})

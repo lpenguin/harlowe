@@ -119,7 +119,7 @@ define(['jquery', 'utils', 'macros', 'datatypes/hookset', 'datatypes/changercomm
 				if ("selector" in selector) {
 					selector = selector.selector;
 				}
-				return Macros.ChangerCommand(name, selector, target);
+				return ChangerCommand.create(name, selector, target);
 			},
 			/*
 				This ChangerCommand registers a new enchantment on the Section that the

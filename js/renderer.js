@@ -52,7 +52,6 @@ define(['utils', 'markup/markup', 'twinescript/compiler'], function(Utils, Twine
 		/**
 			A composition of TwineMarkup.lex and Renderer.render,
 			but with a (currently rudimentary) memoizer.
-			This could be replaced with _.compose and _.memoize.
 		*/
 		exec: (function() {
 			/*
@@ -61,7 +60,7 @@ define(['utils', 'markup/markup', 'twinescript/compiler'], function(Utils, Twine
 			*/
 			var cachedInput,
 				cachedOutput;
-		
+
 			return function(src) {
 				// If a non-string is passed into here, there's really nothing to do.
 				if (typeof src !== "string") {

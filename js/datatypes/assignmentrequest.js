@@ -17,12 +17,11 @@ define([], function() {
 		TwineScript_TypeName: "an assignment operation",
 		TwineScript_ObjectName: "an assignment operation",
 		
-		toString: function() {
+		TwineScript_Print: function() {
 			return "[an assignment operation]";
 		},
 		
 		create: function(dest, src, operator) {
-		console.log("create",this);
 			return Object.assign(Object.create(this), {
 				dest:              dest,
 				src:               src,

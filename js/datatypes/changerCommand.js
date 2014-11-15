@@ -26,7 +26,7 @@ define(['macros'], function(Macros) {
 		TwineScript_TypeName:
 			"a changer command",
 		
-		toString: function() {
+		TwineScript_Print: function() {
 			return "[A '" + this.macroName + "' command]";
 		},
 		

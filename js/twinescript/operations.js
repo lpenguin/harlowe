@@ -116,7 +116,7 @@ define(['utils', 'state', 'story', 'datatypes/colour', 'datatypes/assignmentrequ
 		return (isObject(obj) && "TwineScript_ObjectName" in obj)
 			? obj.TwineScript_ObjectName
 			: Array.isArray(obj) ? "an array"
-			: (typeof obj === "string" || typeof obj === "number") ? 'the ' + typeof obj + " " + JSON.stringify(obj)
+			: (typeof obj === "string" || typeof obj === "number") ? 'the ' + typeof obj + " " + Utils.toJSLiteral(obj)
 			/*
 				For ES6 symbol compatibility, we must use String(obj) here instead of obj + "".
 				I don't actually expect symbols to enter the TwineScript userland, but better safe.
@@ -433,10 +433,10 @@ define(['utils', 'state', 'story', 'datatypes/colour', 'datatypes/assignmentrequ
 			return l % r;
 		}), "modulus"),
 		
-		lt:  comparisonOp( onlyNumbers( doNotCoerce(function(l,r) { return l <  r; }), "do < to")),
-		gt:  comparisonOp( onlyNumbers( doNotCoerce(function(l,r) { return l >  r; }), "do > to")),
-		lte: comparisonOp( onlyNumbers( doNotCoerce(function(l,r) { return l <= r; }), "do <= to")),
-		gte: comparisonOp( onlyNumbers( doNotCoerce(function(l,r) { return l >= r; }), "do >= to")),
+		"<":  comparisonOp( onlyNumbers( doNotCoerce(function(l,r) { return l <  r; }), "do < to")),
+		">":  comparisonOp( onlyNumbers( doNotCoerce(function(l,r) { return l >  r; }), "do > to")),
+		"<=": comparisonOp( onlyNumbers( doNotCoerce(function(l,r) { return l <= r; }), "do <= to")),
+		">=": comparisonOp( onlyNumbers( doNotCoerce(function(l,r) { return l >= r; }), "do >= to")),
 		
 		is: comparisonOp(Object.is),
 		isNot: comparisonOp(function(l,r) {

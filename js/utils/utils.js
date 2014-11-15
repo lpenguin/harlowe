@@ -110,6 +110,16 @@ define(['jquery', 'markup/markup', 'selectors', 'customelements', 'jqueryplugins
 		/*
 			String utilities
 		*/
+		
+		/*
+			In some places, it's necessary to print numbers, strings and arrays of primitives
+			as JS literals. This is a semantic shortcut for a certain
+			built-in method that can accomplish this easily.
+			
+			@method toJSLiteral
+			@return {String}
+		*/
+		toJSLiteral: JSON.stringify,
 
 		/**
 			Returns whether a value is either a string or array.

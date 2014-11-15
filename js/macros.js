@@ -67,6 +67,9 @@ function($, Story, Utils, Operations) {
 				}
 				return fn.apply(0, args);
 			};
+			t.TwineScript_Print = function() {
+				return new TypeError("I can't print a sensor macro.");
+			};
 			/*
 				The combined thunk should have the same expando properties
 				("changer", "sensor", etc.) as the initial function.

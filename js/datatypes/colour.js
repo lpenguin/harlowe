@@ -66,13 +66,15 @@ define(['utils'], function(Utils){
 			});
 		},
 		
-		toString: function() {
+		TwineScript_Print: function() {
 			return "<tw-colour style='background-color:rgb("
 				+ [this.r, this.g, this.b].join(',') + ");'></span>";
 		},
+		
 		toJSON: function() {
 			return Object.assign({ colour: true }, this);
 		},
+		
 		/*
 			This converts the colour into a 6-char HTML hex string.
 			(No, this doesn't create a 3-char colour if one was possible. Sorry.)

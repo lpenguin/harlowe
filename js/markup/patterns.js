@@ -436,10 +436,7 @@
 		or:        either(wb + caseInsensitive("or")  + wb, "\\|\\|"),
 		not:       either(wb + caseInsensitive("not") + wb, "!" + notBefore("=")),
 		
-		lt:        "<(?!=)",
-		lte:       "<=",
-		gt:        ">(?!=)",
-		gte:       ">=",
+		inequality: either("<(?!=)", "<=", ">(?!=)", ">="),
 		
 		isIn:      wb + caseInsensitive("is in") + wb,
 		contains:  wb + caseInsensitive("contains") + wb,

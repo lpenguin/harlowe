@@ -155,15 +155,17 @@ function(Macros, Utils, State, Story, Engine, AssignmentRequest) {
 		[rest(AssignmentRequest)])
 
 		/*
-			(print:), (text:): convert the expression to text.
+			(text:): convert the expressions to text.
 			This provides explicit coercion to String for TwineScript values.
+			Concatenates multiple values.
 			Evaluates to a text string.
 		*/
-		(["print", "text"], function print(_, expr) {
-			return expr+"";
+		("text", function print(_, expr /*variadic */) {
+			expr = Array.prototype.slice.call(arguments, 1).join('');
+			return expr;
 		},
-		// (print: accepts 1 anything)
-		[Any])
+		// (text: accepts a lot of anything)
+		[rest(Any)])
 
 		/*
 			(num:), (number:)
@@ -395,20 +397,6 @@ function(Macros, Utils, State, Story, Engine, AssignmentRequest) {
 			return Story.getPassageName(State.previousPassage() || Story.startPassage);
 		},
 		null],
-
-		/*
-			(goto:)
-			I kinda want to make this lazily return a "GotoCommand" or something.
-		*/
-
-		goto: [function (name) {
-			name = Story.passageNamed(name);
-			if (!name) {
-				return new RangeError("There's no passage named '" + name + "'.");
-			}
-			return Engine.goToPassage(name);
-		},
-		String],
 
 		/*
 			Wrappers for Window

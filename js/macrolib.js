@@ -1,5 +1,5 @@
 define(['jquery', 'markup/markup', 'story', 'macros', 'utils', 'datatypes/changercommand', 'internaltypes/twinewarning',
-'macrolib/values', 'macrolib/stylechangers', 'macrolib/sensors', 'macrolib/enchantments'],
+'macrolib/values', 'macrolib/stylechangers', 'macrolib/sensors', 'macrolib/enchantments', 'macrolib/commands'],
 function($, TwineMarkup, Story, Macros, Utils, ChangerCommand, TwineWarning) {
 	"use strict";
 	/*
@@ -19,7 +19,7 @@ function($, TwineMarkup, Story, Macros, Utils, ChangerCommand, TwineWarning) {
 		* "is"  prefix: Currently reserved.
 		* "can" prefix: Currently reserved.
 		* type name: Should denote a type constructor or converter.
-			Constructors include (colour:) and (num:)
+			Constructors include (colour:), (text:) and (num:)
 		* verbs:
 			As TwineScript "statements" are expressions, imperative verbs
 			aren't terribly helpful. (print:) remains out of sheer incumbency,
@@ -31,35 +31,6 @@ function($, TwineMarkup, Story, Macros, Utils, ChangerCommand, TwineWarning) {
 
 	Macros.addValue
 
-		/*
-			(display:) evaluates to the TwineMarkup source of the passage
-			with the given name.
-			Evaluates to a DisplayCommand, an object which is by-and-large
-			unusable as a stored value, but renders to the full TwineMarkup
-			source of the given passage.
-		*/
-		("display", function display(_, name) {
-			/*
-				Test for the existence of the named passage in the story.
-			*/
-			if (!Story.passageNamed(name)) {
-				return new ReferenceError(
-					"I can't display the passage '"
-					+ name
-					+ "' because it doesn't exist."
-				);
-			}
-			/*
-				Create a DisplayCommand.
-			*/
-			return {
-				TwineScript_ObjectName: "a (display:) command",
-				toString: function() {
-					// TODO: Reimplement the (display:) loop.
-					return Story.passageNamed(name).html();
-				}
-			};
-		})
 		/*
 			(remove:) Removes the given hook or pseudo-hook from the section.
 			It accepts a standard selector, emits a side-effect, and returns "".
@@ -74,7 +45,7 @@ function($, TwineMarkup, Story, Macros, Utils, ChangerCommand, TwineWarning) {
 		(uncloak:) Shows the given hook or pseudo-hook.
 		They accept a standard selector, emits a side-effect, and returns "".
 	*/
-	["cloak","uncloak"].forEach(function(name) {
+	["cloak", "uncloak"].forEach(function(name) {
 		Macros.addValue(name, function cloak(section, selector) {
 			var selection = section.selectHook(selector);
 			/*

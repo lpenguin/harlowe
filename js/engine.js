@@ -96,12 +96,6 @@ function ($, Story, Utils, Selectors, State, Section) {
 		}
 
 		/*
-			Identify which transition this passage is associated with.
-			Use the default transition, "fade-in", if none specified.
-		*/
-		t8n = passageData.attr("data-t8n") || "fade-in";
-
-		/*
 			If this isn't a stretchtext transition, send away all of the
 			old passage instances.
 		*/
@@ -121,11 +115,7 @@ function ($, Story, Utils, Selectors, State, Section) {
 			Utils.unescape(
 				passageData.html()
 			),
-			newPassage,
-			/*
-				...and apply the aforementioned transition.
-			*/
-			[]//function (desc) { desc.transition = t8n; }
+			newPassage
 		);
 		$('body').append(el);
 	}

@@ -8,13 +8,6 @@ define(['utils', 'datatypes/colour'], function(Utils, Colour) {
 		@class Compiler
 		@static
 	*/
-
-	/*
-		In some places, it's necessary to print numbers, strings and arrays of primitives
-		as JS literals. This is a semantic shortcut for a certain
-		built-in method that can accomplish this easily.
-	*/
-	var toJSLiteral = JSON.stringify;
 	
 	/*
 		Before I continue, I'd like to explain the API for "TwineScript datatype" objects.
@@ -31,6 +24,9 @@ define(['utils', 'datatypes/colour'], function(Utils, Colour) {
 		{Function} TwineScript_+:
 			a function which is used to overload the + operator. Note that TwineScript
 			automatically forces both sides of + to be of identical type.
+		
+		{Function} TwineScript_Print:
+			a function which is used when the given object is printed into the passage.
 		
 		{Function} TwineScript_ToString:
 			returns a string that's used when the object CAN be implicitly
@@ -143,7 +139,7 @@ define(['utils', 'datatypes/colour'], function(Utils, Colour) {
 				/*
 					Print the propertyNames array literal.
 				*/
-				+ toJSLiteral(propertyNames)
+				+ Utils.toJSLiteral(propertyNames)
 				+ ")";
 		}
 		return "";
@@ -157,7 +153,7 @@ define(['utils', 'datatypes/colour'], function(Utils, Colour) {
 		return "Operations.makeAssignmentRequest("
 			+ left + ","
 			+ right + ","
-			+ toJSLiteral(operator)
+			+ Utils.toJSLiteral(operator)
 			+")";
 	}
 	
@@ -246,14 +242,14 @@ define(['utils', 'datatypes/colour'], function(Utils, Colour) {
 				return compile(token.children);
 			}
 			else if (token.type === "string") {
-				return toJSLiteral(
+				return Utils.toJSLiteral(
 					// Trim off the enclosing " or ' or ` characters.
 					token.text.slice(1,-1)
 				);
 			}
 			else if (token.type === "colour") {
 				return "Colour.create("
-					+ toJSLiteral(token.colour)
+					+ Utils.toJSLiteral(token.colour)
 					+ ")";
 			}
 			/*
@@ -338,9 +334,9 @@ define(['utils', 'datatypes/colour'], function(Utils, Colour) {
 			implicitLeftIt = true;
 			operation = tokens[i].type;
 		}
-		else if ((i = indexOfType(tokens, "lt", "lte", "gt", "gte")) >-1) {
+		else if ((i = indexOfType(tokens, "inequality")) >-1) {
 			implicitLeftIt = true;
-			operation = tokens[i].type;
+			operation = tokens[i].operator;
 		}
 		else if ((i = indexOfType(tokens, "arithmetic")) >-1) {
 			operation = tokens[i].operator;
@@ -376,16 +372,16 @@ define(['utils', 'datatypes/colour'], function(Utils, Colour) {
 			*/
 			left = "Operations.get(" + compile(tokens.slice (0,  i))
 				/*
-					toJSLiteral() is used to both escape the name
+					Utils.toJSLiteral() is used to both escape the name
 					string and wrap it in quotes.
 				*/
-				+ "," + toJSLiteral(tokens[i].name) + ")";
+				+ "," + Utils.toJSLiteral(tokens[i].name) + ")";
 			midString = " ";
 			needsLeft = needsRight = false;
 		}
 		else if ((i = indexOfType(tokens, "simpleVariable")) >-1) {
 			midString = " Operations.get(State.variables,"
-				+ toJSLiteral(tokens[i].name)
+				+ Utils.toJSLiteral(tokens[i].name)
 				/*
 					Here is where the default value for variables is passed!
 				*/
@@ -481,7 +477,7 @@ define(['utils', 'datatypes/colour'], function(Utils, Colour) {
 				return compileAssignmentRequest(left, right, assignment);
 			}
 			else if (operation) {
-				return " Operations[" + toJSLiteral(operation) + "](" + left + "," + right + ") ";
+				return " Operations[" + Utils.toJSLiteral(operation) + "](" + left + "," + right + ") ";
 			}
 		}
 		/*

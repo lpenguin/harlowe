@@ -166,14 +166,28 @@ function($, Utils, Selectors, Renderer, Environ, Story, State, HookUtils, HookSe
 			This must of course run after the sensor/changer function was run,
 			in case that provided an error.
 		*/
-		else if (result instanceof Error) {
+		else if (Utils.containsError(result)) {
 			renderError(result);
 		}
 		/*
-			If the expression was a hookRef, clone the text of the first matched hook.
+			If the expression had a TwineScript_Print method, do that.
 		*/
-		else if (HookSet.isPrototypeOf(result)) {
-			this.renderInto(result.text(), expr);
+		else if (result && result.TwineScript_Print) {
+			/*
+				TwineScript_Print() typically emits side-effects. These
+				will occur... now.
+			*/
+			result = result.TwineScript_Print();
+			
+			/*
+				TwineScript_Print() can return one kind of error.
+			*/
+			if (Utils.containsError(result)) {
+				renderError(result);
+			}
+			else {
+				this.renderInto(result, expr);
+			}
 		}
 		/*
 			This prints an object if it's a string, number, or has a custom toString method

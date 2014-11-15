@@ -81,6 +81,15 @@ define(['hookutils', 'jquery'],function(HookUtils, $) {
 		},
 		
 		/**
+			TwineScript_Print is used to determine how this expression prints when
+			it reaches the top level of a passage.
+			Much like ToString, it prints the first hook in this set.
+		*/
+		TwineScript_Print: function() {
+			return this.text();
+		},
+		
+		/**
 			TwineScript_ObjectName and _TypeName are used for error messages.
 		*/
 		get TwineScript_ObjectName() {
