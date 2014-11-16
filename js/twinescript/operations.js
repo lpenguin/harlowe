@@ -234,6 +234,13 @@ define(['utils', 'state', 'story', 'datatypes/colour', 'datatypes/assignmentrequ
 	function onlyNumbers(fn, operationVerb) {
 		operationVerb = operationVerb || "do this to";
 		return function(left, right) {
+			var error;
+			/*
+				This part allows errors to propagate up the TwineScript stack.
+			*/
+			if ((error = Utils.containsError(left, right))) {
+				return error;
+			}
 			if (typeof left !== "number" || typeof right !== "number") {
 				return new TypeError("I can only " + operationVerb + " numbers, not " +
 				objectName(typeof left !== "number" ? left : right) + ".");
@@ -250,16 +257,16 @@ define(['utils', 'state', 'story', 'datatypes/colour', 'datatypes/assignmentrequ
 	function doNotCoerce(fn) {
 		return function(left, right) {
 			var error;
-			// VarRefs cannot have operations performed on them.
-			// TODO: Except &&, perhaps?
-			if (left && left.varref) {
-				return new TypeError("I can't give an expression a new value.");
-			}
 			/*
 				This part allows errors to propagate up the TwineScript stack.
 			*/
 			if ((error = Utils.containsError(left, right))) {
 				return error;
+			}
+			// VarRefs cannot have operations performed on them.
+			// TODO: Except &&, perhaps?
+			if (left && left.varref) {
+				return new TypeError("I can't give an expression a new value.");
 			}
 			/*
 				This checks that left and right are generally different types

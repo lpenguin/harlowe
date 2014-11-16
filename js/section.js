@@ -11,7 +11,7 @@ function($, Utils, Selectors, Renderer, Environ, Story, State, HookUtils, HookSe
 		and methods and properties related to invoking TwineScript code within it.
 		
 		The big deal of having multiple Section objects (and the name Section itself
-		as compared to "passage" or "screen") is that multiple simultaneous passages
+		as compared to "passage" or "screen") is that multiple simultaneous passages'
 		(such as (display:)ed passages, or stretchtext mode) code should be
 		hygenically scoped. Hook references in one passage cannot affect another,
 		and so forth.
@@ -19,6 +19,27 @@ function($, Utils, Selectors, Renderer, Environ, Story, State, HookUtils, HookSe
 		@class Section
 		@static
 	*/
+	
+	/**
+		This is a shortcut for rendering errors that either popped up while evaluating
+		expressions, or via performing extra checks as a result.
+		
+		@method renderError
+		@private
+		@param {Error} error
+		@param {jQuery} target
+	*/
+	function renderError(error, target) {
+		/*
+			Warning messages are special: they are only displayed in debug mode.
+		*/
+		if (error.name === "TwineWarning" && !Story.options.debug) {
+			return;
+		}
+		target.replaceWith("<tw-error class='"
+			+ ((error.name === "TwineWarning") ? "warning" : "error")
+			+ "' title='" + target.attr('title') + "'>" + error.message + "</tw-error>");
+	}
 	
 	/**
 		Run a newly rendered <tw-link> element.
@@ -84,29 +105,13 @@ function($, Utils, Selectors, Renderer, Environ, Story, State, HookUtils, HookSe
 			result = this.eval(Utils.unescape(expr.popAttr('js') || ''));
 		
 		/*
-			This is a shortcut for rendering errors that either popped up while evaluating
-			the expression, or performing extra checks as a result.
-		*/
-		function renderError() {
-			/*
-				Warning messages are special: they are only displayed in debug mode.
-			*/
-			if (result.name === "TwineWarning" && !Story.options.debug) {
-				return;
-			}
-			expr.replaceWith("<tw-error class='"
-				+ ((result.name === "TwineWarning") ? "warning" : "error")
-				+ "' title='" + expr.attr('title') + "'>" + result.message + "</tw-error>");
-		}
-		
-		/*
 			If result is a ChangerCommand, please run it.
 		*/
 		if (result.changer) {
 			if (!nextHook.length) {
 				renderError(new TypeError(
 					"The (" + result.macroName + ":) macro should be assigned to a variable or attached to a hook."
-				));
+				), expr);
 			}
 			else {
 				this.renderInto(
@@ -151,7 +156,7 @@ function($, Utils, Selectors, Renderer, Environ, Story, State, HookUtils, HookSe
 				if (!nextHook.length) {
 					renderError(new TypeError(
 						"The (" + result.macroName + ":) macro must be attached to a hook."
-					));
+					), expr);
 				}
 				else {
 					runSensorFunction.call(this, result, nextHook);
@@ -167,7 +172,7 @@ function($, Utils, Selectors, Renderer, Environ, Story, State, HookUtils, HookSe
 			in case that provided an error.
 		*/
 		else if (Utils.containsError(result)) {
-			renderError(result);
+			renderError(result, expr);
 		}
 		/*
 			If the expression had a TwineScript_Print method, do that.
@@ -183,7 +188,7 @@ function($, Utils, Selectors, Renderer, Environ, Story, State, HookUtils, HookSe
 				TwineScript_Print() can return one kind of error.
 			*/
 			if (Utils.containsError(result)) {
-				renderError(result);
+				renderError(result, expr);
 			}
 			else {
 				this.renderInto(result, expr);
@@ -277,8 +282,7 @@ function($, Utils, Selectors, Renderer, Environ, Story, State, HookUtils, HookSe
 				just use that error as the result value.
 			*/
 			if (Utils.containsError(result)) {
-				// TODO: Replace this with a general printHTMLError()-type call
-				this.renderInto(result+"", target);
+				renderError(result, target);
 				return;
 			}
 			/*

@@ -64,12 +64,12 @@ define(['jquery', 'utils', 'macros', 'datatypes/hookset', 'datatypes/changercomm
 		* {Boolean} once Whether or not the enchanted DOM elements can trigger this macro
 		multiple times.
 		
-		@method newEnchantmentMacroFn
+		@method newEnchantmentMacroFns
 		@param  {Function} innerFn       The function to perform on the macro's hooks
 		@param  {Object}  [enchantDesc]  An enchantment description object, or null.
 		@return {Function[]}             A pair of functions.
 	*/
-	function newEnchantmentMacroFn(enchantDesc, name) {
+	function newEnchantmentMacroFns(enchantDesc, name) {
 		// enchantDesc is a mandatory argument.
 		Utils.assert(enchantDesc);
 		
@@ -163,10 +163,9 @@ define(['jquery', 'utils', 'macros', 'datatypes/hookset', 'datatypes/changercomm
 					code = desc.code;
 				
 				/*
-					Prevent the target from being run normally. 
-					(This idiom is #awkward...)
+					Prevent the target's code from running immediately.
 				*/
-				delete desc.code;
+				desc.cloak = true;
 				
 				/*
 					If a rerender method was specified, then this is a "combo" macro,
@@ -343,12 +342,13 @@ define(['jquery', 'utils', 'macros', 'datatypes/hookset', 'datatypes/changercomm
 				rerender: "",
 				classList: "enchantment-mouseout"
 			}
-		}];
+		}
+	];
 	
 	//TODO: (hover:)
 	
 	interactionTypes.forEach(function(e) {
-		Macros.addChanger.apply(0, [e.name].concat(newEnchantmentMacroFn(e.enchantDesc, e.name)));
+		Macros.addChanger.apply(0, [e.name].concat(newEnchantmentMacroFns(e.enchantDesc, e.name)));
 	});
 
 	
@@ -362,7 +362,7 @@ define(['jquery', 'utils', 'macros', 'datatypes/hookset', 'datatypes/changercomm
 					rerender: revisionType
 				}),
 				name = interactionType.name + "-" + revisionType;
-			Macros.addChanger.apply(0, [name].concat(newEnchantmentMacroFn(enchantDesc, name)));
+			Macros.addChanger.apply(0, [name].concat(newEnchantmentMacroFns(enchantDesc, name)));
 		});
 	});
 });

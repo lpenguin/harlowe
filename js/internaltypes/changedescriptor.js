@@ -1,13 +1,6 @@
 define(['jquery', 'utils', 'renderer'], function($, Utils, Renderer) {
 	"use strict";
 	/**
-		A ChangeDescriptor is a TwineScript internal object with the following values:
-		
-		{String} [transition]      Which transition to use.
-		{Number} [transitionTime]  The duration of the transition, in ms. CURRENTLY UNUSED.
-		{String} code              Transformations made on the hook's code before it is run.
-		{jQuery} target            Where to render the code, if not the hookElement.
-		{String} append            Which jQuery method to append the code to the dest with.
 		
 		When a new Section (generally a hook or expression) is about to be rendered,
 		a ChangeDescriptor is created and fed into all of the ChangerCommands which are
@@ -16,11 +9,34 @@ define(['jquery', 'utils', 'renderer'], function($, Utils, Renderer) {
 	*/
 	var ChangeDescriptor = {
 		
+		// A ChangeDescriptor is a TwineScript internal object with the following values:
+		
+		// {String} code              Transformations made on the hook's code before it is run.
 		code:             "",
+		
+		// {Boolean} cloaked          Whether or not this code is 'cloaked'.
+		//                            (code won't be used until something uncloaks it).
+		cloaked:          false,
+		
+		// {jQuery} target            Where to render the code, if not the hookElement.
 		target:           null,
+		
+		// {String} append            Which jQuery method name to append the code to the dest with.
 		append:           "append",
+		
+		// {String} [transition]      Which built-in transition to use.
 		transition:       "dissolve",
+		
+		// {Number} [transitionTime]  The duration of the transition, in ms. CURRENTLY UNUSED.
+		transitionTime:   0,
+		
+		// {Object} [attr]            Attributes to apply to the <tw-expression> using $.fn.attr().
+		//                            Used only by (hook:).
 		attr:             null,
+		
+		// {Object} [data]            Data to attach to the <tw-expression> using $.fn.attr().
+		//                            Used only by (link:).
+		data:             null,
 		
 		/**
 			This creates an inheriting ChangeDescriptor, and is basically
@@ -46,6 +62,8 @@ define(['jquery', 'utils', 'renderer'], function($, Utils, Renderer) {
 				append      = this.append,
 				transition  = this.transition,
 				attr        = this.attr,
+				data        = this.data,
+				cloaked     = this.cloaked,
 				dom;
 			
 			/*
@@ -67,7 +85,7 @@ define(['jquery', 'utils', 'renderer'], function($, Utils, Renderer) {
 				(Note: code may be '' if the descriptor's append method is "remove".
 				In which case, let it be an empty set.)
 			*/
-			dom = (code &&
+			dom = (code && !cloaked &&
 				/*
 					Don't forget: $.parseHTML returns an array of nodes.
 				*/
@@ -126,6 +144,12 @@ define(['jquery', 'utils', 'renderer'], function($, Utils, Renderer) {
 			*/
 			if (attr) {
 				target.attr(attr);
+			}
+			/*
+				Same with jQuery data (such as functions to call in event of, say, clicking).
+			*/
+			if (data) {
+				target.data(data);
 			}
 			
 			/*

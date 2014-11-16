@@ -1,5 +1,5 @@
 define(['jquery', 'markup/markup', 'story', 'macros', 'utils', 'datatypes/changercommand', 'internaltypes/twinewarning',
-'macrolib/values', 'macrolib/stylechangers', 'macrolib/sensors', 'macrolib/enchantments', 'macrolib/commands'],
+'macrolib/values', 'macrolib/stylechangers', 'macrolib/sensors', 'macrolib/enchantments', 'macrolib/commands', 'macrolib/links'],
 function($, TwineMarkup, Story, Macros, Utils, ChangerCommand, TwineWarning) {
 	"use strict";
 	/*
