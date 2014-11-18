@@ -179,7 +179,12 @@
 			leftSeparator:     "<\\-",
 			closer:            "\\]\\]",
 			legacySeparator:   "\\|",
-			legacyText:        "(" + notChars("]|") + "?)"
+			legacyText:        "(" + notChars("]|") + "?)",
+		},
+		
+		tailedLink = {
+			opener:            "\\]\\[",
+			closer:            "\\]\\]",
 		},
 
 		identifier = "it|time",
@@ -222,6 +227,31 @@
 		*/
 		number = '\\b(\\d+\\.?(?:[eE][+\\-]?\\d+)?|NaN)' + notBefore("m?s") + '\\b'
 		;
+		
+	passageLink.main =
+		passageLink.opener
+		+ either(
+			passageLink.text + passageLink.rightSeparator,
+			/*
+				The rightmost right arrow or leftmost left arrow
+				is regarded as the canonical separator.
+			
+				[[A->B->C->D->E]] has a link text of
+					A->B->C->D
+					and a passage name of
+					E
+			
+				[[A<-B<-C<-D<-E]] has a link text of
+					B<-C<-D<-E
+					and a passage name of
+					A
+			
+				Thus, the left separator's preceding text must be non-greedy.
+			*/
+			passageLink.text.replace("*","*?") + passageLink.leftSeparator
+		)
+		+ passageLink.text;
+	
 	/*
 		Return the Patterns object.
 		
@@ -307,31 +337,14 @@
 			"\\]" + hookTagBack,
 		
 		passageLink:
-			passageLink.opener
-			+ either(
-				passageLink.text + passageLink.rightSeparator,
-				/*
-					The rightmost right arrow or leftmost left arrow
-					is regarded as the canonical separator.
-					
-					[[A->B->C->D->E]] has a link text of
-						A->B->C->D
-						and a passage name of
-						E
-					
-					[[A<-B<-C<-D<-E]] has a link text of
-						B<-C<-D<-E
-						and a passage name of
-						A
-					
-					Thus, the left separator's preceding text must be non-greedy.
-				*/
-				passageLink.text.replace("*","*?") + passageLink.leftSeparator
-			)
-			+ passageLink.text
+			passageLink.main
 			+ passageLink.closer,
 			
 		passageLinkOpener: opener("[["),
+		
+		tailedLinkOpener:
+			passageLink.main
+			+ tailedLink.opener,
 			
 		legacyLink:
 			/*

@@ -77,8 +77,8 @@ function(Macros, Utils, Story, Engine) {
 		/*
 			(goto:) sends the player to a new passage, as soon as it is printed.
 		*/
-		('goto', function (name) {
-			var id = Story.passageNamed(name);
+		('goto', function (_, name) {
+			var id = Story.getPassageID(name);
 			if (!id) {
 				return new RangeError("There's no passage named '" + name + "'.");
 			}

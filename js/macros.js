@@ -88,7 +88,7 @@ function($, Story, Utils, Operations) {
 		@param {Array|Object} type A type description to compare the argument with.
 		@return {Boolean} True if the argument passes the check, false otherwise.
 	*/
-	function singleTypeCheck(arg, type) {		
+	function singleTypeCheck(arg, type) {
 		/*
 			First, check if it's a None type.
 		*/
@@ -175,12 +175,12 @@ function($, Story, Utils, Operations) {
 		
 		/*
 			The name is used solely for error message generation. It can be a String or
-			an Array of Strings. If it's the latter, let's not bother with the name
-			and not try and guess incorrectly which variant the author used.
-			
-			Otherwise, let's wrap the name with macro syntax for display purposes.
+			an Array of Strings. If it's the latter, and there's more than one name, 
+			we'll (often incorrectly, but still informatively) use the first name,
+			as we have no other information about which macro name was used.
+			It's an uncomfortable state of affairs, I know.
 		*/
-		name = Array.isArray(name) ? "" : "(" + name + ":) ";
+		name = "(" + (Array.isArray(name) && name.length > 1 ? name[0] : name) + ":)";
 		
 		// That being done, we now have the wrapping function.
 		return function typeCheckedMacro() {
@@ -200,7 +200,7 @@ function($, Story, Utils, Operations) {
 				*/
 				if (ind >= typeSignature.length && !rest) {
 					return new TypeError((args.length - typeSignature.length) +
-						" too many values were given to this " + name + "macro.");
+						" too many values were given to this " + name + " macro.");
 				}
 				
 				/*
@@ -235,7 +235,7 @@ function($, Story, Utils, Operations) {
 					*/
 					
 					if (arg === undefined) {
-						return new TypeError("The " + name + "macro needs "
+						return new TypeError("The " + name + " macro needs "
 							+ Utils.plural((typeSignature.length - ind), "more value") + ".");
 					}
 					

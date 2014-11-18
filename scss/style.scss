@@ -189,6 +189,10 @@ tw-error
 	}
 	&.warning {
 		background-color: hsla(30, 72%, 55%, 0.4);
+		display: none; // Only available in debug mode.
+		.debug-mode & {
+			display: inline;
+		}
 	}
 }
 

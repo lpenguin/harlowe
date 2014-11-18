@@ -32,7 +32,7 @@ function($, Macros, Utils, Story, State, Engine, ChangerCommand) {
 	
 	Macros.addChanger
 		(["link"], function(_, expr) {
-			return ChangerCommand.create("link", expr);
+			return ChangerCommand.create("link", [expr]);
 		},
 		function(desc, text) {
 			var innerCode = desc.code;
@@ -46,5 +46,5 @@ function($, Macros, Utils, Story, State, Engine, ChangerCommand) {
 				},
 			};
 		},
-		[String])
+		[String]);
 });

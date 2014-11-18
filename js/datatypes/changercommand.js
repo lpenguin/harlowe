@@ -1,4 +1,4 @@
-define(['macros'], function(Macros) {
+define(['utils', 'macros'], function(Utils, Macros) {
 	"use strict";
 	/*
 		A ChangerCommand is an author-facing function that is used to mutate a ChangeDescriptor
@@ -31,6 +31,8 @@ define(['macros'], function(Macros) {
 		},
 		
 		create: function(macroName, params, next) {
+			Utils.assert(params === undefined || Array.isArray(params));
+			
 			return Object.assign(Object.create(this), {
 				macroName:                macroName,
 				params:                   params,

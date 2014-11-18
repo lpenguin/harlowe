@@ -27,7 +27,7 @@ define(['jquery', 'utils', 'macros', 'datatypes/hookset', 'datatypes/changercomm
 	revisionTypes.forEach(function(e) {
 		Macros.addChanger(e,
 			function(_, scope) {
-				return ChangerCommand.create(e, scope);
+				return ChangerCommand.create(e, [scope]);
 			},
 			function(desc, scope) {
 				desc.target = scope;
@@ -119,7 +119,7 @@ define(['jquery', 'utils', 'macros', 'datatypes/hookset', 'datatypes/changercomm
 				if ("selector" in selector) {
 					selector = selector.selector;
 				}
-				return ChangerCommand.create(name, selector, target);
+				return ChangerCommand.create(name, [selector, target]);
 			},
 			/*
 				This ChangerCommand registers a new enchantment on the Section that the

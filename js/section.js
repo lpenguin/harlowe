@@ -59,12 +59,6 @@ function($, Utils, Selectors, Renderer, Environ, Story, State, HookUtils, HookSe
 		if (Story.passageNamed(passage)) {
 			visited = (State.passageNameVisited(passage));
 		} else {
-			// Is it a code link?
-			try {
-				passage = this.eval(passage);
-				Story.passageNamed(passage) && (visited = (State.passageNameVisited(passage)));
-			} catch(err) { /* pass */ }
-			
 			// Not an internal link?
 			if (!~visited) {
 				link.replaceWith(
@@ -107,7 +101,7 @@ function($, Utils, Selectors, Renderer, Environ, Story, State, HookUtils, HookSe
 		/*
 			If result is a ChangerCommand, please run it.
 		*/
-		if (result.changer) {
+		if (result && result.changer) {
 			if (!nextHook.length) {
 				renderError(new TypeError(
 					"The (" + result.macroName + ":) macro should be assigned to a variable or attached to a hook."
@@ -570,8 +564,10 @@ function($, Utils, Selectors, Renderer, Environ, Story, State, HookUtils, HookSe
 					}
 					case Selectors.internalLink:
 					{
-						runLink.call(section, expr);
-						break;
+						if (expr.attr("passage-expr")) {
+							runLink.call(section, expr);
+							break;
+						}
 					}
 				}
 			});
