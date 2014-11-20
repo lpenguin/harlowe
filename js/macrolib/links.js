@@ -36,7 +36,6 @@ function($, Macros, Utils, Story, State, Engine, ChangerCommand) {
 		},
 		function(desc, text) {
 			var innerCode = desc.code;
-			// TODO: Change this to <tw-link>
 			desc.code = '<tw-link>' + text + '</tw-link>';
 			desc.append = "replace";
 			desc.data = {

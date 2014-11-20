@@ -227,7 +227,7 @@ define(['utils', 'markup/markup', 'twinescript/compiler'], function(Utils, Twine
 						Expressions
 					*/
 					case "hookRef":
-					case "variable": 
+					case "variable":
 					case "macro": {
 						out += '<tw-expression type="' + token.type + '" name="' + escape(token.name || token.text) + '"'
 							// Debug mode: show the macro name as a title.

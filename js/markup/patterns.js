@@ -181,11 +181,6 @@
 			legacySeparator:   "\\|",
 			legacyText:        "(" + notChars("]|") + "?)",
 		},
-		
-		tailedLink = {
-			opener:            "\\]\\[",
-			closer:            "\\]\\]",
-		},
 
 		identifier = "it|time",
 		
@@ -341,10 +336,6 @@
 			+ passageLink.closer,
 			
 		passageLinkOpener: opener("[["),
-		
-		tailedLinkOpener:
-			passageLink.main
-			+ tailedLink.opener,
 			
 		legacyLink:
 			/*

@@ -60,7 +60,7 @@ define(['utils', 'macros'], function(Utils, Macros) {
 		},
 		
 		TwineScript_Clone: function() {
-			return ChangerCommand.create(this.macroName, this.params, this.next);
+			return this.create(this.macroName, this.params, this.next);
 		},
 		
 		/*

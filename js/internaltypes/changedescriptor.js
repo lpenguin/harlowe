@@ -177,5 +177,5 @@ define(['jquery', 'utils', 'renderer'], function($, Utils, Renderer) {
 		}
 	};
 	
-	return Object(ChangeDescriptor);
+	return Object.seal(ChangeDescriptor);
 });
