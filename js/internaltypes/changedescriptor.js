@@ -7,7 +7,14 @@ define(['jquery', 'utils', 'renderer'], function($, Utils, Renderer) {
 		attached to the Section. They mutate the ChangeDescriptor, and the result describes
 		all of the changes that must be made to the Section on rendering.
 	*/
-	var ChangeDescriptor = {
+	var	ChangeDescriptor,
+		/*
+			changeDescriptorShape is an array of all expected properties on
+			ChangeDescriptor instances. It's cached for performance paranoia.
+		*/
+		changeDescriptorShape;
+	
+	ChangeDescriptor = {
 		
 		// A ChangeDescriptor is a TwineScript internal object with the following values:
 		
@@ -66,6 +73,8 @@ define(['jquery', 'utils', 'renderer'], function($, Utils, Renderer) {
 				cloaked     = this.cloaked,
 				dom;
 			
+			Utils.assertOnlyHas(this, changeDescriptorShape);
+			
 			/*
 				First, a quick check to see if there is a target.
 				If not, assume nothing needs to be done (the user of this object
@@ -74,7 +83,6 @@ define(['jquery', 'utils', 'renderer'], function($, Utils, Renderer) {
 			if (!target) {
 				return $();
 			}
-			
 			/*
 				Render the TwineMarkup prose into a HTML DOM structure.
 			
@@ -84,12 +92,14 @@ define(['jquery', 'utils', 'renderer'], function($, Utils, Renderer) {
 			
 				(Note: code may be '' if the descriptor's append method is "remove".
 				In which case, let it be an empty set.)
+				
+				Notice also that the entire expression is wrapped in $():
+				a jQuery must be returned by this method, and $(false)
+				conveniently evaluates to $().Otherwise, it converts the
+				array returned by $.parseHTML into a jQuery.
 			*/
-			dom = (code && !cloaked &&
-				/*
-					Don't forget: $.parseHTML returns an array of nodes.
-				*/
-				$($.parseHTML(Renderer.exec(code))));
+			dom = $(code && !cloaked &&
+				$.parseHTML(Renderer.exec(code)));
 			
 			/*
 				Now, check to see that the given jQuery method in the descriptor
@@ -176,6 +186,7 @@ define(['jquery', 'utils', 'renderer'], function($, Utils, Renderer) {
 			return dom;
 		}
 	};
+	changeDescriptorShape = Object.keys(ChangeDescriptor);
 	
 	return Object.seal(ChangeDescriptor);
 });

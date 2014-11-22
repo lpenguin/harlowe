@@ -81,9 +81,6 @@ function($, Utils, Selectors, Renderer, Environ, Story, State, HookUtils, HookSe
 	/**
 		Run a newly rendered <tw-link> element.
 		
-		TODO: there should perchance exist "lazy links" whose passage-exprs are not
-		evaluated into passage-ids until the moment they are clicked.
-		
 		@method runLink
 		@private
 		@param {jQuery} link The <tw-link> element to run.

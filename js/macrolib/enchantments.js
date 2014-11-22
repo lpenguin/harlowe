@@ -159,13 +159,13 @@ define(['jquery', 'utils', 'macros', 'datatypes/hookset', 'datatypes/changercomm
 						these enchantments is more succinct using jQuery
 						than using a plain Array or Set.
 					*/
-					enchantments = $(),
-					code = desc.code;
+					enchantments = $();
 				
 				/*
 					Prevent the target's code from running immediately.
+					This is unset when the event is finally triggered.
 				*/
-				desc.cloak = true;
+				desc.cloaked = true;
 				
 				/*
 					If a rerender method was specified, then this is a "combo" macro,
@@ -273,7 +273,8 @@ define(['jquery', 'utils', 'macros', 'datatypes/hookset', 'datatypes/changercomm
 										all its values are assigned, not just the target.
 										The second argument may be extraneous. #awkward
 									*/
-									desc.section.renderInto(code + '', null, desc);
+									desc.cloaked = false;
+									desc.section.renderInto(desc.code, null, desc);
 								}
 							);
 						});

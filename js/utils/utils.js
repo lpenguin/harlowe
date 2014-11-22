@@ -589,6 +589,40 @@ define(['jquery', 'markup/markup', 'selectors', 'customelements', 'jqueryplugins
 			}
 		},
 		
+		/**
+			Asserts that an object doesn't lack a necessary property.
+			This and the next method provide some shape-checking
+			to important functions.
+			
+			@method assertMustHave
+			@param {Object} object
+			@param {Array} props
+		*/
+		assertMustHave: function(object, props) {
+			for(var i = 0; i < props.length; i += 1) {
+				if(!(props[i] in object)) {
+					console.error("Assertion failed: " + object
+						+ " lacks property " + props[i]);
+				}
+			}
+		},
+		
+		/**
+			Asserts that an object has no property extensions.
+			
+			@method assertOnlyHas
+			@param {Object} object
+			@param {Array} props
+		*/
+		assertOnlyHas: function(object, props) {
+			for(var i in object) {
+				if (props.indexOf(i) === -1) {
+					console.error("Assertion failed: " + object
+						+ " had unexpected property '" + i + "'!");
+				}
+			}
+		},
+		
 		/*
 			Constants
 		*/
