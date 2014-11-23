@@ -21,9 +21,9 @@ define(['jquery', 'utils', 'renderer'], function($, Utils, Renderer) {
 		// {String} code              Transformations made on the hook's code before it is run.
 		code:             "",
 		
-		// {Boolean} cloaked          Whether or not this code is 'cloaked'.
-		//                            (code won't be used until something uncloaks it).
-		cloaked:          false,
+		// {Boolean} enabled         Whether or not this code is enabled.
+		//                            (Disabled code won't be used until something enables it).
+		enabled:          true,
 		
 		// {jQuery} target            Where to render the code, if not the hookElement.
 		target:           null,
@@ -70,7 +70,7 @@ define(['jquery', 'utils', 'renderer'], function($, Utils, Renderer) {
 				transition  = this.transition,
 				attr        = this.attr,
 				data        = this.data,
-				cloaked     = this.cloaked,
+				enabled     = this.enabled,
 				dom;
 			
 			Utils.assertOnlyHas(this, changeDescriptorShape);
@@ -98,7 +98,7 @@ define(['jquery', 'utils', 'renderer'], function($, Utils, Renderer) {
 				conveniently evaluates to $().Otherwise, it converts the
 				array returned by $.parseHTML into a jQuery.
 			*/
-			dom = $(code && !cloaked &&
+			dom = $(code && enabled &&
 				$.parseHTML(Renderer.exec(code)));
 			
 			/*

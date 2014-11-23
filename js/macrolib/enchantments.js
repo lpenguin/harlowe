@@ -165,7 +165,7 @@ define(['jquery', 'utils', 'macros', 'datatypes/hookset', 'datatypes/changercomm
 					Prevent the target's code from running immediately.
 					This is unset when the event is finally triggered.
 				*/
-				desc.cloaked = true;
+				desc.enabled = false;
 				
 				/*
 					If a rerender method was specified, then this is a "combo" macro,
@@ -273,7 +273,7 @@ define(['jquery', 'utils', 'macros', 'datatypes/hookset', 'datatypes/changercomm
 										all its values are assigned, not just the target.
 										The second argument may be extraneous. #awkward
 									*/
-									desc.cloaked = false;
+									desc.enabled = true;
 									desc.section.renderInto(desc.code, null, desc);
 								}
 							);

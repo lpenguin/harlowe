@@ -273,6 +273,17 @@
 					};
 				},
 			},
+			collapsed: {
+				fn: function(match) {
+					return {
+						/*
+							TODO: Currently, this eliminates line breaks inside
+							string literals inside macros. This shouldn't be the case.
+						*/
+						innerText: match[1].replace(/[\s\n]+/g, ' ')
+					};
+				},
+			},
 			escapedLine: {
 				fn: Object
 			},
