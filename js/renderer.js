@@ -223,10 +223,6 @@ define(['utils', 'markup/markup', 'twinescript/compiler'], function(Utils, Twine
 						out += escape(token.verbatim);
 						break;
 					}
-					case "collapsed": {
-						out += escape(token.verbatim);
-						break;
-					}
 					/*
 						Expressions
 					*/
