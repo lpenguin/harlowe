@@ -20,43 +20,6 @@ function($, Utils, Selectors, Renderer, Environ, Story, State, HookUtils, HookSe
 		@static
 	*/
 	
-	
-	/**
-		This function allows an expression of TwineMarkup to be evaluated as data, and
-		determine the text within it.
-		This is currently only used by runLink, to determine the link's passage name.
-		
-		@method evaluateTwineMarkup
-		@private
-		@param {String} expr
-		@param {String|jQuery} text, or a <tw-error> element.
-	*/
-	function evaluateTwineMarkup(expr) {
-		/*
-			The expression is rendered into this loose DOM element, which
-			is then discarded after returning. Hopefully no leaks
-			will arise from this.
-		*/
-		var p = $('<p>'),
-			errors;
-		
-		/*
-			Render the text, using this own section as the base (which makes sense,
-			as the recipient of this function is usually a sub-expression within this section).
-			
-			No changers, etc. are capable of being applied here.
-		*/
-		this.renderInto(expr, p);
-		
-		/*
-			But first!! Pull out any errors that were generated.
-		*/
-		if ((errors = p.find('tw-error')).length > 0) {
-			return errors;
-		}
-		return p.text();
-	}
-	
 	/**
 		This is a shortcut for rendering errors that either popped up while evaluating
 		expressions, or via performing extra checks as a result.
@@ -86,7 +49,7 @@ function($, Utils, Selectors, Renderer, Environ, Story, State, HookUtils, HookSe
 		@param {jQuery} link The <tw-link> element to run.
 	*/
 	function runLink(link) {
-		var passage = evaluateTwineMarkup.call(this, Utils.unescape(link.attr("passage-expr"))),
+		var passage = this.evaluateTwineMarkup(Utils.unescape(link.attr("passage-expr"))),
 			text = link.text(),
 			visited = -1;
 		
@@ -220,9 +183,18 @@ function($, Utils, Selectors, Renderer, Environ, Story, State, HookUtils, HookSe
 			result = result.TwineScript_Print();
 			
 			/*
-				TwineScript_Print() can return one kind of error.
+				On rare occasions (specifically, when the passage component
+				of the link syntax produces an error) TwineScript_Print
+				returns a jQuery of the <tw-error>.
 			*/
-			if (Utils.containsError(result)) {
+			if (result instanceof $) {
+				expr.append(result);
+			}
+			/*
+				Alternatively (and more commonly), TwineScript_Print() can
+				return an Error object.
+			*/
+			else if (Utils.containsError(result)) {
 				renderError(result, expr);
 			}
 			else {
@@ -427,6 +399,42 @@ function($, Utils, Selectors, Renderer, Environ, Story, State, HookUtils, HookSe
 		*/
 		$: function(str) {
 			return Utils.$(str, this.dom);
+		},
+		
+		/**
+			This function allows an expression of TwineMarkup to be evaluated as data, and
+			determine the text within it.
+			This is currently only used by runLink, to determine the link's passage name.
+		
+			@method evaluateTwineMarkup
+			@private
+			@param {String} expr
+			@param {String|jQuery} text, or a <tw-error> element.
+		*/
+		evaluateTwineMarkup: function(expr) {
+			/*
+				The expression is rendered into this loose DOM element, which
+				is then discarded after returning. Hopefully no leaks
+				will arise from this.
+			*/
+			var p = $('<p>'),
+				errors;
+			
+			/*
+				Render the text, using this own section as the base (which makes sense,
+				as the recipient of this function is usually a sub-expression within this section).
+			
+				No changers, etc. are capable of being applied here.
+			*/
+			this.renderInto(expr, p);
+			
+			/*
+				But first!! Pull out any errors that were generated.
+			*/
+			if ((errors = p.find('tw-error')).length > 0) {
+				return errors;
+			}
+			return p.text();
 		},
 		
 		/**

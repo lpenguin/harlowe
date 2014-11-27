@@ -1,4 +1,4 @@
-define(['utils', 'datatypes/colour'], function(Utils, Colour) {
+define(['utils'], function(Utils) {
 	"use strict";
 	
 	/**

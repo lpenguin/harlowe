@@ -42,21 +42,7 @@ require(['jquery', 'renderer', 'story', 'state', 'engine', 'utils', 'selectors',
 	var installHandlers = function() {
 		var html = $(document.documentElement);
 		
-		// Install the handler for passage links.
-
-		html.on('click.passage-link', Selectors.internalLink+'[passage-id]', function(e) {
-			var next = $(this).attr('passage-id');
-
-			if (next) {
-				// TODO: stretchtext
-				Engine.goToPassage(next,false);
-			}
-
-			e.preventDefault();
-		});
-
 		// If the debug option is on, add the debugger.
-
 		if (Story.options.debug) {
 			$(document.body).append(debugHTML);
 			$('.show-invisibles').click(function() {

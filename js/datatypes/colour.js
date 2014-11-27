@@ -1,4 +1,4 @@
-define(['utils'], function(Utils){
+define(['utils', 'jquery'], function(Utils, $){
 	/*
 		Colours are first-class objects in TwineScript.
 		You can't do much with them, though - just add them.
@@ -10,8 +10,35 @@ define(['utils'], function(Utils){
 		*/
 		singleDigit   = /^([\da-fA-F])$/,
 		tripleDigit   = /^([\da-fA-F])([\da-fA-F])([\da-fA-F])$/,
-		sextupleDigit = /^([\da-fA-F])([\da-fA-F])([\da-fA-F])([\da-fA-F])([\da-fA-F])([\da-fA-F])$/;
+		sextupleDigit = /^([\da-fA-F])([\da-fA-F])([\da-fA-F])([\da-fA-F])([\da-fA-F])([\da-fA-F])$/,
+		/*
+			This cache here is used by the function just below.
+		*/
+		cssNameCache = Object.create(null);
 
+	/*
+		This private function tries its best to convert a CSS3 colour name (like "rebeccapurple"
+		or "papayawhip") to an RGB object. It uses jQuery to make the initial lookup, and
+		caches the resulting object for future lookups.
+	*/
+	function css3ToRGB(colourName) {
+		if (colourName in cssNameCache) {
+			return cssNameCache[colourName];
+		}
+		var colour = $("<p>").css("background-color", colourName).css("background-color");
+		if (!colour.startsWith('rgb')) {
+			colour = { r:192, g:192, b:192 };
+		}
+		else {
+			colour = colour.match(/\d+/g).reduce(function(colour, num, ind) {
+				colour["rgb"[ind]] = +num;
+				return colour;
+			}, {});
+		}
+		cssNameCache[colourName] = colour;
+		return colour;
+	}
+	
 	/*
 		This private function converts a string comprising a CSS hex colour
 		into an {r,g,b} object.
@@ -24,7 +51,7 @@ define(['utils'], function(Utils){
 		if (typeof str !== "string") {
 			return str;
 		}
-		// Trim off the "#", if any.
+		// Trim off the "#".
 		str = str.replace("#", '');
 		/*
 			If a 3-char hex colour was passed, convert it to a 6-char colour.
@@ -96,7 +123,10 @@ define(['utils'], function(Utils){
 		*/
 		create: function(rgbObj) {
 			if (typeof rgbObj === "string") {
-				return this.create(hexToRGB(rgbObj));
+				if (Colour.isHexString(rgbObj)) {
+					return this.create(hexToRGB(rgbObj));
+				}
+				return this.create(css3ToRGB(rgbObj));
 			}
 			return Object.assign(Object.create(this), rgbObj);
 		},

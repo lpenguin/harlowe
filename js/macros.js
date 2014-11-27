@@ -11,8 +11,8 @@ function($, Story, Utils, Operations) {
 	var Macros,
 		// Private collection of registered macros.
 		macroRegistry = {},
-		// Private collection of ChangerCommand definitions.
-		changerCommandRegistry = {};
+		// Private collection of command definitions, which are created by command macros.
+		commandRegistry = {};
 		
 	/*
 		Operations.runMacro() passes its arguments as a thunk.
@@ -300,8 +300,9 @@ function($, Story, Utils, Operations) {
 		},
 		
 		/**
-			A high-level wrapper for Macros.add() that creates a Value Macro from two
-			entities: a macro implementation function, and a ChangerCommand function.
+			A high-level wrapper for Macros.add() that creates a Value Macro from 3
+			entities: a macro implementation function, a ChangerCommand function, and
+			a parameter type signature array.
 			
 			The passed-in function should return a changer.
 			
@@ -317,7 +318,7 @@ function($, Story, Utils, Operations) {
 			// Return the function to enable "bubble chaining".
 			return addValue;
 		},
-	
+		
 		/**
 			A high-level wrapper for Macros.add() that takes a plain function, creates a
 			thunk-accepting version of it, and registers it as a live Sensor Macro.
@@ -332,6 +333,7 @@ function($, Story, Utils, Operations) {
 			@method addSensor
 			@param {String} name
 			@param {Function} fn
+			@param {Array} typeSignature
 		*/
 		addSensor: function addSensor(name, fn, typeSignature) {
 			fn.sensor = true;
@@ -382,7 +384,7 @@ function($, Story, Utils, Operations) {
 				eager(typeSignatureCheck(name, fn, typeSignature))
 			);
 			// I'll explain later. It involves registering the changerCommand implementation.
-			changerCommandRegistry[Array.isArray(name) ? name[0] : name] = changerCommandFn;
+			commandRegistry[Array.isArray(name) ? name[0] : name] = changerCommandFn;
 			
 			// Return the function to enable "bubble chaining".
 			return addChanger;
@@ -400,7 +402,7 @@ function($, Story, Utils, Operations) {
 			@return {Function} the registered changer function.
 		*/
 		getChangerFn: function getChanger(name) {
-			return changerCommandRegistry[name];
+			return commandRegistry[name];
 		},
 		
 		/*
