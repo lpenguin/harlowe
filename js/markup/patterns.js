@@ -426,7 +426,7 @@
 		// Better make it a recursive regex or something?
 		string: 
 			either(
-				// Single strings					
+				// Single strings
 				string.emptySingle,
 				string.emptyDouble,
 				string.emptyBacktick,
@@ -453,6 +453,7 @@
 
 		arithmetic: either("\\+", "\\-", "\\*", "\\\/", "%") + notBefore("="),
 		comma:      ",",
+		spread:     "\\.\\.\\." + notBefore("\\."),
 
 		to:        either(wb + caseInsensitive("to") + wb, "="),
 		into:      wb + "into" + wb,

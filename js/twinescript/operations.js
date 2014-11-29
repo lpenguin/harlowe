@@ -536,6 +536,18 @@ define(['utils', 'state', 'story', 'datatypes/colour', 'datatypes/assignmentrequ
 		},
 		
 		/*
+			This takes a plain value assumed to be an array, and wraps
+			it in a special structure that denotes it to be spreadable.
+			This is created by the spread (...) operator.
+		*/
+		makeSpreader: function(val) {
+			return {
+				value: val,
+				spreader: true,
+			};
+		},
+		
+		/*
 			This takes a plain function that is assumed to be a thunk,
 			and attaches some thunk methods and properties to it.
 			

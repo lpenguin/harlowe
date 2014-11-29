@@ -102,7 +102,7 @@ define(['utils'], function(Utils) {
 		Javascript values in string form, and joins them into a compiled
 		Javascript thunk function.
 	*/
-	function compileThunk(/* variadic */) {
+	function compileThunk(/* variadic */) {		
 		return 'Operations.makeThunk(function(){return ['
 			+ Array.from(arguments).join()
 			+ ']})';
@@ -283,6 +283,7 @@ define(['utils'], function(Utils) {
 			and
 			or
 			to
+			spread ...
 			comma
 			
 			We must check these in reverse, so that the least-precedent
@@ -296,6 +297,17 @@ define(['utils'], function(Utils) {
 		*/
 		if ((i = indexOfType(tokens, "comma")) >-1) {
 			midString = ",";
+		}
+		else if ((i = indexOfType(tokens, "spread")) >-1) {
+			/*
+				Whether or not this actually makes sense as a "mid"string
+				is probably easily disputed.
+			*/
+			midString = "Operations.makeSpreader(";
+			right =
+				compile(tokens.splice(i + 1))
+				+ ")";
+			needsLeft = false;
 		}
 		else if ((i = indexOfType(tokens, "to")) >-1) {
 			assignment = "to";

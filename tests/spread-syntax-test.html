@@ -1,0 +1,9 @@
+<!DOCTYPE html><meta charset="utf-8">
+<title>Spread Syntax Test</title>
+<link rel="stylesheet" href="../build/harlowe-css.css"/>
+<tw-story></tw-story><script data-main="../js/harlowe.js" src="../node_modules/requirejs/require.js"></script>
+<tw-storydata options="debug" startnode="1">
+<tw-passagedata pid="1" name="1" position="512,384" data-t8n="instant">
+(set:$x to (a: 1))
+(a: ...(a: 2,4, ...$x), "Seven", ..."89") (= 2,4,1,Seven,8,9)
+(a: ...2) (= error)

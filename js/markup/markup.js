@@ -458,7 +458,7 @@
 				},
 			},
 			["string", "boolean", "identifier", "is", "to", "into", "and", "or", "not", "isNot",
-			"comma", "contains", "isIn"].reduce(function(a, e) {
+			"comma", "spread", "contains", "isIn"].reduce(function(a, e) {
 				a[e] = { fn: Object };
 				return a;
 			},{})

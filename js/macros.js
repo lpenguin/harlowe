@@ -28,9 +28,38 @@ function($, Story, Utils, Operations) {
 	*/
 	function eager(fn) {
 		return function eagerMacroResult(argsThunk) {
-			var args = argsThunk(),
-				// Do the error check now.
-				error = Utils.containsError(args);
+			var args = argsThunk();
+			
+			// Spreaders are spread out now.
+			args = args.reduce(function(newArgs, el) {
+				if (el.spreader === true) {
+					/*
+						Currently, the full gamut of spreadable
+						JS objects isn't available - only arrays and strings.
+					*/
+					if (Array.isArray(el.value) || typeof el.value === "string") {
+						for(var i = 0; i < el.value.length; i++) {
+							newArgs.push(el.value[i]);
+						}
+					}
+					else {
+						newArgs.push(
+							new TypeError(
+								"I can't spread out "
+								+ Operations.objectName(el.value)
+								+ ", which is not a string or array."
+							)
+						);
+					}
+				}
+				else {
+					newArgs.push(el);
+				}
+				return newArgs;
+			}, []);
+			
+			// Do the error check now.
+			var error = Utils.containsError(args);
 
 			if (error) {
 				return error;

@@ -318,10 +318,7 @@ function(Macros, Utils, State, Story, Engine, AssignmentRequest) {
 		*/
 
 		/*
-			A random integer function
-			1 argument: random int from 0 to a inclusive
-			2 arguments: random int from a to b inclusive (order irrelevant)
-			Identical to Twine 1's version.
+			This function returns a random integer from a to b inclusive.
 		*/
 		random: [function random(a, b) {
 			var from, to;
@@ -351,22 +348,30 @@ function(Macros, Utils, State, Story, Engine, AssignmentRequest) {
 		array: [Array.of, zeroOrMore(Any)],
 		
 		/*
-			(any-of:)
-			Similar to (either:), but flattens arrays to retrieve a random value.
-			(either:) originally implicitly did this in Twine 1, but now it's 
-			more explicit, to enable better-sounding expressions,
-			like (print: (any-of: $bag))
+			(range:)
+			Produces an *inclusive* range of integers from a to b.
 		*/
-		anyof: [function any_of() {
-			if(arguments.length === 1) {
-				if (Array.isArray(arguments[0])) {
-					return either.apply(this, arguments[0]);
-				}
-				return arguments[0];
+		range: [function range(a, b) {
+			/*
+				For now, let's assume descending ranges are intended,
+				and support them.
+			*/
+			if (a > b) {
+				return range(b, a).reverse();
 			}
-			return any_of(either.apply(this, arguments));
+			/*
+				This differs from Python: the base case returns just [a],
+				instead of an empty array. The rationale is that since it is
+				inclusive, a can serve as both start and end term just fine.
+			*/
+			var ret = [a];
+			b -= a;
+			while(b-- > 0) {
+				ret.push(++a);
+			}
+			return ret;
 		},
-		Array],
+		[Number, Number]],
 
 		// Return the number of times the named passage was visited.
 		// For multiple arguments, return the smallest visited value.
