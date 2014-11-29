@@ -1,4 +1,4 @@
-require.config({ 
+require.config({
 	paths: {
 		// External libraries
 		jquery:          './lib/jquery',
@@ -83,7 +83,7 @@ require(['jquery', 'renderer', 'story', 'state', 'engine', 'utils', 'selectors',
 		// Execute the custom scripts
 		
 		script.each(function(i) {
-			try { 
+			try {
 				_eval($(this).html());
 			} catch (e) {
 				// TODO: Something more graceful - an 'error passage', perhaps?

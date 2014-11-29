@@ -43,7 +43,7 @@ function(Macros, Utils, Story, Engine) {
 		[String])
 		
 		/*
-			(print:) is a command to print a string. It's very similar to (text:), 
+			(print:) is a command to print a string. It's very similar to (text:),
 			insofar as it converts its expr to string, but changer commands can be
 			stapled onto it.
 		*/

@@ -251,7 +251,7 @@ function($, Utils, Selectors, Renderer, Environ, Story, State, HookUtils, HookSe
 		
 		@method runSensorFunction
 		@private
-		@param {Function} sensor The sensor function. 
+		@param {Function} sensor The sensor function.
 		@param {jQuery} target The <tw-hook> that the sensor is connected to.
 	*/
 	function runSensorFunction(sensor, target) {
@@ -271,7 +271,7 @@ function($, Utils, Selectors, Renderer, Environ, Story, State, HookUtils, HookSe
 			recursiveSensing;
 		
 		/*
-			This closure runs every frame from now on, until 
+			This closure runs every frame from now on, until
 			the target hook is gone.
 			
 			Notice that as this is bound, giving it a name isn't

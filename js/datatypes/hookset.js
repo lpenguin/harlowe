@@ -38,7 +38,7 @@ define(['hookutils', 'jquery'],function(HookUtils, $) {
 		
 		/**
 			An Array forEach-styled iteration function. The given function is
-			called on every <tw-hook> in the section DOM 
+			called on every <tw-hook> in the section DOM
 			
 			This is currently just used by Section.renderInto, to iterate over each
 			word and render it individually.

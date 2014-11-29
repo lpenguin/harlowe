@@ -150,7 +150,7 @@ define(['jquery', 'utils', 'renderer'], function($, Utils, Renderer) {
 			);
 			
 			/*
-				If HTML attributes were included in the changerDescriptor, apply them now. 
+				If HTML attributes were included in the changerDescriptor, apply them now.
 			*/
 			if (attr) {
 				target.attr(attr);

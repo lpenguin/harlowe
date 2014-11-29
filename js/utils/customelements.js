@@ -48,8 +48,8 @@ define(['es6shims'], function() {
 	// - creator: which application created this. Metadata only.
 	// - creator-version: version number of the creator application. Metadata only.
 	// - options: space-separated runtime options.
-	('tw-storydata', 'storyname', 'startnode', 'creator', 'creator-version', 'options') 
-	('tw-passagedata', 'name', 'pid', 'position') 
+	('tw-storydata', 'storyname', 'startnode', 'creator', 'creator-version', 'options')
+	('tw-passagedata', 'name', 'pid', 'position')
 	('tw-story') // Stories (block)
 	('tw-debugger') // The debug pane
 	
@@ -74,7 +74,7 @@ define(['es6shims'], function() {
 	// .hook-macro: is a hook macro.
 	// .false-if: name is "if" but it evaluated to false.
 	// .error: a problem occurred while running.
-	('tw-expression', 'type', 'name', 'title', 'js') 
+	('tw-expression', 'type', 'name', 'title', 'js')
 	('tw-sidebar') // Sidebar (block)
 	('tw-icon') // Sidebar button (block)
 	

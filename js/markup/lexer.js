@@ -221,7 +221,7 @@
 				an arbitrarily nestable rule.
 			*/
 			frontTokenStack = [],
-			// Some hoisted temporary vars used in each loop iteration. 
+			// Some hoisted temporary vars used in each loop iteration.
 			i, l, rule, match, slice,
 			/*
 				index ticks upward as we advance through the src.
@@ -374,7 +374,7 @@
 	}
 	
 	/*
-		To waylay speed concerns, the tokens are passed in as tuples: 
+		To waylay speed concerns, the tokens are passed in as tuples:
 		the token object itself, and its index within the parentToken's
 		children array.
 	*/

@@ -70,7 +70,7 @@
 		var left = Array.isArray(pair) ? pair[0] : pair,
 			right = (Array.isArray(pair) && pair[1]) || left;
 		
-		return escape(left) + "([^]*?)" + escape(right) + 
+		return escape(left) + "([^]*?)" + escape(right) +
 			/*
 				This function checks if the right-terminator is a sole repeating symbol,
 				then returns the symbol wrapped in '(?!' ')', or "" if not.
@@ -147,7 +147,7 @@
 			
 			* Only the * can be used for bullets (to prevent ambiguity with printed numbers: -2 or +2)
 			* Multiples of the bullet must be used for nested lists: **, instead of whitespace.
-			* Numbered lists must use 0. instead of actual numbers. 
+			* Numbered lists must use 0. instead of actual numbers.
 			
 			In the field, lists are structurally not that useful in Twine, except for pure
 			presentational purposes: putting a bullet-point before a line.
@@ -204,7 +204,7 @@
 		hookTagFront =  "\\|(" + anyLetter.replace("]", "_]") + "*)>",
 		hookTagBack  =  "<("   + anyLetter.replace("]", "_]") + "*)\\|",
 		
-		string = { 
+		string = {
 			// The empty strings
 			emptyDouble: '""(?!")',
 			emptySingle: "''(?!')",
@@ -250,7 +250,7 @@
 	/*
 		Return the Patterns object.
 		
-		Note that some of these properties are "opener" objects, which are used by the 
+		Note that some of these properties are "opener" objects, which are used by the
 		lexer. It's a bit #awkward having them alongside the string properties like this,
 		keyed to a similar but otherwise disconnected property name...
 	*/
@@ -424,7 +424,7 @@
 		// TODO: this generated regex is horrendously slow
 		// when an unclosed ' or " is in the source text.
 		// Better make it a recursive regex or something?
-		string: 
+		string:
 			either(
 				// Single strings
 				string.emptySingle,

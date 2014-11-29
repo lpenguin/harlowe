@@ -1,4 +1,4 @@
-define(['jquery', 'story', 'utils', 'selectors', 'state', 'section'], 
+define(['jquery', 'story', 'utils', 'selectors', 'state', 'section'],
 function ($, Story, Utils, Selectors, State, Section) {
 	"use strict";
 	
@@ -22,7 +22,7 @@ function ($, Story, Utils, Selectors, State, Section) {
 		sidebar = container.children(Selectors.sidebar);
 		
 		/*
-			Generate the HTML for the permalink. 
+			Generate the HTML for the permalink.
 			(This is currently unavailable as of Harlowe 1.0)
 		*/
 		if (Story.options.permalink) {

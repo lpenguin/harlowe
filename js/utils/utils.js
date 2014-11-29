@@ -1,7 +1,7 @@
 define(['jquery', 'markup/markup', 'selectors', 'customelements', 'jqueryplugins'], function($, TwineMarkup, Selectors) {
 	"use strict";
 
-	var 
+	var
 		// Used by lockProperties
 		lockDesc = {
 			configurable: 0,
@@ -162,7 +162,7 @@ define(['jquery', 'markup/markup', 'selectors', 'customelements', 'jqueryplugins
 		},
 
 		/**
-			Convert a HTML classlist attribute (e.g. class="magic link") into 
+			Convert a HTML classlist attribute (e.g. class="magic link") into
 			a CSS class selector chain (".magic.link").
 
 			@method selectorToClassList

@@ -178,7 +178,7 @@ define(['utils', 'state', 'story', 'datatypes/colour', 'datatypes/assignmentrequ
 		@return {String|Error}
 	*/
 	function compilePropertyIndex(obj, prop) {
-		var 
+		var
 			// A cached error message fragment.
 			onlyIcan = "Only I can use data keys beginning with ",
 			// Hoisted variable.
@@ -387,7 +387,7 @@ define(['utils', 'state', 'story', 'datatypes/colour', 'datatypes/assignmentrequ
 		
 		"+":  doNotCoerce(function(l, r) {
 			/*
-				I'm not a fan of the fact that + is both concatenator and 
+				I'm not a fan of the fact that + is both concatenator and
 				arithmetic op, but I guess it's close to what people expect.
 				Nevertheless, applying the logic that a string is just as much a
 				sequential collection as an array, I feel I can overload +
@@ -645,7 +645,7 @@ define(['utils', 'state', 'story', 'datatypes/colour', 'datatypes/assignmentrequ
 					/*
 						Convert the currently passed chain element, e,
 						using compilePropertyIndex in the context of the
-						current object. 
+						current object.
 						For instance, if object is an array, and e is "1st",
 						this converts e to "0".
 					*/
@@ -736,7 +736,7 @@ define(['utils', 'state', 'story', 'datatypes/colour', 'datatypes/assignmentrequ
 		/*
 			While these (OK, maybe just objectName) are more commonly used internally,
 			some modules (like Macros) should call on them as well for consistent error
-			messages. 
+			messages.
 		*/
 		objectName: objectName,
 		typeName: typeName,

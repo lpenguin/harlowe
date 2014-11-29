@@ -204,7 +204,7 @@ function($, Story, Utils, Operations) {
 		
 		/*
 			The name is used solely for error message generation. It can be a String or
-			an Array of Strings. If it's the latter, and there's more than one name, 
+			an Array of Strings. If it's the latter, and there's more than one name,
 			we'll (often incorrectly, but still informatively) use the first name,
 			as we have no other information about which macro name was used.
 			It's an uncomfortable state of affairs, I know.
@@ -424,7 +424,7 @@ function($, Story, Utils, Operations) {
 			allows the registered changer function to finally be invoked.
 			
 			TODO: This makes me wonder if this changer registering business shouldn't be in
-			the changerCommand module instead. 
+			the changerCommand module instead.
 			
 			@method getChangerFn
 			@param {String} name

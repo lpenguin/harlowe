@@ -4,12 +4,12 @@ define(['utils', 'macros'], function(Utils, Macros) {
 		A ChangerCommand is an author-facing function that is used to mutate a ChangeDescriptor
 		 object, that itself is used to alter a Section's rendering.
 		
-		This decorator function accepts a function (which defines the ChangerCommand's 
+		This decorator function accepts a function (which defines the ChangerCommand's
 		internal implementation), the name of the macro that created it, and some
-		author-supplied configuration parameters, and creates a partial 
+		author-supplied configuration parameters, and creates a partial
 		function augmented with the necessary TwineScript related methods.
 		
-		For instance, for (transition: "dissolve"), the name would be 
+		For instance, for (transition: "dissolve"), the name would be
 		"transition" and params would be ["dissolve"].
 		
 		Since it basically transforms an existing function without modifying its prototype,
@@ -46,7 +46,7 @@ define(['utils', 'macros'], function(Utils, Macros) {
 		
 		/*
 			Changer composition is performed using the + operator.
-			This is the basis for advanced use of changer macros - 
+			This is the basis for advanced use of changer macros -
 			(transition:) + (background:), etc., provide sophisticated
 			styling.
 		*/

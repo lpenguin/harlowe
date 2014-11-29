@@ -69,7 +69,7 @@
 		}
 
 		/*
-			Alters the rules object's fn methods, so that their returned objects 
+			Alters the rules object's fn methods, so that their returned objects
 			have 'type', 'match' and 'innerMode' properties assigned to them.
 		*/
 		function setupRules(mode, target) {
@@ -533,7 +533,7 @@
 			/**
 				@method lex
 				@param {String} src String source to lex.
-				@return {Array} Tree structure of 
+				@return {Array} Tree structure of
 			*/
 			lex: rules(Lexer).lex,
 			

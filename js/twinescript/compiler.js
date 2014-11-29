@@ -86,7 +86,7 @@ define(['utils'], function(Utils) {
 			the original array).
 			
 			For browser optimisation purposes, arguments is copied into an
-			array 
+			array
 		*/
 		var a = Array.prototype.slice.call(arguments, 0);
 		/*
@@ -109,7 +109,7 @@ define(['utils'], function(Utils) {
 	}
 	
 	/**
-		This takes a single TwineMarkup token being used in an assignmentRequest, 
+		This takes a single TwineMarkup token being used in an assignmentRequest,
 		and returns a tuple that contains an object reference, and a property name or chain.
 	*/
 	function compileVarRef(token) {
@@ -171,7 +171,7 @@ define(['utils'], function(Utils) {
 			/*
 				These hold the returned compilations of the tokens
 				surrounding a currently matched token, as part of this function's
-				recursive descent. 
+				recursive descent.
 			*/
 			left, right,
 			/*
@@ -180,8 +180,8 @@ define(['utils'], function(Utils) {
 			macroNameToken, token, varRefTemp,
 			/*
 				Setting values to either of these variables
-				determines the code to emit: 
-				- for midString, a plain JS infix operation between left and right; 
+				determines the code to emit:
+				- for midString, a plain JS infix operation between left and right;
 				- for operation, an Operations method call with left and right as arguments.
 				- for assignment, an AssignmentRequest.
 			*/
@@ -463,7 +463,7 @@ define(['utils'], function(Utils) {
 			left  = left  || (compile(tokens.slice (0,  i), isVarRef)).trim();
 			right = right || (compile(tokens.splice(i + 1))).trim();
 			/*
-				The compiler should implicitly insert the "it" keyword when the 
+				The compiler should implicitly insert the "it" keyword when the
 				left-hand-side of a comparison operator was omitted.
 			*/
 			if (implicitLeftIt && !(left)) {

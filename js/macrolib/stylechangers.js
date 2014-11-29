@@ -156,7 +156,7 @@ define(['macros', 'utils', 'datatypes/colour', 'datatypes/changercommand'], func
 				return function text_style(d, styleName) {
 					var
 						/*
-							A pair of HTML strings to wrap the hook in. 
+							A pair of HTML strings to wrap the hook in.
 						*/
 						wrapperHTML = ['', ''];
 					

@@ -48,7 +48,7 @@ define(['jquery', 'utils', 'macros', 'datatypes/hookset', 'datatypes/changercomm
 		an event.
 		
 		In short, it allows various words to become links etc., and do something when
-		they are clicked, just by deploying a single macro instantiation! Just type 
+		they are clicked, just by deploying a single macro instantiation! Just type
 		"click("house")[...]", and every instance of "house" in the section becomes
 		a link that does something.
 		
@@ -56,7 +56,7 @@ define(['jquery', 'utils', 'macros', 'datatypes/hookset', 'datatypes/changercomm
 		enchantment. It contains the following:
 		
 		* {String} event The DOM event that triggers the rendering of this macro's contents.
-		* {String} classList The list of classes to 'enchant' the hook with, to denote that it 
+		* {String} classList The list of classes to 'enchant' the hook with, to denote that it
 		is ready for the player to trigger an event on it.
 		* {String} rerender Determines whether to clear the span before rendering into it ("replace"),
 		append the rendering to its current contents ("append") or prepend it ("prepend").
@@ -246,7 +246,7 @@ define(['jquery', 'utils', 'macros', 'datatypes/hookset', 'datatypes/changercomm
 								Alas, this is a #kludge to allow the jQuery event handler
 								function above to access this inner data (as in, call this.event).
 							*/
-							e.parent().data('enchantmentEvent', 
+							e.parent().data('enchantmentEvent',
 								function specificEnchantmentEvent() {
 									var index;
 									if (enchantDesc.once) {
@@ -336,7 +336,7 @@ define(['jquery', 'utils', 'macros', 'datatypes/hookset', 'datatypes/changercomm
 		// (mouseout:)
 		// Perform the enclosed macros when the scope is moused away.
 		{
-			name: "mouseout", 
+			name: "mouseout",
 			enchantDesc: {
 				event: "mouseleave",
 				once: true,
