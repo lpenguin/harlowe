@@ -19,13 +19,6 @@ define(['utils', 'markup/markup', 'twinescript/compiler'], function(Utils, Twine
 	function renderTag(token, tagName) {
 		return Utils.wrapHTMLTag(Renderer.render(token.children), tagName);
 	}
-	
-	/*
-		This makes a standard passage link.
-	*/
-	function renderLink(text, passage) {
-		return '<tw-link class="link" passage-expr="' + escape(passage) + '">' + (text || passage) + '</tw-link>';
-	}
 
 	/*
 		Text constant used by align().
@@ -204,7 +197,14 @@ define(['utils', 'markup/markup', 'twinescript/compiler'], function(Utils, Twine
 						break;
 					}
 					case "twineLink": {
-						out += renderLink(render(token.children) || undefined, token.passage);
+						/*
+							This crudely desugars the twineLink token into a
+							(link-goto:) token.
+						*/
+						var newTwineLinkToken = TwineMarkup.lex("(link-goto:"
+							+ Utils.toTSStringLiteral(token.innerText) + ","
+							+ Utils.toTSStringLiteral(token.passage) + ")");
+						out += render(newTwineLinkToken.children);
 						break;
 					}
 					case "hook": {

@@ -151,7 +151,6 @@ function(Macros, Utils, State, Story, Engine, AssignmentRequest) {
 			}
 			return "";
 		},
-		// (put: is variadic)
 		[rest(AssignmentRequest)])
 
 		/*
@@ -174,7 +173,6 @@ function(Macros, Utils, State, Story, Engine, AssignmentRequest) {
 		(["num", "number"], function number(_, expr) {
 			return +expr;
 		},
-		// (num: accepts 1 anything)
 		[Any])
 		
 		/*
@@ -189,7 +187,7 @@ function(Macros, Utils, State, Story, Engine, AssignmentRequest) {
 		[Any])
 		
 		/*
-			(unless:) the negated form of if().
+			(unless:) the negated form of (if:).
 			Evaluates to a boolean.
 		*/
 		("unless", function unless(section, expr) {

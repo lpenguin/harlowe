@@ -70,45 +70,49 @@ function($, Macros, Utils, Story, State, Engine, ChangerCommand) {
 	/*
 		(link-goto:) is an eager version of (link:...)[(goto:...)], where the
 		passage name ((goto:)'s argument) is evaluated alongside (link:)'s argument.
-		It is also what the standard link syntax (should, hopefully) desugars to.
+		It is also what the standard link syntax desugars to.
 	*/
 	Macros.addValue
 		(["link-goto"], function(section, text, passage) {
 			/*
-				For all command macros, their arguments should be evaluated at creation
-				time. And so it is here: the passageName is evaluated at macro evaluation time,
-				not macro printing time. If an error occurs, it should be revealed here
-				and now.
-			*/
-			var passageName = section.evaluateTwineMarkup(Utils.unescape(passage || text));
-			
-			/*
-				If a <tw-error> was returned by evaluateTwineMarkup, replace the link with it.
-			*/
-			if (passageName instanceof $) {
-				/*
-					Alas, there is a #problem: evaluateTwineMarkup cannot return the
-					error objects, as they have long been discarded through the renderInto()
-					process - only their resulting HTML elements remain.
-					
-					So... a new Error object must be created from the test of the error.
-					This is painful, but seemingly the least incorrect approach.
-				*/
-				return new Error(passageName.first().text());
-			}
-			/*
-				Return the (link-goto:) object.
+				Return a new (link-goto:) object.
 			*/
 			return {
-				TwineScript_TypeName: "a (link-goto: " + Utils.toJSLiteral(passageName) + ") command",
+				TwineScript_TypeName: "a (link-goto: "
+					+ Utils.toJSLiteral(text) + ", "
+					+ Utils.toJSLiteral(passage) + ") command",
 				TwineScript_ObjectName: "a (link-goto:) command",
 				
 				TwineScript_Print: function() {
 					var visited = -1;
+					/*
+						The string representing the passage name is evaluated as TwineMarkup here -
+						the link syntax accepts TwineMarkup in both link and passage position
+						(e.g. [[**Go outside**]], [[$characterName->$nextLocation]]), and the text
+						content of the evaluated TwineMarkup is regarded as the passage name,
+						even though it is never printed.
+						
+						One concern is that of evaluation order: the passage name is always evaluated
+						before the link text, as coded here. But, considering the TwineMarkup parser
+						already discards the ordering of link text and passage name in the link
+						syntax ([[a->b]] vs [[b<-a]]) then this can't be helped, and probably doesn't matter.
+					*/
+					var passageName = section.evaluateTwineMarkup(Utils.unescape(passage || text));
 					var passageID = Story.getPassageID(passageName);
 					
-					if (Story.passageNamed(passage)) {
-						visited = (State.passageNameVisited(passage));
+					/*
+						If a <tw-error> was returned by evaluateTwineMarkup, replace the link with it.
+					*/
+					if (passageName instanceof $) {
+						/*
+							section.runExpression() is able to accept jQuery objects
+							being returned from TwineScript_Print().
+						*/
+						return passageName;
+					}
+					
+					if (passageID) {
+						visited = (State.passageIDVisited(passageID));
 					} else {
 						// Not an internal link?
 						if (!~visited) {

@@ -42,49 +42,6 @@ function($, Utils, Selectors, Renderer, Environ, Story, State, HookUtils, HookSe
 	}
 	
 	/**
-		Run a newly rendered <tw-link> element.
-		
-		@method runLink
-		@private
-		@param {jQuery} link The <tw-link> element to run.
-	*/
-	function runLink(link) {
-		var passage = this.evaluateTwineMarkup(Utils.unescape(link.attr("passage-expr"))),
-			text = link.text(),
-			visited = -1;
-		
-		/*
-			If a <tw-error> was returned by evaluateTwineMarkup, replace the link with it.
-		*/
-		if (passage instanceof $) {
-			link.replaceWith(passage);
-			return;
-		}
-		if (Story.passageNamed(passage)) {
-			visited = (State.passageNameVisited(passage));
-		} else {
-			// Not an internal link?
-			if (!~visited) {
-				link.replaceWith(
-					'<tw-broken-link passage-id="' + passage + '">'
-					+ (text || passage)
-					+ '</tw-broken-link>'
-				);
-			}
-		}
-		link.removeAttr("passage-expr").attr("passage-id", Story.getPassageID(passage));
-		if (Story.options.debug) {
-			link.attr("passage-name", passage);
-		}
-		if (visited) {
-			link.addClass("visited");
-		}
-		if (Story.options.opaquelinks) {
-			link.attr("title",passage);
-		}
-	}
-	
-	/**
 		Run a newly rendered <tw-expression> element's code, obtain the resulting value,
 		and apply it to the next <tw-hook> element, if present.
 		
@@ -593,8 +550,7 @@ function($, Utils, Selectors, Renderer, Environ, Story, State, HookUtils, HookSe
 			*/
 			
 			Utils.findAndFilter(dom, Selectors.hook + ","
-				+ Selectors.expression + ","
-				+ Selectors.internalLink).each(function doExpressions () {
+				+ Selectors.expression).each(function doExpressions () {
 				var expr = $(this);
 			
 				switch(expr.tag()) {
@@ -610,13 +566,6 @@ function($, Utils, Selectors, Renderer, Environ, Story, State, HookUtils, HookSe
 					{
 						runExpression.call(section, expr);
 						break;
-					}
-					case Selectors.internalLink:
-					{
-						if (expr.attr("passage-expr")) {
-							runLink.call(section, expr);
-							break;
-						}
 					}
 				}
 			});
