@@ -165,7 +165,8 @@ define(['utils', 'state', 'story', 'datatypes/colour', 'datatypes/assignmentrequ
 				Otherwise, defer to the TwineScript_TypeName, or TwineScript_ObjectName
 			*/
 			: (isObject(obj) && "TwineScript_TypeName" in obj) ? obj.TwineScript_TypeName
-			: objectName(obj));
+			: objectName(obj)
+		);
 	}
 	
 	/*

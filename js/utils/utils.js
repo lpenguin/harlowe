@@ -120,7 +120,28 @@ define(['jquery', 'markup/markup', 'selectors', 'customelements', 'jqueryplugins
 			@return {String}
 		*/
 		toJSLiteral: JSON.stringify,
-
+		
+		/*
+			Conversely, this rarer function produces a TwineScript string literal using the
+			given string.
+			
+			@method toTSStringLiteral
+			@return {String}
+		*/
+		toTSStringLiteral: function(str) {
+			var simultaneousGraves =
+				Math.max.apply(
+					0,
+					/*
+						This finds the length of the longest run of ` characters in the string.
+					*/
+					(str.match(/(`+)/g) || []).map(function(e) { return e.length; }).concat(0)
+				) + 1;
+			return "`".repeat(simultaneousGraves)
+				+ str
+				+ "`".repeat(simultaneousGraves);
+		},
+		
 		/**
 			Returns whether a value is either a string or array.
 

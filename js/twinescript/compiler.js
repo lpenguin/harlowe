@@ -242,10 +242,7 @@ define(['utils'], function(Utils) {
 				return compile(token.children);
 			}
 			else if (token.type === "string") {
-				return Utils.toJSLiteral(
-					// Trim off the enclosing " or ' or ` characters.
-					token.text.slice(1,-1)
-				);
+				return Utils.toJSLiteral(token.value);
 			}
 			else if (token.type === "colour") {
 				return "Colour.create("
@@ -359,7 +356,7 @@ define(['utils'], function(Utils) {
 				it doesn't exist.
 				This would ideally be an "implicitLeftZero", but, well...
 			*/
-			if ("+-".contains(tokens[i].text)) {
+			if ("+-".includes(tokens[i].text)) {
 				left  = compile(tokens.slice(0,  i));
 				if (!left) {
 					left = "0";

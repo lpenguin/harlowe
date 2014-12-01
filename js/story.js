@@ -42,7 +42,7 @@ define(['jquery', 'utils', 'selectors'], function($, Utils, Selectors) {
 			TODO: instead of false, return $().
 		*/
 		passageNamed: function (name) {
-			var passage = $(Selectors.storyData + " > " + Selectors.passageData +'[name="' + name + '"]');
+			var passage = $(Selectors.storyData + " > " + Selectors.passageData +'[name=' + Utils.toJSLiteral(name) + ']');
 			
 			return !!passage.length && passage;
 		},

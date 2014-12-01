@@ -205,14 +205,15 @@
 		hookTagBack  =  "<("   + anyLetter.replace("]", "_]") + "*)\\|",
 		
 		string = {
-			// The empty strings
-			emptyDouble: '""(?!")',
-			emptySingle: "''(?!')",
-			emptyBacktick: "``(?!`)",
-			// Javascript strings
-			single:   "'" + either(notChars("\\'"),"\\\\.") + "+'",
-			double:   '"' + either(notChars('\\"'),'\\\\.') + '+"',
-			backtick: '`' + either(notChars('\\`'),'\\\\.') + '+`',
+			/*
+				Notice that as this uses backreferences (\1 etc) this assumes
+				the RegExp will be composed as single + double. #awkward
+				
+				Also notice that no empty string exists - this can only be produced
+				using (text:) with no arguments.
+			*/
+			single:   "('+)[^]+?\\1",
+			double:   '("+)[^]+?\\2',
 		},
 		
 		/*
@@ -220,9 +221,9 @@
 			This doesn't include the - sign because arithmetic's pattern will trump it.
 			Negative numerals are handled in TwineScript as unary uses of arithmetic.
 		*/
-		number = '\\b(\\d+\\.?(?:[eE][+\\-]?\\d+)?|NaN)' + notBefore("m?s") + '\\b'
+		number = '\\b(\\d+(?:\\.\\d+)?(?:[eE][+\\-]?\\d+)?|NaN)' + notBefore("m?s") + '\\b'
 		;
-		
+		console.log(number);
 	passageLink.main =
 		passageLink.opener
 		+ either(
@@ -426,13 +427,8 @@
 		// Better make it a recursive regex or something?
 		string:
 			either(
-				// Single strings
-				string.emptySingle,
-				string.emptyDouble,
-				string.emptyBacktick,
 				string.single,
-				string.double,
-				string.backtick
+				string.double
 			),
 		
 		/*

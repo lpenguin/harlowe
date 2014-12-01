@@ -32,7 +32,7 @@ function($, Story, Utils, Operations) {
 			
 			// Spreaders are spread out now.
 			args = args.reduce(function(newArgs, el) {
-				if (el.spreader === true) {
+				if (el && el.spreader === true) {
 					/*
 						Currently, the full gamut of spreadable
 						JS objects isn't available - only arrays and strings.

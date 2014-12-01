@@ -202,8 +202,8 @@ define(['utils', 'markup/markup', 'twinescript/compiler'], function(Utils, Twine
 							(link-goto:) token.
 						*/
 						var newTwineLinkToken = TwineMarkup.lex("(link-goto:"
-							+ Utils.toTSStringLiteral(token.innerText) + ","
-							+ Utils.toTSStringLiteral(token.passage) + ")");
+							+ Utils.toJSLiteral(token.innerText) + ","
+							+ Utils.toJSLiteral(token.passage) + ")");
 						out += render(newTwineLinkToken.children);
 						break;
 					}

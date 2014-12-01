@@ -164,7 +164,7 @@ function(Macros, Utils, State, Story, Engine, AssignmentRequest) {
 			return expr;
 		},
 		// (text: accepts a lot of anything)
-		[rest(Any)])
+		[zeroOrMore(Any)])
 
 		/*
 			(num:), (number:)

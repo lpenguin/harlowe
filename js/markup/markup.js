@@ -153,9 +153,9 @@
 						align = Math.round(centerIndex / (arrow.length - 2) * 50);
 					} else if (arrow[0] === "<" && arrow.slice(-1) === ">") {
 						align = "justify";
-					} else if (arrow.contains(">")) {
+					} else if (arrow.includes(">")) {
 						align = "right";
-					} else if (arrow.contains("<")) {
+					} else if (arrow.includes("<")) {
 						align = "left";
 					}
 					return { align: align };
@@ -370,6 +370,15 @@
 				
 				groupingFront: { fn: Object },
 				
+				string: {
+					fn: function(match) {
+						var quote = (match[1] || match[2] || match[3]);
+						
+						return {
+							value: match[0].slice(quote.length, -quote.length),
+						};
+					},
+				},
 				cssTime: {
 					fn: function(match) {
 						return {
@@ -457,7 +466,7 @@
 					},
 				},
 			},
-			["string", "boolean", "identifier", "is", "to", "into", "and", "or", "not", "isNot",
+			["boolean", "identifier", "is", "to", "into", "and", "or", "not", "isNot",
 			"comma", "spread", "contains", "isIn"].reduce(function(a, e) {
 				a[e] = { fn: Object };
 				return a;
