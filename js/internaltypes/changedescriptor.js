@@ -76,11 +76,10 @@ define(['jquery', 'utils', 'renderer'], function($, Utils, Renderer) {
 			Utils.assertOnlyHas(this, changeDescriptorShape);
 			
 			/*
-				First, a quick check to see if there is a target.
-				If not, assume nothing needs to be done (the user of this object
-				has opted not to set it) and return.
+				First, a quick check to see if this is enabled and with a target.
+				If not, assume nothing needs to be done, and return.
 			*/
-			if (!target) {
+			if (!target || !enabled) {
 				return $();
 			}
 			/*
@@ -98,7 +97,8 @@ define(['jquery', 'utils', 'renderer'], function($, Utils, Renderer) {
 				conveniently evaluates to $().Otherwise, it converts the
 				array returned by $.parseHTML into a jQuery.
 			*/
-			dom = $(code && enabled &&
+			
+			dom = $(code &&
 				$.parseHTML(Renderer.exec(code)));
 			
 			/*

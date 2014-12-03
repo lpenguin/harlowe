@@ -273,8 +273,11 @@ define(['jquery', 'utils', 'macros', 'datatypes/hookset', 'datatypes/changercomm
 										all its values are assigned, not just the target.
 										The second argument may be extraneous. #awkward
 									*/
-									desc.enabled = true;
-									desc.section.renderInto(desc.code, null, desc);
+									desc.section.renderInto(
+										desc.code,
+										null,
+										Object.assign({}, desc, { enabled: true })
+									);
 								}
 							);
 						});

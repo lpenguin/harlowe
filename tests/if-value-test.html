@@ -4,8 +4,7 @@
 <tw-story></tw-story><script data-main="../js/harlowe.js" src="../node_modules/requirejs/require.js"></script>
 <tw-storydata options="debug" startnode="1">
 <tw-passagedata pid="1" name="1" position="512,384" data-t8n="instant">
-(set: $red to (text:(if:2 < 3))) $red (= true)
-(set: $red to (text:(else:))) $red (= false)
-(set: $red to (text:(unless:true))) $red (= false)
-(set: $red to (text:(elseif:false))) $red (= false)
-(set: $red to (text:(else:))) $red (= true)
+(if: 3 > 2)[True] (= True)
+(if: 3 < 2)[False] (= < blank >)
+(set: $b to (else-if: 1<3))
+$b[True] (= True)

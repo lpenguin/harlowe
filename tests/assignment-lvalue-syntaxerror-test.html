@@ -4,10 +4,10 @@
 <tw-story></tw-story><script data-main="../js/harlowe.js" src="../node_modules/requirejs/require.js"></script>
 <tw-storydata options="debug" startnode="1">
 <tw-passagedata pid="1" name="1" position="512,384" data-t8n="instant">
-(set: to 2)
-(set: $red $red to 2)
-(set: $red and $red to 2)
-(set: $red into 2)
-(set: 2 into $red)
-(put: $red into 2)
-(put: $red to 2)
+(set: to 2) (= error)
+(set: $red $red to 2) (= JS error)
+(set: $red and $red to 2) (= error)
+(set: $red into 2) (= error)
+(set: 2 into $red) (= error)
+(put: $red into 2) (= error)
+(put: $red to 2) (= error)
