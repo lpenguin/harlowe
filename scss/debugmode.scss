@@ -126,47 +126,38 @@
 	}
 	
 	/* Show destinations of links */
-	tw-link::after,	 tw-broken-link::after
-	{
+	tw-link::after,	 tw-broken-link::after {
 		@include tiny-annotation();
 		content: attr(passage-name);
 	}
 }
 
-@keyframes enchantment 
-{
+@keyframes enchantment {
 	0%,to { border-color: hsl( 30,100%,70%) }
 	50%   { border-color: hsl(160,100%,70%) }
 }
-@-webkit-keyframes enchantment 
-{
+@-webkit-keyframes enchantment {
 	0%,to { border-color: hsl( 30,100%,70%); }
 	50%   { border-color: hsl(160,100%,70%); }
 }
 
 /* The debug button */
 
-tw-debugger
-{
+tw-debugger {
 	position:fixed;
 	bottom:0;
 	right:0;
-	width:20%;
 	min-width: 10em;
-	height:5%;
 	min-height: 1em;
 	padding: 1em;
 	font-size: 1.5em;
-	@media screen and (max-width: 1280px)
-	{
+	@media screen and (max-width: 1280px) {
 		font-size: 1.25em;
 	}
-	@media screen and (max-width: 960px)
-	{
+	@media screen and (max-width: 960px) {
 		font-size: 1em;
 	}
-	@media screen and (max-width: 640px)
-	{
+	@media screen and (max-width: 640px) {
 		font-size: 0.8em;
 	}
 	border: {
@@ -177,8 +168,7 @@ tw-debugger
 	background: #fff;
 	transition: opacity 0.2s; -webkit-transition: opacity 0.2s;
 	opacity: 0.8;
-	&:hover
-	{
+	&:hover {
 		opacity: 1;
 	}
 }
@@ -193,4 +183,3 @@ tw-debugger
 		box-shadow: inset #ddd 3px 5px 0.5em;
 	}
 }
-

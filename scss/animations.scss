@@ -13,38 +13,32 @@
             transform: $transforms;
 }
 
-@include keyframes(appear)
-{
+@include keyframes(appear) {
 	0% { opacity: 0 }
 	to { opacity: 1 }
 }
 
-@include keyframes(fade-in-out)
-{
+@include keyframes(fade-in-out) {
 	0%,to { opacity: 0 }
 	50% { opacity: 1 }
 }
 
-@include keyframes(rumble)
-{
+@include keyframes(rumble) {
 	0%,to {}
 	50% { @include transform(translateY(-0.2em)) }
 }
 
-@include keyframes(shudder)
-{
+@include keyframes(shudder) {
 	0%,to {}
 	50% { @include transform(translateX(0.2em)) }
 }
 
-@include keyframes(box-flash)
-{
+@include keyframes(box-flash) {
 	0% { background-color: white; color: white; }
 	to {}
 }
 
-@include keyframes(pulse)
-{
+@include keyframes(pulse) {
 	0%  { @include transform(scale(0,0)) }
 	20% { @include transform(scale(1.2,1.2)) }
 	40% { @include transform(scale(0.9,0.9)) }
@@ -55,8 +49,7 @@
 
 /* Slightly eased-out shudders */
 
-@include keyframes(shudder-in)
-{
+@include keyframes(shudder-in) {
    0%, to {        @include transform(translateX(0em));    }
    5%, 25%, 45% {  @include transform(translateX(-1em));   }
    15%, 35%, 55% { @include transform(translateX(1em));    }

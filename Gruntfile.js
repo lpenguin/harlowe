@@ -148,7 +148,7 @@ module.exports = function (grunt) {
 	grunt.loadNpmTasks('grunt-contrib-cssmin');
 	grunt.loadNpmTasks('grunt-text-replace');
 
-	grunt.registerTask('default', [ 'jshint', 'requirejs', 'sass', 'cssmin']);
+	grunt.registerTask('default', [ 'clean', 'jshint', 'sass', 'cssmin', 'requirejs']);
 	grunt.registerTask('runtime', [ 'requirejs', 'yuidoc', 'sass', 'cssmin', 'replace:runtime']);
 	grunt.registerTask('release', [
 		'clean', 'yuidoc'
