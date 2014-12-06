@@ -35,12 +35,18 @@ function($, Story, Utils, Operations) {
 				if (el && el.spreader === true) {
 					/*
 						Currently, the full gamut of spreadable
-						JS objects isn't available - only arrays and strings.
+						JS objects isn't available - only arrays, sets and strings.
 					*/
-					if (Array.isArray(el.value) || typeof el.value === "string") {
+					if (Array.isArray(el.value)
+							|| typeof el.value === "string") {
 						for(var i = 0; i < el.value.length; i++) {
 							newArgs.push(el.value[i]);
 						}
+					}
+					else if (el.value instanceof Set) {
+						el.value.forEach(function(item) {
+							newArgs.push(item);
+						});
 					}
 					else {
 						newArgs.push(

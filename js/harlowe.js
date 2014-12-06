@@ -1,17 +1,27 @@
+/*
+	This require.config call must be in here, so that local testing of Harlowe
+	can be conducted without having to recompile harlowe.min.js.
+*/
 require.config({
 	paths: {
 		// External libraries
-		jquery:          './lib/jquery',
-		lzstring:        './lib/lzstring',
-		es6shims:        './lib/es6shims',
+		jquery:          '../node_modules/jquery/dist/jquery',
+		"lz-string":     '../node_modules/lz-string/libs/lz-string-1.3.3',
+		almond:          '../node_modules/almond/almond',
+		"es6-shim":      '../node_modules/es6-shim/es6-shim',
+		jqueryplugins:   'utils/jqueryplugins',
 		// Utils
-		utils:           './utils/utils',
-		hookutils:       './utils/hookutils',
-		selectors:       './utils/selectors',
-		regexstrings:    './utils/regexstrings',
-		customelements:  './utils/customelements',
-		jqueryplugins:   './utils/jqueryplugins',
-	}
+		utils:           'utils/utils',
+		hookutils:       'utils/hookutils',
+		selectors:       'utils/selectors',
+		regexstrings:    'utils/regexstrings',
+		customelements:  'utils/customelements',
+	},
+	deps: [
+		'jquery',
+		'es6-shim',
+		'jqueryplugins',
+	],
 });
 require(['jquery', 'renderer', 'story', 'state', 'engine', 'utils', 'selectors', 'macrolib', 'repl'],
 		function ($, Renderer, Story, State, Engine, Utils, Selectors) {

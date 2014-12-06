@@ -1,4 +1,4 @@
-define([], function() {
+define(['utils'], function(Utils) {
 	/*
 		AssignmentRequests represent an assignment statement. Different
 		macros may handle this request differently (for instance,
@@ -22,6 +22,9 @@ define([], function() {
 		},
 		
 		create: function(dest, src, operator) {
+			// Assert: dest is a varRef
+			Utils.assert("propertyChain" in dest && "object" in dest);
+			
 			return Object.assign(Object.create(this), {
 				dest:              dest,
 				src:               src,

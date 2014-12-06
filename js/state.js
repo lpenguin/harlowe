@@ -1,4 +1,4 @@
-define(['story', 'utils', 'lzstring'], function(Story, Utils, LZString) {
+define(['story', 'utils', 'lz-string'], function(Story, Utils, LZString) {
 	"use strict";
 	/**
 		State

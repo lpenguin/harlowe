@@ -31,6 +31,16 @@ define(['utils', 'state', 'story', 'datatypes/colour', 'datatypes/assignmentrequ
 	function isObject(value) {
 		return !!value && (typeof value === "object" || typeof value === "function");
 	}
+	
+	/*
+		Next, a quick function used for distinguishing the 3 types of collections
+		native to TwineScript.
+	*/
+	function collectionType(value) {
+		return Array.isArray(value) ? "array" :
+			value instanceof Map ? "datamap" :
+			value instanceof Set ? "dataset" : "object";
+	}
 	/*
 		Next, a shortcut to determine whether a given value should have
 		sequential collection functionality (e.g. Array, String, other stuff).
@@ -56,6 +66,15 @@ define(['utils', 'state', 'story', 'datatypes/colour', 'datatypes/assignmentrequ
 		*/
 		if (Array.isArray(value)) {
 			return [].concat(value);
+		}
+		/*
+			For ES6 collections, we can depend on the constructors.
+		*/
+		if (value instanceof Map) {
+			return new Map(value);
+		}
+		if (value instanceof Set) {
+			return new Set(value);
 		}
 		/*
 			If it's a function, Function#bind() makes a copy without altering its 'this'.
@@ -116,7 +135,13 @@ define(['utils', 'state', 'story', 'datatypes/colour', 'datatypes/assignmentrequ
 		return (isObject(obj) && "TwineScript_ObjectName" in obj)
 			? obj.TwineScript_ObjectName
 			: Array.isArray(obj) ? "an array"
+			: obj instanceof Map ? "a datamap"
+			: obj instanceof Set ? "a dataset"
 			: (typeof obj === "string" || typeof obj === "number") ? 'the ' + typeof obj + " " + Utils.toJSLiteral(obj)
+			/*
+				If it's a null-object, it can't be stringified with String().
+			*/
+			: Object.getPrototypeOf(obj) === null ? "a bare object"
 			/*
 				For ES6 symbol compatibility, we must use String(obj) here instead of obj + "".
 				I don't actually expect symbols to enter the TwineScript userland, but better safe.
@@ -128,8 +153,8 @@ define(['utils', 'state', 'story', 'datatypes/colour', 'datatypes/assignmentrequ
 		checks. Generally, a TwineScript datatype prototype should be supplied to this function,
 		compared to objectName, which typically should receive instances.
 		
-		Alternatively, for Javascript types, the global constructors String, Number, Boolean
-		and Array may be given.
+		Alternatively, for Javascript types, the global constructors String, Number, Boolean,
+		Map, Set, and Array may be given.
 		
 		Finally, certain "type descriptor" objects are used by Macros, and take the form
 			{ pattern: {String, innerType: {Array|Object|String} }
@@ -157,9 +182,11 @@ define(['utils', 'state', 'story', 'datatypes/colour', 'datatypes/assignmentrequ
 			/*
 				Second, if it's a global constructor, simply return its name in lowercase.
 			*/
-			(obj    === String ||
+			(   obj === String ||
 				obj === Number ||
 				obj === Boolean)  ? "a "  + obj.name.toLowerCase()
+			:  (obj === Map ||
+				obj === Set)      ? "a data" + obj.name.toLowerCase()
 			:   obj === Array     ? "an " + obj.name.toLowerCase()
 			/*
 				Otherwise, defer to the TwineScript_TypeName, or TwineScript_ObjectName
@@ -194,28 +221,25 @@ define(['utils', 'state', 'story', 'datatypes/colour', 'datatypes/assignmentrequ
 		/*
 			Sequentials have special sugar property indices:
 			
-			.length: this falls back to JS's length property for Arrays and Strings.
-			.last: antonym of .1st
-			.1st, .2nd etc.: 1-indexed synonyms for .0, .1, .2.
-			
-			As you can see, .n is 0-indexed and falls back to JS,
-			and .nth is 1-indexed sugar above it.
+			length: this falls back to JS's length property for Arrays and Strings.
+			1st, 2nd etc.: indices.
+			last: antonym of 1st.
+			2nd-last, 3rd-last: reverse indices.
 		*/
 		if (isSequential(obj)) {
+			/*
+				Note that this glibly allows "1rd" or "2st".
+				There's no real problem with this.
+			*/
+			if ((match = /(\d+)(?:st|[nr]d|th)/.exec(prop))) {
+				prop = match[1] - 1 + "";
+			}
 			if (prop === "last") {
 				prop = obj.length - 1 + "";
 			}
-			/*
-				This should generously allow "1rd" or "2st".
-			*/
-			if ((match = /(\d+)(?:st|[nr]d|th)/.exec(prop))) {
-				prop = match[1];
-				// Notice that this guards against NaN (which is not > or < anything).
-				if (+prop > 0) {
-					prop = prop - 1 + "";
-				}
+			if ((match = /(\d+)(?:st|[nr]d|th)-last/.exec(prop))) {
+				prop = obj.length - match[1] + "";
 			}
-
 		}
 		return prop;
 	}
@@ -265,16 +289,15 @@ define(['utils', 'state', 'story', 'datatypes/colour', 'datatypes/assignmentrequ
 				return error;
 			}
 			// VarRefs cannot have operations performed on them.
-			// TODO: Except &&, perhaps?
 			if (left && left.varref) {
 				return new TypeError("I can't give an expression a new value.");
 			}
 			/*
 				This checks that left and right are generally different types
-				(both different typeof or, if both are object, different Arrayness)
+				(both different typeof or, if both are object, different collection types)
 			*/
 			if (typeof left !== typeof right
-				|| Array.isArray(left) !== Array.isArray(right)) {
+				|| collectionType(left) !== collectionType(right)) {
 				/*
 					Attempt to coerce to string using TwineScript specific
 					methods, and return an error if it fails.
@@ -320,6 +343,12 @@ define(['utils', 'state', 'story', 'datatypes/colour', 'datatypes/assignmentrequ
 			*/
 			if (isSequential(container)) {
 				return container.indexOf(obj) > -1;
+			}
+			/*
+				For Maps and Sets, use .has().
+			*/
+			if (container instanceof Map || container instanceof Set) {
+				return container.has(obj);
 			}
 			/*
 				For plain object containers, it returns true if
@@ -387,12 +416,13 @@ define(['utils', 'state', 'story', 'datatypes/colour', 'datatypes/assignmentrequ
 		},
 		
 		"+":  doNotCoerce(function(l, r) {
+			var ret;
 			/*
 				I'm not a fan of the fact that + is both concatenator and
 				arithmetic op, but I guess it's close to what people expect.
 				Nevertheless, applying the logic that a string is just as much a
 				sequential collection as an array, I feel I can overload +
-				on arrays to mean immutable array concatenation.
+				on collections to mean immutable concatenation or set union.
 			*/
 			if (Array.isArray(l)) {
 				/*
@@ -400,6 +430,25 @@ define(['utils', 'state', 'story', 'datatypes/colour', 'datatypes/assignmentrequ
 					the right side also be an array.
 				*/
 				return [].concat(l, r);
+			}
+			/*
+				For Maps and Sets, create a new instance combining left and right.
+				You may note that in the case of Maps, values of keys used on the
+				right side trump those on the left side.
+			*/
+			if (l instanceof Map) {
+				ret = new Map(l);
+				r.forEach(function(v,k) {
+					ret.set(k, v);
+				});
+				return ret;
+			}
+			if (l instanceof Set) {
+				ret = new Set(l);
+				r.forEach(function(v) {
+					ret.add(v);
+				});
+				return ret;
 			}
 			/*
 				If a TwineScript object implements a + method, use that.
@@ -410,6 +459,7 @@ define(['utils', 'state', 'story', 'datatypes/colour', 'datatypes/assignmentrequ
 			return l + r;
 		}),
 		"-":  doNotCoerce(function(l, r) {
+			var ret;
 			/*
 				Overloading - to mean "remove all instances from".
 				So, "reed" - "e" = "rd", and [1,3,5,3] - 3 = [1,5].
@@ -421,6 +471,16 @@ define(['utils', 'state', 'story', 'datatypes/colour', 'datatypes/assignmentrequ
 					from an array requires it be wrapped in an (a:) macro.
 				*/
 				return l.filter(function(e) { return r.indexOf(e) === -1; });
+			}
+			/*
+				Sets, but not Maps, can be subtracted.
+			*/
+			else if (l instanceof Set) {
+				ret = new Set(l);
+				r.forEach(function(v) {
+					ret.delete(v);
+				});
+				return ret;
 			}
 			else if (typeof l === "string") {
 				/*
@@ -494,7 +554,7 @@ define(['utils', 'state', 'story', 'datatypes/colour', 'datatypes/assignmentrequ
 				differential properties on the prototype chain. Oh well,
 				it's probably not that good an idea anyway.
 			*/
-			if (!(prop in obj)) {
+			if ((obj instanceof Map) ? !obj.has(prop) : !(prop in obj)) {
 				/*
 					If a default value is given (only for State.variables,
 					currently) then return that.
@@ -508,7 +568,7 @@ define(['utils', 'state', 'story', 'datatypes/colour', 'datatypes/assignmentrequ
 				return new ReferenceError("I can't find a '" + prop + "' data key in "
 					+ objectName(obj));
 			}
-			return obj[prop];
+			return (obj instanceof Map) ? obj.get(prop) : obj[prop];
 		},
 		
 		/*
@@ -572,7 +632,27 @@ define(['utils', 'state', 'story', 'datatypes/colour', 'datatypes/assignmentrequ
 			property chain is valid, and then returning an object that pairs the chain
 			with the variable.
 		*/
-		makeVarRef: (function(){
+		makeVarRef: (function() {
+			/*
+				As Maps have a different means of accessing stored values
+				than arrays, these tiny utility functions are needed.
+				They have the slight bonus that they can fit into some .reduce() calls
+				below, which potentially offsets the cost of being re-created for each varRef.
+			*/
+			function objectOrMapGet(obj, prop) {
+				if (obj instanceof Map) {
+					return obj.get(prop);
+				} else {
+					return obj[prop];
+				}
+			}
+			function objectOrMapSet(obj, prop, value) {
+				if (obj instanceof Map) {
+					obj.set(prop, value);
+				} else {
+					obj[prop] = value;
+				}
+			}
 			/*
 				The prototype object for VarRefs. Currently only has
 				one method on it.
@@ -588,9 +668,7 @@ define(['utils', 'state', 'story', 'datatypes/colour', 'datatypes/assignmentrequ
 					for the assignment operation).
 				*/
 				get deepestObject() {
-					return this.propertyChain.slice(0, -1).reduce(function(obj, f) {
-						return obj[f];
-					}, this.object);
+					return this.propertyChain.slice(0, -1).reduce(objectOrMapGet, this.object);
 				},
 				
 				/*
@@ -609,14 +687,13 @@ define(['utils', 'state', 'story', 'datatypes/colour', 'datatypes/assignmentrequ
 				},
 				set: function(value) {
 					/*
-						All objects in TwineScript are passed by value.
+						Most all objects in TwineScript are passed by value.
+						Hence, setting to an object duplicates it.
 					*/
 					if (isObject(value)) {
-						this.deepestObject[this.deepestProperty] = clone(value);
+						value = clone(value);
 					}
-					else {
-						this.deepestObject[this.deepestProperty] = value;
-					}
+					objectOrMapSet(this.deepestObject, this.deepestProperty, value);
 				},
 				delete: function() {
 					Operations.delete(this.deepestObject, this.deepestProperty);
@@ -659,7 +736,7 @@ define(['utils', 'state', 'story', 'datatypes/colour', 'datatypes/assignmentrequ
 						Move to the next object in the chain (which is, as you know,
 						another object property of the current object).
 					*/
-					object = object[e];
+					object = objectOrMapGet(object, e);
 					
 					return {
 						chain:  chain,
@@ -671,12 +748,7 @@ define(['utils', 'state', 'story', 'datatypes/colour', 'datatypes/assignmentrequ
 					This allows "it" to be used in e.g. (set: $red.x to it + 2)
 					by setting it to the correct object value ($red.x instead of $red).
 				*/
-				It = propertyChain.reduce(function(object,e) {
-					/*
-						Reference down the chain until it's at an end.
-					*/
-					return object[e];
-				}, object);
+				It = propertyChain.reduce(objectOrMapGet, object);
 				
 				return Object.assign(Object.create(VarRefProto), {
 					object: object,

@@ -171,7 +171,7 @@
 			New text alignment syntax.
 		*/
 		align = ws + "(==+>|<=+|=+><=+|<==+>)" + ws + eol,
-
+		
 		passageLink = {
 			opener:            "\\[\\[",
 			text:              "(" + notChars("]") + ")",
@@ -181,12 +181,12 @@
 			legacySeparator:   "\\|",
 			legacyText:        "(" + notChars("]|") + "?)",
 		},
-
+		
 		identifier = "it|time",
 		
 		simpleVariable = "\\$(" + anyLetter.replace("\\-", "") + "+)",
 		
-		variableProperty = "\\.(" + anyLetter.replace("\\-", "") + "+)",
+		variableProperty = "'s" + ws + "(" + anyLetter.replace("\\-", "") + "+)",
 		
 		variable = simpleVariable + "(?:" + variableProperty + ")*",
 		
@@ -223,7 +223,7 @@
 		*/
 		number = '\\b(\\d+(?:\\.\\d+)?(?:[eE][+\\-]?\\d+)?|NaN)' + notBefore("m?s") + '\\b'
 		;
-		console.log(number);
+	
 	passageLink.main =
 		passageLink.opener
 		+ either(

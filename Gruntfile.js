@@ -69,10 +69,11 @@ module.exports = function (grunt) {
 				options: {
 					baseUrl: 'js',
 					mainConfigFile: 'js/harlowe.js',
-					include: ['lib/almond', 'harlowe'],
-					insertRequire: ['harlowe'],
 					name: 'harlowe',
+					include: ['almond'],
+					insertRequire: ['harlowe'],
 					wrap: true,
+					useStrict: true,
 					out: destJS
 				}
 			}

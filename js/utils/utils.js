@@ -1,4 +1,4 @@
-define(['jquery', 'markup/markup', 'selectors', 'customelements', 'jqueryplugins'], function($, TwineMarkup, Selectors) {
+define(['jquery', 'markup/markup', 'selectors', 'customelements'], function($, TwineMarkup, Selectors) {
 	"use strict";
 
 	var

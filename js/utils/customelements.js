@@ -1,4 +1,4 @@
-define(['es6shims'], function() {
+define([], function() {
 	"use strict";
 	/*
 		Custom Elements

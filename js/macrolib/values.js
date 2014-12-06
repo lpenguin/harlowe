@@ -339,8 +339,8 @@ function(Macros, Utils, State, Story, Engine, AssignmentRequest) {
 		
 		/*
 			(a:), (array:)
-			Used for creating Array literals.
-			TODO: Make it "concat-spread" arrays passed into it??
+			Used for creating plain JS arrays, which are a standard
+			Harlowe data type.
 		*/
 		a:     [Array.of, zeroOrMore(Any)],
 		array: [Array.of, zeroOrMore(Any)],
@@ -370,9 +370,62 @@ function(Macros, Utils, State, Story, Engine, AssignmentRequest) {
 			return ret;
 		},
 		[Number, Number]],
+		
+		/*
+			(datamap:)
+			Similar to (a:), these create standard JS Maps and Sets.
+			But, instead of supplying an iterator, you supply keys and values
+			interleaved: (datamap: key, value, key, value).
+			
+			One concern about maps: even though they are a Map,
+			inserting a non-primitive in key position is problematic because
+			retrieving the key uses compare-by-reference, and most
+			of Twine 2's unique object types are immutable (hence, can't be
+			used in by-reference comparisons).
+		*/
+		datamap: [function() {
+			var key, ret;
+			/*
+				This converts the flat arguments "array" into an array of
+				key-value pairs [[key, value],[key, value]].
+				During each odd iteration, the element is the key.
+				Then, the element is the value.
+			*/
+			ret = new Map(Array.from(arguments).reduce(function(array, element) {
+				if (key === undefined) {
+					key = element;
+				}
+				else {
+					array.push([key, element]);
+					key = undefined;
+				}
+				return array;
+			}, []));
+			
+			/*
+				One error can result: if there's an odd number of arguments, that
+				means a key has not been given a value.
+			*/
+			if (key !== undefined) {
+				return new TypeError("This datamap has a key without a value.");
+			}
+			return ret;
+		}, zeroOrMore(Any)],
+		
+		/*
+			(dataset:)
+			Sets are more straightforward - they can accept plain arrays
+			straight off.
+		*/
+		dataset: [function() {
+			return new Set(Array.from(arguments));
+		}, zeroOrMore(Any)],
 
-		// Return the number of times the named passage was visited.
-		// For multiple arguments, return the smallest visited value.
+		/*
+			(visited:)
+			Return the number of times the named passage was visited.
+			For multiple arguments, return the smallest visited value.
+		*/
 		visited: [function visited(name) {
 			var ret, i;
 			if (arguments.length > 1) {
