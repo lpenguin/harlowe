@@ -15,13 +15,18 @@ define(['utils', 'state', 'story', 'datatypes/colour', 'datatypes/assignmentrequ
 			in a comparison operation was. Since its scope is so ephemeral,
 			it can just be a shared identifier right here.
 		*/
-		It = false,
+		It = 0,
 		/*
 			Used to determine if a property name is an array index.
 			If negative indexing sugar is ever added, this could
 			be replaced with a function.
 		*/
-		numericIndex = /^(?:[1-9]\d*|0)$/;
+		numericIndex = /^(?:[1-9]\d*|0)$/,
+		/*
+			The default defaultValue, used for all uninitialised properties
+			and variables, is 0.
+		*/
+		defaultValue = 0;
 	
 	/*
 		First, a quick shortcut to determine whether the
@@ -141,7 +146,7 @@ define(['utils', 'state', 'story', 'datatypes/colour', 'datatypes/assignmentrequ
 			/*
 				If it's a null-object, it can't be stringified with String().
 			*/
-			: Object.getPrototypeOf(obj) === null ? "a bare object"
+			: Object.getPrototypeOf(Object(obj)) === null ? "a bare object"
 			/*
 				For ES6 symbol compatibility, we must use String(obj) here instead of obj + "".
 				I don't actually expect symbols to enter the TwineScript userland, but better safe.
@@ -524,7 +529,7 @@ define(['utils', 'state', 'story', 'datatypes/colour', 'datatypes/assignmentrequ
 			@method get
 			@return {Error|Anything}
 		*/
-		get: function(obj, prop, defaultValue) {
+		get: function(obj, prop) {
 			if (obj === null || obj === undefined) {
 				return new ReferenceError(
 					"I can't get a property named '"
@@ -534,6 +539,10 @@ define(['utils', 'state', 'story', 'datatypes/colour', 'datatypes/assignmentrequ
 					+ "."
 				);
 			}
+			
+			/*
+				First, check for and propagate earlier errors.
+			*/
 			if (Utils.containsError(obj)) {
 				return obj;
 			}
@@ -556,10 +565,11 @@ define(['utils', 'state', 'story', 'datatypes/colour', 'datatypes/assignmentrequ
 			*/
 			if ((obj instanceof Map) ? !obj.has(prop) : !(prop in obj)) {
 				/*
-					If a default value is given (only for State.variables,
-					currently) then return that.
+					If the property is actually a State.variables access,
+					then it's a variable, and uses the defaultValue in place
+					of undefined.
 				*/
-				if (defaultValue !== undefined) {
+				if (obj === State.variables) {
 					return defaultValue;
 				}
 				/*
@@ -606,19 +616,6 @@ define(['utils', 'state', 'story', 'datatypes/colour', 'datatypes/assignmentrequ
 				value: val,
 				spreader: true,
 			};
-		},
-		
-		/*
-			This takes a plain function that is assumed to be a thunk,
-			and attaches some thunk methods and properties to it.
-			
-			Currently, it just attaches an identifying "thunk" property.
-			Thunks should not be observable to TwineScript authors.
-		*/
-		makeThunk: function(fn) {
-			return Object.assign(fn, {
-				thunk: true,
-			});
 		},
 		
 		/*
@@ -747,8 +744,12 @@ define(['utils', 'state', 'story', 'datatypes/colour', 'datatypes/assignmentrequ
 				/*
 					This allows "it" to be used in e.g. (set: $red.x to it + 2)
 					by setting it to the correct object value ($red.x instead of $red).
+					
+					Notice this uses Operations.get in place of objectOrMapGet: this
+					is because It is essentially a special variable, and should use
+					the default value, propagate errors, etc.
 				*/
-				It = propertyChain.reduce(objectOrMapGet, object);
+				It = propertyChain.reduce(Operations.get, object);
 				
 				return Object.assign(Object.create(VarRefProto), {
 					object: object,

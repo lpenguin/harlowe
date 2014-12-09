@@ -1,5 +1,5 @@
 define(['jquery', 'markup/markup', 'story', 'macros', 'utils', 'datatypes/changercommand', 'internaltypes/twinewarning',
-'macrolib/values', 'macrolib/stylechangers', 'macrolib/sensors', 'macrolib/enchantments', 'macrolib/commands', 'macrolib/links'],
+'macrolib/values', 'macrolib/stylechangers', 'macrolib/enchantments', 'macrolib/commands', 'macrolib/links'],
 function($, TwineMarkup, Story, Macros, Utils, ChangerCommand, TwineWarning) {
 	"use strict";
 	/*
@@ -114,6 +114,6 @@ function($, TwineMarkup, Story, Macros, Utils, ChangerCommand, TwineWarning) {
 				return d;
 			}
 		);
-		
+
 	Utils.log("Loaded the built-in macros.");
 });

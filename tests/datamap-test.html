@@ -11,8 +11,10 @@ Basic:
 (print: "Armour" is in $person) (= true)
 (set: $person to it + (datamap: "Mana", 3))
 (print: $person contains "Mana") (= true)
+$person's Armour (= 10)
+$person's Weapon (= error)
 
 Nested:
 
 (set: $person's bag to (datamap: "seeds", 2))
-(print: $person's bag's seeds)
+$person's bag's seeds (= 2)

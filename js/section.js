@@ -52,6 +52,7 @@ function($, Utils, Selectors, Renderer, Environ, Story, State, HookUtils, HookSe
 	function runExpression(expr) {
 		/*
 			Become cognizant of any hook connected to this expression.
+			To be connected, it must be the very next element. 
 		*/
 		var nextHook = expr.next("tw-hook"),
 			/*
@@ -84,42 +85,20 @@ function($, Utils, Selectors, Renderer, Environ, Story, State, HookUtils, HookSe
 					result
 				);
 			}
-		}	
+		}
 		/*
-			The result can be any of these values, and
-			should be put to use in the following ways:
-			
-			falsy primitive:
-				Remove the nearest hook.
-			HookSet:
-				Print the text of the first hook in the set.
-			stringy primitive:
-				Print into the passage.
-			function with .changer property:
-				Assume this was returned by a changer macro.
-				Call runChangerFunction with it and the nearest hook
-				as arguments.
-			function:
-				Run it, passing the nearest hook and innerInstance.
+			Else, if it's a live macro, please run that.
+		*/
+		else if (result && result.live) {
+			runLiveHook.call(this, nextHook, result.delay);
+		}
+		/*
+			Otherwise, if it's a function:
+			Run it, passing the nearest hook and this.
+			I'm not sure what exactly relies on this... :|
 		*/
 		else if (typeof result === "function") {
-			if (result.sensor) {
-				/*
-					Sensors, unlike changers, require a hook to be present - hence the
-					word "must" instead of "should".
-				*/
-				if (!nextHook.length) {
-					renderError(new TypeError(
-						"The (" + result.macroName + ":) macro must be attached to a hook."
-					), expr);
-				}
-				else {
-					runSensorFunction.call(this, result, nextHook);
-				}
-			}
-			else {
-				result(nextHook, this);
-			}
+			result(nextHook, this);
 		}
 		/*
 			Print any error that resulted.
@@ -196,36 +175,31 @@ function($, Utils, Selectors, Renderer, Environ, Story, State, HookUtils, HookSe
 	}
 	
 	/**
-		A sensor function is a function returned from a <tw-expression> evaluation
-		that represents a sensor: an expression whose value is watched.
-		
-		An example of a simple sensor is
-			when(time > 2s)
-		We must check whether the expression is true on every frame, from now until
-		the passage is left.
+		A live hook is one that has the (live:) macro attached.
+		It repeatedly re-renders, allowing a passage to have "live" behaviour.
 		
 		This is exclusively called by runExpression().
 		
-		@method runSensorFunction
+		@method runLiveHook
 		@private
 		@param {Function} sensor The sensor function.
 		@param {jQuery} target The <tw-hook> that the sensor is connected to.
+		@param {Number} delay The timeout delay.
 	*/
-	function runSensorFunction(sensor, target) {
+	function runLiveHook(target, delay) {
 		/*
-			Remember the code of the target hook
-			that will be run if the sensor triggers.
+			Remember the code of the hook.
 			
 			(We also remove (pop) the code from the hook
 			so that doExpressions() doesn't render it.)
 		*/
 		var code = target.popAttr('code') || "",
-			/*
-				This stores the current state of the target
-				hook - whether its code is rendered, or removed.
-			*/
-			on,
-			recursiveSensing;
+			recursive;
+		
+		/*
+			Default the delay to 20ms
+		*/
+		delay = delay || 20;
 		
 		/*
 			This closure runs every frame from now on, until
@@ -234,49 +208,18 @@ function($, Utils, Selectors, Renderer, Environ, Story, State, HookUtils, HookSe
 			Notice that as this is bound, giving it a name isn't
 			all that useful.
 		*/
-		recursiveSensing = (function() {
-			/*
-				Check if the sensor has triggered.
-			*/
-			var result = sensor();
+		recursive = (function() {
+			var done = false;
 			
-			/*
-				If an error resulted (which may occur if re-evaluating the
-				sensor's condition caused a TypeError or something) then
-				just use that error as the result value.
-			*/
-			if (Utils.containsError(result)) {
-				renderError(result, target);
-				return;
-			}
-			/*
-				Act on the data given - if the value differs from the previous,
-				alter the target hook.
-			*/
-			Utils.assert("done" in result && "value" in result);
-			if (result.value !== on) {
-				on = result.value;
-				/*
-					You may note that only an off->on change is when
-					rendering of the hook code occurs - and, moreover,
-					each off->on change triggers a fresh re-render of
-					hook code, with nothing cached. This is deliberate,
-					and, I trust, intuitive.
-				*/
-				if (on) {
-					this.renderInto(code, target);
-				}
-				else {
-					target.empty();
-				}
-			}
+			this.renderInto(code, target, {append:'replace'});
+			
 			// If it's not done, keep sensing.
-			if (!result.done || !this.inDOM()) {
-				requestAnimationFrame(recursiveSensing);
+			if (!done || !this.inDOM()) {
+				setTimeout(recursive, delay);
 			}
 		}.bind(this));
 		
-		recursiveSensing();
+		setTimeout(recursive, delay);
 	}
 	
 	Section = {
@@ -435,7 +378,7 @@ function($, Utils, Selectors, Renderer, Environ, Story, State, HookUtils, HookSe
 			This is used primarily by Engine.showPassage() to render
 			passage data into a fresh <tw-passage>, but is also used to
 			render TwineMarkup into <tw-expression>s (by runExpression())
-			and <tw-hook>s (by render() and runSensorFunction()).
+			and <tw-hook>s (by render() and runLiveHook()).
 			
 			@method renderInto
 			@param {String} code The TwineMarkup code to render into the target.

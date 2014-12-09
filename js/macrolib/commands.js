@@ -92,5 +92,22 @@ function(Macros, Utils, Story, Engine) {
 			};
 		},
 		[String])
-		;
+	
+		/*
+			(live:)
+			This "command" attaches to hooks, similar to the way changers do.
+			Makes an attached hook become "live", which means that it's repeatedly re-run
+			every certain number of seconds. This and (event:) are the main means of
+			making a passage dynamic and changing over time, or in reaction to an event.
+		*/
+		(["live"],
+			function live(_, delay) {
+				return {
+					live: true,
+					delay: delay
+				};
+			},
+			[Number]
+		);
+		
 });

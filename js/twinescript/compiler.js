@@ -97,17 +97,6 @@ define(['utils'], function(Utils) {
 		return (array.length - 1) - indexOfType.apply(0, a);
 	}
 	
-	/*
-		A helper function for compile(). This takes some compiled
-		Javascript values in string form, and joins them into a compiled
-		Javascript thunk function.
-	*/
-	function compileThunk(/* variadic */) {		
-		return 'Operations.makeThunk(function(){return ['
-			+ Array.from(arguments).join()
-			+ ']})';
-	}
-	
 	/**
 		This takes a single TwineMarkup token being used in an assignmentRequest,
 		and returns a tuple that contains an object reference, and a property name or chain.
@@ -391,10 +380,7 @@ define(['utils'], function(Utils) {
 		else if ((i = indexOfType(tokens, "simpleVariable")) >-1) {
 			midString = " Operations.get(State.variables,"
 				+ Utils.toJSLiteral(tokens[i].name)
-				/*
-					Here is where the default value for variables is passed!
-				*/
-				+ ", 0)";
+				+ ")";
 			needsLeft = needsRight = false;
 		}
 		else if ((i = indexOfType(tokens, "macro")) >-1) {
@@ -416,30 +402,24 @@ define(['utils'], function(Utils) {
 					: '"' + tokens[i].name + '"'
 				)
 				/*
-					The arguments given to a macro instance must be converted to a thunk.
-					The reason is that "live" macros need to be reliably called again and
-					again, using the same variable bindings in their original invocations.
-					
-					For instance, consider the macro instance "(when: time > 2s)". The "time"
-					variable needs to be re-evaluated every time - something which isn't
-					possible by just transpiling the macro instance into a JS function call.
+					The arguments given to a macro instance are given in an array.
 				*/
-				+ ', ' + compileThunk(
-					/*
-						The first argument to macros must be the current section,
-						so as to give the macros' functions access to data
-						about the runtime state (such as, whether this expression
-						is nested within another one).
-					*/
-					"section",
-					/*
-						You may notice here, unseen, is the assumption that Javascript array literals
-						and TwineScript macro invocations use the same character to separate arguments/items.
-						(That, of course, being the comma - (macro: 1,2,3) vs [1,2,3].)
-						This is currently true, but it is nonetheless a fairly bold assumption.
-					*/
-					compile(tokens[i].children.slice(1))
-				) + ')';
+				+ ', ['
+				/*
+					The first argument to macros must be the current section,
+					so as to give the macros' functions access to data
+					about the runtime state (such as, whether this expression
+					is nested within another one).
+				*/
+				+ "section,"
+				/*
+					You may notice here, unseen, is the assumption that Javascript array literals
+					and TwineScript macro invocations use the same character to separate arguments/items.
+					(That, of course, being the comma - (macro: 1,2,3) vs [1,2,3].)
+					This is currently true, but it is nonetheless a fairly bold assumption.
+				*/
+				+ compile(tokens[i].children.slice(1))
+				+ '])';
 			needsLeft = needsRight = false;
 		}
 		else if ((i = indexOfType(tokens, "grouping")) >-1) {

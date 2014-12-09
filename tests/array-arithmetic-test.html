@@ -6,9 +6,9 @@
 <tw-passagedata pid="1" name="1" position="512,384" data-t8n="instant">
 (set:$bag to (a:1,3))
 (set:$bag to it + (a:5))
-(set:$bag to (it - (a:$bag.0)) + (a:7))
+(set:$bag to (it - (a:$bag's 1st)) + (a:7))
 $bag (= 3,5,7)
 (set:$bag to (a:1,1,3))
 (set:$bag to it + (a:5))
-(set:$bag to (it - it.0) + (a:7))
+(set:$bag to (it - its 1st) + (a:7))
 $bag (= 1,3,5,7)

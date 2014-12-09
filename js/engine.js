@@ -57,7 +57,7 @@ function ($, Story, Utils, Selectors, State, Section) {
 			// Passage element to create
 			newPassage,
 			// Transition ID
-			// TEMPORARY measure: must change when customisable links are implemented.
+			// Temporary measure: must change when customisable links are implemented.
 			t8n = "instant",
 			// The <tw-passagedata> element
 			passageData = Story.passageWithID(id),
@@ -116,7 +116,8 @@ function ($, Story, Utils, Selectors, State, Section) {
 			Utils.unescape(
 				passageData.html()
 			),
-			newPassage
+			newPassage,
+			{ transition: "dissolve" }
 		);
 		$('body').append(el);
 	}

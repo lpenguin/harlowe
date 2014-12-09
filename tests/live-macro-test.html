@@ -1,7 +1,7 @@
 <!DOCTYPE html><meta charset="utf-8">
-<title>When Error Test</title>
+<title>Live Macro Test</title>
 <link rel="stylesheet" href="../build/harlowe-css.css"/>
 <tw-story></tw-story><script data-main="../js/harlowe.js" src="../node_modules/requirejs/require.js"></script>
 <tw-storydata options="debug" startnode="1">
-<tw-passagedata pid="1" name="1" position="512,384">
-(when: time > 2s and (any-of: 1,2,4) > 2)[Hey!] (= an error in 2 seconds)
+<tw-passagedata pid="1" name="1" position="512,384" data-t8n="instant">
+(live:1s)[(set:$cupcakes to it + 1) $cupcakes]

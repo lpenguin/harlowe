@@ -32,7 +32,7 @@ define(['jquery', 'utils', 'renderer'], function($, Utils, Renderer) {
 		append:           "append",
 		
 		// {String} [transition]      Which built-in transition to use.
-		transition:       "dissolve",
+		transition:       "instant",
 		
 		// {Number} [transitionTime]  The duration of the transition, in ms. CURRENTLY UNUSED.
 		transitionTime:   0,

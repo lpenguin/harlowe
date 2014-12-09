@@ -15,20 +15,16 @@ function($, Story, Utils, Operations) {
 		commandRegistry = {};
 		
 	/*
-		Operations.runMacro() passes its arguments as a thunk.
-		See that page for the formal explanation. These two functions, eager and deferred,
-		convert regular Javascript functions to accept a such a thunk as its sole argument.
-		
-		Non-live macros ("eager" macros) don't actually need the thunk - they take it,
-		unwrap it, and discard it. Live macros, however, need to retain
-		it and re-evaluate it over and over.
-		
-		These should currently (August 2014) only be called by
-		Macros.addChanger() and Macros.addValue().
+		This function wraps another function (expected to be a macro implementation
+		function) in such a way that its arguments are spread-out, error-checked,
+		and then passed to the function.
 	*/
-	function eager(fn) {
-		return function eagerMacroResult(argsThunk) {
-			var args = argsThunk();
+	function readArguments(fn) {
+		/*
+			The arguments are already in array form - no need
+			to use Array.from(arguments) here!
+		*/
+		return function macroResult(args) {
 			
 			// Spreaders are spread out now.
 			args = args.reduce(function(newArgs, el) {
@@ -71,47 +67,6 @@ function($, Story, Utils, Operations) {
 				return error;
 			}
 			return fn.apply(0, args);
-		};
-	}
-	
-	/*
-		Conversely, this one wraps the function, fn, in an outer function, O,
-		which takes argsThunk and returns another thunk that calls the args
-		on fn.
-		
-		Hence, this converts fn into a function that joins the argsThunk
-		with the macro's call, creating a combined thunk.
-		
-		Again, this should currently (August 2014) only be called by addSensor.
-	*/
-	function deferred(fn) {
-		return function deferredMacroResult(argsThunk) {
-			/*
-				While macroResultThunk's interior is similar to macroResult,
-				returned up above in eagerFunction(),
-				note that the scope binding of argsThunk is different,
-				and thus it can't really be abstracted out.
-			*/
-			var t = function macroResultThunk() {
-				var args = argsThunk(),
-					// Do the error check now.
-					error = Utils.containsError(args);
-				
-				if (error) {
-					return error;
-				}
-				return fn.apply(0, args);
-			};
-			t.sensor = true;
-			t.TwineScript_Print = function() {
-				return new TypeError("I can't print a sensor macro.");
-			};
-			/*
-				The combined thunk should have the same expando properties
-				("changer", "sensor", etc.) as the initial function.
-			*/
-			Object.assign(t, fn);
-			return t;
 		};
 	}
 	
@@ -192,7 +147,7 @@ function($, Story, Utils, Operations) {
 		error feedback.
 		
 		@param {String|Array}      name            The macro's name(s).
-		@param {Function}          fn              A macro function that does NOT receive a thunk.
+		@param {Function}          fn              A macro function.
 		@param {Array|Object|null} typeSignature   An array of Twine macro parameter type data.
 	*/
 	function typeSignatureCheck(name, fn, typeSignature) {
@@ -348,40 +303,10 @@ function($, Story, Utils, Operations) {
 		addValue: function addValue(name, fn, typeSignature) {
 			Macros.add(name,
 				"value",
-				eager(typeSignatureCheck(name, fn, typeSignature))
+				readArguments(typeSignatureCheck(name, fn, typeSignature))
 			);
 			// Return the function to enable "bubble chaining".
 			return addValue;
-		},
-		
-		/**
-			A high-level wrapper for Macros.add() that takes a plain function, creates a
-			thunk-accepting version of it, and registers it as a live Sensor Macro.
-			
-			Sensors return an object signifying whether to display the
-			attached hook, and whether to continue sensing.
-			
-			The returned object has:
-				{Boolean} value Whether to display or not
-				{Boolean} done Whether to stop sensing.
-			
-			@method addSensor
-			@param {String} name
-			@param {Function} fn
-			@param {Array} typeSignature
-		*/
-		addSensor: function addSensor(name, fn, typeSignature) {
-			fn.sensor = true;
-			fn.macroName = name;
-			fn.toString = function() {
-				return "[A '" + name + "' sensor]";
-			};
-			Macros.add(name,
-				"sensor",
-				deferred(typeSignatureCheck(name, fn, typeSignature))
-			);
-			// Return the function to enable "bubble chaining".
-			return addSensor;
 		},
 	
 		/**
@@ -416,7 +341,7 @@ function($, Story, Utils, Operations) {
 			
 			Macros.add(name,
 				"changer",
-				eager(typeSignatureCheck(name, fn, typeSignature))
+				readArguments(typeSignatureCheck(name, fn, typeSignature))
 			);
 			// I'll explain later. It involves registering the changerCommand implementation.
 			commandRegistry[Array.isArray(name) ? name[0] : name] = changerCommandFn;
@@ -475,10 +400,10 @@ function($, Story, Utils, Operations) {
 			converted to 2 parameters to runMacro:
 			
 			@param {String} name     The macro's name.
-			@param {Function} thunk  A thunk enclosing the expressions
+			@param {Array}  args     An array enclosing the passed arguments.
 			@return The result of the macro function.
 		*/
-		run: function(name, thunk) {
+		run: function(name, args) {
 			var fn;
 			// First and least, the error rejection check.
 			if (Utils.containsError(name)) {
@@ -500,12 +425,11 @@ function($, Story, Utils, Operations) {
 						+ "' because it doesn't exist."
 					);
 				}
-				// TODO: Implement passage macros.
 				return new Error("Passage macros are not implemented yet.");
 			}
 			else fn = Macros.get(name);
 			
-			return fn(thunk);
+			return fn(args);
 		},
 		
 	};
