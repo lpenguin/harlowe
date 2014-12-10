@@ -387,6 +387,10 @@ function($, Story, Utils, Operations) {
 				return {pattern: "rest",             innerType: type };
 			},
 			
+			/*
+				As this isn't a method, but a stand-in "type" alongside
+				Array and String, its name is capitalised.
+			*/
 			Any: {
 				TwineScript_TypeName: "anything",
 			}, // In ES6, this would be a Symbol.

@@ -8,7 +8,8 @@ define(['macros', 'utils', 'datatypes/colour', 'datatypes/changercommand'], func
 		This module modifies the Macros module only, and exports nothing.
 	*/
 	var
-		either = Macros.TypeSignature.either;
+		either = Macros.TypeSignature.either,
+		optional = Macros.TypeSignature.optional;
 	
 	Macros.addChanger
 	
@@ -28,6 +29,7 @@ define(['macros', 'utils', 'datatypes/colour', 'datatypes/changercommand'], func
 
 		// (transition:)
 		// Apply a CSS transition to a hook as it is inserted.
+		// Accepts a string name, and an OPTIONAL delay time.
 		(["transition", "t8n"],
 			function transition(_, name, time) {
 				return ChangerCommand.create("transition", [name, time]);
@@ -37,7 +39,7 @@ define(['macros', 'utils', 'datatypes/colour', 'datatypes/changercommand'], func
 				d.transitionTime = time;
 				return d;
 			},
-			[String]
+			[String, optional(Number)]
 		)
 		
 		// (font:)

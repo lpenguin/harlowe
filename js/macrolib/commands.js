@@ -3,7 +3,8 @@ function(Macros, Utils, Story, Engine) {
 	"use strict";
 	
 	var
-		Any = Macros.TypeSignature.Any;
+		Any = Macros.TypeSignature.Any,
+		optional = Macros.TypeSignature.optional;
 	
 	Macros.addValue
 	
@@ -92,7 +93,7 @@ function(Macros, Utils, Story, Engine) {
 			};
 		},
 		[String])
-	
+		
 		/*
 			(live:)
 			This "command" attaches to hooks, similar to the way changers do.
@@ -107,7 +108,24 @@ function(Macros, Utils, Story, Engine) {
 					delay: delay
 				};
 			},
-			[Number]
+			[optional(Number)]
+		)
+		
+		/*
+			(event:)
+			Similar to (live:), except that it will stop re-running the attached hook
+			once its inner text stops being just whitespace.
+			Yes, the actual implementation of this is in Section, not here.
+		*/
+		(["event"],
+			function event(_, delay) {
+				return {
+					live: true,
+					event: true,
+					delay: delay
+				};
+			},
+			[optional(Number)]
 		);
 		
 });

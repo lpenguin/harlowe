@@ -213,9 +213,6 @@ define(['utils', 'markup/markup', 'twinescript/compiler'], function(Utils, Twine
 							// Debug mode: show the hook destination as a title.
 							+ ((Renderer.options.debug && token.name) ? ' title="Hook: ?' + token.name + '"' : '')
 							+ ' code="' + escape(token.innerText) + '">'
-							// Insert a non-breaking space so that the hook can be selected
-							// and used in a Scope.
-							+'&#8203;'
 							+'</tw-hook>';
 						break;
 					}

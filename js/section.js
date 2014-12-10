@@ -90,7 +90,7 @@ function($, Utils, Selectors, Renderer, Environ, Story, State, HookUtils, HookSe
 			Else, if it's a live macro, please run that.
 		*/
 		else if (result && result.live) {
-			runLiveHook.call(this, nextHook, result.delay);
+			runLiveHook.call(this, nextHook, result.delay, result.event);
 		}
 		/*
 			Otherwise, if it's a function:
@@ -186,7 +186,7 @@ function($, Utils, Selectors, Renderer, Environ, Story, State, HookUtils, HookSe
 		@param {jQuery} target The <tw-hook> that the sensor is connected to.
 		@param {Number} delay The timeout delay.
 	*/
-	function runLiveHook(target, delay) {
+	function runLiveHook(target, delay, isEvent) {
 		/*
 			Remember the code of the hook.
 			
@@ -197,9 +197,9 @@ function($, Utils, Selectors, Renderer, Environ, Story, State, HookUtils, HookSe
 			recursive;
 		
 		/*
-			Default the delay to 20ms
+			Default the delay to 20ms if none was given.
 		*/
-		delay = delay || 20;
+		delay = (delay === undefined ? 20 : delay);
 		
 		/*
 			This closure runs every frame from now on, until
@@ -209,14 +209,35 @@ function($, Utils, Selectors, Renderer, Environ, Story, State, HookUtils, HookSe
 			all that useful.
 		*/
 		recursive = (function() {
-			var done = false;
-			
 			this.renderInto(code, target, {append:'replace'});
-			
-			// If it's not done, keep sensing.
-			if (!done || !this.inDOM()) {
-				setTimeout(recursive, delay);
+			/*
+				(event:) is like (live:), but only renders when
+				no whitespace is present (or was added) inside
+				the <tw-hook>. This determinant may be a little
+				rough and arbitrary, and may be revisited or made
+				more precise in the future.
+			*/
+			if (isEvent) {
+				/*
+					Take the text, and remove the surrounding whitespace,
+					AND any potential zero-width spaces. What's left is
+					then judged - if equal to "", the event hasn't transpired.
+				*/
+				console.log(code,target.text().trim().replace(/\u200b/g,''));
+				if (target.text().trim().replace(/\u200b/g,'')) {
+					return;
+				}
 			}
+			/*
+				It will also cease re-rendering if it's removed from the DOM.
+			*/
+			if (!this.inDOM()) {
+				return;
+			}
+			/*
+				Otherwise, resume re-running.
+			*/
+			setTimeout(recursive, delay);
 		}.bind(this));
 		
 		setTimeout(recursive, delay);
