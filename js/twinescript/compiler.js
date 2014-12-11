@@ -213,7 +213,7 @@ define(['utils'], function(Utils) {
 					return varRefTemp;
 				}
 			}
-			else if (token.type === "identifier") {
+			else if (token.type === "simpleIdentifier") {
 				return " Operations.Identifiers." + token.text + " ";
 			}
 			else if (token.type === "hookRef") {
@@ -227,7 +227,7 @@ define(['utils'], function(Utils) {
 				*/
 				return " section.selectHook('?" + token.name + "') ";
 			}
-			else if (token.type === "variable") {
+			else if (token.type === "variable" || token.type === "identifier") {
 				return compile(token.children);
 			}
 			else if (token.type === "string") {
@@ -374,6 +374,16 @@ define(['utils'], function(Utils) {
 					string and wrap it in quotes.
 				*/
 				+ "," + Utils.toJSLiteral(tokens[i].name) + ")";
+			midString = " ";
+			needsLeft = needsRight = false;
+		}
+		else if ((i = rightAssociativeIndexOfType(tokens, "itsProperty")) >-1) {
+			/*
+				This is actually identical to the above, but with the difference that
+				there is no left subtoken (it is always Identifiers.it).
+			*/
+			left = "Operations.get(Operations.Identifiers.it,"
+				+ Utils.toJSLiteral(tokens[i].name) + ")";
 			midString = " ";
 			needsLeft = needsRight = false;
 		}

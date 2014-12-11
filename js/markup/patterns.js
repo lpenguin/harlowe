@@ -182,23 +182,43 @@
 			legacyText:        "(" + notChars("]|") + "?)",
 		},
 		
-		identifier = "it|time",
+		/*
+			This determines the valid characters for a property name. Sadly, "-" is not allowed.
+		*/
+		validVariablePropertyName = anyLetter.replace("\\-", "") + "+",
 		
-		simpleVariable = "\\$(" + anyLetter.replace("\\-", "") + "+)",
+		/*
+			Variables, and properties of variables:
+			$red
+			$bag's bonnet
+			$a's 1st's 2nd
+		*/
+		simpleVariable = "\\$(" + validVariablePropertyName + ")",
 		
-		variableProperty = "'s" + ws + "(" + anyLetter.replace("\\-", "") + "+)",
+		variableProperty = "'s" + ws + "(" + validVariablePropertyName + ")",
 		
 		variable = simpleVariable + "(?:" + variableProperty + ")*",
+		
+		/*
+			Identifiers: either "it" or "time".
+			"it" is a bit of a problem because its possessive is "its", not "it's",
+			so we can't use a derivation similar to variableProperty.
+		*/
+		simpleIdentifier = "\\b" + either("it","time") + "\\b",
+		
+		itsProperty = "its" + ws + "(" + validVariablePropertyName + ")",
+		
+		identifier = either(simpleIdentifier, itsProperty + "(?:" + variableProperty + ")*"),
 		
 		macro = {
 			opener:            "\\(",
 			name:              "(" + either(anyLetter.replace("]","\\/]") + anyLetter + "*", variable) + "):",
-			closer:            "\\)"
+			closer:            "\\)",
 		},
 		
 		tag = {
 			name:              "\\w[\\w\\-]*",
-			attrs:             "(?:\"[^\"]*\"|'[^']*'|[^'\">])*?"
+			attrs:             "(?:\"[^\"]*\"|'[^']*'|[^'\">])*?",
 		},
 		
 		hookTagFront =  "\\|(" + anyLetter.replace("]", "_]") + "*)>",
@@ -421,6 +441,8 @@
 		
 		// Special identifiers
 		identifier: identifier,
+		simpleIdentifier: simpleIdentifier,
+		itsProperty: itsProperty,
 		
 		// TODO: this generated regex is horrendously slow
 		// when an unclosed ' or " is in the source text.

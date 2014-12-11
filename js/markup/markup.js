@@ -331,6 +331,20 @@
 					};
 				},
 			},
+			
+			/*
+				I regret repeating this, but a programmatic means of avoiding
+				repetition would probably be a mite too obfuscatory.
+			*/
+			identifier: {
+				fn: function(match) {
+					return {
+						name:      match[1],
+						innerText: match[0],
+						innerMode: variableMode,
+					};
+				},
+			},
 		});
 		
 		/*
@@ -339,6 +353,8 @@
 		variableRules = setupRules(variableMode, {
 			simpleVariable:   { fn: textTokenFn("name") },
 			variableProperty: { fn: textTokenFn("name") },
+			simpleIdentifier: { fn: textTokenFn("name") },
+			itsProperty:      { fn: textTokenFn("name") },
 		});
 		
 		/*
@@ -466,7 +482,7 @@
 					},
 				},
 			},
-			["boolean", "identifier", "is", "to", "into", "and", "or", "not", "isNot",
+			["boolean", "is", "to", "into", "and", "or", "not", "isNot",
 			"comma", "spread", "contains", "isIn"].reduce(function(a, e) {
 				a[e] = { fn: Object };
 				return a;

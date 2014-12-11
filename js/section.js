@@ -223,7 +223,6 @@ function($, Utils, Selectors, Renderer, Environ, Story, State, HookUtils, HookSe
 					AND any potential zero-width spaces. What's left is
 					then judged - if equal to "", the event hasn't transpired.
 				*/
-				console.log(code,target.text().trim().replace(/\u200b/g,''));
 				if (target.text().trim().replace(/\u200b/g,'')) {
 					return;
 				}
