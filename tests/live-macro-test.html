@@ -4,12 +4,14 @@
 <tw-story></tw-story><script data-main="../js/harlowe.js" src="../node_modules/requirejs/require.js"></script>
 <tw-storydata options="debug" startnode="1">
 <tw-passagedata pid="1" name="1" position="512,384" data-t8n="instant">
-(live:1s)[(set:$cupcakes to it + 1) $cupcakes cupcakes] (= 1 cupcakes, then increasing)
+(live:1s)[(set:$cupcakes to it + 1) $cupcakes cupcakes(if:$cupcakes>9)[(stop:)]] (= 1 cupcakes, then increasing until 10)
 
-(event:1s)[{
-
-  (if:$cupcakes > 5)[This won't be displayed]
-
-  (else-if:$cupcakes > 4)[Enough cupcakes!]
-
+(live:1s)[{
+  (if:$cupcakes > 5)[
+    This won't be displayed
+  ]
+  (else-if:$cupcakes > 4)[
+    Enough cupcakes!
+    (stop:)
+  ]
 }] (= Enough cupcakes! after 4 seconds)

@@ -353,7 +353,7 @@
 			not united is because their names are used to identify them in Lexer.
 		*/
 		hookAnonymousFront: "\\[",
-		hookBack:  "\\](?!<)",
+		hookBack:  "\\]" + notBefore(hookTagBack),
 		
 		hookAppendedBack:
 			"\\]" + hookTagBack,

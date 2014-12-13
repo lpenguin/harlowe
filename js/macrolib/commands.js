@@ -48,7 +48,7 @@ function(Macros, Utils, Story, Engine) {
 			insofar as it converts its expr to string, but changer commands can be
 			stapled onto it.
 		*/
-		(["print"], function(_, expr) {
+		("print", function(_, expr) {
 
 			if (Utils.containsError(expr)) {
 				return expr;
@@ -78,7 +78,7 @@ function(Macros, Utils, Story, Engine) {
 		/*
 			(goto:) sends the player to a new passage, as soon as it is printed.
 		*/
-		('goto', function (_, name) {
+		("goto", function (_, name) {
 			var id = Story.getPassageID(name);
 			if (!id) {
 				return new RangeError("There's no passage named '" + name + "'.");
@@ -98,10 +98,12 @@ function(Macros, Utils, Story, Engine) {
 			(live:)
 			This "command" attaches to hooks, similar to the way changers do.
 			Makes an attached hook become "live", which means that it's repeatedly re-run
-			every certain number of seconds. This and (event:) are the main means of
+			every certain number of seconds. This is the main means of
 			making a passage dynamic and changing over time, or in reaction to an event.
+			
+			Yes, the actual implementation of this is in Section, not here.
 		*/
-		(["live"],
+		("live",
 			function live(_, delay) {
 				return {
 					live: true,
@@ -112,20 +114,23 @@ function(Macros, Utils, Story, Engine) {
 		)
 		
 		/*
-			(event:)
-			Similar to (live:), except that it will stop re-running the attached hook
-			once its inner text stops being just whitespace.
-			Yes, the actual implementation of this is in Section, not here.
+			(stop:)
+			This zero-arity macro creates a (stop:) command, which is not configurable.
+			
+			Clunky though it looks, it serves an important purpose: inside a (live:)
+			macro, its appearance signals that the macro must stop running.
 		*/
-		(["event"],
-			function event(_, delay) {
+		("stop",
+			function stop() {
 				return {
-					live: true,
-					event: true,
-					delay: delay
+					TwineScript_ObjectName: "a (stop:) command",
+					TwineScript_TypeName:   "a (stop:) command",
+					TwineScript_Print: function() {
+						return "";
+					},
 				};
 			},
-			[optional(Number)]
+			[]
 		);
 		
 });

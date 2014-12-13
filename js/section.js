@@ -142,7 +142,7 @@ function($, Utils, Selectors, Renderer, Environ, Story, State, HookUtils, HookSe
 			and isn't a function.
 		*/
 		else if (typeof result === "string"  || typeof result === "number"
-			|| (typeof result === "object" && result && result.toString !== ({}).toString)) {
+			|| (typeof result === "object" && result && result.toString !== Object.prototype.toString)) {
 			/*
 				Transition the resulting Twine code into the expression's element.
 			*/
@@ -211,24 +211,15 @@ function($, Utils, Selectors, Renderer, Environ, Story, State, HookUtils, HookSe
 		recursive = (function() {
 			this.renderInto(code, target, {append:'replace'});
 			/*
-				(event:) is like (live:), but only renders when
-				no whitespace is present (or was added) inside
-				the <tw-hook>. This determinant may be a little
-				rough and arbitrary, and may be revisited or made
-				more precise in the future.
+				The (stop:) command causes the nearest (live:) command enclosing
+				it to be stopped. Inside an (if:), it allows one-off live events to be coded.
+				If a (stop:) is in the rendering target, we shan't continue running.
 			*/
-			if (isEvent) {
-				/*
-					Take the text, and remove the surrounding whitespace,
-					AND any potential zero-width spaces. What's left is
-					then judged - if equal to "", the event hasn't transpired.
-				*/
-				if (target.text().trim().replace(/\u200b/g,'')) {
-					return;
-				}
+			if (target.find("tw-expression[name='stop']").length) {
+				return;
 			}
 			/*
-				It will also cease re-rendering if it's removed from the DOM.
+				Re-rendering will also cease if this section is removed from the DOM.
 			*/
 			if (!this.inDOM()) {
 				return;

@@ -280,7 +280,7 @@
 							TODO: Currently, this eliminates line breaks inside
 							string literals inside macros. This shouldn't be the case.
 						*/
-						innerText: match[1].replace(/[\s\n]+/g, ' ')
+						innerText: match[1].replace(/[\s\n]+/g, ' ').trim()
 					};
 				},
 			},
