@@ -25,7 +25,7 @@ function ($, Story, Utils, Selectors, State, Section) {
 			Generate the HTML for the permalink.
 			(This is currently unavailable as of Harlowe 1.0)
 		*/
-		if (Story.options.permalink) {
+		if (Story.options.permalink && State.save) {
 			sidebar.append('<tw-icon class="permalink" title="Permanent link to this passage"><a href="#' + State.save() + '">&sect;');
 		}
 		// Apart from the Permalink, the sidebar buttons consist of Undo (Back) and Redo (Forward) buttons.
