@@ -1,18 +1,18 @@
-define(['jquery', 'markup/markup', 'selectors', 'customelements'], function($, TwineMarkup, Selectors) {
+define(['jquery', 'markup/markup', 'utils/selectors', 'utils/customelements'], function($, TwineMarkup, Selectors) {
 	"use strict";
 
 	var
 		// Used by lockProperties
 		lockDesc = {
 			configurable: 0,
-			writable: 0			
+			writable: 0
 		},
 		// Used to cache t8n animation times
 		t8nAnimationTimes = {
 			"transition-in": Object.create(null),
 			"transition-out": Object.create(null)
 		};
-	
+
 	/**
 		A static class with helper methods used throughout Harlowe.
 
@@ -24,7 +24,7 @@ define(['jquery', 'markup/markup', 'selectors', 'customelements'], function($, T
 		/**
 			Make object properties immutable and impossible to delete,
 			without preventing the object from being extended.
-			
+
 			Does not do a 'deep' lock - object properties may, in themselves, be modified.
 
 			@method lockProperties
@@ -64,36 +64,14 @@ define(['jquery', 'markup/markup', 'selectors', 'customelements'], function($, T
 			Object.defineProperty(obj, prop, propDesc);
 			return obj;
 		},
-		
-		/**
-			A faster way to clone an object than Object.assign({}, ...).
 
-			@method clone
-			@param {Object} obj	object to clone
-			@return {Object} cloned object
-		*/
-
-		clone: function (obj) {
-			var i,
-				ret = Object.create(Object.getPrototypeOf(obj)),
-				keys = Object.getOwnPropertyNames(obj),
-				prop;
-
-			for (i = 0; i < keys.length; i++) {
-				prop = obj[keys[i]];
-				ret[keys[i]] = $.isPlainObject(prop) ? Utils.clone(prop) : prop;
-			}
-
-			return ret;
-		},
-		
 		/**
 			If the arguments contain an Error, return that error.
 			This also recursively examines arrays' contents.
-			
+
 			Maybe in the future, there could be a way to concatenate multiple
 			errors into a single "report"...
-			
+
 			@method containsError
 			@return {Error|Boolean} The first error encountered, or false.
 		*/
@@ -106,30 +84,30 @@ define(['jquery', 'markup/markup', 'selectors', 'customelements'], function($, T
 						: false;
 					}, false);
 		},
-		
+
 		/*
 			String utilities
 		*/
-		
+
 		/*
 			In some places, it's necessary to print numbers, strings and arrays of primitives
 			as JS literals. This is a semantic shortcut for a certain
 			built-in method that can accomplish this easily.
-			
+
 			@method toJSLiteral
 			@return {String}
 		*/
 		toJSLiteral: JSON.stringify,
-		
+
 		/*
 			Conversely, this rarer function produces a TwineScript string literal using the
 			given string.
-			
+
 			@method toTSStringLiteral
 			@return {String}
 		*/
 		toTSStringLiteral: function(str) {
-			var simultaneousGraves =
+			var consecutiveGraves =
 				Math.max.apply(
 					0,
 					/*
@@ -137,66 +115,11 @@ define(['jquery', 'markup/markup', 'selectors', 'customelements'], function($, T
 					*/
 					(str.match(/(`+)/g) || []).map(function(e) { return e.length; }).concat(0)
 				) + 1;
-			return "`".repeat(simultaneousGraves)
+			return "`".repeat(consecutiveGraves)
 				+ str
-				+ "`".repeat(simultaneousGraves);
-		},
-		
-		/**
-			Returns whether a value is either a string or array.
-
-			@method stringOrArray
-			@param n	value to test
-			@return {Boolean}
-		*/
-
-		stringOrArray: function (n) {
-			return (typeof n === "string" || Array.isArray(n));
+				+ "`".repeat(consecutiveGraves);
 		},
 
-		/**
-			Splits a string, but only at unquoted separator characters.
-
-			@method splitUnquoted
-			@param {String} str		string to split
-			@param {String} split		separator, default single space
-			@return {Array} array of strings
-		*/
-
-		splitUnquoted: function (str, split) {
-			return str.split(new RegExp((split || " ") + TwineMarkup.RegExpStrings.unquoted));
-		},
-
-		/**
-			Convert a CSS class selector chain (".magic.link") into
-			a HTML classlist attribute (e.g. class="magic link").
-
-			@method classListToSelector
-			@param {String} list	chain to convert
-			@return {String} classlist string
-		*/
-
-		classListToSelector: function (c) {
-			if (typeof c === "string") {
-				return "." + c.replace(/ /g, ".");
-			}
-		},
-
-		/**
-			Convert a HTML classlist attribute (e.g. class="magic link") into
-			a CSS class selector chain (".magic.link").
-
-			@method selectorToClassList
-			@param {String} c	classlist attribute
-			@return {String} selector chain
-		*/
-
-		selectorToClassList: function (c) {
-			if (typeof c === "string") {
-				return c.replace(/\./g, " ").trim();
-			}
-		},
-		
 		/**
 			Takes a string argument, expressed as a CSS time,
 			and returns the time in milliseconds that it equals.
@@ -207,9 +130,8 @@ define(['jquery', 'markup/markup', 'selectors', 'customelements'], function($, T
 
 			@method cssTimeUnit
 			@param s		either string, or array of strings
-			@return either single string or array of times	
+			@return either single string or array of times
 		*/
-
 		cssTimeUnit: function (s) {
 			var ret;
 
@@ -234,21 +156,8 @@ define(['jquery', 'markup/markup', 'selectors', 'customelements'], function($, T
 		},
 
 		/**
-			Search the given string to find any terms beginning with "t8n-",
-			and return it stripped of the "t8n-" prefix. If none found, default to "dissolve".
-			
-			@method transitionSelector
-			@param {String} str The string to test.
-			@return {String} The transition selector.
-		*/
-		transitionSelector: function (str) {
-			return (typeof str === "string" && str.startsWith("t8n-") && str.slice(4))
-				|| "dissolve";
-		},
-		
-		/**
 			A quick method for turning a number into an "nth" string.
-			
+
 			@method nth
 			@param {String|Number} num
 			@return {String}
@@ -260,11 +169,11 @@ define(['jquery', 'markup/markup', 'selectors', 'customelements'], function($, T
 				lastDigit === "2" ? "nd" :
 				lastDigit === "3" ? "rd" : "th");
 		},
-		
+
 		/**
 			A quick method for adding an 's' to the end of a string
 			that comes in the form "[num] [noun]".
-			
+
 			@method plural
 			@param {Number} num   The quantity
 			@param {String} noun  The noun to possibly pluralise
@@ -277,7 +186,7 @@ define(['jquery', 'markup/markup', 'selectors', 'customelements'], function($, T
 		/*
 			HTML utilities
 		*/
-		
+
 		/**
 			Unescape HTML entities.
 			For speed, convert common entities quickly, and convert others with jQuery.
@@ -315,7 +224,7 @@ define(['jquery', 'markup/markup', 'selectors', 'customelements'], function($, T
 
 		/**
 			HTML-escape a string.
-			
+
 			@method escape
 			@param {String} text Text to escape
 			@return {String} converted text
@@ -325,12 +234,12 @@ define(['jquery', 'markup/markup', 'selectors', 'customelements'], function($, T
 				.replace(/>/g, '&gt;'  ).replace(/</g, '&lt;' )
 				.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 		},
-		
+
 		/**
 			Some names are case-insensitive, AND dash-insensitive.
 			This method converts such names to all-lowercase and lacking
 			underscores and hyphens.
-			
+
 			@method insensitiveName
 			@param {String} text Text to convert.
 			@return {String} converted text
@@ -338,9 +247,9 @@ define(['jquery', 'markup/markup', 'selectors', 'customelements'], function($, T
 		insensitiveName: function (e) {
 			return (e + "").toLowerCase().replace(/-|_/g, "");
 		},
-		
+
 		/**
-			
+
 			@method wrapHTMLTag
 			@param {String} text Text to wrap.
 			@param {String} tagName Name of the HTML tag to wrap in.
@@ -391,11 +300,11 @@ define(['jquery', 'markup/markup', 'selectors', 'customelements'], function($, T
 			}
 			return text.replace(/&[#\w]+;|./g, Utils.charToSpan);
 		},
-		
+
 		/*
 			Element utilities
-		*/		
-	
+		*/
+
 		/**
 			Quick utility function that calls .filter(q).add(q).find(q),
 			which is similar to just .find() but includes the top element
@@ -477,16 +386,16 @@ define(['jquery', 'markup/markup', 'selectors', 'customelements'], function($, T
 
 		/**
 			Transition an element out.
-		
+
 			@method transitionOut
 			@param {jQuery} el            jQuery collection to transition out
-			@param (String) transIndex    transition to use			
+			@param (String) transIndex    transition to use
 			@param {Function} onComplete  function to call when completed
 		*/
 
 		transitionOut: function (el, transIndex, onComplete) {
 			var delay;
-			
+
 			/*
 				The default transition callback is to remove the element.
 			*/
@@ -505,19 +414,19 @@ define(['jquery', 'markup/markup', 'selectors', 'customelements'], function($, T
 				- whereas the below method will simply occur immedately.
 			*/
 			delay = Utils.transitionTime(transIndex, "transition-out");
-			
+
 			!delay ? onComplete() : window.setTimeout(onComplete, delay);
 		},
 
 		/**
 			Transition an element in.
-		
+
 			@method transitionIn
 			@param {jQuery} el			    jQuery collection to transition out
-			@param (String) transIndex		transition to use		
+			@param (String) transIndex		transition to use
 			@param {Function} onComplete	function to call when completed
 		*/
-		
+
 		transitionIn: function (el, transIndex, onComplete) {
 			var delay;
 
@@ -533,20 +442,20 @@ define(['jquery', 'markup/markup', 'selectors', 'customelements'], function($, T
 			*/
 			el.attr("data-t8n", transIndex).addClass("transition-in");
 			delay = Utils.transitionTime(transIndex, "transition-in");
-			
+
 			!delay ? onComplete() : window.setTimeout(onComplete, delay);
 		},
-		
+
 		/**
 			Caches the CSS time (duration + delay) for a particular transition,
 			to save on costly $css() lookups.
-		
+
 			@method transitionTime
-			@param (String) transIndex   Transition to use		
+			@param (String) transIndex   Transition to use
 			@param {String} className    Either "transition-in" or "transition-out"
 			@return this
 		*/
-		
+
 		transitionTime: function(transIndex, className) {
 			var p;
 			if (!t8nAnimationTimes[className][transIndex]) {
@@ -568,39 +477,39 @@ define(['jquery', 'markup/markup', 'selectors', 'customelements'], function($, T
 		$: function (str, context) {
 			return $(str, context).not(".transition-out, .transition-out *");
 		},
-		
+
 		/*
 			Logging utilities
 		*/
-		
+
 		/**
 			Internal logging function. Currently a wrapper for console.log.
 			This should be used for basic event logging.
-			
+
 			@method log
 			@param data	line to log
 		*/
-		
+
 		log: function (data) {
 			console.log(data);
 		},
-		
+
 		/**
 			Internal error logging function. Currently a wrapper for console.error.
 			This should be used for engine errors beyond the story author's control.
-			
+
 			@method impossible
 			@param {String} where Name of the calling method.
 			@param data	Line to log
 		*/
-		
+
 		impossible: function (where, data) {
 			console.error(where + "(): " + data);
 		},
-		
+
 		/**
 			Standard assertion function.
-			
+
 			@method assert
 			@param {Boolean} assertion
 		*/
@@ -609,12 +518,12 @@ define(['jquery', 'markup/markup', 'selectors', 'customelements'], function($, T
 				console.error("Assertion failed!");
 			}
 		},
-		
+
 		/**
 			Asserts that an object doesn't lack a necessary property.
 			This and the next method provide some shape-checking
 			to important functions.
-			
+
 			@method assertMustHave
 			@param {Object} object
 			@param {Array} props
@@ -627,10 +536,10 @@ define(['jquery', 'markup/markup', 'selectors', 'customelements'], function($, T
 				}
 			}
 		},
-		
+
 		/**
 			Asserts that an object has no property extensions.
-			
+
 			@method assertOnlyHas
 			@param {Object} object
 			@param {Array} props
@@ -643,7 +552,7 @@ define(['jquery', 'markup/markup', 'selectors', 'customelements'], function($, T
 				}
 			}
 		},
-		
+
 		/*
 			Constants
 		*/
@@ -654,9 +563,9 @@ define(['jquery', 'markup/markup', 'selectors', 'customelements'], function($, T
 			@property storyElement
 			@static
 		*/
-		
-		storyElement: $("tw-story")
+
+		storyElement: $(Selectors.story)
 	};
-	
+
 	return Object.freeze(Utils);
 });

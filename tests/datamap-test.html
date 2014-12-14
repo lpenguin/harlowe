@@ -16,5 +16,10 @@ $person's Weapon (= error)
 
 Nested:
 
-(set: $person's bag to (datamap: "seeds", 2))
-$person's bag's seeds (= 2)
+{(set: $person's bag to (datamap: "seeds", 2))
+$person's bag's seeds (= 2)}
+
+Concatenation:
+
+{(set: $barrel to (datamap: "eggs", 2) + (datamap: "legumes", 2))
+(print: $barrel contains "legumes" and contains "eggs") (= true)}

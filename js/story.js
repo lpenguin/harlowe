@@ -1,4 +1,4 @@
-define(['jquery', 'utils', 'selectors'], function($, Utils, Selectors) {
+define(['jquery', 'utils', 'utils/selectors'], function($, Utils, Selectors) {
 	"use strict";
 	/**
 		Singleton object governing data concerning the stort and its structure.

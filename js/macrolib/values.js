@@ -1,72 +1,8 @@
-define(['macros', 'utils', 'state', 'story', 'engine', 'datatypes/assignmentrequest'],
-function(Macros, Utils, State, Story, Engine, AssignmentRequest) {
+define(['macros'], function(Macros) {
 	"use strict";
 	/*
 		Built-in value macros.
-		This module modifies the Macros module only, and exports nothing.
-		
-			State mutation:
-		set
-		put
-		move
-		
-			Type coercion:
-		text / print
-		num / number
-		a / array
-		
-			Mathematics:
-		min
-		max
-		abs
-		sign
-		sin
-		cos
-		tan
-		floor
-		round
-		ceil
-		pow
-		exp
-		sqrt
-		log
-		log10
-		log2
-		
-			Randomness:
-		random
-		either
-		anyof
-		
-			Stateful boolean:
-		if
-		unless
-		elseif
-		else
-		
-			System time querying:
-		weekday
-		monthday
-		currenttime
-		currentdate
-		
-			State querying:
-		visited
-		previous
-
-			Window querying:
-		pageURL
-		
-			User input:
-		prompt
-		confirm
-		
-			Statements:
-		goto
-		alert
-		openURL
-		reload
-		gotoURL
+		These macros manipulate the primitive values - boolean, string, number.
 	*/
 	
 	var
@@ -74,92 +10,14 @@ function(Macros, Utils, State, Story, Engine, AssignmentRequest) {
 		zeroOrMore = Macros.TypeSignature.zeroOrMore,
 		Any = Macros.TypeSignature.Any;
 	
-	Macros.addValue
+	Macros.add
 		/*
-			(set:) Set Twine variables.
-			Evaluates to nothing.
-		*/
-		("set", function set(_, assignmentRequests /*variadic*/) {
-			var i, ar;
-			
-			assignmentRequests = Array.prototype.slice.call(arguments, 1);
-			
-			/*
-				This has to be a plain for-loop so that an early return
-				is possible.
-			*/
-			for(i = 0; i < assignmentRequests.length; i+=1) {
-				ar = assignmentRequests[i];
-				
-				if (ar.operator === "into") {
-					return new SyntaxError("Please say 'to' when using the (set:) macro.");
-				}
-				ar.dest.set(ar.src);
-			}
-			return "";
-		},
-		[rest(AssignmentRequest)])
-		
-		/*
-			(put:) A left-to-right version of (set:) that requires the "into" operator.
-			Evaluates to nothing if no error occured.
-			TODO: mix this into the (set:) definition.
-		*/
-		("put", function put(_, assignmentRequests) {
-			var i, ar;
-			
-			assignmentRequests = Array.prototype.slice.call(arguments, 1);
-			
-			/*
-				This has to be a plain for-loop so that an early return
-				is possible.
-			*/
-			for(i = 0; i < assignmentRequests.length; i+=1) {
-				ar = assignmentRequests[i];
-				
-				if (ar.operator === "to") {
-					return new SyntaxError("Please say 'into' when using the (put:) macro.");
-				}
-				ar.dest.set(ar.src);
-			}
-			return "";
-		},
-		[rest(AssignmentRequest)])
-		
-		/*
-			(move:) A variant of (put:) that deletes the source's binding after
-			performing the operation. Ideally used as an equivalent
-			to Javascript's "x = arr.pop();"
-		*/
-		("move", function move(_, ar) {
-			var get, error;
-			
-			if (ar.src && ar.src.varref) {
-				get = ar.src.get();
-				if ((error = Utils.containsError(get))) {
-					return error;
-				}
-				ar.dest.set(get);
-				ar.src.delete();
-			}
-			else {
-				/*
-					Fallback behaviour: when phrased as
-					(move: 2 into $red)
-				*/
-				ar.dest.set(ar.src);
-			}
-			return "";
-		},
-		[rest(AssignmentRequest)])
-
-		/*
-			(text:): convert the expressions to text.
+			(text:) convert the expressions to string.
 			This provides explicit coercion to String for TwineScript values.
 			Concatenates multiple values.
 			Evaluates to a text string.
 		*/
-		("text", function print(_, expr /*variadic */) {
+		(["text", "string"], function print(_, expr /*variadic */) {
 			expr = Array.prototype.slice.call(arguments, 1).join('');
 			return expr;
 		},
@@ -291,9 +149,7 @@ function(Macros, Utils, State, Story, Engine, AssignmentRequest) {
 		min: [Math.min, rest(Number)],
 		max: [Math.max, rest(Number)],
 		abs: [Math.abs, Number],
-		sign: [Math.sign || function (val) {
-			return (typeof val !== "number" || isNaN(val)) ? val : Math.max(-1, Math.min(1, Math.ceil(val)));
-		}, Number],
+		sign: [Math.sign, Number],
 		sin:    [Math.sin, Number],
 		cos:    [Math.cos, Number],
 		tan:    [Math.tan, Number],
@@ -304,13 +160,9 @@ function(Macros, Utils, State, Story, Engine, AssignmentRequest) {
 		exp:    [Math.exp, Number],
 		sqrt:   [mathFilter(Math.sqrt), Number],
 		log:    [mathFilter(Math.log), Number],
-		log10:  [mathFilter(Math.log10 || function (value) {
-			return Math.log(value) * (1 / Math.LN10);
-		}), Number],
-		log2:   [mathFilter(Math.log2 || function (value) {
-			return Math.log(value) * (1 / Math.LN2);
-		}), Number],
-
+		log10:  [mathFilter(Math.log10), Number],
+		log2:   [mathFilter(Math.log2), Number],
+		
 		/*
 			Basic randomness
 		*/
@@ -332,127 +184,6 @@ function(Macros, Utils, State, Story, Engine, AssignmentRequest) {
 		}, [Number, Number]],
 		
 		either: [either, rest(Any)],
-		
-		/*
-			Array/Sequence macros
-		*/
-		
-		/*
-			(a:), (array:)
-			Used for creating plain JS arrays, which are a standard
-			Harlowe data type.
-		*/
-		a:     [Array.of, zeroOrMore(Any)],
-		array: [Array.of, zeroOrMore(Any)],
-		
-		/*
-			(range:)
-			Produces an *inclusive* range of integers from a to b.
-		*/
-		range: [function range(a, b) {
-			/*
-				For now, let's assume descending ranges are intended,
-				and support them.
-			*/
-			if (a > b) {
-				return range(b, a).reverse();
-			}
-			/*
-				This differs from Python: the base case returns just [a],
-				instead of an empty array. The rationale is that since it is
-				inclusive, a can serve as both start and end term just fine.
-			*/
-			var ret = [a];
-			b -= a;
-			while(b-- > 0) {
-				ret.push(++a);
-			}
-			return ret;
-		},
-		[Number, Number]],
-		
-		/*
-			(datamap:)
-			Similar to (a:), these create standard JS Maps and Sets.
-			But, instead of supplying an iterator, you supply keys and values
-			interleaved: (datamap: key, value, key, value).
-			
-			One concern about maps: even though they are a Map,
-			inserting a non-primitive in key position is problematic because
-			retrieving the key uses compare-by-reference, and most
-			of Twine 2's unique object types are immutable (hence, can't be
-			used in by-reference comparisons).
-		*/
-		datamap: [function() {
-			var key, ret;
-			/*
-				This converts the flat arguments "array" into an array of
-				key-value pairs [[key, value],[key, value]].
-				During each odd iteration, the element is the key.
-				Then, the element is the value.
-			*/
-			ret = new Map(Array.from(arguments).reduce(function(array, element) {
-				if (key === undefined) {
-					key = element;
-				}
-				else {
-					array.push([key, element]);
-					key = undefined;
-				}
-				return array;
-			}, []));
-			
-			/*
-				One error can result: if there's an odd number of arguments, that
-				means a key has not been given a value.
-			*/
-			if (key !== undefined) {
-				return new TypeError("This datamap has a key without a value.");
-			}
-			return ret;
-		}, zeroOrMore(Any)],
-		
-		/*
-			(dataset:)
-			Sets are more straightforward - they can accept plain arrays
-			straight off.
-		*/
-		dataset: [function() {
-			return new Set(Array.from(arguments));
-		}, zeroOrMore(Any)],
-
-		/*
-			(visited:)
-			Return the number of times the named passage was visited.
-			For multiple arguments, return the smallest visited value.
-		*/
-		visited: [function visited(name) {
-			var ret, i;
-			if (arguments.length > 1) {
-				for (i = 0, ret = State.pastLength; i < arguments.length; i++) {
-					ret = Math.min(ret, visited(arguments[i]));
-				}
-				return ret;
-			}
-			return name ? State.passageNameVisited(name) : State.passageIDVisited(State.passage);
-		},
-		rest(String)],
-		
-		/*
-			(visit:)
-			A Boolean check for whether this is the nth visit, where
-			n is provided by the user.
-		*/
-		visit: [function visit(num) {
-			return State.passageIDVisited(State.passage) === num;
-		},
-		Number],
-		
-		// Return the name of the previous visited passage.
-		previous: [function previous() {
-			return Story.getPassageName(State.previousPassage() || Story.startPassage);
-		},
-		null],
 
 		/*
 			Wrappers for Window
@@ -498,7 +229,7 @@ function(Macros, Utils, State, Story, Engine, AssignmentRequest) {
 						functions is section, so we have to convert the above
 						to use a contract that's amenable to this requirement.
 					*/
-					Macros.addValue(key, function(/* variadic */) {
+					Macros.add(key, function(/* variadic */) {
 						/*
 							As none of the above actually need or use section,
 							we can safely discard it.

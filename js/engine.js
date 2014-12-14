@@ -1,4 +1,4 @@
-define(['jquery', 'story', 'utils', 'selectors', 'state', 'section'],
+define(['jquery', 'story', 'utils', 'utils/selectors', 'state', 'section'],
 function ($, Story, Utils, Selectors, State, Section) {
 	"use strict";
 	

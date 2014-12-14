@@ -1,4 +1,4 @@
-define(['hookutils'],function(HookUtils) {
+define(['utils/hookutils'],function(HookUtils) {
 	"use strict";
 	
 	/**

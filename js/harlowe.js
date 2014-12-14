@@ -10,12 +10,6 @@ require.config({
 		almond:          '../node_modules/almond/almond',
 		"es6-shim":      '../node_modules/es6-shim/es6-shim',
 		jqueryplugins:   'utils/jqueryplugins',
-		// Utils
-		utils:           'utils/utils',
-		hookutils:       'utils/hookutils',
-		selectors:       'utils/selectors',
-		regexstrings:    'utils/regexstrings',
-		customelements:  'utils/customelements',
 	},
 	deps: [
 		'jquery',
@@ -23,7 +17,7 @@ require.config({
 		'jqueryplugins',
 	],
 });
-require(['jquery', 'renderer', 'story', 'state', 'engine', 'utils', 'selectors', 'macrolib', 'repl'],
+require(['jquery', 'renderer', 'story', 'state', 'engine', 'utils', 'utils/selectors', 'macrolib', 'repl'],
 		function ($, Renderer, Story, State, Engine, Utils, Selectors) {
 	"use strict";
 	/**

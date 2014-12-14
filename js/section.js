@@ -1,5 +1,16 @@
-define(['jquery', 'utils', 'selectors', 'renderer', 'twinescript/environ', 'story', 'state', 'hookutils',
-'datatypes/hookset', 'internaltypes/pseudohookset', 'internaltypes/changedescriptor'],
+define([
+	'jquery',
+	'utils',
+	'utils/selectors',
+	'renderer',
+	'twinescript/environ',
+	'story',
+	'state',
+	'utils/hookutils',
+	'datatypes/hookset',
+	'internaltypes/pseudohookset',
+	'internaltypes/changedescriptor'
+],
 function($, Utils, Selectors, Renderer, Environ, Story, State, HookUtils, HookSet, PseudoHookSet, ChangeDescriptor) {
 	"use strict";
 
@@ -54,7 +65,7 @@ function($, Utils, Selectors, Renderer, Environ, Story, State, HookUtils, HookSe
 			Become cognizant of any hook connected to this expression.
 			To be connected, it must be the very next element. 
 		*/
-		var nextHook = expr.next("tw-hook"),
+		var nextHook = expr.next(Selectors.hook),
 			/*
 				Execute the expression.
 			*/
@@ -186,7 +197,7 @@ function($, Utils, Selectors, Renderer, Environ, Story, State, HookUtils, HookSe
 		@param {jQuery} target The <tw-hook> that the sensor is connected to.
 		@param {Number} delay The timeout delay.
 	*/
-	function runLiveHook(target, delay, isEvent) {
+	function runLiveHook(target, delay) {
 		/*
 			Remember the code of the hook.
 			
@@ -215,7 +226,7 @@ function($, Utils, Selectors, Renderer, Environ, Story, State, HookUtils, HookSe
 				it to be stopped. Inside an (if:), it allows one-off live events to be coded.
 				If a (stop:) is in the rendering target, we shan't continue running.
 			*/
-			if (target.find("tw-expression[name='stop']").length) {
+			if (target.find(Selectors.expression + "[name='stop']").length) {
 				return;
 			}
 			/*
@@ -560,5 +571,5 @@ function($, Utils, Selectors, Renderer, Environ, Story, State, HookUtils, HookSe
 		
 	};
 	
-	return Utils.lockProperties(Section);
+	return Object.preventExtensions(Section);
 });

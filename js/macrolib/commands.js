@@ -6,7 +6,7 @@ function(Macros, Utils, Story, Engine) {
 		Any = Macros.TypeSignature.Any,
 		optional = Macros.TypeSignature.optional;
 	
-	Macros.addValue
+	Macros.add
 	
 		/*
 			(display:) evaluates to the TwineMarkup source of the passage

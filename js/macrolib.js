@@ -1,5 +1,18 @@
-define(['jquery', 'markup/markup', 'story', 'macros', 'utils', 'datatypes/changercommand', 'internaltypes/twinewarning',
-'macrolib/values', 'macrolib/stylechangers', 'macrolib/enchantments', 'macrolib/commands', 'macrolib/links'],
+define([
+	'jquery',
+	'markup/markup',
+	'story',
+	'macros',
+	'utils',
+	'datatypes/changercommand',
+	'internaltypes/twinewarning',
+	'macrolib/values',
+	'macrolib/commands',
+	'macrolib/datastructures',
+	'macrolib/stylechangers',
+	'macrolib/enchantments',
+	'macrolib/links',
+],
 function($, TwineMarkup, Story, Macros, Utils, ChangerCommand, TwineWarning) {
 	"use strict";
 	/*
@@ -21,15 +34,10 @@ function($, TwineMarkup, Story, Macros, Utils, ChangerCommand, TwineWarning) {
 		* type name: Should denote a type constructor or converter.
 			Constructors include (colour:), (text:) and (num:)
 		* verbs:
-			As TwineScript "statements" are expressions, imperative verbs
-			aren't terribly helpful. (print:) remains out of sheer incumbency,
-			as does(?) (display:).
-			
-			Sometimes, such as with (replace:), we get a 'verb' that actually
-			describes what its output does, rather than itself.
+			Should be saved for commands only.
 	*/
 
-	Macros.addValue
+	Macros.add
 
 		/*
 			(remove:) Removes the given hook or pseudo-hook from the section.
@@ -46,7 +54,7 @@ function($, TwineMarkup, Story, Macros, Utils, ChangerCommand, TwineWarning) {
 		They accept a standard selector, emits a side-effect, and returns "".
 	*/
 	["cloak", "uncloak"].forEach(function(name) {
-		Macros.addValue(name, function cloak(section, selector) {
+		Macros.add(name, function cloak(section, selector) {
 			var selection = section.selectHook(selector);
 			/*
 				To my regret, I must use a side-effect here for tracking

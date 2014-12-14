@@ -1,5 +1,5 @@
-define(['jquery', 'macros', 'utils', 'story', 'state', 'engine', 'datatypes/changercommand'],
-function($, Macros, Utils, Story, State, Engine, ChangerCommand) {
+define(['jquery', 'macros', 'utils', 'utils/selectors', 'story', 'state', 'engine', 'datatypes/changercommand'],
+function($, Macros, Utils, Selectors, Story, State, Engine, ChangerCommand) {
 	"use strict";
 	/*
 		This module defines the behaviour of links in Harlowe - both
@@ -23,7 +23,7 @@ function($, Macros, Utils, Story, State, Engine, ChangerCommand) {
 			The jQuery event namespace is "passage-link".
 		*/
 		"click.passage-link",
-		"tw-link",
+		Selectors.internalLink,
 		function clickLinkEvent() {
 			var link = $(this),
 				/*
@@ -72,7 +72,7 @@ function($, Macros, Utils, Story, State, Engine, ChangerCommand) {
 		passage name ((goto:)'s argument) is evaluated alongside (link:)'s argument.
 		It is also what the standard link syntax desugars to.
 	*/
-	Macros.addValue
+	Macros.add
 		(["link-goto"], function(section, text, passage) {
 			/*
 				Return a new (link-goto:) object.

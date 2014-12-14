@@ -245,6 +245,27 @@ function($, Story, Utils, Operations) {
 		};
 	}
 	
+	/**
+		The bare-metal macro registration function.
+		If an array of names is given, an identical macro is created under each name.
+		
+		@method privateAdd
+		@private
+		@param {String|Array} name  A String, or an Array holding multiple strings.
+		@param {String} type The type (either "sensor", "changer", or, and in absentia, "value")
+		@param {Function} fn  The function.
+	*/
+	function privateAdd(name, type, fn) {
+		// Add the fn to the macroRegistry, plus aliases (if name is an array of aliases)
+		if (Array.isArray(name)) {
+			name.forEach(function (n) {
+				Utils.lockProperty(macroRegistry, Utils.insensitiveName(n), fn);
+			});
+		} else {
+			Utils.lockProperty(macroRegistry, Utils.insensitiveName(name), fn);
+		}
+	}
+	
 	Macros = {
 		/**
 			Checks if a given macro name is registered.
@@ -270,43 +291,23 @@ function($, Story, Utils, Operations) {
 		},
 		
 		/**
-			The bare-metal macro registration function.
-			If an array of names is given, an identical macro is created under each name.
-			
-			@method add
-			@param {String|Array} name  A String, or an Array holding multiple strings.
-			@param {String} type The type (either "sensor", "changer", or, and in absentia, "value")
-			@param {Function} fn  The function.
-		*/
-		add: function (name, type, fn) {
-			// Add the fn to the macroRegistry, plus aliases (if name is an array of aliases)
-			if (Array.isArray(name)) {
-				name.forEach(function (n) {
-					Utils.lockProperty(macroRegistry, Utils.insensitiveName(n), fn);
-				});
-			} else {
-				Utils.lockProperty(macroRegistry, Utils.insensitiveName(name), fn);
-			}
-		},
-		
-		/**
-			A high-level wrapper for Macros.add() that creates a Value Macro from 3
+			A high-level wrapper for add() that creates a Value Macro from 3
 			entities: a macro implementation function, a ChangerCommand function, and
 			a parameter type signature array.
 			
 			The passed-in function should return a changer.
 			
-			@method addValue
+			@method add
 			@param {String} name
 			@param {Function} fn
 		*/
-		addValue: function addValue(name, fn, typeSignature) {
-			Macros.add(name,
+		add: function add(name, fn, typeSignature) {
+			privateAdd(name,
 				"value",
 				readArguments(typeSignatureCheck(name, fn, typeSignature))
 			);
 			// Return the function to enable "bubble chaining".
-			return addValue;
+			return add;
 		},
 	
 		/**
@@ -339,7 +340,7 @@ function($, Story, Utils, Operations) {
 		addChanger: function addChanger(name, fn, changerCommandFn, typeSignature) {
 			Utils.assert(changerCommandFn);
 			
-			Macros.add(name,
+			privateAdd(name,
 				"changer",
 				readArguments(typeSignatureCheck(name, fn, typeSignature))
 			);

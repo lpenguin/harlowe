@@ -1,4 +1,4 @@
-define(['hookutils', 'jquery'],function(HookUtils, $) {
+define(['utils/hookutils', 'jquery'],function(HookUtils, $) {
 	"use strict";
 	
 	/**

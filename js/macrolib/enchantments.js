@@ -88,7 +88,10 @@ define(['jquery', 'utils', 'macros', 'datatypes/hookset', 'datatypes/changercomm
 				namespace, solely for personal tidiness.
 			*/
 			enchantDesc.event + ".enchantment",
-			Utils.classListToSelector(enchantDesc.classList),
+			
+			// This converts a HTML class attribute into a CSS selector
+			"." + enchantDesc.classList.replace(/ /g, "."),
+			
 			function generalEnchantmentEvent() {
 				var enchantment = $(this),
 					/*
