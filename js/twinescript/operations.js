@@ -44,7 +44,7 @@ function(Utils, State, Story, Colour, AssignmentRequest, OperationUtils) {
 		clone           = OperationUtils.clone,
 		coerceToString  = OperationUtils.coerceToString,
 		objectName      = OperationUtils.objectName,
-		typeName        = OperationUtils.typeName
+		contains        = OperationUtils.contains
 		;
 	
 	/*
@@ -178,45 +178,6 @@ function(Utils, State, Story, Colour, AssignmentRequest, OperationUtils) {
 			It = left;
 			return fn(It, right);
 		};
-	}
-	
-	/*
-		As the base function for Operations.contains,
-		this implements the "x contains y" and "y is in x" keywords.
-		This is placed outside so that Operation.isIn can call it.
-		@return {String}
-	*/
-	function contains(container,obj) {
-		var i, keys;
-		if (container) {
-			/*
-				Basic array or string indexOf check.
-			*/
-			if (isSequential(container)) {
-				return container.indexOf(obj) > -1;
-			}
-			/*
-				For Maps and Sets, use .has().
-			*/
-			if (container instanceof Map || container instanceof Set) {
-				return container.has(obj);
-			}
-			/*
-				For plain object containers, it returns true if
-				the obj is a stored value.
-			*/
-			if (container.constructor === Object) {
-				for (i = 0, keys = Object.keys(container); i < keys.length; i+=1) {
-					if (container[keys] === obj) {
-						return true;
-					}
-				}
-			}
-		}
-		/*
-			Default: since "'r' is in 'r'" is true, so is "false is in false".
-		*/
-		return Operations.is(container,obj);
 	}
 
 	/*
@@ -652,14 +613,6 @@ function(Utils, State, Story, Colour, AssignmentRequest, OperationUtils) {
 			// The input is all clear, it seems.
 			return AssignmentRequest.create(dest, src, operator);
 		},
-		
-		/*
-			While these (OK, maybe just objectName) are more commonly used internally,
-			some modules (like Macros) should call on them as well for consistent error
-			messages.
-		*/
-		objectName: objectName,
-		typeName: typeName,
 		
 	};
 	return Object.freeze(Operations);

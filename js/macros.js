@@ -1,5 +1,5 @@
-define(['jquery', 'story', 'utils', 'twinescript/operations'],
-function($, Story, Utils, Operations) {
+define(['jquery', 'story', 'utils', 'utils/operationutils'],
+function($, Story, Utils, OperationUtils) {
 	"use strict";
 	/**
 		This contains a registry of macro definitions, and methods to add to that registry.
@@ -48,7 +48,7 @@ function($, Story, Utils, Operations) {
 						newArgs.push(
 							new TypeError(
 								"I can't spread out "
-								+ Operations.objectName(el.value)
+								+ OperationUtils.objectName(el.value)
 								+ ", which is not a string or array."
 							)
 						);
@@ -233,9 +233,9 @@ function($, Story, Utils, Operations) {
 						Otherwise, it was the most common case: an invalid data type.
 					*/
 					return new TypeError(name + "'s " +
-						Utils.nth(ind + 1) + " value is " + Operations.objectName(arg) +
+						Utils.nth(ind + 1) + " value is " + OperationUtils.objectName(arg) +
 						", but should be " +
-						Operations.typeName(type) + ".");
+						OperationUtils.typeName(type) + ".");
 				}
 			}
 			/*

@@ -1,5 +1,5 @@
-define(['macros', 'utils', 'state', 'datatypes/assignmentrequest'],
-function(Macros, Utils, State, AssignmentRequest) {
+define(['macros', 'utils', 'utils/operationutils', 'state', 'datatypes/assignmentrequest'],
+function(Macros, Utils, OperationUtils, State, AssignmentRequest) {
 	"use strict";
 	
 	var
@@ -110,7 +110,7 @@ function(Macros, Utils, State, AssignmentRequest) {
 				and support them.
 			*/
 			if (a > b) {
-				return range(b, a).reverse();
+				return range(_, b, a).reverse();
 			}
 			/*
 				This differs from Python: the base case returns just [a],
@@ -127,6 +127,28 @@ function(Macros, Utils, State, AssignmentRequest) {
 		[Number, Number])
 		
 		/*
+			(subarray:)
+			Produces a slice of the given array, cut from
+			the *inclusive* indices a and b.
+			A match of (substring:).
+		*/
+		("subarray", function subarray(_, array, a, b) {
+			/*
+				For now, let's assume descending ranges are intended,
+				and support them.
+			*/
+			if (a > b) {
+				return subarray(_, array, b, a);
+			}
+			/*
+				As the indices are 1-indexed, we shall subtract 1 from a.
+				But, as they're inclusive, b shall be left as is.
+			*/
+			return array.slice(a-1, b);
+		},
+		[Array, Number, Number])
+		
+		/*
 			(history:)
 			Returns the array of past passage names, directly from State.
 			This is used to implement the visited() function from Twine 1.
@@ -135,8 +157,6 @@ function(Macros, Utils, State, AssignmentRequest) {
 			return State.pastPassageNames();
 		},
 		[])
-		
-		
 		
 		/*
 			DATAMAP MACROS
@@ -192,13 +212,48 @@ function(Macros, Utils, State, AssignmentRequest) {
 		*/
 		/*
 			(dataset:)
-			Sets are more straightforward - they can accept plain arrays
-			straight off.
+			Sets are more straightforward - their JS constructors can accept
+			arrays straight off.
 		*/
 		("dataset", function() {
 			return new Set(Array.from(arguments).slice(1));
 		},
 		zeroOrMore(Any))
+		
+		/*
+			COLLECTION OPERATIONS
+		*/
+		/*
+			(count:)
+			Accepts 2 arguments - a collection and a value - and returns the number
+			of occurrences of the value in the collection, using the same semantics
+			as the "contains" operator.
+		*/
+		("count", function(_, collection, value) {
+			switch(OperationUtils.collectionType(collection)) {
+				case "dataset":
+				case "datamap": {
+					return +collection.has(name);
+				}
+				case "string": {
+					if (typeof value !== "string") {
+						return new TypeError(
+							OperationUtils.objectName(collection)
+							+ " can't contain  "
+							+ OperationUtils.objectName(value)
+							+ " because it isn't a string."
+						);
+					}
+					return collection.split(value).length-1;
+				}
+				case "array": {
+					return collection.reduce(function(count, e) {
+						return count + (e === value);
+					}, 0);
+				}
+			}
+		},
+		[Any, Any])
 		
 		// End of macros
 		;

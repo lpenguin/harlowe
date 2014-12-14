@@ -17,7 +17,14 @@ define(['utils'], function(Utils) {
 	function collectionType(value) {
 		return Array.isArray(value) ? "array" :
 			value instanceof Map ? "datamap" :
-			value instanceof Set ? "dataset" : "object";
+			value instanceof Set ? "dataset" :
+			value && typeof value === "object" ? "object" :
+			/*
+				If it's not an object, then it's not a collection. Return
+				a falsy string (though I don't condone using this function in
+				Boolean position).
+			*/
+			"";
 	}
 	/*
 		Next, a shortcut to determine whether a given value should have
@@ -174,6 +181,38 @@ define(['utils'], function(Utils) {
 		);
 	}
 	
+	/*
+		As the base function for Operations.contains,
+		this implements the "x contains y" and "y is in x" keywords.
+		This is placed outside so that Operation.isIn can call it.
+		@return {String}
+	*/
+	function contains(container,obj) {
+		/*
+			TODO: this has the problem, though, that all objects are compared by reference
+			using JS's strict equality algorithm, rather than a more intuitive
+			compare-by-value proposition.
+		*/
+		if (container) {
+			/*
+				Basic array or string indexOf check.
+			*/
+			if (isSequential(container)) {
+				return container.indexOf(obj) > -1;
+			}
+			/*
+				For Sets and Maps, use .has().
+			*/
+			if (container instanceof Set || container instanceof Map) {
+				return container.has(obj);
+			}
+		}
+		/*
+			Default: since "'r' is in 'r'" is true, so is "false is in false".
+		*/
+		return Object.is(container, obj);
+	}
+	
 	var OperationUtils = Object.freeze({
 		isObject: isObject,
 		collectionType: collectionType,
@@ -182,6 +221,7 @@ define(['utils'], function(Utils) {
 		coerceToString: coerceToString,
 		objectName: objectName,
 		typeName: typeName,
+		contains: contains,
 	});
 	return OperationUtils;
 });

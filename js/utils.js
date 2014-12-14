@@ -129,7 +129,7 @@ define(['jquery', 'markup/markup', 'utils/selectors', 'utils/customelements'], f
 			If the string can't be parsed as a time, then this returns 0.
 
 			@method cssTimeUnit
-			@param s		either string, or array of strings
+			@param s either string, or array of strings
 			@return either single string or array of times
 		*/
 		cssTimeUnit: function (s) {

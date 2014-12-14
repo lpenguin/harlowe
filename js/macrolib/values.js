@@ -25,6 +25,28 @@ define(['macros'], function(Macros) {
 		[zeroOrMore(Any)])
 
 		/*
+			(substring:)
+			Produces a slice of the given string, cut from
+			the *inclusive* one-indexed indices a and b.
+			A match of (subarray:).
+		*/
+		("substring", function substring(_, string, a, b) {
+			/*
+				For now, let's assume descending ranges are intended,
+				and support them.
+			*/
+			if (a > b) {
+				return substring(_, string, b, a);
+			}
+			/*
+				As the indices are 1-indexed, we shall subtract 1 from a.
+				But, as they're inclusive, b shall be left as is.
+			*/
+			return string.slice(a-1, b);
+		},
+		[String, Number, Number])
+		
+		/*
 			(num:), (number:)
 			This provides explicit coercion to Number.
 		*/

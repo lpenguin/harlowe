@@ -208,9 +208,9 @@ define(['story', 'utils', 'lz-string'], function(Story, Utils, LZString) {
 			@return {Array} Array of previously visited passages.
 		*/
 		pastPassageNames: function () {
-			var i, ret = [Story.getPassageName(present.passage)];
+			var i, ret = [];
 
-			for (i = recent; i > 0; i--) {
+			for (i = recent-1; i >= 0; i--) {
 				ret.unshift(Story.getPassageName(timeline[i].passage));
 			}
 
