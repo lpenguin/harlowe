@@ -468,14 +468,9 @@ function($, Utils, Selectors, Renderer, Environ, Story, State, HookUtils, HookSe
 			}
 			
 			/*
-				If no code is left in the descriptor, do nothing.
-				If there's code but no target, something
-				incorrect has transpired.
+				If there's no target, something incorrect has transpired.
 			*/
-			if (!desc.code && desc.append !== "remove") {
-				return;
-			}
-			else if (!desc.target) {
+			if (!desc.target) {
 				Utils.impossible("Section.renderInto",
 					"ChangeDescriptor has code but not a target!");
 				return;

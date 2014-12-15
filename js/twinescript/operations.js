@@ -61,8 +61,12 @@ function(Utils, State, Story, Colour, AssignmentRequest, OperationUtils) {
 			// A cached error message fragment.
 			onlyIcan = "Only I can use data keys beginning with ",
 			// Hoisted variable.
-			match;
+			match,
+			error;
 		
+		if((error = Utils.containsError(obj, prop))) {
+			return error;
+		}
 		if(prop.startsWith("__")) {
 			return new Error(onlyIcan + "'__'.");
 		}

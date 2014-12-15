@@ -84,7 +84,7 @@ function($, Macros, Utils, Selectors, Story, State, Engine, ChangerCommand) {
 				TwineScript_ObjectName: "a (link-goto:) command",
 				
 				TwineScript_Print: function() {
-					var visited = -1;
+					var visited = -1, passageID, passageName;
 					/*
 						The string representing the passage name is evaluated as TwineMarkup here -
 						the link syntax accepts TwineMarkup in both link and passage position
@@ -97,8 +97,7 @@ function($, Macros, Utils, Selectors, Story, State, Engine, ChangerCommand) {
 						already discards the ordering of link text and passage name in the link
 						syntax ([[a->b]] vs [[b<-a]]) then this can't be helped, and probably doesn't matter.
 					*/
-					var passageName = section.evaluateTwineMarkup(Utils.unescape(passage || text));
-					var passageID = Story.getPassageID(passageName);
+					passageName = section.evaluateTwineMarkup(Utils.unescape(passage || text));
 					
 					/*
 						If a <tw-error> was returned by evaluateTwineMarkup, replace the link with it.
@@ -110,6 +109,7 @@ function($, Macros, Utils, Selectors, Story, State, Engine, ChangerCommand) {
 						*/
 						return passageName;
 					}
+					passageID = Story.getPassageID(passageName);
 					
 					if (passageID) {
 						visited = (State.passageIDVisited(passageID));
