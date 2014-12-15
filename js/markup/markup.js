@@ -175,6 +175,13 @@
 			Now, the inline rules.
 		*/
 		inlineRules = setupRules(markupMode, {
+		
+			/*
+				This is a legacy match that simply provides
+				an error to those who have mistakenly deployed Twine 1
+				macro syntax in Twine 2.
+			*/
+			twine1Macro: { fn: Object },
 			
 			/*
 				Like GitHub-Flavoured Markdown, Twine preserves line breaks

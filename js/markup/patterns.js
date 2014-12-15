@@ -175,7 +175,7 @@
 		passageLink = {
 			opener:            "\\[\\[",
 			text:              "(" + notChars("]") + ")",
-			rightSeparator:    "\\->",
+			rightSeparator:    either("\\->", "\\|"),
 			leftSeparator:     "<\\-",
 			closer:            "\\]\\]",
 			legacySeparator:   "\\|",
@@ -215,6 +215,8 @@
 			name:              "(" + either(anyLetter.replace("]","\\/]") + anyLetter + "*", variable) + "):",
 			closer:            "\\)",
 		},
+		
+		twine1Macro = "<<[^>\\s]+\\s*(?:\\\\.|'(?:[^'\\\\]*\\\\.)*[^'\\\\]*'|\"(?:[^\"\\\\]*\\\\.)*[^\"\\\\]*\"|[^'\"\\\\>]|>(?!>))*>>",
 		
 		tag = {
 			name:              "\\w[\\w\\-]*",
@@ -393,6 +395,9 @@
 		
 		groupingFront: "\\(" + notBefore(macro.name),
 		groupingBack:  "\\)",
+		
+		twine1Macro:
+			twine1Macro,
 		
 		/*
 			Macro code

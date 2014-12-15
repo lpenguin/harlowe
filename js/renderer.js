@@ -100,6 +100,17 @@ define(['utils', 'markup/markup', 'twinescript/compiler'], function(Utils, Twine
 			for(; i < len; i += 1) {
 				token = tokens[i];
 				switch(token.type) {
+					case "twine1Macro": {
+						/*
+							TODO: abstract out the renderError method from Section, and use it here.
+						*/
+						out += "<tw-error class='error' title=\""
+							+ escape(token.text)
+							+ "\">"
+							+ "Twine 2 macros use a different syntax to Twine 1 macros."
+							+ "</tw-error>";
+						break;
+					}
 					case "numbered":
 					case "bulleted": {
 						// Run through the tokens, consuming all consecutive list items
