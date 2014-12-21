@@ -119,7 +119,7 @@ define(['jquery', 'utils', 'macros', 'datatypes/hookset', 'datatypes/changercomm
 					could be used far from the hooks that this HookRef selects,
 					and we'll need to re-run the desc's section's selectHook() anyway.
 				*/
-				if ("selector" in selector) {
+				if (selector.selector) {
 					selector = selector.selector;
 				}
 				return ChangerCommand.create(name, [selector, target]);
@@ -207,7 +207,6 @@ define(['jquery', 'utils', 'macros', 'datatypes/hookset', 'datatypes/changercomm
 							depending on the selector.
 						*/
 						scope = desc.section.selectHook(selector);
-						
 						/*
 							In the unlikely event that no scope could be created, call it quits.
 							Q: should it make a fuss?
@@ -294,7 +293,7 @@ define(['jquery', 'utils', 'macros', 'datatypes/hookset', 'datatypes/changercomm
 							the previous call to enchantScope().
 						*/
 						enchantments.each(function() {
-							$(this).children().unwrap();
+							$(this).contents().unwrap();
 						});
 					}
 				};

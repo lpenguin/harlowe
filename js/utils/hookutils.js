@@ -227,7 +227,6 @@ define(['jquery', 'utils', 'utils/selectors'], function($, Utils, Selectors) {
 			nodes.forEach(function(e) {
 				ret = ret.add($(e).wrapAll(htmlTag));
 			});
-			console.log(ret);
 			return ret;
 		},
 		
