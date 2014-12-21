@@ -17,7 +17,7 @@ require.config({
 		'jqueryplugins',
 	],
 });
-require(['jquery', 'renderer', 'story', 'state', 'engine', 'utils', 'utils/selectors', 'macrolib', /*'repl'*/],
+require(['jquery', 'renderer', 'story', 'state', 'engine', 'utils', 'utils/selectors', 'macrolib', 'repl'],
 		function ($, Renderer, Story, State, Engine, Utils, Selectors) {
 	"use strict";
 	/**

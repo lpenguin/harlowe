@@ -88,10 +88,6 @@ define([], function() {
 		Structural elements
 	*/
 	
-	// Charspans (inline)
-	// - value: the char value, or 'space' or 'tab'.
-	('tw-char', 'value')
-	
 	// Hooks (inline)
 	// - name: the name of the hook.
 	// - code: the code that it should render, if it's not yet rendered.

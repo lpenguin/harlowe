@@ -9,82 +9,203 @@ define(['jquery', 'utils', 'utils/selectors'], function($, Utils, Selectors) {
 		@class HookUtils
 		@static
 	*/
-	
-	/**
-		Creates an Array of jQuery objects, queried from the given DOM,
-		which contain the chars in the selector.
-		The selector is currently just a text search string.
-		
-		@method findCharSpans
-		@private
-		@param {String} selector The search string.
-		@param {jQuery} dom The DOM to search.
-		@return {Array} An array of jQuery objects.
+
+	/*
+		Retrieves a substring from a text node by slicing it into (at most 3) parts,
+		specified by the inclusive start and non-inclusive end indices.
 	*/
-	function findCharSpans(selector, dom) {
-		// Recursive call
-		return _findCharSpans(selector, Utils.findAndFilter(dom, Selectors.charSpan), true);
-	}
-
-	/**
-		Gets the value of a charSpan element.
-		Needed because <br> elements are also considered charspans, but lack a 'value' attribute.
-
-	*/
-	function _elementGetChar(elem) {
-		return (elem.tagName.toLowerCase() === "br" ? "\n" : elem.getAttribute("value"));
-	}
-	
-	/**
-		The recursive form of findCharSpans.
-		
-		@method _findCharSpans
-		@private
-		@param {String} selector The search string.
-		@param {jQuery} chars The charspans to search.
-		@param {Boolean} fulltext Whether this is the full text. If true, then
-		the recursive call results are put into an array instead of a jQuery collection.
-	*/
-	function _findCharSpans(selector, chars, fulltext) {
-		var temp, query, el1, el2, i,
-			ret = (fulltext ? [] : $());
-
-		// Coerce to string
-		selector += "";
-		if (selector.length > 1 || fulltext) {
-			// Recursive case: see if each instance of search string's first character is followed
-			// by search string's next character.
-			for (i = 0; i < chars.length; i++) {
-				el1 = chars.get(i);
-				// If length <= 1, don't bother checking next char
-				query = ((selector.length <= 1 || i >= chars.length - 1) && (_elementGetChar(el1) === selector[0]) && el1);
-
-				if (!query) {
-					el2 = chars.get(i + 1);
-					if (el2 && _elementGetChar(el1) === selector[0] && _elementGetChar(el2) === selector[1]) {
-						// See if a further search yields profit
-						query = _findCharSpans(selector.slice(1), chars.slice(i + 1, i + selector.length), false);
-					}
-				}
-				// Add the results to the return set.
-				if (query) {
-					if (fulltext) {
-						ret.push($(el1).add(query));
-					} else {
-						ret = ret.add(el1).add(query);
-					}
-				}
+	function sliceNode(node, start, end) {
+		/*
+			We need to cache the length here, as the node is transformed
+			by the subsequent splitText calls.
+		*/
+		var l = node.textContent.length;
+		/*
+			Of course, we can't omit simple range checks before going further.
+		*/
+		if (start >= l) {
+			return;
+		}
+		/*
+			Now, we do the first split, separating the start of the node
+			from the start of the substring.
+			(We skip this if the substring is at the start, as splitting
+			will create a 0-char text node.)
+		*/
+		var newNode, ret = [(newNode = (start === 0 ? node : node.splitText(start)))];
+		if (end) {
+			/*
+				This function supports negative end indices, using the
+				following quick conversion:
+			*/
+			if (end <= 0) {
+				end = l - end;
 			}
-		} else {
-			// Base case: return char if it matches the search string.
-			temp = (chars.attr("value") === selector ? chars.first() : []);
-			if (fulltext) {
-				ret.push(temp);
-			} else {
-				ret = temp;
+			/*
+				If that conversion causes end to become equal to l, we
+				don't bother (as it will create another 0-char text node).
+			*/
+			if (end < l) {
+				/*
+					Otherwise, the split will be performed.
+					Note that this returns the rightmost portion of the split,
+					i.e. from the end of the substring onwards.
+				*/
+				ret.push(newNode.splitText(end - start));
 			}
 		}
-		return (ret.length > 0 || fulltext ? ret : void 0);
+		return ret;
+	}
+	
+	/*
+		This slightly complicated procedure is necessary to select all
+		descendent text nodes in jQuery.
+	*/
+	function textNodes(dom) {
+		/*
+			First, create an array containing all descendent and contents nodes
+			which are text nodes.
+		*/
+		return Array.apply(0, $(dom).find('*').addBack().contents().filter(function() {
+			return this.nodeType === Node.TEXT_NODE;
+		}))
+		/*
+			the addBack() call adds back the descendents in an unwanted order, so we must
+			sort the returned array using compareDocumentPosition.
+		*/
+		.sort(function(left, right) {
+			return (left.compareDocumentPosition(right)) === 2 ? 1 : -1;
+		});
+	}
+	
+	/*
+		This complicated function takes an array of contiguous sequential
+		text nodes, and a search string, and does the following:
+		
+		1. Finds all occurrences of the search string in the sequence,
+		even where the string spans multiple text nodes,
+		
+		2. Splits the nodes along the occurrences of the string, and
+		then returns these split-off nodes.
+		
+		The purpose of this is to allow transformations of exact
+		textual matches within passage text, *regardless* of the
+		actual DOM hierarchy which those matches bestride.
+	*/
+	function findTextInNodes(textNodes, searchString) {
+		var
+			/*
+				examinedNodes holds the text nodes which are currently being
+				scrutinised for any possibility of holding the search string.
+			*/
+			examinedNodes = [],
+			/*
+				examinedText holds the textContent of the entire set of
+				examinedNodes, for easy comparison and inspection.
+			*/
+			examinedText = '',
+			/*
+				ret is the returned array of split-off text nodes.
+			*/
+			ret = [],
+			/*
+				And these are just hoisted junk.
+			*/
+			index, remainingLength, slices;
+		
+		/*
+			First, if either search set is 0, return.
+		*/
+		if (!textNodes.length || !searchString) {
+			return ret;
+		}
+		/*
+			We progress through all of the text nodes.
+		*/
+		while(textNodes.length > 0) {
+			/*
+				Add the next text node to the set of those being examined.
+			*/
+			examinedNodes.push(textNodes[0]);
+			examinedText += textNodes[0].textContent;
+			textNodes.shift();
+			
+			/*
+				Now, perform the examination: does this set of nodes contain the string?
+			*/
+			index = examinedText.indexOf(searchString);
+			/*
+				If so, proceed to extract the substring.
+			*/
+			if (index > -1) {
+				remainingLength = examinedText.length - (index + searchString.length);
+				/*
+					First, remove all nodes which do not contain any
+					part of the search string (as this algorithm scans left-to-right
+					through nodes, these will always be in the left portion of the
+					examinedNodes list).
+				*/
+				while(index >= examinedNodes[0].textContent.length) {
+					index -= examinedNodes[0].textContent.length;
+					examinedNodes.shift();
+				}
+				/*
+					In the event that it was found within a single node,
+					simply slice that node only.
+				*/
+				if (examinedNodes.length === 1) {
+					slices = sliceNode(examinedNodes[0], index, index + searchString.length);
+					ret.push(slices[0]);
+					// The extra slice at the end shall be examined
+					// in the next recursion.
+					if (slices[1]) {
+						textNodes.unshift(slices[1]);
+					}
+					break;
+				}
+				/*
+					We now push multiple components: a slice from the first examined node
+					(which will extract the entire right side of the node):
+				*/
+				ret.push(sliceNode(
+					examinedNodes[0],
+					index,
+					examinedNodes[0].length
+				)
+				/*
+					(Since we're extracting the right side, there will be no 'end' slice
+					returned by sliceNode. So, just use the first returned element.)
+				*/
+				[0]);
+				/*
+					Then, all of the nodes between first and last:
+				*/
+				ret.push.apply(ret, examinedNodes.slice(1,-1));
+				/*
+					Then, a slice from the last examined node (which will extract
+					the entire left side).
+				*/
+				slices = sliceNode(
+					examinedNodes[examinedNodes.length-1],
+					0,
+					examinedNodes[examinedNodes.length-1].textContent.length - remainingLength
+				);
+				ret.push(slices[0]);
+				// The extra slice at the end shall be examined
+				// in the next recursion.
+				if (slices[1]) {
+					textNodes.unshift(slices[1]);
+				}
+				// Finally, if any of the above were undefined, we remove them.
+				ret = ret.filter(Boolean);
+				break;
+			}
+		}
+		/*
+			The above only finds the first substring match. The further ones
+			are obtained through this recursive call.
+		*/
+		return [ret].concat(findTextInNodes(textNodes, searchString));
 	}
 	
 	/*
@@ -92,7 +213,23 @@ define(['jquery', 'utils', 'utils/selectors'], function($, Utils, Selectors) {
 	*/
 	var HookUtils = {
 		
-		findCharSpans: findCharSpans,
+		/**
+			@method wrapTextNodes
+			@static
+			@param {String} searchString The passage text to wrap
+			@param {jQuery} dom The DOM in which to search
+			@param {String} htmlTag The HTML tag to wrap around
+			@return {jQuery} A jQuery set holding the created HTML wrapper tags.
+		*/
+		wrapTextNodes: function(searchString, dom, htmlTag) {
+			var nodes = findTextInNodes(textNodes(dom), searchString),
+				ret = $();
+			nodes.forEach(function(e) {
+				ret = ret.add($(e).wrapAll(htmlTag));
+			});
+			console.log(ret);
+			return ret;
+		},
 		
 		/**
 			Returns the type of a selector string.
@@ -106,13 +243,8 @@ define(['jquery', 'utils', 'utils/selectors'], function($, Utils, Selectors) {
 		*/
 		selectorType: function (val) {
 			var r;
-
-			// Coerce empty string to undefined
-
-			if (!val) {
-				return "undefined";
-			}
-			if (typeof val === "string") {
+			
+			if (val && typeof val === "string") {
 				r = /\?(\w*)/.exec(val);
 
 				if (r && r.length) {

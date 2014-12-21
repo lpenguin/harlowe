@@ -7,16 +7,16 @@ define([], function() {
 		passage: "tw-passage",
 		story: "tw-story",
 		sidebar: "tw-sidebar",
-		charSpan: "tw-char, br",
 		internalLink: "tw-link",
 		brokenLink: "tw-broken-link",
 		hook: "tw-hook",
 		pseudoHook: "tw-pseudo-hook",
 		expression: "tw-expression",
 		enchanter: "[enchanter]",
-		script: "[data-role=script]",
-		stylesheet: "[data-role=stylesheet]",
+		script: "[role=script]",
+		stylesheet: "[role=stylesheet]",
 		storyData: "tw-storydata",
-		passageData: "tw-passagedata"
+		passageData: "tw-passagedata",
+		whitespace: "tw-char[char=space], tw-char[char=tab], br",
 	});
 });

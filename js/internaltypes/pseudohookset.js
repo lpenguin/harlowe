@@ -19,7 +19,7 @@ define(['utils/hookutils'],function(HookUtils) {
 		@class PseudoHookSet
 		@static
 	*/
-	var PseudoHookSet = Object.freeze({		
+	var PseudoHookSet = Object.freeze({
 		/**
 			An Array forEach-styled iteration function. This wraps all
 			matched words in the section DOM with a temporary element,
@@ -30,30 +30,31 @@ define(['utils/hookutils'],function(HookUtils) {
 			
 			@method forEach
 			@param {Function} fn The callback, which is passed the following:
-				{jQuery} The <tw-pseudo-hook> element to manipulate.
+			@param {jQuery} The <tw-pseudo-hook> element to manipulate.
 		*/
 		forEach: function(fn) {
-		
 			/*
-				HookUtils.findCharSpans powers the entire PseudoHook
-				concept, and here is where it is invoked.
+				This is a bit of a #kludge, but no better solution
+				exists. In order for DOM replacement jQuery methods
+				to work reliably on the entire word, a temporary wrapper
+				element must be placed around the 1+ text nodes comprising
+				it, thus giving it a solid DOM parentage base.
+				
+				HookSet, of course, can simply use the <tw-hook> elements
+				that already exist. As symmetry with that, the element name
+				used here is <tw-pseudo-hook>.
 			*/
-			HookUtils.findCharSpans(this.selector, this.section.dom)
-				.forEach(function(e) {
-				/*
-					This is a bit of a #kludge, but no better solution
-					exists. In order for DOM replacement jQuery methods
-					to work reliably on the entire word, a temporary wrapper
-					element must be placed around them, thus giving them a
-					solid DOM parentage base.
-					
-					HookSet, of course, can simply use the <tw-hook> elements
-					that already exist. As symmetry with that, the element name
-					used here is <tw-pseudo-hook>.					
-				*/
-				e.wrapAll('<tw-pseudo-hook>');
-				fn(e.parent());
-				e.unwrap();
+			var e = HookUtils.wrapTextNodes(this.selector, this.section.dom, '<tw-pseudo-hook>');
+			/*
+				Now, call the passed function on all of the <tw-pseudo-hook> elements.
+			*/
+			fn(e.parent());
+			/*
+				Having done that, we now remove the <tw-pseudo-hook> elements and normalize
+				the text nodes that were split up as a result of the 
+			*/
+			e.unwrap().parent().each(function() {
+				this.normalize();
 			});
 		},
 		

@@ -361,7 +361,7 @@ function($, Utils, Selectors, Renderer, Environ, Story, State, HookUtils, HookSe
 		
 		/**
 			This method takes a selector string and selects hooks - usually single <tw-hook>s,
-			but also "pseudo-hooks", consecutive charspans that match the selector -
+			but also "pseudo-hooks", consecutive text nodes that match the selector -
 			querying only this section's DOM and all above it.
 			
 			This is most commonly invoked by TwineScript's desugaring of the HookRef

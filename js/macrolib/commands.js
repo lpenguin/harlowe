@@ -37,7 +37,7 @@ function(Macros, Utils, Story, Engine) {
 					"a (display:) command",
 				
 				TwineScript_Print: function() {
-					return Story.passageNamed(name).html();
+					return Utils.unescape(Story.passageNamed(name).html());
 				},
 			};
 		},

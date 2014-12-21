@@ -27,7 +27,6 @@ define(['utils', 'markup/markup', 'twinescript/compiler'], function(Utils, Twine
 	*/
 	var center = "text-align: center; max-width:50%; ",
 		escape = Utils.escape,
-		charSpanify = Utils.charSpanify,
 		/*
 			The public Renderer object.
 		*/
@@ -184,7 +183,7 @@ define(['utils', 'markup/markup', 'twinescript/compiler'], function(Utils, Twine
 						break;
 					}
 					case "inlineUrl": {
-						out += '<a class="link" href="' + escape(token.text) + '">' + charSpanify(token.text) + '</a>';
+						out += '<a class="link" href="' + escape(token.text) + '">' + token.text + '</a>';
 						break;
 					}
 					case "tag": {
@@ -248,7 +247,7 @@ define(['utils', 'markup/markup', 'twinescript/compiler'], function(Utils, Twine
 						Base case
 					*/
 					default: {
-						out += token.children && token.children.length ? render(token.children) : charSpanify(token.text);
+						out += token.children && token.children.length ? render(token.children) : token.text;
 						break;
 					}
 				}
