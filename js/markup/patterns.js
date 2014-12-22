@@ -102,10 +102,11 @@
 		(performing escaping on the input strings, etc.)
 	*/
 	function opener(a /*variadic*/) {
-		var pattern;
+		var pattern, options;
 		
 		if (arguments.length > 1 || 1) {
-			pattern = "^(?:" + Array.apply(0, arguments).map(escape).join("|") + ")";
+			options = Array.apply(0, arguments).map(escape);
+			pattern = either.apply(0, options) + notBefore.apply(0, options);
 			return new RegExp(pattern);
 		}
 		return {
@@ -173,7 +174,7 @@
 		align = ws + "(==+>|<=+|=+><=+|<==+>)" + ws + eol,
 		
 		passageLink = {
-			opener:            "\\[\\[",
+			opener:            "\\[\\[(?!\\[)",
 			text:              "(" + notChars("]") + ")",
 			rightSeparator:    either("\\->", "\\|"),
 			leftSeparator:     "<\\-",
