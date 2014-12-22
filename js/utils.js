@@ -262,6 +262,7 @@ define(['jquery', 'markup/markup', 'utils/selectors', 'utils/customelements'], f
 		/**
 			Takes a string containing a character or HTML entity, and wraps it into a
 			<tw-char> tag, converting the entity if it is one.
+			Currently (Dec. 2014) unused.
 
 			@method charToSpan
 			@param {String} character
@@ -289,7 +290,8 @@ define(['jquery', 'markup/markup', 'utils/selectors', 'utils/customelements'], f
 		/**
 			Converts an entire string into individual characters, each enclosed
 			by a <tw-char>.
-
+			Currently (Dec. 2014) unused.
+			
 			@method charSpanify
 			@param {String} text Source string
 			@return {String} Resultant HTML

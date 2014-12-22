@@ -231,7 +231,12 @@ define(['utils'], function(Utils) {
 				return compile(token.children);
 			}
 			else if (token.type === "string") {
-				return Utils.toJSLiteral(token.value);
+				/*
+					Note that this is entirely reliant on the fact that TwineScript string
+					literals are currently exactly equal to JS string literals (minus template
+					strings).
+				*/
+				return token.text;
 			}
 			else if (token.type === "colour") {
 				return "Colour.create("

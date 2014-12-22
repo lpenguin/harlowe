@@ -393,15 +393,8 @@
 				
 				groupingFront: { fn: Object },
 				
-				string: {
-					fn: function(match) {
-						var quote = (match[1] || match[2] || match[3]);
-						
-						return {
-							value: match[0].slice(quote.length, -quote.length),
-						};
-					},
-				},
+				string: { fn: Object, },
+				
 				cssTime: {
 					fn: function(match) {
 						return {

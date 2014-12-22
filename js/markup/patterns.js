@@ -26,7 +26,7 @@
 	
 	/*
 		Matches a string of non-nesting characters enclosed by open character and another character,
-		but potentially containing the close-character escaped with /
+		but potentially containing the close-character escaped with \
 		
 		For instance, <This is \> an example>.
 	*/
@@ -34,7 +34,7 @@
 		o = escape(o);
 		c = c ? escape(c) : o;
 
-		return o + "(?:" + notChars( c + "\\" ) + "\\.)" + "*" + notChars( c + "\\" ) + c;
+		return o + "(?:" + notChars( c + "\\" ) + "\\\\.)" + "*" + notChars( c + "\\" ) + c;
 	}
 	
 	/*
@@ -234,8 +234,8 @@
 				Also notice that no empty string exists - this can only be produced
 				using (text:) with no arguments.
 			*/
-			single:   "('+)[^]+?\\1",
-			double:   '("+)[^]+?\\2',
+			single:   enclosed("'"),
+			double:   enclosed('"'),
 		},
 		
 		/*
