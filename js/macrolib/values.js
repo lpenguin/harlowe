@@ -225,8 +225,8 @@ define(['macros'], function(Macros) {
 		},
 		String],
 		openURL: [window.open, String],
-		reload: [window.location.reload, null],
-		gotoURL: [window.location.assign, String],
+		reload: [window.location.reload.bind(window.location), null],
+		gotoURL: [window.location.assign.bind(window.location), String],
 		pageURL: [function () {
 			return window.location.href;
 		}, null],

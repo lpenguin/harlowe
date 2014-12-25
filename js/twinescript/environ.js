@@ -42,6 +42,7 @@ define(['macros', 'state', 'utils', 'datatypes/colour', 'twinescript/operations'
 						to signify that the browser produced them and not Twine.
 					*/
 					Utils.log(e);
+					Utils.log(Array.from(arguments).join(''));
 					e.message = "\u2615 " + e.message;
 					return e;
 				}

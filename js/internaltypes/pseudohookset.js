@@ -1,4 +1,4 @@
-define(['utils/hookutils'],function(HookUtils) {
+define(['jquery', 'utils/hookutils'],function($, HookUtils) {
 	"use strict";
 	
 	/**
@@ -44,16 +44,16 @@ define(['utils/hookutils'],function(HookUtils) {
 				that already exist. As symmetry with that, the element name
 				used here is <tw-pseudo-hook>.
 			*/
-			var e = HookUtils.wrapTextNodes(this.selector, this.section.dom, '<tw-pseudo-hook>');
+			var e = HookUtils.wrapTextNodes(this.selector, this.section.dom, '<tw-pseudo-hook>').parent();
 			/*
 				Now, call the passed function on all of the <tw-pseudo-hook> elements.
 			*/
-			fn(e.parent());
+			e.each(function(){ fn($(this)); }); 
 			/*
 				Having done that, we now remove the <tw-pseudo-hook> elements and normalize
 				the text nodes that were split up as a result of the 
 			*/
-			e.unwrap().parent().each(function() {
+			e.contents().unwrap().parent().each(function() {
 				this.normalize();
 			});
 		},

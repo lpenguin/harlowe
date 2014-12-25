@@ -97,43 +97,6 @@ define(['utils'], function(Utils) {
 		return (array.length - 1) - indexOfType.apply(0, a);
 	}
 	
-	/**
-		This takes a single TwineMarkup token being used in an assignmentRequest,
-		and returns a tuple that contains an object reference, and a property name or chain.
-	*/
-	function compileVarRef(token) {
-		var propertyNames;
-		
-		if (token.type === "identifier") {
-			/*
-				I don't think this is correct...
-			*/
-			return "Operations.makeVarRef(Operations.Identifiers, '" + token.text + "' )";
-		}
-		if (token.type === "hookRef") {
-			/*
-				Assignments to hookRefs assign text to all of their matching hooks.
-				
-				TwineScript_Assignee is a setter accessor used as a TwineScript
-				assignment interface.
-			*/
-			return "Operations.makeVarRef(section.selectHook('?" + token.name + "'), 'TwineScript_Assignee')";
-		}
-		else if (token.type === "variable") {
-			propertyNames = token.children.map(function(e){
-				return e.name;
-			});
-			
-			return "Operations.makeVarRef(State.variables, "
-				/*
-					Print the propertyNames array literal.
-				*/
-				+ Utils.toJSLiteral(propertyNames)
-				+ ")";
-		}
-		return "";
-	}
-	
 	/*
 		This helper function for compile() emits code for a makeAssignmentRequest call.
 		Placing it here is a bit clearer than being cloistered deep in compile().
@@ -166,7 +129,7 @@ define(['utils'], function(Utils) {
 			/*
 				Hoisted temp variables
 			*/
-			macroNameToken, token, varRefTemp,
+			macroNameToken, token,
 			/*
 				Setting values to either of these variables
 				determines the code to emit:
@@ -203,18 +166,20 @@ define(['utils'], function(Utils) {
 		*/
 		if (tokens.length === 1) {
 			token = tokens[0];
-			if (isVarRef) {
-				/*
-					If we can make a varRef out of this token,
-					return the varRef code.
-				*/
-				varRefTemp = compileVarRef(token);
-				if (varRefTemp) {
-					return varRefTemp;
+			
+			if (token.type === "identifier") {
+				if (isVarRef) {
+					/*
+						I don't think this is correct...
+					*/
+					return "Operations.makeVarRef(Operations.Identifiers, '" + token.text + "' )";
 				}
-			}
-			else if (token.type === "simpleIdentifier") {
 				return " Operations.Identifiers." + token.text + " ";
+			}
+			else if (token.type === "variable") {
+				return " Operations." + (isVarRef ? "makeVarRef" : "get") + "(State.variables,"
+					+ Utils.toJSLiteral(token.name)
+					+ ")";
 			}
 			else if (token.type === "hookRef") {
 				/*
@@ -225,18 +190,24 @@ define(['utils'], function(Utils) {
 					2. The ? sigil is needed to distinguish the hook name
 					from a pseudo-hook selector string.
 				*/
+				if (isVarRef) {
+					/*
+						Assignments to hookRefs assign text to all of their matching hooks.
+						
+						TwineScript_Assignee is a setter accessor used as a TwineScript
+						assignment interface.
+					*/
+					return "Operations.makeVarRef(section.selectHook('?" + token.name + "'), 'TwineScript_Assignee')";
+				}
 				return " section.selectHook('?" + token.name + "') ";
-			}
-			else if (token.type === "variable" || token.type === "identifier") {
-				return compile(token.children);
 			}
 			else if (token.type === "string") {
 				/*
 					Note that this is entirely reliant on the fact that TwineScript string
 					literals are currently exactly equal to JS string literals (minus template
-					strings).
+					strings and newlines).
 				*/
-				return token.text;
+				return token.text.replace(/\n/g, "\\n");
 			}
 			else if (token.type === "colour") {
 				return "Colour.create("
@@ -257,7 +228,7 @@ define(['utils'], function(Utils) {
 			order of precedence:
 			
 			grouping ()
-			property . []
+			property 's
 			macro
 			not
 			multiply
@@ -373,7 +344,8 @@ define(['utils'], function(Utils) {
 				This is somewhat tricky - we need to manually wrap the left side
 				inside the Operations.get call, while leaving the right side as is.
 			*/
-			left = "Operations.get(" + compile(tokens.slice (0,  i))
+			left = "Operations." + (isVarRef ? "makeVarRef" : "get")
+				+ "(" + compile(tokens.slice (0,  i))
 				/*
 					Utils.toJSLiteral() is used to both escape the name
 					string and wrap it in quotes.
@@ -390,12 +362,6 @@ define(['utils'], function(Utils) {
 			left = "Operations.get(Operations.Identifiers.it,"
 				+ Utils.toJSLiteral(tokens[i].name) + ")";
 			midString = " ";
-			needsLeft = needsRight = false;
-		}
-		else if ((i = indexOfType(tokens, "simpleVariable")) >-1) {
-			midString = " Operations.get(State.variables,"
-				+ Utils.toJSLiteral(tokens[i].name)
-				+ ")";
 			needsLeft = needsRight = false;
 		}
 		else if ((i = indexOfType(tokens, "macro")) >-1) {

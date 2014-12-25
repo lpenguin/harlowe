@@ -14,8 +14,9 @@
 (move: $arr's 1st into $val)
 (print: $arr) (= 3,2,4)
 (print: $val) (= 1)
+(print: (a:1,2)'s 2nd) (= 2)
 
 
 (set: $obj to { gold: 1 }) $obj's gold (= 1)
 (set: $obj to { last: { '1st':(a:1,2,3) }}) $obj's last's 1st (= 1,2,3)
-(print: $obj's last's 1st's 1st ) (= 2)
+(print: $obj's last's 1st's 2nd ) (= 2)

@@ -374,7 +374,13 @@ function(Utils, State, Story, Colour, AssignmentRequest, OperationUtils) {
 				differential properties on the prototype chain. Oh well,
 				it's probably not that good an idea anyway.
 			*/
-			if ((obj instanceof Map) ? !obj.has(prop) : !(prop in obj)) {
+			if ((obj instanceof Map)
+					? !obj.has(prop)
+					/*
+						Notice that the 'in' operator fails on primitives, so
+						Object(obj) must be used.
+					*/
+					: !(prop in Object(obj))) {
 				/*
 					If the property is actually a State.variables access,
 					then it's a variable, and uses the defaultValue in place
@@ -494,6 +500,14 @@ function(Utils, State, Story, Colour, AssignmentRequest, OperationUtils) {
 					return Operations.get(this.deepestObject, this.deepestProperty);
 				},
 				set: function(value) {
+					/*
+						If value has a TwineScript_AssignValue() method
+						(i.e. is a HookSet) then its returned value is used
+						instead of copying over the object itself.
+					*/
+					if (value && value.TwineScript_AssignValue) {
+						value = value.TwineScript_AssignValue();
+					}
 					/*
 						Most all objects in TwineScript are passed by value.
 						Hence, setting to an object duplicates it.

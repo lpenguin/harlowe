@@ -5,6 +5,11 @@
 <tw-storydata options="debug" startnode="1">
 <tw-passagedata pid="1" name="1" position="512,384" data-t8n="instant">
 (set: $red to 12) $red (= 12)
+
 (set: $red to it / 4) $red (= 3)
-(set: $blue to (datamap:"Frog","Jane")) $blue's Frog (= Jane)
-(set: $blue to its Frog) $blue (= Jane)
+
+(set: $blue to (datamap:"Frog","Jane")) 
+(print:$blue's Frog) (= Jane)
+
+(set: $blue to its Frog)
+$blue (= Jane)

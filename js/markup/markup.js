@@ -23,7 +23,6 @@
 			blockRules,
 			inlineRules,
 			expressionRules,
-			variableRules,
 			macroRules,
 			// ..and, this is the union of them.
 			allRules,
@@ -35,11 +34,6 @@
 				The standard TwineMarkup mode.
 			*/
 			markupMode     = [],
-			/*
-				The interior of variables (which comprise identifier references
-				like "$chair", and property references like ".peach").
-			*/
-			variableMode = [],
 			/*
 				The contents of macro tags - expressions and other macros.
 			*/
@@ -329,39 +323,7 @@
 			
 			hookRef:  { fn: textTokenFn("name") },
 			
-			variable: {
-				fn: function(match) {
-					return {
-						name:      match[1],
-						innerText: match[0],
-						innerMode: variableMode,
-					};
-				},
-			},
-			
-			/*
-				I regret repeating this, but a programmatic means of avoiding
-				repetition would probably be a mite too obfuscatory.
-			*/
-			identifier: {
-				fn: function(match) {
-					return {
-						name:      match[1],
-						innerText: match[0],
-						innerMode: variableMode,
-					};
-				},
-			},
-		});
-		
-		/*
-			The two variable rules.
-		*/
-		variableRules = setupRules(variableMode, {
-			simpleVariable:   { fn: textTokenFn("name") },
-			variableProperty: { fn: textTokenFn("name") },
-			simpleIdentifier: { fn: textTokenFn("name") },
-			itsProperty:      { fn: textTokenFn("name") },
+			variable:   { fn: textTokenFn("name") },
 		});
 		
 		/*
@@ -392,6 +354,13 @@
 				},
 				
 				groupingFront: { fn: Object },
+				
+				/*
+					Warning: the property pattern "'s" conflicts with the string literal
+					pattern - "$a's b's" resembles a string literal. To ensure that
+					the former is always matched first, this rule must come before it.
+				*/
+				variableProperty: { fn: textTokenFn("name") },
 				
 				string: { fn: Object, },
 				
@@ -481,6 +450,8 @@
 						};
 					},
 				},
+				identifier: { fn: textTokenFn("name") },
+				itsProperty:      { fn: textTokenFn("name") },
 			},
 			["boolean", "is", "to", "into", "and", "or", "not", "isNot",
 			"comma", "spread", "contains", "isIn"].reduce(function(a, e) {
@@ -498,14 +469,19 @@
 		[].push.apply(markupMode,       Object.keys(blockRules)
 								.concat(Object.keys(inlineRules))
 								.concat(Object.keys(expressionRules)));
-		[].push.apply(variableMode,     Object.keys(variableRules));
-		[].push.apply(macroMode,        Object.keys(macroRules)
-								.concat(Object.keys(expressionRules)));
+		/*
+			Warning: the property pattern "'s" conflicts with the string literal
+			pattern - "$a's b's" resembles a string literal. To ensure that
+			the former is always matched first, expressionRules
+			must be pushed first.
+		*/
+		[].push.apply(macroMode,        Object.keys(expressionRules)
+								.concat(Object.keys(macroRules)));
 
 		/*
 			Merge all of the categories together.
 		*/
-		allRules = Object.assign({}, blockRules, inlineRules, variableRules, expressionRules, macroRules);
+		allRules = Object.assign({}, blockRules, inlineRules, expressionRules, macroRules);
 		
 		/*
 			Add the 'pattern' property to each rule

@@ -392,20 +392,30 @@ define(['jquery', 'markup/markup', 'utils/selectors', 'utils/customelements'], f
 			@method transitionOut
 			@param {jQuery} el            jQuery collection to transition out
 			@param (String) transIndex    transition to use
-			@param {Function} onComplete  function to call when completed
 		*/
 
-		transitionOut: function (el, transIndex, onComplete) {
-			var delay;
-
+		transitionOut: function (el, transIndex) {
+			var delay,
+				/*
+					If the element is actually a bare TextNode, we must
+					wrap it in a temporary element first, which can thus be
+					animated using CSS.
+				*/
+				isTextNode = el.filter(function(_,e) { return e.nodeType === Node.TEXT_NODE; }).length > 0;
 			/*
 				The default transition callback is to remove the element.
 			*/
-			onComplete = onComplete || function () {
+			function onComplete() {
 				el.remove();
-			};
+			}
 			/*
-				But, for now, apply the transition.
+				As mentioned above, text nodes must be wrapped in containers.
+			*/
+			if (isTextNode) {
+				el = el.wrapAll('<tw-transition-container>').parent();
+			}
+			/*
+				Now, apply the transition.
 			*/
 			el.attr("data-t8n", transIndex).addClass("transition-out");
 
@@ -424,23 +434,46 @@ define(['jquery', 'markup/markup', 'utils/selectors', 'utils/customelements'], f
 			Transition an element in.
 
 			@method transitionIn
-			@param {jQuery} el			    jQuery collection to transition out
-			@param (String) transIndex		transition to use
-			@param {Function} onComplete	function to call when completed
+			@param {jQuery} el              jQuery collection to transition out
+			@param (String) transIndex      Transition to use
 		*/
 
-		transitionIn: function (el, transIndex, onComplete) {
-			var delay;
-
+		transitionIn: function (el, transIndex) {
+			var delay,
+				/*
+					If the element is actually a bare TextNode, we must
+					wrap it in a temporary element first, then
+					unwrap it after the transition concludes.
+				*/
+				isTextNode = el.filter(function(_,e) { return e.nodeType === Node.TEXT_NODE; }).length > 0;
+			
 			/*
 				The default transition callback is to remove the transition-in
 				class. (#maybe this should always be performed???)
 			*/
-			onComplete = onComplete || function () {
-				el.removeClass("transition-in").removeAttr("data-t8n");
-			};
+			function onComplete () {
+				/*
+					If it's a text node, then the element is just a wrapper - discard it.
+				*/
+				if (isTextNode) {
+					el.contents().unwrap();
+				}
+				/*
+					Otherwise, remove the transition attributes.
+				*/
+				else {
+					el.removeClass("transition-in").removeAttr("data-t8n");
+				}
+			}
 			/*
-				For now, perform the transition.
+				As mentioned above, text nodes must be wrapped in containers.
+			*/
+			if (isTextNode) {
+				el = el.wrapAll('<tw-transition-container>').parent();
+			}
+			/*
+				Now, perform the transition by assigning these attributes
+				and letting the built-in CSS take over.
 			*/
 			el.attr("data-t8n", transIndex).addClass("transition-in");
 			delay = Utils.transitionTime(transIndex, "transition-in");

@@ -194,22 +194,18 @@
 			$bag's bonnet
 			$a's 1st's 2nd
 		*/
-		simpleVariable = "\\$(" + validVariablePropertyName + ")",
+		variable = "\\$(" + validVariablePropertyName + ")",
 		
 		variableProperty = "'s" + ws + "(" + validVariablePropertyName + ")",
-		
-		variable = simpleVariable + "(?:" + variableProperty + ")*",
 		
 		/*
 			Identifiers: either "it" or "time".
 			"it" is a bit of a problem because its possessive is "its", not "it's",
 			so we can't use a derivation similar to variableProperty.
 		*/
-		simpleIdentifier = "\\b" + either("it","time") + "\\b",
+		identifier = "\\b" + either("it","time") + "\\b",
 		
 		itsProperty = "its" + ws + "(" + validVariablePropertyName + ")",
-		
-		identifier = either(simpleIdentifier, itsProperty + "(?:" + variableProperty + ")*"),
 		
 		macro = {
 			opener:            "\\(",
@@ -229,10 +225,7 @@
 		
 		string = {
 			/*
-				Notice that as this uses backreferences (\1 etc) this assumes
-				the RegExp will be composed as single + double. #awkward
-				
-				Also notice that no empty string exists - this can only be produced
+				Notice that no empty string is permitted - this can only be produced
 				using (text:) with no arguments.
 			*/
 			single:   enclosed("'"),
@@ -404,12 +397,6 @@
 			Macro code
 		*/
 		
-		simpleVariable:
-			simpleVariable,
-		
-		variableOpener:
-			opener("$"),
-		
 		variableProperty:
 			variableProperty,
 		
@@ -447,7 +434,6 @@
 		
 		// Special identifiers
 		identifier: identifier,
-		simpleIdentifier: simpleIdentifier,
 		itsProperty: itsProperty,
 		
 		// TODO: this generated regex is horrendously slow

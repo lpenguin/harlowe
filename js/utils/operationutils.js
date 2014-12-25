@@ -80,6 +80,7 @@ define(['utils'], function(Utils) {
 			If we've gotten here, something unusual has been passed in.
 			(If I allow ES6 Maps into Twine userland, I'd better change this function.)
 		*/
+		Utils.log(value);
 		Utils.impossible("Operations.clone", "The value " + value + " cannot be cloned!");
 		return value;
 	}

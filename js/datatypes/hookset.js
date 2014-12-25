@@ -18,14 +18,14 @@ define(['utils/hookutils', 'jquery'],function(HookUtils, $) {
 		on the collection of matched hooks in the HookSet.
 	*/
 	function jQueryCall(methodName /*variadic*/) {
-		/*
-			hooks is a jQuery collection of every <tw-hook> in the Section
-			which matches this HookSet's selector string.
-			
-			This is re-evaluated during every jQueryCall, so that it's always
-			up-to-date with the DOM.
-		*/
 		var args = Array.from(arguments).slice(1),
+			/*
+				hooks is a jQuery collection of every <tw-hook> in the Section
+				which matches this HookSet's selector string.
+			
+				This is re-evaluated during every jQueryCall, so that it's always
+				up-to-date with the DOM.
+			*/
 			hooks = this.section.$(
 				HookUtils.hookToSelector(
 					this.selector.slice(1) /* slice off the hook sigil */
@@ -99,11 +99,21 @@ define(['utils/hookutils', 'jquery'],function(HookUtils, $) {
 		
 		/**
 			TwineScript_Assignee is used when this object is an lvalue
-			in an AssignmentRequest.
+			in an AssignmentRequest. It's an accessor because it's
+			accessed by Operation.get(), I think.
 		*/
 		get TwineScript_Assignee() {},
 		set TwineScript_Assignee(value) {
 			return jQueryCall.call(this, "text", value);
+		},
+		/**
+			TwineScript_AssignValue is used when this object is an rvalue
+			in an AssignmentRequest. Yes, (set: $grault to ?garply) only
+			copies ?garply's present value into $grault, as if ?garply
+			were a variable.
+		*/
+		TwineScript_AssignValue: function() {
+			return jQueryCall.call(this, "text");
 		},
 		
 		/**
