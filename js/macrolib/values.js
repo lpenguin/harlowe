@@ -82,7 +82,7 @@ define(['macros'], function(Macros) {
 		*/
 		("elseif", function elseif(section, expr) {
 			/*
-				This and else() check the lastHookShown expando
+				This and (else:) check the lastHookShown expando
 				property, if present.
 			*/
 			if (!("lastHookShown" in section.stack[0])) {

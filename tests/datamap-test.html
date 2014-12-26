@@ -23,3 +23,8 @@ Concatenation:
 
 {(set: $barrel to (datamap: "eggs", 2) + (datamap: "legumes", 2))
 (print: $barrel contains "legumes" and contains "eggs") (= true)}
+
+Addition by property indexing:
+
+{(set: $person's bag's flax to "woven")
+(print: $person's bag's flax) (= woven)}

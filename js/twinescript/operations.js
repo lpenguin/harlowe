@@ -89,11 +89,15 @@ function(Utils, State, Story, Colour, AssignmentRequest, OperationUtils) {
 			if ((match = /(\d+)(?:st|[nr]d|th)/.exec(prop))) {
 				prop = match[1] - 1 + "";
 			}
-			if (prop === "last") {
+			else if (prop === "last") {
 				prop = obj.length - 1 + "";
 			}
-			if ((match = /(\d+)(?:st|[nr]d|th)-last/.exec(prop))) {
+			else if ((match = /(\d+)(?:st|[nr]d|th)-last/.exec(prop))) {
 				prop = obj.length - match[1] + "";
+			}
+			else if (prop !== "length") {
+				return new Error("You can only use positions ('4th', 'last', '2nd-last', etc.) and 'length' with a "
+					+ objectName(obj) + ".");
 			}
 		}
 		return prop;

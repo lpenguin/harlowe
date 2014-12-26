@@ -69,7 +69,7 @@ function($, Utils, Selectors, Renderer, Environ, Story, State, HookUtils, HookSe
 			/*
 				Execute the expression.
 			*/
-			result = this.eval(Utils.unescape(expr.popAttr('js') || ''));
+			result = this.eval(expr.popAttr('js') || '');
 		
 		/*
 			If result is a ChangerCommand, please run it.
@@ -169,8 +169,15 @@ function($, Utils, Selectors, Renderer, Environ, Story, State, HookUtils, HookSe
 				|| result === undefined) {
 			nextHook.removeAttr('code');
 			expr.addClass("false");
+			
 			if (nextHook.length) {
-				this.stack[0].lastHookShown = false;
+				/*
+					Unfortunately, (else-if:) must be special-cased, so that it doesn't affect
+					lastHookShown, instead preserving the value of the original (if:).
+				*/
+				if (Utils.insensitiveName(expr.attr('name')) !== "elseif") {
+					this.stack[0].lastHookShown = false;
+				}
 				return;
 			}
 		}

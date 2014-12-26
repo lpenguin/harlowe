@@ -1,10 +1,18 @@
 <!DOCTYPE html><meta charset="utf-8">
-<title>Array Error Test</title>
+<title>If-Elseif Test</title>
 <link rel="stylesheet" href="../build/harlowe-css.css"/>
 <tw-story></tw-story><script data-main="../js/harlowe.js" src="../node_modules/requirejs/require.js"></script>
 <tw-storydata options="debug" startnode="1">
 <tw-passagedata pid="1" name="1" position="512,384" data-t8n="instant">
-(print: (a:) + 2) (= error)
-(set: $a to (a:))
-(set: $a's e to 2) (= error)
-(set: $a's -1th to 2) (= error)
+{(if:true)[True]
+(elseif:false)[]
+(else:)[]} (= True)
+{(if:false)[]
+(elseif:true)[True]
+(else:)[]} (= True)
+{(if:false)[]
+(elseif:false)[]
+(else:)[True]} (= True)
+{(if:true)[True]
+(elseif:true)[]
+(else:)[]} (= True)

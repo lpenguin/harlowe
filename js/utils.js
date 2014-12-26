@@ -189,7 +189,7 @@ define(['jquery', 'markup/markup', 'utils/selectors', 'utils/customelements'], f
 
 		/**
 			Unescape HTML entities.
-			For speed, convert common entities quickly, and convert others with jQuery.
+			For speed, convert common entities quickly, and convert others with the DOM.
 
 			@method unescape
 			@param {String} text Text to convert
