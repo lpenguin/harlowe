@@ -50,9 +50,8 @@ function ($, Story, Utils, Selectors, State, Section) {
 		@private
 		@param {String} id
 		@param {Boolean} stretch Is stretchtext
-		@param {jQuery} [el] The DOM parent element to append to
 	*/
-	function showPassage (id, stretch, el) {
+	function showPassage (id, stretch) {
 		var
 			// Passage element to create
 			newPassage,
@@ -63,8 +62,7 @@ function ($, Story, Utils, Selectors, State, Section) {
 			passageData = Story.passageWithID(id),
 			oldPassages,
 			section,
-			win = $(window);
-
+			story = Utils.storyElement;
 		/*
 			Early exit: the wrong passage ID was supplied.
 		*/
@@ -74,27 +72,16 @@ function ($, Story, Utils, Selectors, State, Section) {
 		}
 		
 		/*
-			There's an option to supply a destination element for the passage,
-			but by and large it will be the storyElement that is the
-			recipient.
+			Because rendering a passage is a somewhat intensive DOM manipulation,
+			the <tw-story> is detached before and reattached after.
 		*/
-		el = el || Utils.storyElement;
-		
-		el.detach();
+		story.detach();
 
 		/*
 			Find out how many tw-passage elements there are currently in the
 			destination element.
 		*/
-		oldPassages = Utils.$(el.children(Utils.passageSelector));
-		
-		/*
-			Scroll the window to the top, if it's being inserted
-			into the window's DOM.
-		*/
-		if (win.find(el).length) {
-			win.scrollTop(oldPassages.offset());
-		}
+		oldPassages = Utils.$(story.children(Utils.passageSelector));
 
 		/*
 			If this isn't a stretchtext transition, send away all of the
@@ -104,7 +91,7 @@ function ($, Story, Utils, Selectors, State, Section) {
 			Utils.transitionOut(oldPassages, t8n);
 		}
 		
-		newPassage = createPassageElement().appendTo(el);
+		newPassage = createPassageElement().appendTo(story);
 		
 		section = Section.create(newPassage);
 		
@@ -119,7 +106,21 @@ function ($, Story, Utils, Selectors, State, Section) {
 			newPassage,
 			{ transition: "dissolve" }
 		);
-		$('body').append(el);
+		/*
+			Although the <tw-story> is being reattached to <html>, the browser
+			will transport it to the <body> anyway.
+		*/
+		$('html').append(story)
+			/*
+				In stretchtext, scroll the window to the top of the inserted element,
+				minus an offset of 5% of the viewport's height.
+				Outside of stretchtext, just scroll to the top of the page.
+			*/
+			.scrollTop(
+				stretch
+				? newPassage.offset().top - $(window).height() * 0.05
+				: 0
+			);
 	}
 	
 	var Engine = {
