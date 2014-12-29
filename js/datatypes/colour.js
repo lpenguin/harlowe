@@ -98,12 +98,15 @@ define(['utils', 'jquery'], function(Utils, $){
 				+ [this.r, this.g, this.b].join(',') + ");'></span>";
 		},
 		
-		TwineScript_Clone: function() {
-			return Colour.create(this);
+		TwineScript_is: function(other) {
+			return Colour.isPrototypeOf(other) &&
+				other.r === this.r &&
+				other.g === this.g &&
+				other.b === this.b;
 		},
 		
-		toJSON: function() {
-			return Object.assign({ colour: true }, this);
+		TwineScript_Clone: function() {
+			return Colour.create(this);
 		},
 		
 		/*

@@ -1,19 +1,12 @@
-define(['utils', 'macros'], function(Utils, Macros) {
+define(['utils', 'macros', 'utils/operationutils'], function(Utils, Macros, OperationUtils) {
 	"use strict";
 	/*
-		A ChangerCommand is an author-facing function that is used to mutate a ChangeDescriptor
-		 object, that itself is used to alter a Section's rendering.
+		A ChangerCommand is a command that is used to alter the way a particular
+		Section renders the value. It does this by mutating a passed-in ChangeDescriptor
+		object in some way.
 		
-		This decorator function accepts a function (which defines the ChangerCommand's
-		internal implementation), the name of the macro that created it, and some
-		author-supplied configuration parameters, and creates a partial
-		function augmented with the necessary TwineScript related methods.
-		
-		For instance, for (transition: "dissolve"), the name would be
-		"transition" and params would be ["dissolve"].
-		
-		Since it basically transforms an existing function without modifying its prototype,
-		it isn't really a "class", and thus isn't a prototype object with a .create() method.
+		ChangerCommands are first-class values so that they can be saved and combined
+		by the author to create "custom styles" for sections of story text.
 	*/
 	var ChangerCommand = {
 		
@@ -30,6 +23,17 @@ define(['utils', 'macros'], function(Utils, Macros) {
 			return "[A '" + this.macroName + "' command]";
 		},
 		
+		/*
+			ChangerCommands are created and returned changer macro calls.
+			The arguments passed to them are essentially direct representations
+			of the macro call itself.
+			For instance, (font: "Skia") would result in a call of
+				ChangerCommand.create("font", ["Skia"])
+			
+			@param {String} macroName
+			@param {Array} params
+			@param {ChangerCommand} next
+		*/
 		create: function(macroName, params, next) {
 			Utils.assert(params === undefined || Array.isArray(params));
 			
@@ -57,6 +61,14 @@ define(['utils', 'macros'], function(Utils, Macros) {
 			}
 			ret.next = other;
 			return ret;
+		},
+		
+		"TwineScript_is": function(other) {
+			if (ChangerCommand.isPrototypeOf(other)) {
+				return this.macroName === other.macroName &&
+					OperationUtils.is(this.params, other.params) &&
+					OperationUtils.is(this.next, other.next);
+			}
 		},
 		
 		TwineScript_Clone: function() {

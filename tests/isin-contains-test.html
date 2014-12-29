@@ -14,3 +14,8 @@
 (set: $a's 1st to 1)
 (print: 1 is in $a) (= true)
 (print: $a contains 1) (= true)
+
+(print: (a:) is in (a:(a:))) (= true)
+(print: (dataset:) is in (a:(dataset:))) (= true)
+(print: (dataset:2,3) is in (dataset:4,(dataset:2,3))) (= true)
+(print: (dataset:(a:"Red")) contains "e") (= false)

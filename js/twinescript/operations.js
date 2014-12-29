@@ -100,6 +100,21 @@ function(Utils, State, Story, Colour, AssignmentRequest, OperationUtils) {
 					+ objectName(obj) + ".");
 			}
 		}
+		/*
+			Sets, being essentially a limited kind of arrays, cannot have any
+			property access other than 'length'.
+		*/
+		else if (obj instanceof Set) {
+			if (prop !== "length") {
+				return new Error("You can only get the 'length' of a " + objectName(obj)
+					+ ". To check contained values, use the 'contains' operator.");
+			}
+			/*
+				This kludge must be used to pave over a little difference
+				between Arrays and Sets.
+			*/
+			prop = "size";
+		}
 		return prop;
 	}
 	
@@ -326,7 +341,8 @@ function(Utils, State, Story, Colour, AssignmentRequest, OperationUtils) {
 		"<=": comparisonOp( onlyNumbers( doNotCoerce(function(l,r) { return l <= r; }), "do <= to")),
 		">=": comparisonOp( onlyNumbers( doNotCoerce(function(l,r) { return l >= r; }), "do >= to")),
 		
-		is: comparisonOp(Object.is),
+		is: comparisonOp(OperationUtils.is),
+		
 		isNot: comparisonOp(function(l,r) {
 			return !Operations.is(l,r);
 		}),

@@ -183,10 +183,51 @@ define(['utils'], function(Utils) {
 	}
 	
 	/*
+		As TwineScript uses pass-by-value rather than pass-by-reference
+		for all objects, it must also use compare-by-value for objects as well.
+		This function implements the "is" operation.
+		@return {Boolean}
+	*/
+	function is(l, r) {
+		/*
+			For primitives, === is sufficient.
+		*/
+		if (typeof l !== "object" && typeof r !== "object") {
+			return l === r;
+		}
+		/*
+			For Arrays, compare every element and position of one
+			with the other.
+		*/
+		if (Array.isArray(l) && Array.isArray(r)) {
+			if (l.length < r.length) {
+				return is(r, l);
+			}
+			return l.every(function(element, index) {
+				return is(r[index], element);
+			});
+		}
+		/*
+			For Maps and Sets, simply reduce them to Arrays.
+		*/
+		if (l instanceof Map && r instanceof Map) {
+			// Don't forget that Map.prototype.entries() returns an iterator!
+			return is(Array.from(l.entries()), Array.from(r.entries()));
+		}
+		if (l instanceof Set && r instanceof Set) {
+			return is(Array.from(l.values()), Array.from(r.values()));
+		}
+		if (l && typeof l.TwineScript_is === "function") {
+			return l.TwineScript_is(r);
+		}
+		return Object.is(l, r);
+	}
+	
+	/*
 		As the base function for Operations.contains,
 		this implements the "x contains y" and "y is in x" keywords.
 		This is placed outside so that Operation.isIn can call it.
-		@return {String}
+		@return {Boolean}
 	*/
 	function contains(container,obj) {
 		/*
@@ -195,23 +236,27 @@ define(['utils'], function(Utils) {
 			compare-by-value proposition.
 		*/
 		if (container) {
-			/*
-				Basic array or string indexOf check.
-			*/
-			if (isSequential(container)) {
+			if (typeof container === "string") {
 				return container.indexOf(obj) > -1;
 			}
+			if(Array.isArray(container)) {
+				return container.some(function(e) {
+					return is(e, obj);
+				});
+			}
 			/*
-				For Sets and Maps, use .has().
+				For Sets and Maps, check that the key exists.
 			*/
 			if (container instanceof Set || container instanceof Map) {
-				return container.has(obj);
+				return Array.from(container.keys()).some(function(e) {
+					return is(e, obj);
+				});
 			}
 		}
 		/*
 			Default: since "'r' is in 'r'" is true, so is "false is in false".
 		*/
-		return Object.is(container, obj);
+		return is(container, obj);
 	}
 	
 	var OperationUtils = Object.freeze({
@@ -222,6 +267,7 @@ define(['utils'], function(Utils) {
 		coerceToString: coerceToString,
 		objectName: objectName,
 		typeName: typeName,
+		is: is,
 		contains: contains,
 	});
 	return OperationUtils;

@@ -111,6 +111,9 @@ define(['utils/hookutils', 'jquery'],function(HookUtils, $) {
 			in an AssignmentRequest. Yes, (set: $grault to ?garply) only
 			copies ?garply's present value into $grault, as if ?garply
 			were a variable.
+			Note that as a result, it's not possible to store
+			a HookSet in a variable - which is good, as it carries with it
+			a reference to its origin hook.
 		*/
 		TwineScript_AssignValue: function() {
 			return jQueryCall.call(this, "text");
