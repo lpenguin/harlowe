@@ -233,7 +233,7 @@ define(['jquery', 'utils', 'macros', 'datatypes/hookset', 'datatypes/changercomm
 								+ enchantDesc.classList +"'>");
 							/*
 								It's a little odd that the generated wrapper must be retrieved in
-								this roundabout fashion, but oh well. That's how jQuery works.
+								this roundabout fashion, but oh well.
 							*/
 							wrapping = e.parent();
 							
@@ -254,9 +254,6 @@ define(['jquery', 'utils', 'macros', 'datatypes/hookset', 'datatypes/changercomm
 									if (enchantDesc.once) {
 										/*
 											Remove this enchantment from the Section's list.
-											This must be done now, so that renderInto(), when
-											it calls updateEnchantments(), will not re-enchant
-											the scope using this very enchantment.
 										*/
 										index = desc.section.enchantments.indexOf(enchantData);
 										desc.section.enchantments.splice(index,1);

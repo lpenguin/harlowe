@@ -200,8 +200,11 @@ define(['utils'], function(Utils) {
 			with the other.
 		*/
 		if (Array.isArray(l) && Array.isArray(r)) {
-			if (l.length < r.length) {
-				return is(r, l);
+			/*
+				A quick check: if they vary in length, they already fail.
+			*/
+			if (l.length !== r.length) {
+				return false;
 			}
 			return l.every(function(element, index) {
 				return is(r[index], element);
@@ -217,6 +220,10 @@ define(['utils'], function(Utils) {
 		if (l instanceof Set && r instanceof Set) {
 			return is(Array.from(l.values()), Array.from(r.values()));
 		}
+		/*
+			For TwineScript built-ins, use the TwineScript_is() method to determine
+			uniqueness.
+		*/
 		if (l && typeof l.TwineScript_is === "function") {
 			return l.TwineScript_is(r);
 		}

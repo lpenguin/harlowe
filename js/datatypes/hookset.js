@@ -48,8 +48,8 @@ define(['utils/hookutils', 'jquery'],function(HookUtils, $) {
 				{jQuery} The <tw-hook> element to manipulate.
 		*/
 		forEach: function(fn) {
-			return jQueryCall.call(this, "each", function() {
-				fn($(this));
+			return jQueryCall.call(this, "each", function(i) {
+				fn($(this), i);
 			});
 		},
 		

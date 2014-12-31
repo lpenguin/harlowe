@@ -48,7 +48,7 @@ define(['jquery', 'utils/hookutils'],function($, HookUtils) {
 			/*
 				Now, call the passed function on all of the <tw-pseudo-hook> elements.
 			*/
-			e.each(function(){ fn($(this)); }); 
+			e.each(function(i){ fn($(this), i); });
 			/*
 				Having done that, we now remove the <tw-pseudo-hook> elements and normalize
 				the text nodes that were split up as a result of the 

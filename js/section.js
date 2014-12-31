@@ -542,34 +542,7 @@ function($, Utils, Selectors, Renderer, Environ, Story, State, HookUtils, HookSe
 				The data is purely temporary and can be safely discarded.
 			*/
 			this.stack.shift();
-			
-			/*
-				Finally, update the enchantments now that the DOM is modified.
-				TODO: this really should not be run more than once per frame,
-				so some way of throttled debouncing is necessary.
-			*/
-			this.updateEnchantments();
-			
 		},
-		
-		/**
-			Updates all enchantments in the section. Should be called after every
-			DOM manipulation within the section (such as, at the end of .render()).
-
-			@method updateEnchantments
-		*/
-		updateEnchantments: function () {
-			this.enchantments.forEach(function(e) {
-				/*
-					This first method removes old <tw-enchantment> elements...
-				*/
-				e.refreshScope();
-				/*
-					...and this one adds new ones.
-				*/
-				e.enchantScope();
-			});
-		}
 		
 	};
 	

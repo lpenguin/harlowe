@@ -166,7 +166,7 @@
 		/*
 			Markdown setext headers conflict with the hr syntax, and are thus gone.
 		*/
-		heading = "\n" + ws + "(#{1,6})" + ws + "([^\\n]+?)" + ws + "#*" + ws + eol,
+		heading = either("^","\n") + ws + "(#{1,6})" + ws + "([^\\n]+?)" + ws + "#*" + ws + eol,
 		
 		/*
 			New text alignment syntax.
