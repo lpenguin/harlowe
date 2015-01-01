@@ -397,11 +397,14 @@ define(['jquery', 'markup/markup', 'utils/selectors', 'utils/customelements'], f
 		transitionOut: function (el, transIndex) {
 			var delay,
 				/*
-					If the element is actually a bare TextNode, we must
+					If the element is not a tw-hook or tw-passage, we must
 					wrap it in a temporary element first, which can thus be
 					animated using CSS.
 				*/
-				isTextNode = el.filter(function(_,e) { return e.nodeType === Node.TEXT_NODE; }).length > 0;
+				mustWrap =
+					el.length > 1 ||
+					['tw-hook','tw-passage'].indexOf(el.tag()) === -1;
+			
 			/*
 				The default transition callback is to remove the element.
 			*/
@@ -409,9 +412,9 @@ define(['jquery', 'markup/markup', 'utils/selectors', 'utils/customelements'], f
 				el.remove();
 			}
 			/*
-				As mentioned above, text nodes must be wrapped in containers.
+				As mentioned above, we must, in some cases, wrap the nodes in containers.
 			*/
-			if (isTextNode) {
+			if (mustWrap) {
 				el = el.wrapAll('<tw-transition-container>').parent();
 			}
 			/*
@@ -441,11 +444,13 @@ define(['jquery', 'markup/markup', 'utils/selectors', 'utils/customelements'], f
 		transitionIn: function (el, transIndex) {
 			var delay,
 				/*
-					If the element is actually a bare TextNode, we must
-					wrap it in a temporary element first, then
-					unwrap it after the transition concludes.
+					If the element is not a tw-hook or tw-passage, we must
+					wrap it in a temporary element first, which can thus be
+					animated using CSS.
 				*/
-				isTextNode = el.filter(function(_,e) { return e.nodeType === Node.TEXT_NODE; }).length > 0;
+				mustWrap =
+					el.length > 1 ||
+					['tw-hook','tw-passage'].indexOf(el.tag()) === -1;
 			
 			/*
 				The default transition callback is to remove the transition-in
@@ -455,7 +460,7 @@ define(['jquery', 'markup/markup', 'utils/selectors', 'utils/customelements'], f
 				/*
 					If it's a text node, then the element is just a wrapper - discard it.
 				*/
-				if (isTextNode) {
+				if (mustWrap) {
 					el.contents().unwrap();
 				}
 				/*
@@ -466,9 +471,9 @@ define(['jquery', 'markup/markup', 'utils/selectors', 'utils/customelements'], f
 				}
 			}
 			/*
-				As mentioned above, text nodes must be wrapped in containers.
+				As mentioned above, we must, in some cases, wrap the nodes in containers.
 			*/
-			if (isTextNode) {
+			if (mustWrap) {
 				el = el.wrapAll('<tw-transition-container>').parent();
 			}
 			/*
@@ -593,13 +598,14 @@ define(['jquery', 'markup/markup', 'utils/selectors', 'utils/customelements'], f
 		*/
 
 		/**
-			Story element. Since Utils is frozen, this will always refer to the
-			same DOM object for the entirety of the game.
+			This is used as a more semantic shortcut to the <tw-story> element.
 			@property storyElement
 			@static
 		*/
 
-		storyElement: $(Selectors.story)
+		get storyElement() {
+			return $(Selectors.story);
+		}
 	};
 
 	return Object.freeze(Utils);

@@ -93,6 +93,8 @@ function ($, Story, Utils, Selectors, State, Section) {
 		
 		newPassage = createPassageElement().appendTo(story);
 		
+		Utils.assert(newPassage.length > 0);
+		
 		section = Section.create(newPassage);
 		
 		/*

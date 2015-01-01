@@ -104,6 +104,7 @@
 			*/
 			hr: {
 				fn: Object,
+				canFollow: [null, "br"],
 			},
 			bulleted: {
 				fn: function(match) {
@@ -112,6 +113,7 @@
 						innerText: match[2]
 					};
 				},
+				canFollow: [null, "br"],
 			},
 			heading: {
 				fn: function(match) {
@@ -120,6 +122,7 @@
 						innerText: match[2]
 					};
 				},
+				canFollow: [null, "br"],
 			},
 			/*
 				Text align syntax

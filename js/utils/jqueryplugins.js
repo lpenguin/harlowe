@@ -14,7 +14,7 @@ define(['jquery'], function($) {
 			This is only a getter.
 		*/
 		tag: function() {
-			return this[0] && this[0].tagName.toLowerCase();
+			return this[0] && this[0].tagName && this[0].tagName.toLowerCase();
 		}
 	});
 });

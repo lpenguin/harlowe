@@ -28,11 +28,8 @@ require(['jquery', 'renderer', 'story', 'state', 'engine', 'utils', 'utils/selec
 		@module Harlowe
 		@main Harlowe
 	*/
-	var debugHTML =
-		"<tw-debugger><button class='show-invisibles'>&#9903; Debug View</button></tw-debugger>";
-		
 	
-	// Used to execute custom scripts
+	// Used to execute custom scripts outside of main()'s scope.
 	function _eval(text) {
 		return eval(text + '');
 	}
@@ -44,7 +41,9 @@ require(['jquery', 'renderer', 'story', 'state', 'engine', 'utils', 'utils/selec
 		@method installHandlers
 	*/
 	var installHandlers = function() {
-		var html = $(document.documentElement);
+		var html = $(document.documentElement),
+			debugHTML =
+			"<tw-debugger><button class='show-invisibles'>&#9903; Debug View</button></tw-debugger>";
 		
 		// If the debug option is on, add the debugger.
 		if (Story.options.debug) {

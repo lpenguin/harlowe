@@ -17,7 +17,8 @@ define(['utils', 'markup/markup', 'twinescript/compiler'], function(Utils, Twine
 		and renders the contained text.
 	*/
 	function renderTag(token, tagName) {
-		return Utils.wrapHTMLTag(Renderer.render(token.children), tagName);
+		var contents = Renderer.render(token.children);
+		return contents && Utils.wrapHTMLTag(contents, tagName);
 	}
 
 	/*

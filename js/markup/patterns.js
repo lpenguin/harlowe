@@ -125,7 +125,7 @@
 		};
 	}
 	
-	var ws = "\\s*",
+	var ws = "[ \\f\\t\\v\u00a0\u1680\u180e\u2000-\u200a\u2028\u2029\u202f\u205f\u3000]*",
 		
 		wb = "\\b",
 		
@@ -155,18 +155,18 @@
 		*/
 		bullet = "(?:\\*)",
 		
-		bulleted = ws + "(" + bullet + "+)\\s+([^\\n]*)" + eol,
+		bulleted = "\n?" + ws + "(" + bullet + "+)\\s+([^\\n]*)" + eol,
 		
 		numberPoint = "(?:0\\.)",
 		
-		numbered = ws + "(" + numberPoint + "+)([^\\n]*)" + eol,
+		numbered = "\n?" + ws + "(" + numberPoint + "+)([^\\n]*)" + eol,
 		
-		hr = ws + "[-*_]{3,}" + ws + eol,
+		hr = "\n?" + ws + "[-*_]{3,}" + ws + eol,
 		
 		/*
 			Markdown setext headers conflict with the hr syntax, and are thus gone.
 		*/
-		heading = either("^","\n") + ws + "(#{1,6})" + ws + "([^\\n]+?)" + ws + "#*" + ws + eol,
+		heading = "\n?" + ws + "(#{1,6})" + ws + "([^\\n]+?)" + ws + "#*" + ws + eol,
 		
 		/*
 			New text alignment syntax.

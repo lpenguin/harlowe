@@ -350,6 +350,9 @@
 			*/
 			if (i === l) {
 				index += 1;
+				if (lastToken === null) {
+					lastToken = "text";
+				}
 			}
 		}
 		
@@ -477,9 +480,6 @@
 				children:                 [],
 				innerMode:   Lexer.startMode,
 			}));
-			/*
-				[Insert console.log(ret) here if you feel like it]
-			*/
 			return ret;
 		},
 		/*

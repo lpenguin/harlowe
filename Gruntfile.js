@@ -33,7 +33,7 @@ module.exports = function (grunt) {
 		},
 
 		jshint: {
-			all: jsFileList,
+			harlowe: jsFileList,
 			options: {
 				globals: {
 					require : true,
@@ -61,7 +61,26 @@ module.exports = function (grunt) {
 				// Environments
 				browser  : true,
 				devel    : true,
-			}
+			},
+			tests: {
+				files: {
+					src: ['test/spec/**.js'],
+				},
+      			options: {
+      				globals: {
+      					// Jasmine
+      					describe : true,
+      					expect   : true,
+      					it       : true,
+      					// User-defined
+      					createPassage : true,
+      					runPassage : true,
+      					htmlOfPassage : true,
+      					expectMarkupToBecome : true,
+      				},
+      				globalstrict: true,
+      			},
+      		},
 		},
 
 		requirejs: {
@@ -149,7 +168,7 @@ module.exports = function (grunt) {
 	grunt.loadNpmTasks('grunt-contrib-cssmin');
 	grunt.loadNpmTasks('grunt-text-replace');
 
-	grunt.registerTask('default', [ 'clean', 'jshint', 'sass', 'cssmin', 'requirejs']);
+	grunt.registerTask('default', [ 'clean', 'jshint:harlowe', 'jshint:tests', 'sass', 'cssmin', 'requirejs']);
 	grunt.registerTask('runtime', [ 'requirejs', 'yuidoc', 'sass', 'cssmin', 'replace:runtime']);
 	grunt.registerTask('release', [
 		'clean', 'yuidoc'
