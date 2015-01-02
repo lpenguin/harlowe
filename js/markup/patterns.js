@@ -125,7 +125,9 @@
 		};
 	}
 	
-	var ws = "[ \\f\\t\\v\u00a0\u1680\u180e\u2000-\u200a\u2028\u2029\u202f\u205f\u3000]*",
+	var
+		// This includes all forms of whitespace except \n and \r
+		ws = "[ \\f\\t\\v\u00a0\u1680\u180e\u2000-\u200a\u2028\u2029\u202f\u205f\u3000]*",
 		
 		wb = "\\b",
 		
@@ -155,11 +157,11 @@
 		*/
 		bullet = "(?:\\*)",
 		
-		bulleted = "\n?" + ws + "(" + bullet + "+)\\s+([^\\n]*)" + eol,
+		bulleted = "\n?" + ws + "(" + bullet + "+)" + ws + "([^\\n]*)" + eol,
 		
 		numberPoint = "(?:0\\.)",
 		
-		numbered = "\n?" + ws + "(" + numberPoint + "+)([^\\n]*)" + eol,
+		numbered = "\n?" + ws + "(" + numberPoint + "+)" + ws + "([^\\n]*)" + eol,
 		
 		hr = "\n?" + ws + "[-*_]{3,}" + ws + eol,
 		

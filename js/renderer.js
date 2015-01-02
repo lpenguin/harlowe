@@ -82,8 +82,8 @@ define(['utils', 'markup/markup', 'twinescript/compiler'], function(Utils, Twine
 			var token,
 				// Cache the tokens array length
 				len,
-				// Hoisted var, used only by the numbered/bulleted case
-				tagName,
+				// Hoisted vars, used only by the numbered/bulleted case
+				tagName, depth,
 				// Hoisted vars, used only by the align case
 				style, body, align, j,
 				
@@ -116,8 +116,16 @@ define(['utils', 'markup/markup', 'twinescript/compiler'], function(Utils, Twine
 						// Run through the tokens, consuming all consecutive list items
 						tagName = (token.type === "numbered" ? "ol" : "ul");
 						out += "<" + tagName + ">";
-						
+						depth = 1;
 						while(i < len && tokens[i] && tokens[i].type === token.type) {
+							/*
+								For differences in depth, raise and lower the <ul> depth
+								in accordance with it.
+							*/
+							out += ("<" + tagName + ">").repeat(Math.max(0, tokens[i].depth - depth));
+							out += ("</" + tagName + ">").repeat(Math.max(0, depth - tokens[i].depth));
+							depth = tokens[i].depth;
+							
 							out += renderTag(tokens[i], "li");
 							i += 1;
 							// If a <br> follows a listitem, ignore it.
@@ -125,7 +133,7 @@ define(['utils', 'markup/markup', 'twinescript/compiler'], function(Utils, Twine
 								i+=1;
 							}
 						}
-						out += "</" + tagName + ">";
+						out += ("</" + tagName + ">").repeat(depth + 1);
 						break;
 					}
 					case "align": {

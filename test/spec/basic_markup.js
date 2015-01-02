@@ -135,16 +135,77 @@ describe("bulleted lists", function() {
 			"<ul><li>A</li><li>B</li></ul>"
 		);
 	});
+	it("won't work unless it's at the start of a line", function() {
+		expectMarkupToBecome(
+			"A B *C",
+			"A B *C"
+		);
+	});
 	it("(unlike Markdown) allows nested lists by the addition of more consecutive *'s", function() {
 		expectMarkupToBecome(
-			" * A\n ** B\n ** C\n * D",
-			"<ul><li>A<ul><li>B</li><li>C</li></ul><li>D</li></ul>"
+			"* A\n** B\n** C\n* D",
+			"<ul><li>A</li><ul><li>B</li><li>C</li></ul><li>D</li></ul>"
+		);
+		expectMarkupToBecome(
+			"* A\n*** B\n*** C\n* D",
+			"<ul><li>A</li><ul><ul><li>B</li><li>C</li></ul></ul><li>D</li></ul>"
+		);
+		expectMarkupToBecome(
+			"*** A\n*** B",
+			"<ul><ul><ul><li>A</li><li>B</li></ul></ul></ul>"
+		);
+		expectMarkupToBecome(
+			"*** A\n* B\n*** C",
+			"<ul><ul><ul><li>A</li></ul></ul><li>B</li><ul><ul><li>C</li></ul></ul></ul>"
 		);
 	});
 	it("(unlike Markdown) permits whitespace between the start of the line and *", function() {
 		expectMarkupToBecome(
 			" \t* A",
 			"<ul><li>A</li></ul>"
+		);
+	});
+});
+
+describe("numbered lists", function() {
+	it("wraps 1 or more adjacent lines starting with 0. (plus optional whitespace) in <ul><li>", function() {
+		expectMarkupToBecome(
+			"0. A",
+			"<ol><li>A</li></ol>"
+		);
+		expectMarkupToBecome(
+			"0. A\n0. B",
+			"<ol><li>A</li><li>B</li></ol>"
+		);
+	});
+	it("won't work unless it's at the start of a line", function() {
+		expectMarkupToBecome(
+			"A B 0.C",
+			"A B 0.C"
+		);
+	});
+	it("(unlike Markdown) allows nested lists by the addition of more consecutive *'s", function() {
+		expectMarkupToBecome(
+			"0. A\n0.0. B\n0.0. C\n0. D",
+			"<ol><li>A</li><ol><li>B</li><li>C</li></ol><li>D</li></ol>"
+		);
+		expectMarkupToBecome(
+			"0. A\n0.0.0. B\n0.0.0. C\n0. D",
+			"<ol><li>A</li><ol><ol><li>B</li><li>C</li></ol></ol><li>D</li></ol>"
+		);
+		expectMarkupToBecome(
+			"0.0.0. A\n0.0.0. B",
+			"<ol><ol><ol><li>A</li><li>B</li></ol></ol></ol>"
+		);
+		expectMarkupToBecome(
+			"0.0.0. A\n0. B\n0.0.0. C",
+			"<ol><ol><ol><li>A</li></ol></ol><li>B</li><ol><ol><li>C</li></ol></ol></ol>"
+		);
+	});
+	it("(unlike Markdown) permits whitespace between the start of the line and 0.", function() {
+		expectMarkupToBecome(
+			" \t0. A",
+			"<ol><li>A</li></ol>"
 		);
 	});
 });

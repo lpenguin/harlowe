@@ -115,6 +115,15 @@
 				},
 				canFollow: [null, "br"],
 			},
+			numbered: {
+				fn: function(match) {
+					return {
+						depth: match[1].length / 2,
+						innerText: match[2]
+					};
+				},
+				canFollow: [null, "br"],
+			},
 			heading: {
 				fn: function(match) {
 					return {
@@ -156,14 +165,6 @@
 						align = "left";
 					}
 					return { align: align };
-				},
-			},
-			numbered: {
-				fn: function(match) {
-					return {
-						depth: match[1].length / 2,
-						innerText: match[2]
-					};
 				},
 			},
 		});
