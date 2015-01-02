@@ -236,7 +236,17 @@ define(['utils', 'markup/markup', 'twinescript/compiler'], function(Utils, Twine
 						break;
 					}
 					case "verbatim": {
-						out += escape(token.verbatim);
+						out += escape(token.verbatim)
+							/*
+								The only replacement that should be done is \n -> <br>. In
+								browsers, even if the CSS is set to preserve whitespace, copying text
+								still ignores line breaks that aren't explicitly set with <br>s.
+							*/
+							.replace(/\n/g,'<br>');
+						break;
+					}
+					case "collapsed": {
+						out += token.children && token.children.length ? render(token.children) : token.innerText;
 						break;
 					}
 					/*

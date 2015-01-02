@@ -301,8 +301,7 @@ define(['utils'], function(Utils) {
 				+  compile(tokens.splice(i + 1))) + ")";
 		}
 		else if ((i = indexOfType(tokens, "and", "or")) >-1) {
-			midString =
-				( tokens[i].type === "and" ? " && " : " || " );
+			operation = tokens[i].type;
 		}
 		else if ((i = indexOfType(tokens, "is", "isNot", "contains", "isIn")) >-1) {
 			implicitLeftIt = true;
@@ -329,7 +328,10 @@ define(['utils'], function(Utils) {
 			}
 		}
 		else if ((i = indexOfType(tokens, "not")) >-1) {
-			midString = "!";
+			midString = "Operations.not(";
+			right =
+				compile(tokens.splice(i + 1))
+				+ ")";
 			needsLeft = false;
 		}
 		/*

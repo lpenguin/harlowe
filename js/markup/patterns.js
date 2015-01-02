@@ -329,7 +329,7 @@
 		/*
 			TODO: Make the collapsed syntax nestable.
 		*/
-		collapsed:        "{([^]*?[^}])}",
+		collapsed:        "{([^}]*)}",
 		collapsedOpener:                                   opener("{"),
 		
 		bulleted:    bulleted,

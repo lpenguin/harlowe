@@ -126,23 +126,33 @@ function(Utils, State, Story, Colour, AssignmentRequest, OperationUtils) {
 	*/
 	
 	/*
-		Converts a function to refuse its arguments if one
-		of them is not a number.
+		Wraps a function to refuse its arguments if one
+		of them is not a certain type of primitive.
+		@param {String} type Either "number" or "boolean"
+		@param {Function} fn The function to wrap.
+		@param {String} [operationVerb] A verb describing the function's action.
 		@return {Function}
 	*/
-	function onlyNumbers(fn, operationVerb) {
+	function onlyPrimitives(type, fn, operationVerb) {
 		operationVerb = operationVerb || "do this to";
 		return function(left, right) {
 			var error;
+			/*
+				If the passed function has an arity of 1, ignore the
+				right value.
+			*/
+			if (fn.length === 1) {
+				right = left;
+			}
 			/*
 				This part allows errors to propagate up the TwineScript stack.
 			*/
 			if ((error = Utils.containsError(left, right))) {
 				return error;
 			}
-			if (typeof left !== "number" || typeof right !== "number") {
-				return new TypeError("I can only " + operationVerb + " numbers, not " +
-				objectName(typeof left !== "number" ? left : right) + ".");
+			if (typeof left !== type || typeof right !== type) {
+				return new TypeError("I can only " + operationVerb + " " + type + "s, not " +
+				objectName(typeof left !== type ? left : right) + ".");
 			}
 			return fn(left, right);
 		};
@@ -250,6 +260,18 @@ function(Utils, State, Story, Colour, AssignmentRequest, OperationUtils) {
 			return ret;
 		},
 		
+		"and": onlyPrimitives("boolean", doNotCoerce(function(l, r) {
+			return l && r;
+		}), "use 'and' to join"),
+		
+		"or": onlyPrimitives("boolean", doNotCoerce(function(l, r) {
+			return l || r;
+		}), "use 'or' to join"),
+		
+		"not": onlyPrimitives("boolean", function(e) {
+			return !e;
+		}, "use 'not' to invert"),
+		
 		"+":  doNotCoerce(function(l, r) {
 			var ret;
 			/*
@@ -326,20 +348,20 @@ function(Utils, State, Story, Colour, AssignmentRequest, OperationUtils) {
 			}
 			return l - r;
 		}),
-		"*":  onlyNumbers( doNotCoerce(function(l, r) {
+		"*":  onlyPrimitives("number", doNotCoerce(function(l, r) {
 			return l * r;
 		}), "multiply"),
-		"/":  onlyNumbers( doNotCoerce(function(l, r) {
+		"/":  onlyPrimitives("number", doNotCoerce(function(l, r) {
 			return l / r;
 		}), "divide"),
-		"%":  onlyNumbers( doNotCoerce(function(l, r) {
+		"%":  onlyPrimitives("number", doNotCoerce(function(l, r) {
 			return l % r;
 		}), "modulus"),
 		
-		"<":  comparisonOp( onlyNumbers( doNotCoerce(function(l,r) { return l <  r; }), "do < to")),
-		">":  comparisonOp( onlyNumbers( doNotCoerce(function(l,r) { return l >  r; }), "do > to")),
-		"<=": comparisonOp( onlyNumbers( doNotCoerce(function(l,r) { return l <= r; }), "do <= to")),
-		">=": comparisonOp( onlyNumbers( doNotCoerce(function(l,r) { return l >= r; }), "do >= to")),
+		"<":  comparisonOp( onlyPrimitives("number", doNotCoerce(function(l,r) { return l <  r; }), "do < to")),
+		">":  comparisonOp( onlyPrimitives("number", doNotCoerce(function(l,r) { return l >  r; }), "do > to")),
+		"<=": comparisonOp( onlyPrimitives("number", doNotCoerce(function(l,r) { return l <= r; }), "do <= to")),
+		">=": comparisonOp( onlyPrimitives("number", doNotCoerce(function(l,r) { return l >= r; }), "do >= to")),
 		
 		is: comparisonOp(OperationUtils.is),
 		
