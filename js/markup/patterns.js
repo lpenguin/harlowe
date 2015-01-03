@@ -182,7 +182,7 @@
 			leftSeparator:     "<\\-",
 			closer:            "\\]\\]",
 			legacySeparator:   "\\|",
-			legacyText:        "(" + notChars("]|") + "?)",
+			legacyText:        "(" + either("[^\\|\\]]", "\\]" + notBefore("\\]")) + "+)",
 		},
 		
 		/*
