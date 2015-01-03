@@ -201,6 +201,12 @@
 		variableProperty = "'s" + ws + "(" + validVariablePropertyName + ")",
 		
 		/*
+			Computed properties are of the form:
+			$a's (expression)
+		*/
+		computedVariablePropertyFront = "'s" + ws + "\\(",
+		
+		/*
 			Identifiers: either "it" or "time".
 			"it" is a bit of a problem because its possessive is "its", not "it's",
 			so we can't use a derivation similar to variableProperty.
@@ -301,11 +307,11 @@
 		heading:     heading,
 		align:       align,
 		
-		strong:          stylerSyntax("__", "**"),
-		strongOpener:          opener("__", "**"),
+		strong:          stylerSyntax("**"),
+		strongOpener:          opener("**"),
 		
-		em:               stylerSyntax("_",  "*"),
-		emOpener:               opener("_",  "*"),
+		em:               stylerSyntax("*"),
+		emOpener:               opener("*"),
 		
 		del:                   stylerSyntax("~~"),
 		delOpener:                   opener("~~"),
@@ -401,6 +407,9 @@
 		
 		variableProperty:
 			variableProperty,
+		
+		computedVariablePropertyFront:
+			computedVariablePropertyFront,
 		
 		variable:
 			variable,

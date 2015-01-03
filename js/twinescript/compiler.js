@@ -341,18 +341,24 @@ define(['utils'], function(Utils) {
 			instead of the incorrect:
 				Operations.get(a,1) Operations.get(,2)
 		*/
-		else if ((i = rightAssociativeIndexOfType(tokens, "variableProperty")) >-1) {
+		else if ((i = rightAssociativeIndexOfType(tokens, "variableProperty", "computedVariableProperty")) >-1) {
 			/*
 				This is somewhat tricky - we need to manually wrap the left side
 				inside the Operations.get call, while leaving the right side as is.
 			*/
 			left = "Operations." + (isVarRef ? "makeVarRef" : "get")
 				+ "(" + compile(tokens.slice (0,  i))
+				+ ","
+				/*
+					computedVariableProperties have children... variablePropertes merely have a name.
+				*/
+				+ (tokens[i].type === "variableProperty"
 				/*
 					Utils.toJSLiteral() is used to both escape the name
 					string and wrap it in quotes.
 				*/
-				+ "," + Utils.toJSLiteral(tokens[i].name) + ")";
+				? Utils.toJSLiteral(tokens[i].name)
+				: compile(tokens[i].children)) + ")";
 			midString = " ";
 			needsLeft = needsRight = false;
 		}

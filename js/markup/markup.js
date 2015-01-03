@@ -318,8 +318,12 @@
 				fn: function() {
 					return {
 						matches: {
-							groupingFront: "grouping",
-							macroFront: "macro"
+							groupingFront:
+								"grouping",
+							macroFront:
+								"macro",
+							computedVariablePropertyFront:
+								"computedVariableProperty",
 						},
 					};
 				},
@@ -365,6 +369,8 @@
 					the former is always matched first, this rule must come before it.
 				*/
 				variableProperty: { fn: textTokenFn("name") },
+				
+				computedVariablePropertyFront: { fn: Object },
 				
 				string: { fn: Object, },
 				
