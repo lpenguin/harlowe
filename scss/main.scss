@@ -137,6 +137,7 @@ tw-icon {
 */
 
 tw-error {
+	display: inline-block;
 	border-radius: 0.2em;
 	padding: 0.2em;
 	font-size: 1rem;
@@ -150,6 +151,23 @@ tw-error {
 		.debug-mode & {
 			display: inline;
 		}
+	}
+}
+tw-error-explanation {
+	display: block;
+	font-size: 0.8rem;
+	line-height: 1rem;
+}
+tw-error-explanation-button {
+	cursor: pointer;
+	line-height: 0em;
+	border-radius: 1px;
+	border: 1px solid black;
+	font-size: 0.8rem;
+	margin: 0 0.4rem;
+	opacity: 0.5;
+	& .folddown-arrowhead {
+		display:inline-block;
 	}
 }
 

@@ -1,5 +1,5 @@
-define(['jquery', 'story', 'utils', 'utils/operationutils'],
-function($, Story, Utils, OperationUtils) {
+define(['jquery', 'story', 'utils', 'utils/operationutils', 'internaltypes/twineerror'],
+function($, Story, Utils, OperationUtils, TwineError) {
 	"use strict";
 	/**
 		This contains a registry of macro definitions, and methods to add to that registry.
@@ -46,7 +46,7 @@ function($, Story, Utils, OperationUtils) {
 					}
 					else {
 						newArgs.push(
-							new TypeError(
+							TwineError.create("operation",
 								"I can't spread out "
 								+ OperationUtils.objectName(el.value)
 								+ ", which is not a string or array."
@@ -189,7 +189,7 @@ function($, Story, Utils, OperationUtils) {
 					and Rest is not in effect, then too many params were supplied.
 				*/
 				if (ind >= typeSignature.length && !rest) {
-					return new TypeError((args.length - typeSignature.length) +
+					return TwineError.create("macrocall", (args.length - typeSignature.length) +
 						" too many values were given to this " + name + " macro.");
 				}
 				
@@ -225,14 +225,14 @@ function($, Story, Utils, OperationUtils) {
 					*/
 					
 					if (arg === undefined) {
-						return new TypeError("The " + name + " macro needs "
+						return TwineError.create("macrocall", "The " + name + " macro needs "
 							+ Utils.plural((typeSignature.length - ind), "more value") + ".");
 					}
 					
 					/*
 						Otherwise, it was the most common case: an invalid data type.
 					*/
-					return new TypeError(name + "'s " +
+					return TwineError.create("datatype", name + "'s " +
 						Utils.nth(ind + 1) + " value is " + OperationUtils.objectName(arg) +
 						", but should be " +
 						OperationUtils.typeName(type) + ".");
@@ -424,13 +424,13 @@ function($, Story, Utils, OperationUtils) {
 					That's a bit of a discrepancy, I know...
 				*/
 				if (!Story.passageNamed(name)) {
-					return new ReferenceError(
+					return TwineError.create("macrocall", 
 						"I can't run the macro '"
 						+ name
 						+ "' because it doesn't exist."
 					);
 				}
-				return new Error("Passage macros are not implemented yet.");
+				return TwineError.create("unimplemented", "Passage macros are not implemented yet.");
 			}
 			else fn = Macros.get(name);
 			

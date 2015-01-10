@@ -5,8 +5,9 @@ define([
 	'datatypes/colour',
 	'datatypes/assignmentrequest',
 	'utils/operationutils',
+	'internaltypes/twineerror',
 ],
-function(Utils, State, Story, Colour, AssignmentRequest, OperationUtils) {
+function(Utils, State, Story, Colour, AssignmentRequest, OperationUtils, TwineError) {
 	"use strict";
 	/**
 		Operation objects are a table of operations which TwineScript proxies
@@ -68,10 +69,10 @@ function(Utils, State, Story, Colour, AssignmentRequest, OperationUtils) {
 			return error;
 		}
 		if(prop.startsWith("__")) {
-			return new Error(onlyIcan + "'__'.");
+			return TwineError.create("property", onlyIcan + "'__'.");
 		}
 		if(prop.startsWith("TwineScript") && prop !== "TwineScript_Assignee") {
-			return new Error(onlyIcan + "'TwineScript'.");
+			return TwineError.create("property", onlyIcan + "'TwineScript'.");
 		}
 		/*
 			Sequentials have special sugar property indices:
@@ -96,7 +97,8 @@ function(Utils, State, Story, Colour, AssignmentRequest, OperationUtils) {
 				prop = obj.length - match[1] + "";
 			}
 			else if (prop !== "length") {
-				return new Error("You can only use positions ('4th', 'last', '2nd-last', etc.) and 'length' with a "
+				return TwineError.create("property",
+					"You can only use positions ('4th', 'last', '2nd-last', etc.) and 'length' with "
 					+ objectName(obj) + ".");
 			}
 		}
@@ -106,7 +108,8 @@ function(Utils, State, Story, Colour, AssignmentRequest, OperationUtils) {
 		*/
 		else if (obj instanceof Set) {
 			if (prop !== "length") {
-				return new Error("You can only get the 'length' of a " + objectName(obj)
+				return TwineError.create("property", "You can only get the 'length' of a "
+					+ objectName(obj)
 					+ ". To check contained values, use the 'contains' operator.");
 			}
 			/*
@@ -151,7 +154,7 @@ function(Utils, State, Story, Colour, AssignmentRequest, OperationUtils) {
 				return error;
 			}
 			if (typeof left !== type || typeof right !== type) {
-				return new TypeError("I can only " + operationVerb + " " + type + "s, not " +
+				return TwineError.create("operation", "I can only " + operationVerb + " " + type + "s, not " +
 				objectName(typeof left !== type ? left : right) + ".");
 			}
 			return fn(left, right);
@@ -174,7 +177,7 @@ function(Utils, State, Story, Colour, AssignmentRequest, OperationUtils) {
 			}
 			// VarRefs cannot have operations performed on them.
 			if (left && left.varref) {
-				return new TypeError("I can't give an expression a new value.");
+				return TwineError.create("operation", "I can't give an expression a new value.");
 			}
 			/*
 				This checks that left and right are generally different types
@@ -191,7 +194,7 @@ function(Utils, State, Story, Colour, AssignmentRequest, OperationUtils) {
 						TwineScript errors are handled by TwineScript, not JS,
 						so don't throw this error, please.
 					*/
-					|| new TypeError(
+					|| TwineError.create("operation",
 						// BUG: This isn't capitalised.
 						objectName(left)
 						+ " isn't the same type of data as "
@@ -384,7 +387,7 @@ function(Utils, State, Story, Colour, AssignmentRequest, OperationUtils) {
 		*/
 		get: function(obj, prop) {
 			if (obj === null || obj === undefined) {
-				return new ReferenceError(
+				return TwineError.create("property",
 					"I can't get a property named '"
 					+ prop
 					+ "' from "
@@ -434,7 +437,7 @@ function(Utils, State, Story, Colour, AssignmentRequest, OperationUtils) {
 				/*
 					Otherwise, produce an error message.
 				*/
-				return new ReferenceError("I can't find a '" + prop + "' data key in "
+				return TwineError.create("property", "I can't find a '" + prop + "' data key in "
 					+ objectName(obj));
 			}
 			return (obj instanceof Map) ? obj.get(prop) : obj[prop];
@@ -455,7 +458,7 @@ function(Utils, State, Story, Colour, AssignmentRequest, OperationUtils) {
 				return;
 			}
 			if (!delete obj[prop]) {
-				return new ReferenceError(
+				return TwineError.create("property",
 					"I couldn't delete '"
 					+ prop
 					+ "' from "
@@ -647,7 +650,7 @@ function(Utils, State, Story, Colour, AssignmentRequest, OperationUtils) {
 				Also refuse if the dest is not, actually, a VarRef.
 			*/
 			if (!isObject(dest) || !("propertyChain" in dest)) {
-				return new TypeError(
+				return TwineError.create("operation",
 					"I can't give "
 					+ objectName(dest)
 					+ " a new value.");
@@ -665,7 +668,7 @@ function(Utils, State, Story, Colour, AssignmentRequest, OperationUtils) {
 			*/
 			if (Array.isArray(dest.object[propertyChain[0]])
 					&& propertyChain[1] && !numericIndex.exec(propertyChain[1])) {
-				return new RangeError(
+				return TwineError.create("property",
 					"Arrays can only have number data keys (not '"
 					+ propertyChain[1] + "')."
 				);

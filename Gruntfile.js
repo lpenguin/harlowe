@@ -77,6 +77,7 @@ module.exports = function (grunt) {
       					runPassage : true,
       					htmlOfPassage : true,
       					expectMarkupToBecome : true,
+      					$ : true,
       				},
       				globalstrict: true,
       			},

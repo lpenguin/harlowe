@@ -26,11 +26,13 @@ function ($, Story, Utils, Selectors, State, Section) {
 			(This is currently unavailable as of Harlowe 1.0)
 		*/
 		if (Story.options.permalink && State.save) {
-			sidebar.append('<tw-icon class="permalink" title="Permanent link to this passage"><a href="#' + State.save() + '">&sect;');
+			sidebar.append(
+				'<tw-icon tabindex=0 class="permalink" title="Permanent link to this passage"><a href="#' + State.save() + '">&sect;'
+			);
 		}
 		// Apart from the Permalink, the sidebar buttons consist of Undo (Back) and Redo (Forward) buttons.
-		back = $('<tw-icon class="undo" title="Undo">&#8630;</tw-icon>').click(Engine.goBack);
-		fwd  = $('<tw-icon class="redo" title="Redo">&#8631;</tw-icon>').click(Engine.goForward);
+		back = $('<tw-icon tabindex=0 class="undo" title="Undo">&#8630;</tw-icon>').click(Engine.goBack);
+		fwd  = $('<tw-icon tabindex=0 class="redo" title="Redo">&#8631;</tw-icon>').click(Engine.goForward);
 
 		if (State.pastLength <= 0) {
 			back.css("visibility", "hidden");
@@ -62,7 +64,13 @@ function ($, Story, Utils, Selectors, State, Section) {
 			passageData = Story.passageWithID(id),
 			oldPassages,
 			section,
-			story = Utils.storyElement;
+			// The <tw-story> element
+			story = Utils.storyElement,
+			/*
+				The <tw-story>'s parent is usually <body>, but if this game is embedded
+				in a larger HTML page, it could be different.
+			*/
+			parent = story.parent();
 		/*
 			Early exit: the wrong passage ID was supplied.
 		*/
@@ -112,16 +120,16 @@ function ($, Story, Utils, Selectors, State, Section) {
 			Although the <tw-story> is being reattached to <html>, the browser
 			will transport it to the <body> anyway.
 		*/
-		$('html').append(story)
-			/*
-				In stretchtext, scroll the window to the top of the inserted element,
-				minus an offset of 5% of the viewport's height.
-				Outside of stretchtext, just scroll to the top of the page.
-			*/
-			.scrollTop(
+		parent.append(story);
+		/*
+			In stretchtext, scroll the window to the top of the inserted element,
+			minus an offset of 5% of the viewport's height.
+			Outside of stretchtext, just scroll to the top of the <tw-story>'s parent element.
+		*/
+		$('html').scrollTop(
 				stretch
 				? newPassage.offset().top - $(window).height() * 0.05
-				: 0
+				: parent.offset().top
 			);
 	}
 	

@@ -9,9 +9,10 @@ define([
 	'utils/hookutils',
 	'datatypes/hookset',
 	'internaltypes/pseudohookset',
-	'internaltypes/changedescriptor'
+	'internaltypes/changedescriptor',
+	'internaltypes/twineerror',
 ],
-function($, Utils, Selectors, Renderer, Environ, Story, State, HookUtils, HookSet, PseudoHookSet, ChangeDescriptor) {
+function($, Utils, Selectors, Renderer, Environ, Story, State, HookUtils, HookSet, PseudoHookSet, ChangeDescriptor, TwineError) {
 	"use strict";
 
 	var Section;
@@ -30,27 +31,6 @@ function($, Utils, Selectors, Renderer, Environ, Story, State, HookUtils, HookSe
 		@class Section
 		@static
 	*/
-	
-	/**
-		This is a shortcut for rendering errors that either popped up while evaluating
-		expressions, or via performing extra checks as a result.
-		
-		@method renderError
-		@private
-		@param {Error} error
-		@param {jQuery} target
-	*/
-	function renderError(error, target) {
-		/*
-			Warning messages are special: they are only displayed in debug mode.
-		*/
-		if (error.name === "TwineWarning" && !Story.options.debug) {
-			return;
-		}
-		target.replaceWith("<tw-error class='"
-			+ ((error.name === "TwineWarning") ? "warning" : "error")
-			+ "' title='" + target.attr('title') + "'>" + error.message + "</tw-error>");
-	}
 	
 	/**
 		Run a newly rendered <tw-expression> element's code, obtain the resulting value,
@@ -76,9 +56,9 @@ function($, Utils, Selectors, Renderer, Environ, Story, State, HookUtils, HookSe
 		*/
 		if (result && result.changer) {
 			if (!nextHook.length) {
-				renderError(new TypeError(
+				expr.replaceWith(TwineError.create("macrocall",
 					"The (" + result.macroName + ":) macro should be assigned to a variable or attached to a hook."
-				), expr);
+				), expr.attr('title'));
 			}
 			else {
 				this.renderInto(
@@ -117,7 +97,10 @@ function($, Utils, Selectors, Renderer, Environ, Story, State, HookUtils, HookSe
 			in case that provided an error.
 		*/
 		else if (Utils.containsError(result)) {
-			renderError(result, expr);
+			if (result instanceof Error) {
+				result = TwineError.fromError(result);
+			}
+			expr.replaceWith(result.render(expr.attr('title'), expr));
 		}
 		/*
 			If the expression had a TwineScript_Print method, do that.
@@ -142,7 +125,10 @@ function($, Utils, Selectors, Renderer, Environ, Story, State, HookUtils, HookSe
 				return an Error object.
 			*/
 			else if (Utils.containsError(result)) {
-				renderError(result, expr);
+				if (result instanceof Error) {
+					result = TwineError.fromError(result);
+				}
+				expr.replaceWith(result.render(expr.attr('title'), expr));
 			}
 			else {
 				this.renderInto(result, expr);

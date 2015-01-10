@@ -56,7 +56,7 @@ function($, Macros, Utils, Selectors, Story, State, Engine, ChangerCommand) {
 		},
 		function(desc, text) {
 			var innerCode = desc.code;
-			desc.code = '<tw-link>' + text + '</tw-link>';
+			desc.code = '<tw-link tabindex=0>' + text + '</tw-link>';
 			desc.append = "replace";
 			desc.data = {
 				clickEvent: function() {
@@ -122,7 +122,7 @@ function($, Macros, Utils, Selectors, Story, State, Engine, ChangerCommand) {
 						}
 					}
 					
-					return '<tw-link ' + (visited > 0 ? 'class="visited" ' : '')
+					return '<tw-link tabindex=0 ' + (visited > 0 ? 'class="visited" ' : '')
 						+ (Story.options.debug ? 'passage-name="' + passageName + '" ' : '')
 						+ 'passage-id="' + passageID + '">' + (text || passage) + '</tw-link>';
 				}

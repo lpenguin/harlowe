@@ -45,6 +45,17 @@ require(['jquery', 'renderer', 'story', 'state', 'engine', 'utils', 'utils/selec
 			debugHTML =
 			"<tw-debugger><button class='show-invisibles'>&#9903; Debug View</button></tw-debugger>";
 		
+		/*
+			This gives interactable elements that should have keyboard access (via possessing
+			a tabindex property) some basic keyboard accessibility, by making their
+			enter-key event trigger their click event.
+		*/
+		html.on('keydown', function(event) {
+			if (event.which === 13 && event.target.getAttribute('tabindex') === "0") {
+				$(event.target).trigger('click');
+			}
+		});
+		
 		// If the debug option is on, add the debugger.
 		if (Story.options.debug) {
 			$(document.body).append(debugHTML);

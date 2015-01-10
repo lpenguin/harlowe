@@ -15,6 +15,7 @@ define(['jquery'], function($) {
 		*/
 		tag: function() {
 			return this[0] && this[0].tagName && this[0].tagName.toLowerCase();
-		}
+		},
+				
 	});
 });

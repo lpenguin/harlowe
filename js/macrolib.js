@@ -5,7 +5,6 @@ define([
 	'macros',
 	'utils',
 	'datatypes/changercommand',
-	'internaltypes/twinewarning',
 	'macrolib/values',
 	'macrolib/commands',
 	'macrolib/datastructures',

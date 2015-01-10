@@ -43,7 +43,6 @@ define(['macros', 'state', 'utils', 'datatypes/colour', 'twinescript/operations'
 					*/
 					Utils.log(e);
 					Utils.log(Array.from(arguments).join(''));
-					e.message = "\u2615 " + e.message;
 					return e;
 				}
 			}
