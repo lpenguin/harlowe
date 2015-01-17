@@ -99,7 +99,7 @@ function(Utils, State, Story, Colour, AssignmentRequest, OperationUtils, TwineEr
 			else if (prop !== "length") {
 				return TwineError.create("property",
 					"You can only use positions ('4th', 'last', '2nd-last', etc.) and 'length' with "
-					+ objectName(obj) + ".");
+					+ objectName(obj) + ", not '" + prop + "'.");
 			}
 		}
 		/*
@@ -542,7 +542,14 @@ function(Utils, State, Story, Colour, AssignmentRequest, OperationUtils, TwineEr
 					(such as (set:)) to perform [[Get]]s and [[Set]]s on this VarRef.
 				*/
 				get: function() {
-					return Operations.get(this.deepestObject, this.deepestProperty);
+					/*
+						There's a problem, though: varRefs only contain compiled properties,
+						not original TwineScript properties. So, we can't call Operations.get()
+						again, here, but must do a plain JS [[Get]].
+					*/
+					var obj = this.deepestObject,
+						prop = this.deepestProperty;
+					return (obj instanceof Map) ? obj.get(prop) : obj[prop];
 				},
 				set: function(value) {
 					/*

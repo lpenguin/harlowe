@@ -259,6 +259,10 @@ define(['utils'], function(Utils) {
 		*/
 		if ((i = indexOfType(tokens, "comma")) >-1) {
 			midString = ",";
+			/*
+				Unlike Javascript, Twinescript allows trailing commas in calls.
+			*/
+			needsRight = false;
 		}
 		else if ((i = indexOfType(tokens, "spread")) >-1) {
 			/*
@@ -344,7 +348,7 @@ define(['utils'], function(Utils) {
 		else if ((i = rightAssociativeIndexOfType(tokens, "variableProperty", "computedVariableProperty")) >-1) {
 			/*
 				This is somewhat tricky - we need to manually wrap the left side
-				inside the Operations.get call, while leaving the right side as is.
+				inside the Operations.get() call, while leaving the right side as is.
 			*/
 			left = "Operations." + (isVarRef ? "makeVarRef" : "get")
 				+ "(" + compile(tokens.slice (0,  i))

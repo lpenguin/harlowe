@@ -1,4 +1,4 @@
-define(['macros'], function(Macros) {
+define(['macros', 'utils/operationutils', 'internaltypes/twineerror'], function(Macros, OperationUtils, TwineError) {
 	"use strict";
 	/*
 		Built-in value macros.
@@ -86,7 +86,7 @@ define(['macros'], function(Macros) {
 				property, if present.
 			*/
 			if (!("lastHookShown" in section.stack[0])) {
-				return new Error("There's nothing before this to do (else-if:) with.");
+				return TwineError.create("macrocall", "There's nothing before this to do (else-if:) with.");
 			}
 			return (section.stack[0].lastHookShown === false && !!expr);
 		},
@@ -98,11 +98,37 @@ define(['macros'], function(Macros) {
 		*/
 		("else", function _else(section) {
 			if (!("lastHookShown" in section.stack[0])) {
-				return new Error("There's nothing before this to do (else:) with.");
+				return TwineError.create("macrocall", "There's nothing before this to do (else:) with.");
 			}
 			return section.stack[0].lastHookShown === false;
 		},
-		null);
+		null)
+		
+		/*
+			(first-nonzero:) returns the leftmost non-zero number of the numbers given to it.
+			It's designed to serve the same purpose as JS's defaulting OR "||" operator.
+		*/
+		(["nonzero", "first-nonzero"], function first_nonzero(/*variadic*/) {
+			return Array.from(arguments).slice(1).filter(Boolean)[0] || false;
+		},
+		[rest(Number)])
+		
+		/*
+			(first-nonempty:), conversely, returns the leftmost value given to it which is not an empty collection.
+		*/
+		(["nonempty", "first-nonempty"], function first_nonempty(/*variadic*/) {
+			/*
+				This and (else:) check the lastHookShown expando
+				property, if present.
+			*/
+			return Array.from(arguments).slice(1).filter(function(e) {
+				if (OperationUtils.isSequential(e)) {
+					return e.length > 0;
+				}
+				return e.size > 0;
+			})[0] || false;
+		},
+		[rest(Macros.TypeSignature.either(String, Array, Map, Set))]);
 
 	/*
 		JS library wrapper macros
@@ -114,19 +140,19 @@ define(['macros'], function(Macros) {
 		namely log, sqrt, etc.
 	*/
 	function mathFilter (fn) {
-		return function () {
+		return function (/*variadic*/) {
 			var result = fn.apply(this, arguments);
 			if (typeof result !== "number" || isNaN(result)) {
-				throw new RangeError("math result is " + result);
+				return TwineError.create("macrocall", "This mathematical expression doesn't compute!");
 			}
 			return result;
 		};
 	}
 	
 	/*
-		Choose one argument, up to 16. Can be used as such: (either: "pantry", "larder", "cupboard" )
+		Choose one argument. Can be used as such: (either: "pantry", "larder", "cupboard" )
 	*/
-	function either() {
+	function either(/*variadic*/) {
 		return arguments[~~(Math.random() * arguments.length)];
 	}
 	

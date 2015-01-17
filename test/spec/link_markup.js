@@ -3,19 +3,19 @@ describe("links", function() {
 
 	describe("(link-goto:)", function() {
 		it("renders to a <tw-link> element if the linked passage exists", function() {
-			createPassage("","glen");
-			var link = runPassage("(link-goto:'glen')").find('tw-link');
+			createPassage("","mire");
+			var link = runPassage("(link-goto:'mire')").find('tw-link');
 		
 			expect(link.parent().is('tw-expression')).toBe(true);
 			expect(link.tag()).toBe("tw-link");
-			expect(link.attr("passage-id")).toBe("glen");
+			expect(link.attr("passage-id")).toBe("mire");
 		});
 		it("becomes a <tw-broken-link> if the linked passage is absent", function() {
-			var link = runPassage("(link-goto: 'glen')").find('tw-broken-link');
+			var link = runPassage("(link-goto: 'mire')").find('tw-broken-link');
 		
 			expect(link.parent().is('tw-expression')).toBe(true);
 			expect(link.tag()).toBe("tw-broken-link");
-			expect(link.html()).toBe("glen");
+			expect(link.html()).toBe("mire");
 		});
 		it("produces an error if given no arguments", function() {
 			var error = runPassage("(link-goto:)").find('tw-error');
@@ -28,19 +28,19 @@ describe("links", function() {
 			expect(error.length).toBe(2);
 		});
 		it("goes to the passage when clicked", function() {
-			createPassage("<p>garply</p>","glen");
-			var link = runPassage("(link-goto:'glen')").find('tw-link');
+			createPassage("<p>garply</p>","mire");
+			var link = runPassage("(link-goto:'mire')").find('tw-link');
 			link.click();
 			expect($('tw-passage p').text()).toBe("garply");
 		});
 		it("can be focused", function() {
-			createPassage("","glen");
-			var link = runPassage("(link-goto:'glen')").find('tw-link');
+			createPassage("","mire");
+			var link = runPassage("(link-goto:'mire')").find('tw-link');
 			expect(link.attr("tabindex")).toBe("0");
 		});
 		it("behaves as if clicked when the enter key is pressed while it is focused", function() {
-			createPassage("<p>garply</p>","glen");
-			var link = runPassage("(link-goto:'glen')").find('tw-link');
+			createPassage("<p>garply</p>","mire");
+			var link = runPassage("(link-goto:'mire')").find('tw-link');
 			link.trigger($.Event('keydown', { which: 13 }));
 			expect($('tw-passage p').text()).toBe("garply");
 		});
@@ -65,20 +65,20 @@ describe("links", function() {
 				expect(expression.text()).toBe("fl]e]a");
 			});
 			it("may contain markup, and links to the correct passage based on the plain text", function() {
-				createPassage("","glen");
-				var link = runPassage("[[gl''e''n]]").find('tw-link');
+				createPassage("","mire");
+				var link = runPassage("[[mi''r''e]]").find('tw-link');
 			
 				expect(link.tag()).toBe("tw-link");
-				expect(link.html()).toBe("gl<b>e</b>n");
-				expect(link.attr("passage-id")).toBe("glen");
+				expect(link.html()).toBe("mi<b>r</b>e");
+				expect(link.attr("passage-id")).toBe("mire");
 			});
 			it("may contain line breaks", function() {
-				createPassage("","glen");
-				var link = runPassage("[[\nglen\n]]").find('tw-link');
+				createPassage("","mire");
+				var link = runPassage("[[\nmire\n]]").find('tw-link');
 			
 				expect(link.tag()).toBe("tw-link");
-				expect(link.html()).toBe("<br>glen<br>");
-				expect(link.attr("passage-id")).toBe("glen");
+				expect(link.html()).toBe("<br>mire<br>");
+				expect(link.attr("passage-id")).toBe("mire");
 			});
 		});
 		describe("proper link syntax", function() {

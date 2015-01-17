@@ -134,6 +134,9 @@ function($, Story, Utils, OperationUtils, TwineError) {
 		if (type === Array) {
 			return Array.isArray(arg);
 		}
+		if (type === Map || type === Set) {
+			return arg instanceof type;
+		}
 		/*
 			For TwineScript-specific types, this check should mostly suffice.
 			TODO: I really need to replace those duck-typing properties.
@@ -223,7 +226,6 @@ function($, Story, Utils, OperationUtils, TwineError) {
 						For instance, if the arg is undefined, then the problem is a
 						"not enough values" error.
 					*/
-					
 					if (arg === undefined) {
 						return TwineError.create("macrocall", "The " + name + " macro needs "
 							+ Utils.plural((typeSignature.length - ind), "more value") + ".");

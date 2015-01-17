@@ -13,6 +13,7 @@ define(['jquery'], function($) {
 		operation: "You tried to use an operation on some data, but the data's type was incorrect.",
 		macrocall: "You tried to use a macro, but it wasn't written correctly.",
 		datatype: "You tried to use a macro, but gave the wrong type of data to it.",
+		keyword: "You used a keyword in a way that I didn't understand.",
 		property: "You tried to access a value in a string/array/datamap, but I couldn't find it.",
 		unimplemented: "I currently don't have this particular feature. I'm sorry.",
 		javascript: "This error message was reported by your browser's Javascript engine. "
