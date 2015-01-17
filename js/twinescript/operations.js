@@ -68,11 +68,28 @@ function(Utils, State, Story, Colour, AssignmentRequest, OperationUtils, TwineEr
 		if((error = Utils.containsError(obj, prop))) {
 			return error;
 		}
-		if(prop.startsWith("__")) {
-			return TwineError.create("property", onlyIcan + "'__'.");
+		/*
+			The computed variable property syntax means that basically
+			any value can be used as a property key. Currently, we only allow strings
+			and numbers to be used.
+		*/
+		if(typeof prop !== "string" && typeof prop !== "number") {
+			return TwineError.create(
+				"property",
+				"Only strings and numbers can be used as property names, not " + objectName(prop) + "."
+				);
 		}
-		if(prop.startsWith("TwineScript") && prop !== "TwineScript_Assignee") {
-			return TwineError.create("property", onlyIcan + "'TwineScript'.");
+		/*
+			These checks here are to ensure that TwineScript properties and __proto__ are
+			not exposed to userland code.
+		*/
+		if(typeof prop === "string") {
+			if(prop.startsWith("__")) {
+				return TwineError.create("property", onlyIcan + "'__'.");
+			}
+			if(prop.startsWith("TwineScript") && prop !== "TwineScript_Assignee") {
+				return TwineError.create("property", onlyIcan + "'TwineScript'.");
+			}
 		}
 		/*
 			Sequentials have special sugar property indices:
@@ -84,10 +101,22 @@ function(Utils, State, Story, Colour, AssignmentRequest, OperationUtils, TwineEr
 		*/
 		if (isSequential(obj)) {
 			/*
+				Number properties are treated differently from strings by sequentials:
+				the number 1 is treated the same as the string "1st", and so forth.
+			*/
+			if (typeof prop === "number") {
+				/*
+					Since JS arrays are 0-indexed, we need only subtract 1 from prop
+					to convert it to a JS property index.
+				*/
+				prop -= 1;
+			}
+			/*
+				Given that prop is a string, convert "1st" etc. into a number.
 				Note that this glibly allows "1rd" or "2st".
 				There's no real problem with this.
 			*/
-			if ((match = /(\d+)(?:st|[nr]d|th)/.exec(prop))) {
+			else if ((match = /(\d+)(?:st|[nr]d|th)/.exec(prop))) {
 				prop = match[1] - 1 + "";
 			}
 			else if (prop === "last") {
