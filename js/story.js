@@ -19,12 +19,34 @@ define(['jquery', 'utils', 'utils/selectors'], function($, Utils, Selectors) {
 			@property {Object} options
 		*/
 		options: {},
-
+		
 		/**
-			Set of JS-based text effects.
-			@property {Object} effects
+			The Page is essentially a simplified DOM for TwineScript access.
+			
+			Each element of this is a Map (known in TwineScript as a (datamap:)) that
+			loosely maps to one of the actual TwineScript DOM elements,
+			(<html>, <tw-story>, <tw-passage>), and has	the following properties:
+			
+			- "style": A ChangerCommand which determines how the given element is styled.
+			Engine applies this style whenever it renders an element.
 		*/
-		effects: {},
+		page: new Map([
+			/*
+				First, the style of the page itself.
+			*/
+			["style", null],
+			
+			/*
+				Now, the contained elements.
+			*/
+			["story", new Map([
+				["style", null],
+			])],
+			
+			["passage", new Map([
+				["style", null],
+			])],
+		]),
 		
 		/**
 			ID of the start passage.

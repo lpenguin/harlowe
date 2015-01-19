@@ -1,0 +1,14 @@
+<!DOCTYPE html><meta charset="utf-8">
+<title>Object Property Belonging Test</title>
+<link rel="stylesheet" href="../build/harlowe-css.css"/>
+<tw-story></tw-story><script data-main="../js/harlowe.js" src="../node_modules/requirejs/require.js"></script>
+<tw-storydata options="debug" startnode="1">
+<tw-passagedata pid="1" name="1" position="512,384" data-t8n="instant">
+(set: $a to (a:))
+(print: 2nd of $a) (= error)
+(print: e of $a) (= error)
+(set: 1st of $a to 2)
+(print: 1st of $a) (= 2)
+(set: $a to (a:(a:1),(a:2)))
+(set: $a's 1st of $a) (= error)
+(set: 1st of $a's 1st) (= error)

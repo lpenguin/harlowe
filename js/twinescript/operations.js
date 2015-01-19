@@ -272,6 +272,10 @@ function(Utils, State, Story, Colour, AssignmentRequest, OperationUtils, TwineEr
 					return It;
 				},
 				
+				get page() {
+					return Story.page;
+				},
+				
 				/*
 					The "time" keyword binds to the number of milliseconds since the passage
 					was rendered.

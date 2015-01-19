@@ -345,24 +345,49 @@ define(['utils'], function(Utils) {
 			instead of the incorrect:
 				Operations.get(a,1) Operations.get(,2)
 		*/
-		else if ((i = rightAssociativeIndexOfType(tokens, "variableProperty", "computedVariableProperty")) >-1) {
+		else if ((i = rightAssociativeIndexOfType(tokens, "property", "computedProperty")) >-1) {
 			/*
 				This is somewhat tricky - we need to manually wrap the left side
 				inside the Operations.get() call, while leaving the right side as is.
 			*/
 			left = "Operations." + (isVarRef ? "makeVarRef" : "get")
-				+ "(" + compile(tokens.slice (0,  i))
+				+ "("
+				/*
+					belongingProperties place the variable on the right.
+				*/
+				+ compile(tokens.slice (0, i))
 				+ ","
 				/*
-					computedVariableProperties have children... variablePropertes merely have a name.
+					computedProperties have children... properties merely have a name.
 				*/
-				+ (tokens[i].type === "variableProperty"
+				+ (tokens[i].type.includes("computed")
+				? compile(tokens[i].children)
 				/*
 					Utils.toJSLiteral() is used to both escape the name
 					string and wrap it in quotes.
 				*/
-				? Utils.toJSLiteral(tokens[i].name)
-				: compile(tokens[i].children)) + ")";
+				: Utils.toJSLiteral(tokens[i].name)) + ")";
+			midString = " ";
+			needsLeft = needsRight = false;
+		}
+		else if ((i = indexOfType(tokens, "belongingProperty", "computedBelongingProperty")) >-1) {
+			/*
+				As with the preceding case, we need to manually wrap the variable side
+				inside the Operations.get() call, while leaving the other side as is.
+			*/
+			right = "Operations." + (isVarRef ? "makeVarRef" : "get")
+				+ "("
+				/*
+					belongingProperties place the variable on the right.
+				*/
+				+ compile(tokens.slice (i + 1))
+				+ ","
+				/*
+					The following is the same as in the preceding case.
+				*/
+				+ (tokens[i].type.includes("computed")
+				? compile(tokens[i].children)
+				: Utils.toJSLiteral(tokens[i].name)) + ")";
 			midString = " ";
 			needsLeft = needsRight = false;
 		}
@@ -372,6 +397,15 @@ define(['utils'], function(Utils) {
 				there is no left subtoken (it is always Identifiers.it).
 			*/
 			left = "Operations.get(Operations.Identifiers.it,"
+				+ Utils.toJSLiteral(tokens[i].name) + ")";
+			midString = " ";
+			needsLeft = needsRight = false;
+		}
+		else if ((i = indexOfType(tokens, "belongingItProperty")) >-1) {
+			/*
+				This corresponds to the expression "2nd of it", etc.
+			*/
+			right = "Operations.get(Operations.Identifiers.it,"
 				+ Utils.toJSLiteral(tokens[i].name) + ")";
 			midString = " ";
 			needsLeft = needsRight = false;

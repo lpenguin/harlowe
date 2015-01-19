@@ -188,7 +188,7 @@
 		/*
 			This determines the valid characters for a property name. Sadly, "-" is not allowed.
 		*/
-		validVariablePropertyName = anyLetter.replace("\\-", "") + "+",
+		validPropertyName = anyLetter.replace("\\-", "") + "+",
 		
 		/*
 			Variables, and properties of variables:
@@ -196,24 +196,36 @@
 			$bag's bonnet
 			$a's 1st's 2nd
 		*/
-		variable = "\\$(" + validVariablePropertyName + ")",
+		variable = "\\$(" + validPropertyName + ")",
 		
-		variableProperty = "'s" + ws + "(" + validVariablePropertyName + ")",
+		property = "'s" + ws + "(" + validPropertyName + ")",
+		
+		belongingProperty = "(" + validPropertyName + ")" + ws + "of",
+		
+		/*
+			Computed properties are of the form:
+			$a's (expression)
+			or
+			(expression) of $a
+		*/
+		computedPropertyFront = "'s" + ws + "\\(",
 		
 		/*
 			Computed properties are of the form:
 			$a's (expression)
 		*/
-		computedVariablePropertyFront = "'s" + ws + "\\(",
+		computedBelongingPropertyBack = "\\)" + ws + "of",
 		
 		/*
 			Identifiers: either "it" or "time".
 			"it" is a bit of a problem because its possessive is "its", not "it's",
-			so we can't use a derivation similar to variableProperty.
+			so we can't use a derivation similar to property.
 		*/
-		identifier = "\\b" + either("it","time") + "\\b",
+		identifier = "\\b" + either("it","time","page") + "\\b",
 		
-		itsProperty = "its" + ws + "(" + validVariablePropertyName + ")",
+		itsProperty = "its" + ws + "(" + validPropertyName + ")",
+		
+		belongingItProperty = "(" + validPropertyName + ")" + ws + "of" + ws + "it",
 		
 		macro = {
 			opener:            "\\(",
@@ -395,8 +407,14 @@
 		macroFront: macro.opener + before(macro.name),
 		macroName: macro.name,
 		
+		/*
+			This must be differentiated from macroFront.
+		*/
 		groupingFront: "\\(" + notBefore(macro.name),
-		groupingBack:  "\\)",
+		/*
+			This must be differentiated from computedBelongingPropertyBack.
+		*/
+		groupingBack:  "\\)" + notBefore(ws + "of"),
 		
 		twine1Macro:
 			twine1Macro,
@@ -405,12 +423,18 @@
 			Macro code
 		*/
 		
-		variableProperty:
-			variableProperty,
+		property:
+			property,
+			
+		belongingProperty:
+			belongingProperty,
 		
-		computedVariablePropertyFront:
-			computedVariablePropertyFront,
+		computedPropertyFront:
+			computedPropertyFront,
 		
+		computedBelongingPropertyBack:
+			computedBelongingPropertyBack,
+			
 		variable:
 			variable,
 		
@@ -446,6 +470,7 @@
 		// Special identifiers
 		identifier: identifier,
 		itsProperty: itsProperty,
+		belongingItProperty: belongingItProperty,
 		
 		// TODO: this generated regex is horrendously slow
 		// when an unclosed ' or " is in the source text.

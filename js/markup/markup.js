@@ -322,8 +322,8 @@
 								"grouping",
 							macroFront:
 								"macro",
-							computedVariablePropertyFront:
-								"computedVariableProperty",
+							computedPropertyFront:
+								"computedProperty",
 						},
 					};
 				},
@@ -368,9 +368,22 @@
 					pattern - "$a's b's" resembles a string literal. To ensure that
 					the former is always matched first, this rule must come before it.
 				*/
-				variableProperty: { fn: textTokenFn("name") },
+				property: { fn: textTokenFn("name") },
 				
-				computedVariablePropertyFront: { fn: Object },
+				belongingProperty: { fn: textTokenFn("name") },
+				
+				computedPropertyFront: { fn: Object },
+				
+				computedBelongingPropertyBack: {
+					fn: function() {
+						return {
+							matches: {
+								groupingFront:
+									"computedBelongingProperty",
+							},
+						};
+					},
+				},
 				
 				string: { fn: Object, },
 				
@@ -460,8 +473,9 @@
 						};
 					},
 				},
-				identifier: { fn: textTokenFn("name") },
-				itsProperty:      { fn: textTokenFn("name") },
+				identifier:          { fn: textTokenFn("name") },
+				itsProperty:         { fn: textTokenFn("name") },
+				belongingItProperty: { fn: textTokenFn("name") },
 			},
 			["boolean", "is", "to", "into", "and", "or", "not", "isNot",
 			"comma", "spread", "contains", "isIn"].reduce(function(a, e) {
