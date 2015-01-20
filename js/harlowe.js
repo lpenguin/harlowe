@@ -109,7 +109,7 @@ require(['jquery', 'renderer', 'story', 'state', 'engine', 'utils', 'utils/selec
 		
 		stylesheet.each(function(i) {
 			// In the future, pre-processing may occur.
-			$(document.head).after('<style data-title="Story stylesheet ' + (i + 1) + '">' + $(this).html());
+			$(document.head).append('<style data-title="Story stylesheet ' + (i + 1) + '">' + $(this).html());
 		});
 		
 		// Load the hash if it's present

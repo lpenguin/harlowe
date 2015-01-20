@@ -306,4 +306,48 @@ describe("basic twinemarkup syntax", function() {
 			);
 		});
 	});
+	
+	describe("aligner syntax", function() {
+		it("right-aligns text with ==> on a single line, and ends right-alignment with <== on a single line", function() {
+			var align = runPassage("==>\ngarply\n<==").find('tw-align');
+			expect(align.css('text-align')).toBe('right');
+			expect(align.text()).toBe('garply');
+			expect(align.css('margin')).toBe('');
+		});
+		it("ignores the number of, and imbalance of, = signs used", function() {
+			[2,3,4,5,6,7,8,9,10].forEach(function(number) {
+				var align = runPassage("=".repeat(number) + ">\ngarply\n<" + "=".repeat(number+2)).find('tw-align');
+				expect(align.css('text-align')).toBe('right');
+				expect(align.text()).toBe('garply');
+				expect(align.css('margin')).toBe('');
+			});
+		});
+		it("centres text with a balanced =><=", function() {
+			var align = runPassage("=><=\ngarply").find('tw-align');
+			expect(align.css('text-align')).toBe('center');
+			expect(align.text()).toBe('garply');
+			expect(align.css('margin')).toBe('');
+		});
+		it("justifies text with <==>", function() {
+			var align = runPassage("<==>\ngarply\n<==").find('tw-align');
+			expect(align.css('text-align')).toBe('justify');
+			expect(align.text()).toBe('garply');
+			expect(align.css('margin')).toBe('');
+		});
+		it("aligns text with unbalanced ==><=", function() {
+			var align = runPassage("==><====\ngarply").find('tw-align');
+			expect(align.css('text-align')).toBe('center');
+			expect(align.attr('style').includes('margin-left: 17%')).toBe(true);
+			
+			align = runPassage("=====><=\ngarply").find('tw-align');
+			expect(align.css('text-align')).toBe('center');
+			expect(align.attr('style').includes('margin-left: 42%')).toBe(true);
+		});
+		it("doesn't nest <tw-align> elements", function() {
+			var align = runPassage("<==>\ngarply\n==>\ngrault\n<==").find('tw-align');
+			expect(align.first().text()).toBe('garply');
+			expect(align.last().text()).toBe('grault');
+			expect(align.parent().children().length).toBe(2);
+		});
+	});
 });

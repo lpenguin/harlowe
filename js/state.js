@@ -270,7 +270,7 @@ define(['story', 'utils'], function(Story, Utils) {
 					steps = arg;
 				}
 			}
-			for (; steps > 0 && recent >= 0; steps--) {
+			for (; steps > 0 && recent > 0; steps--) {
 				moved = true;
 				recent -= 1;
 			}

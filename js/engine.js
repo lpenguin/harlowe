@@ -116,10 +116,7 @@ function ($, Story, Utils, Selectors, State, Section) {
 			newPassage,
 			{ transition: "dissolve" }
 		);
-		/*
-			Although the <tw-story> is being reattached to <html>, the browser
-			will transport it to the <body> anyway.
-		*/
+		
 		parent.append(story);
 		/*
 			In stretchtext, scroll the window to the top of the inserted element,

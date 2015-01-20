@@ -349,7 +349,17 @@ function(Utils, State, Story, Colour, AssignmentRequest, OperationUtils, TwineEr
 			else if (typeof l["TwineScript_+"] === "function") {
 				return l["TwineScript_+"](r);
 			}
-			return l + r;
+			/*
+				Finally, if it's a primitive, we defer to JS's addition operator.
+			*/
+			if ("string|number|boolean".includes(typeof l)) {
+				return l + r;
+			}
+			/*
+				Having got this far, there's nothing else that can be added.
+				Return an error.
+			*/
+			return TwineError.create("operation", "I can't use + on " + objectName(l) + ".");
 		}),
 		"-":  doNotCoerce(function(l, r) {
 			var ret;
