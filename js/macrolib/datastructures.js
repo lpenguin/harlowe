@@ -133,18 +133,7 @@ function(Macros, Utils, OperationUtils, State, AssignmentRequest) {
 			A match of (substring:).
 		*/
 		("subarray", function subarray(_, array, a, b) {
-			/*
-				For now, let's assume descending ranges are intended,
-				and support them.
-			*/
-			if (a > b) {
-				return subarray(_, array, b, a);
-			}
-			/*
-				As the indices are 1-indexed, we shall subtract 1 from a.
-				But, as they're inclusive, b shall be left as is.
-			*/
-			return array.slice(a-1, b);
+			return OperationUtils.subset(array, a, b);
 		},
 		[Array, Number, Number])
 		

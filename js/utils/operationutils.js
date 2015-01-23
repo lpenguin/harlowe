@@ -1,4 +1,4 @@
-define(['utils'], function(Utils) {
+define(['utils', 'internaltypes/twineerror'], function(Utils, TwineError) {
 	"use strict";
 	
 	/*
@@ -266,6 +266,43 @@ define(['utils'], function(Utils) {
 		return is(container, obj);
 	}
 	
+	/*
+		This calls the slice() method of the given sequence, but takes TwineScript (subarray:)
+		and (substring:) indices (which are 1-indexed), converting them to those preferred by JS.
+	*/
+	function subset(sequence, a, b) {
+		/*
+			A zero index or a NaN index is an error.
+		*/
+		if (!a || !b) {
+			return TwineError.create(
+				"macrocall",
+				"The sub" + collectionType(sequence) + " index arguments must not be 0 or NaN."
+			);
+		}
+		/*
+			To simplify things, convert negative indices into positive ones.
+		*/
+		if (a < 0) {
+			a = sequence.length + a + 1;
+		}
+		if (b < 0) {
+			b = sequence.length + b + 1;
+		}
+		/*
+			For now, let's assume descending ranges are intended,
+			and support them.
+		*/
+		if (a > b) {
+			return subset(sequence, b, a);
+		}
+		/*
+			As the positive indices are 1-indexed, we shall subtract 1 from a if a is positive.
+			But, as they're inclusive, b shall be left as is.
+		*/
+		return sequence.slice(a > 0 ? a - 1 : a, b);
+	}
+	
 	var OperationUtils = Object.freeze({
 		isObject: isObject,
 		collectionType: collectionType,
@@ -276,6 +313,7 @@ define(['utils'], function(Utils) {
 		typeName: typeName,
 		is: is,
 		contains: contains,
+		subset: subset,
 	});
 	return OperationUtils;
 });

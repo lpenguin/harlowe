@@ -1,4 +1,4 @@
-define(['macros', 'utils/operationutils', 'internaltypes/twineerror'], function(Macros, OperationUtils, TwineError) {
+define(['utils', 'macros', 'utils/operationutils', 'internaltypes/twineerror'], function(Utils, Macros, OperationUtils, TwineError) {
 	"use strict";
 	/*
 		Built-in value macros.
@@ -17,12 +17,16 @@ define(['macros', 'utils/operationutils', 'internaltypes/twineerror'], function(
 			Concatenates multiple values.
 			Evaluates to a text string.
 		*/
-		(["text", "string"], function print(_, expr /*variadic */) {
-			expr = Array.prototype.slice.call(arguments, 1).join('');
-			return expr;
+		(["text", "string"], function print(/*variadic */) {
+			/*
+				Since only primitives are passed into this, and we use
+				JS's default toString() for primitives, we don't need
+				to do anything more than join() the array.
+			*/
+			return Array.prototype.slice.call(arguments, 1).join('');
 		},
-		// (text: accepts a lot of anything)
-		[zeroOrMore(Any)])
+		// (text: accepts a lot of any primitive)
+		[zeroOrMore(Macros.TypeSignature.either(String, Number, Boolean))])
 
 		/*
 			(substring:)
@@ -31,29 +35,24 @@ define(['macros', 'utils/operationutils', 'internaltypes/twineerror'], function(
 			A match of (subarray:).
 		*/
 		("substring", function substring(_, string, a, b) {
-			/*
-				For now, let's assume descending ranges are intended,
-				and support them.
-			*/
-			if (a > b) {
-				return substring(_, string, b, a);
-			}
-			/*
-				As the indices are 1-indexed, we shall subtract 1 from a.
-				But, as they're inclusive, b shall be left as is.
-			*/
-			return string.slice(a-1, b);
+			return OperationUtils.subset(string, a, b);
 		},
 		[String, Number, Number])
 		
 		/*
 			(num:), (number:)
 			This provides explicit coercion to Number.
+			Currently, it only works on a single string, as there's no other
+			type that has an obvious numeric representation.
 		*/
 		(["num", "number"], function number(_, expr) {
+			/*
+				This simply uses JS's toNumber conversion, meaning that
+				decimals and leading spaces are handled, but leading spaces etc. are not.
+			*/
 			return +expr;
 		},
-		[Any])
+		[String])
 		
 		/*
 			(if:) converts the expression to boolean.

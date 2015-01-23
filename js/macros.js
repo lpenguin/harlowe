@@ -101,7 +101,7 @@ function($, Story, Utils, OperationUtils, TwineError) {
 			/*
 				Either signatures must check every available type.
 			*/
-			else if (type.pattern === "either") {
+			if (type.pattern === "either") {
 				/*
 					The arg passes the test if it matches some of the types.
 				*/

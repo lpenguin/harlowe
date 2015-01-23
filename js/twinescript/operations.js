@@ -97,7 +97,7 @@ function(Utils, State, Story, Colour, AssignmentRequest, OperationUtils, TwineEr
 			length: this falls back to JS's length property for Arrays and Strings.
 			1st, 2nd etc.: indices.
 			last: antonym of 1st.
-			2nd-last, 3rd-last: reverse indices.
+			2ndlast, 3rdlast: reverse indices.
 		*/
 		if (isSequential(obj)) {
 			/*
@@ -112,22 +112,22 @@ function(Utils, State, Story, Colour, AssignmentRequest, OperationUtils, TwineEr
 				prop -= 1;
 			}
 			/*
-				Given that prop is a string, convert "1st" etc. into a number.
+				Given that prop is a string, convert "1st", "2ndlast", etc. into a number.
 				Note that this glibly allows "1rd" or "2st".
 				There's no real problem with this.
 			*/
+			else if ((match = /(\d+)(?:st|[nr]d|th)last/.exec(prop))) {
+				prop = obj.length - match[1] + "";
+			}
 			else if ((match = /(\d+)(?:st|[nr]d|th)/.exec(prop))) {
 				prop = match[1] - 1 + "";
 			}
 			else if (prop === "last") {
 				prop = obj.length - 1 + "";
 			}
-			else if ((match = /(\d+)(?:st|[nr]d|th)-last/.exec(prop))) {
-				prop = obj.length - match[1] + "";
-			}
 			else if (prop !== "length") {
 				return TwineError.create("property",
-					"You can only use positions ('4th', 'last', '2nd-last', etc.) and 'length' with "
+					"You can only use positions ('4th', 'last', '2ndlast', etc.) and 'length' with "
 					+ objectName(obj) + ", not '" + prop + "'.");
 			}
 		}
