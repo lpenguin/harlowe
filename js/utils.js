@@ -1,4 +1,4 @@
-define(['jquery', 'markup/markup', 'utils/selectors', 'internaltypes/twineerror', 'utils/customelements'],
+define(['jquery', 'markup', 'utils/selectors', 'internaltypes/twineerror', 'utils/customelements'],
 function($, TwineMarkup, Selectors, TwineError) {
 	"use strict";
 

@@ -576,11 +576,11 @@
 		This requires the Patterns and Lexer modules.
 	*/
 	if(typeof module === 'object') {
-		Patterns = require('./patterns');
-		module.exports = exporter(require('./lexer'));
+		Patterns = require('patterns');
+		module.exports = exporter(require('lexer'));
 	}
 	else if(typeof define === 'function' && define.amd) {
-		define(['./lexer', './patterns'], function (Lexer, P) {
+		define('markup', ['lexer', 'patterns'], function (Lexer, P) {
 			Patterns = P;
 			return exporter(Lexer);
 		});

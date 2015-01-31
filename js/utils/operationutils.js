@@ -215,7 +215,12 @@ define(['utils', 'internaltypes/twineerror'], function(Utils, TwineError) {
 		*/
 		if (l instanceof Map && r instanceof Map) {
 			// Don't forget that Map.prototype.entries() returns an iterator!
-			return is(Array.from(l.entries()), Array.from(r.entries()));
+			return is(
+				// Since datamaps are supposed to be unordered, we must sort these arrays
+				// so that different-ordered maps are regarded as equal.
+				Array.from(l.entries()).sort(),
+				Array.from(r.entries()).sort()
+			);
 		}
 		if (l instanceof Set && r instanceof Set) {
 			return is(Array.from(l.values()), Array.from(r.values()));

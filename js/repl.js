@@ -1,4 +1,4 @@
-define(['utils', 'markup/markup', 'twinescript/compiler', 'twinescript/environ'], function(Utils, TwineMarkup, Compiler, Environ) {
+define(['utils', 'markup', 'twinescript/compiler', 'twinescript/environ'], function(Utils, TwineMarkup, Compiler, Environ) {
 	"use strict";
 	/*
 		REPL

@@ -492,7 +492,7 @@
 		module.exports = Lexer;
 	}
 	else if(typeof define === 'function' && define.amd) {
-		define([], function () {
+		define('lexer', [], function () {
 			return Lexer;
 		});
 	}

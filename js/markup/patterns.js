@@ -472,9 +472,6 @@
 		itsProperty: itsProperty,
 		belongingItProperty: belongingItProperty,
 		
-		// TODO: this generated regex is horrendously slow
-		// when an unclosed ' or " is in the source text.
-		// Better make it a recursive regex or something?
 		string:
 			either(
 				string.single,
@@ -510,7 +507,7 @@
 		module.exports = Patterns;
 	}
 	else if(typeof define === 'function' && define.amd) {
-		define([], function () {
+		define('patterns', [], function () {
 			return Patterns;
 		});
 	}

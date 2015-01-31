@@ -10,6 +10,10 @@ require.config({
 		almond:          '../node_modules/almond/almond',
 		"es6-shim":      '../node_modules/es6-shim/es6-shim',
 		jqueryplugins:   'utils/jqueryplugins',
+		
+		markup:          './markup/markup',
+		lexer:           './markup/lexer',
+		patterns:        './markup/patterns',
 	},
 	deps: [
 		'jquery',

@@ -11,16 +11,18 @@ module.exports = function (grunt) {
 		destCSS = "./build/harlowe-css.css",
 		destJS = "./build/harlowe-min.js",
 		
+		destMarkupJS = "./build/twinemarkup-min.js",
+
 		// Standard replacements
 		scriptStyleReplacements = [{
 			from: '{{CSS}}',
 			to: function () {
-				return '<style title="Twine CSS">' + grunt.file.read(destCSS) + '</style>'
+				return '<style title="Twine CSS">' + grunt.file.read(destCSS) + '</style>';
 			}
 		}, {
 			from: '{{HARLOWE}}',
 			to: function () {
-				return '<script title="Twine engine code" data-main="harlowe">' + grunt.file.read(destJS) + '</script>'
+				return '<script title="Twine engine code" data-main="harlowe">' + grunt.file.read(destJS) + '</script>\n';
 			}
 		}];
 	
@@ -31,7 +33,6 @@ module.exports = function (grunt) {
 			dist: ['dist/'],
 			build: ['build/']
 		},
-
 		jshint: {
 			harlowe: jsFileList,
 			options: {
@@ -77,6 +78,7 @@ module.exports = function (grunt) {
       					runPassage : true,
       					htmlOfPassage : true,
       					expectMarkupToBecome : true,
+      					expectMarkupToPrint : true,
       					$ : true,
       				},
       				globalstrict: true,
@@ -85,6 +87,14 @@ module.exports = function (grunt) {
 		},
 
 		requirejs: {
+			markup: {
+				options: {
+					baseUrl: 'js/markup',
+					name: 'markup',
+					useStrict: true,
+					out: destMarkupJS
+				}
+			},
 			compile: {
 				options: {
 					baseUrl: 'js',
@@ -96,7 +106,7 @@ module.exports = function (grunt) {
 					useStrict: true,
 					out: destJS
 				}
-			}
+			},
 		},
 
 		sass: {
@@ -125,14 +135,17 @@ module.exports = function (grunt) {
 				dest: 'dist/format.js',
 				replacements: [{
 					from: '"source":""',
-					to: '"source":' + JSON.stringify(grunt.file.read(sourceHTML))
+					to: '"source":' + JSON.stringify(grunt.file.read(sourceHTML)),
+				},{
+					from: '"lexer":""',
+					to: function() { return '"lexer":' + JSON.stringify(grunt.file.read(destMarkupJS)) },
 				}].concat(scriptStyleReplacements.map(function(e) {
 					return {
 						from: e.from,
 						to: function() { return JSON.stringify(e.to()).slice(1, -1); }
 					};
 				}))
-			}
+			},
 		},
 
 		watch: {
@@ -155,6 +168,26 @@ module.exports = function (grunt) {
 		}
 	});
 
+	grunt.registerTask('examplefile', "Create an example TwineJS output file", function() {
+		grunt.file.write('dist/exampleOutput.html',
+			[
+				{
+					from: "{{STORY_DATA}}",
+					to: function() {
+						return "<tw-storydata startnode='1'><tw-passagedata pid=1 name='Start'>''Success!''</tw-passagedata></tw-storydata>";
+					},
+				},
+				{
+					from: "{{STORY_NAME}}",
+					to: function() {
+						return "Example Output File";
+					},
+				},
+			].concat(scriptStyleReplacements).reduce(function(a, e) {
+				return a.replace(e.from, e.to());
+			}, grunt.file.read(sourceHTML)));
+	});
+
 	grunt.loadNpmTasks('grunt-contrib-clean');
 	grunt.loadNpmTasks('grunt-contrib-jshint');
 	grunt.loadNpmTasks('grunt-contrib-watch');
@@ -169,8 +202,8 @@ module.exports = function (grunt) {
 	grunt.loadNpmTasks('grunt-contrib-cssmin');
 	grunt.loadNpmTasks('grunt-text-replace');
 
-	grunt.registerTask('default', [ 'clean', 'jshint:harlowe', 'jshint:tests', 'sass', 'cssmin', 'requirejs']);
-	grunt.registerTask('runtime', [ 'requirejs', 'yuidoc', 'sass', 'cssmin', 'replace:runtime']);
+	grunt.registerTask('default', [ 'clean', 'jshint:harlowe', 'jshint:tests', 'sass', 'cssmin', 'requirejs', ]);
+	grunt.registerTask('runtime', [ 'requirejs', 'yuidoc', 'sass', 'cssmin', 'replace:runtime', 'examplefile', ]);
 	grunt.registerTask('release', [
 		'clean', 'yuidoc'
 	]);

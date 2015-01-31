@@ -9,14 +9,10 @@ describe("basic command macros", function() {
 			expect(error.length).toBe(1);
 		});
 		it("prints the text equivalent of number expressions", function() {
-			var expr = runPassage("(print:2+0)").find('tw-expression');
-		
-			expect(expr.text()).toBe("2");
+			expectMarkupToPrint("(print:2+0)", "2");
 		});
 		it("prints the text equivalent of string expressions", function() {
-			var expr = runPassage("(print: 'gar' + 'ply')").find('tw-expression');
-
-			expect(expr.text()).toBe("garply");
+			expectMarkupToPrint("(print: 'gar' + 'ply')", "garply");
 		});
 		it("prints twinemarkup in strings", function() {
 			var expr = runPassage("(print: '//gar' + 'ply//')").find('tw-expression');
@@ -25,14 +21,10 @@ describe("basic command macros", function() {
 			expect(expr.children().is('i')).toBe(true);
 		});
 		it("prints the text equivalent of boolean expressions", function() {
-			var expr = runPassage("(print: 1 is 1)").find('tw-expression');
-
-			expect(expr.text()).toBe("true");
+			expectMarkupToPrint("(print: true)", "true");
 		});
 		it("prints the text equivalent of arrays", function() {
-			var expr = runPassage("(print: (a: 2))").find('tw-expression');
-
-			expect(expr.text()).toBe("2");
+			expectMarkupToPrint("(print: (a: 2))", "2");
 		});
 		it("evaluates to a command object that can't be +'d", function() {
 			var error = runPassage("(print: (print:1) + (print:1))").find('tw-error');

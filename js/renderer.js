@@ -1,4 +1,4 @@
-define(['utils', 'markup/markup', 'twinescript/compiler'], function(Utils, TwineMarkup, Compiler) {
+define(['utils', 'markup', 'twinescript/compiler'], function(Utils, TwineMarkup, Compiler) {
 	"use strict";
 	/**
 		The Renderer takes the syntax tree from TwineMarkup and returns a HTML string.

@@ -1,6 +1,6 @@
 define([
 	'jquery',
-	'markup/markup',
+	'markup',
 	'story',
 	'macros',
 	'utils',
