@@ -1,5 +1,58 @@
 describe("twinescript operators", function () {
 	'use strict';
+	describe("the + operator", function () {
+		it("adds numbers", function (){
+			expectMarkupToPrint("(print: 3 + 5)","8");
+		});
+		it("can be used to concatenate strings", function () {
+			expectMarkupToPrint("(print: '15' + '2')", "152");
+		});
+		it("can be used to concatenate arrays", function () {
+			expectMarkupToPrint("(print: (a:1) + (a:2))", "1,2");
+		});
+	});
+	describe("the - operator", function () {
+		it("subtracts numbers", function (){
+			expectMarkupToPrint("(print: 3 - 5)","-2");
+		});
+		it("can be used on strings", function () {
+			expectMarkupToPrint("(print: '51' - '5')", "1");
+			expectMarkupToPrint("(print: 'reeeed' - 'e')", "rd");
+		});
+		it("can be used on arrays", function () {
+			expectMarkupToPrint("(print: (a:1,3,5,3) - (a:3))", "1,5");
+		});
+	});
+	describe("the * operator", function () {
+		it("multiplies numbers", function (){
+			expectMarkupToPrint("(print: 3 * 5)","15");
+		});
+		it("can't be used on strings", function () {
+			expectMarkupToError("(print: '15' * '2')");
+		});
+	});
+	describe("the / operator", function () {
+		it("divides numbers", function (){
+			expectMarkupToPrint("(print: 15 / 5)","3");
+		});
+		it("can't be used on strings", function () {
+			expectMarkupToError("(print: '15' / '2')");
+		});
+		it("can't divide by zero", function () {
+			expectMarkupToError("(print: 15 / 0)");
+		});
+	});
+	describe("the % operator", function () {
+		it("remainders numbers", function (){
+			expectMarkupToPrint("(print: 31 % 10)","1");
+		});
+		it("can't be used on strings", function () {
+			expectMarkupToError("(print: '15' * '2')");
+		});
+		it("can't divide by zero", function (){
+			expectMarkupToError("(print: 15 % 0)");
+		});
+	});
 	describe("the 'is' operator", function () {
 		it("compares primitives by value", function (){
 			expectMarkupToPrint("(print: 2 is 2)","true");

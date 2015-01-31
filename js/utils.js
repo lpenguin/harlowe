@@ -196,37 +196,23 @@ function($, TwineMarkup, Selectors, TwineError) {
 
 		/**
 			Unescape HTML entities.
-			For speed, convert common entities quickly, and convert others with the DOM.
 
 			@method unescape
 			@param {String} text Text to convert
 			@return {String} converted text
 		*/
 		unescape: function(text) {
-			var ret;
-			if (text.length <= 1)
-				return text;
-
-			switch (text) {
-				case "&lt;":
-					return '<';
-				case "&gt;":
-					return '>';
-				case "&amp;":
-					return '&';
-				case "&quot;":
-					return '"';
-				case "&#39;":
-					return "'";
-				case "&nbsp;":
-					return String.fromCharCode(160);
-				case "&zwnj;":
-					return String.fromCharCode(8204);
-				default:
-					ret = document.createElement('p');
-					ret.innerHTML = text;
-					return ret.textContent;
-			}
+			return text.replace(/&(?:amp|lt|gt|quot|nbsp|zwnj|#39|#96);/g, function(e) {
+				return {
+					'&amp;'  : '&',
+					'&gt;'   : '>',
+					'&lt;'   : '<',
+					'&quot;' : '"',
+					'&#39;'  : "'",
+					"&nbsp;" : String.fromCharCode(160),
+					"&zwnj;" : String.fromCharCode(8204)
+				}[e];
+			});
 		},
 
 		/**
@@ -237,9 +223,15 @@ function($, TwineMarkup, Selectors, TwineError) {
 			@return {String} converted text
 		*/
 		escape: function(text) {
-			return text.replace(/&/g, '&amp;')
-				.replace(/>/g, '&gt;'  ).replace(/</g, '&lt;' )
-				.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+			return text.replace(/[&><"']/g, function(e) {
+				return {
+					'&' : '&amp;',
+					'>' : '&gt;',
+					'<' : '&lt;',
+					'"' : '&quot;',
+					"'" : '&#39;',
+				}[e];
+			});
 		},
 
 		/**

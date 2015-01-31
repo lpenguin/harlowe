@@ -398,9 +398,15 @@ function(Utils, State, Story, Colour, AssignmentRequest, OperationUtils, TwineEr
 			return l * r;
 		}), "multiply"),
 		"/":  onlyPrimitives("number", doNotCoerce(function(l, r) {
+			if (r === 0) {
+				return TwineError.create("operation", "I can't divide " + objectName(l) + " by zero.");
+			}
 			return l / r;
 		}), "divide"),
 		"%":  onlyPrimitives("number", doNotCoerce(function(l, r) {
+			if (r === 0) {
+				return TwineError.create("operation", "I can't modulo " + objectName(l) + " by zero.");
+			}
 			return l % r;
 		}), "modulus"),
 		

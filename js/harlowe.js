@@ -93,6 +93,15 @@ require(['jquery', 'renderer', 'story', 'state', 'engine', 'utils', 'utils/selec
 			});
 		}
 		Story.startPassage = header.attr('startnode');
+		
+		// If there's no set start passage, find the passage with the
+		// lowest passage ID, and use that.
+		if (!Story.startPassage) {
+			Story.startPassage = [].reduce.call($(Selectors.passageData), function(id, el) {
+				var pid = el.getAttribute('pid');
+				return (pid < id ? pid : id);
+			}, Infinity);
+		}
 
 		// Init game engine
 

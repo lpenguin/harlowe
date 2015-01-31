@@ -123,11 +123,10 @@ function ($, Story, Utils, Selectors, State, Section) {
 			minus an offset of 5% of the viewport's height.
 			Outside of stretchtext, just scroll to the top of the <tw-story>'s parent element.
 		*/
-		$('html').scrollTop(
-				stretch
-				? newPassage.offset().top - $(window).height() * 0.05
-				: parent.offset().top
-			);
+		scroll(
+			0,
+			stretch ? newPassage.offset().top - ($(window).height() * 0.05) : parent.offset().top
+		);
 	}
 	
 	var Engine = {

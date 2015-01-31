@@ -6,4 +6,5 @@ docs/*
 build/*
 *.bat
 \.DS_Store
+tests/*
 

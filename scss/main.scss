@@ -87,7 +87,9 @@ tw-story {
 	/*
 		The <tw-story>'s default distance from the top and bottom of the page is 5%.
 	*/
-	margin: 5% auto;
+	padding-top: 5%;
+	padding-bottom: 5%;
+	margin: 0 auto;
 }
 
 /*
