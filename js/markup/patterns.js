@@ -102,12 +102,20 @@
 		(performing escaping on the input strings, etc.)
 	*/
 	function opener(a /*variadic*/) {
-		var pattern, options;
+		var pattern, options, re;
 		
-		if (arguments.length > 1 || 1) {
-			options = Array.apply(0, arguments).map(escape);
+		if (arguments.length > 1) {
+			a = Array.apply(0, arguments);
+			options = a.map(escape);
 			pattern = either.apply(0, options) + notBefore.apply(0, options);
-			return new RegExp(pattern);
+			re = new RegExp(pattern);
+			/*
+				We stash a "length" expando property on the RegExp denoting
+				the length of the longest option. This enables only the smallest
+				slice of the input string to be run against it.
+			*/
+			re.length = a.reduce(function(a,e) { return Math.max(a,e.length); }, 0);
+			return re;
 		}
 		return {
 			/*
@@ -157,13 +165,13 @@
 		*/
 		bullet = "(?:\\*)",
 		
-		bulleted = "\n?" + ws + "(" + bullet + "+)" + ws + "([^\\n]*)" + eol,
+		bulleted = "(?:\n|^)" + ws + "(" + bullet + "+)" + ws + "([^\\n]*)" + eol,
 		
 		numberPoint = "(?:0\\.)",
 		
-		numbered = "\n?" + ws + "(" + numberPoint + "+)" + ws + "([^\\n]*)" + eol,
+		numbered = "(?:\n|^)" + ws + "(" + numberPoint + "+)" + ws + "([^\\n]*)" + eol,
 		
-		hr = "\n?" + ws + "[-*_]{3,}" + ws + eol,
+		hr = "(?:\n|^)" + ws + "\-{3,}" + ws + eol,
 		
 		/*
 			Markdown setext headers conflict with the hr syntax, and are thus gone.
@@ -300,6 +308,7 @@
 		
 		unquoted:    unquoted,
 		escapedLine: "\\\\\\n",
+		
 		br: "\\n",
 		
 		/*
@@ -418,6 +427,9 @@
 		
 		twine1Macro:
 			twine1Macro,
+			
+		twine1MacroOpener:
+			opener("<<"),
 		
 		/*
 			Macro code

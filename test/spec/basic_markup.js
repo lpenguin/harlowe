@@ -215,10 +215,16 @@ describe("basic twinemarkup syntax", function() {
 		it("turns 3 or more hyphens solely occupying a single line into a <hr>", function() {
 			[3,4,5,8,16].forEach(function(i) {
 				expectMarkupToBecome(
-					"---".repeat(i),
+					"-".repeat(i),
 					"<hr>"
 				);
 			});
+		});
+		it("works consecutively", function() {
+			expectMarkupToBecome(
+				"---\n".repeat(3),
+				"<hr><br><hr><br><hr><br>"
+			);
 		});
 		it("won't work unless it's at the start of a line", function() {
 			expectMarkupToBecome(
