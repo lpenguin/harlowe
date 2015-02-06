@@ -276,6 +276,7 @@ define(['utils', 'internaltypes/twineerror'], function(Utils, TwineError) {
 		and (substring:) indices (which are 1-indexed), converting them to those preferred by JS.
 	*/
 	function subset(sequence, a, b) {
+		var ret, isString = typeof sequence === "string";
 		/*
 			A zero index or a NaN index is an error.
 		*/
@@ -302,10 +303,25 @@ define(['utils', 'internaltypes/twineerror'], function(Utils, TwineError) {
 			return subset(sequence, b, a);
 		}
 		/*
+			As mentioned elsewhere in Operations, JavaScript's irksome UCS-2 encoding for strings
+			means that, in order to treat astral plane characters as 1 character in 1 position,
+			they must be converted to and from arrays whenever indexing or .slice() is performed.
+		*/
+		if (isString) {
+			sequence = Array.from(sequence);
+		}
+		/*
 			As the positive indices are 1-indexed, we shall subtract 1 from a if a is positive.
 			But, as they're inclusive, b shall be left as is.
 		*/
-		return sequence.slice(a > 0 ? a - 1 : a, b);
+		ret = sequence.slice(a > 0 ? a - 1 : a, b);
+		/*
+			Now that that's done, convert any string sequence back into one.
+		*/
+		if (isString) {
+			return ret.join('');
+		}
+		return ret;
 	}
 	
 	var OperationUtils = Object.freeze({

@@ -119,7 +119,7 @@ describe("basic twinemarkup syntax", function() {
 		});
 		it("(unlike Markdown) permits whitespace between the start of the line and #", function() {
 			expectMarkupToBecome(
-				" \t#A",
+				" \f\v\t#A",
 				"<h1>A</h1>"
 			);
 		});

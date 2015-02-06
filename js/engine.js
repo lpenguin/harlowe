@@ -121,11 +121,11 @@ function ($, Story, Utils, Selectors, State, Section) {
 		/*
 			In stretchtext, scroll the window to the top of the inserted element,
 			minus an offset of 5% of the viewport's height.
-			Outside of stretchtext, just scroll to the top of the <tw-story>'s parent element.
+			Outside of stretchtext, just scroll to the top of the <tw-story>'s element.
 		*/
 		scroll(
 			0,
-			stretch ? newPassage.offset().top - ($(window).height() * 0.05) : parent.offset().top
+			stretch ? newPassage.offset().top - ($(window).height() * 0.05) : story.offset().top
 		);
 	}
 	

@@ -1,5 +1,5 @@
-define(['macros', 'utils', 'utils/operationutils', 'state', 'datatypes/assignmentrequest'],
-function(Macros, Utils, OperationUtils, State, AssignmentRequest) {
+define(['macros', 'utils', 'utils/operationutils', 'state', 'datatypes/assignmentrequest', 'internaltypes/twineerror'],
+function(Macros, Utils, OperationUtils, State, AssignmentRequest, TwineError) {
 	"use strict";
 	
 	var
@@ -13,7 +13,7 @@ function(Macros, Utils, OperationUtils, State, AssignmentRequest) {
 			Evaluates to nothing.
 		*/
 		("set", function set(_, assignmentRequests /*variadic*/) {
-			var i, ar;
+			var i, ar, result;
 			
 			assignmentRequests = Array.prototype.slice.call(arguments, 1);
 			
@@ -25,9 +25,15 @@ function(Macros, Utils, OperationUtils, State, AssignmentRequest) {
 				ar = assignmentRequests[i];
 				
 				if (ar.operator === "into") {
-					return new SyntaxError("Please say 'to' when using the (set:) macro.");
+					return TwineError.create("macrocall", "Please say 'to' when using the (set:) macro.");
 				}
-				ar.dest.set(ar.src);
+				result = ar.dest.set(ar.src);
+				/*
+					If the setting caused an error to occur, abruptly return the error.
+				*/
+				if (TwineError.isPrototypeOf(result)) {
+					return result;
+				}
 			}
 			return "";
 		},
@@ -39,7 +45,7 @@ function(Macros, Utils, OperationUtils, State, AssignmentRequest) {
 			TODO: mix this into the (set:) definition.
 		*/
 		("put", function put(_, assignmentRequests /*variadic*/) {
-			var i, ar;
+			var i, ar, result;
 			
 			assignmentRequests = Array.prototype.slice.call(arguments, 1);
 			
@@ -51,9 +57,15 @@ function(Macros, Utils, OperationUtils, State, AssignmentRequest) {
 				ar = assignmentRequests[i];
 				
 				if (ar.operator === "to") {
-					return new SyntaxError("Please say 'into' when using the (put:) macro.");
+					return TwineError.create("macrocall", "Please say 'into' when using the (put:) macro.");
 				}
-				ar.dest.set(ar.src);
+				result = ar.dest.set(ar.src);
+				/*
+					If the setting caused an error to occur, abruptly return the error.
+				*/
+				if (TwineError.isPrototypeOf(result)) {
+					return result;
+				}
 			}
 			return "";
 		},

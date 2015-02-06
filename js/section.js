@@ -113,6 +113,14 @@ function($, Utils, Selectors, Renderer, Environ, Story, State, HookUtils, HookSe
 			result = result.TwineScript_Print();
 			
 			/*
+				If TwineScript_Print returns an object of the form { earlyExit },
+				then that's a signal to cease all further expression evaluation
+				immediately.
+			*/
+			if (result.earlyExit) {
+				return false;
+			}
+			/*
 				On rare occasions (specifically, when the passage component
 				of the link syntax produces an error) TwineScript_Print
 				returns a jQuery of the <tw-error>.
@@ -505,7 +513,7 @@ function($, Utils, Selectors, Renderer, Environ, Story, State, HookUtils, HookSe
 			Utils.findAndFilter(dom, Selectors.hook + ","
 				+ Selectors.expression).each(function doExpressions () {
 				var expr = $(this);
-			
+				
 				switch(expr.tag()) {
 					case Selectors.hook:
 					{
@@ -517,8 +525,11 @@ function($, Utils, Selectors, Renderer, Environ, Story, State, HookUtils, HookSe
 					}
 					case Selectors.expression:
 					{
-						runExpression.call(section, expr);
-						break;
+						/*
+							If this returns false, then the entire .each() loop
+							will terminate, thus halting expression evaluation.
+						*/
+						return runExpression.call(section, expr);
 					}
 				}
 			});

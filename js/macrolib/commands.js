@@ -87,8 +87,23 @@ function(Macros, Utils, Story, Engine) {
 				TwineScript_ObjectName: "a (goto: " + Utils.toJSLiteral(name) + ") command",
 				TwineScript_TypeName:   "a (goto:) command",
 				TwineScript_Print: function() {
-					Engine.goToPassage(id);
-					return "";
+					/*
+						When a passage is being rendered, <tw-story> is detached from the main DOM.
+						If we now call another Engine.goToPassage in here, it will attempt
+						to detach <tw-story> twice, causing a crash.
+						So, the change of passage must be deferred until just after
+						the passage has ceased rendering.
+					*/
+					requestAnimationFrame(Engine.goToPassage.bind(Engine,id));
+					/*
+						But how do you immediately cease rendering the passage?
+						
+						This object's property name causes Section's runExpression() to
+						cancel expression evaluation at that point. This means that for, say,
+							(goto: "X")(set: $y to 1)
+						the (set:) will not run because it is after the (goto:)
+					*/
+					return { earlyExit: 1 };
 				},
 			};
 		},

@@ -117,13 +117,19 @@ function(Utils, State, Story, Colour, AssignmentRequest, OperationUtils, TwineEr
 				There's no real problem with this.
 			*/
 			else if ((match = /(\d+)(?:st|[nr]d|th)last/.exec(prop))) {
-				prop = obj.length - match[1] + "";
+				/*
+					obj.length cannot be trusted here: if it's an astral-plane
+					string, then it will be incorrect. So, just pass a negative index
+					and let Operations.get() do the work of offsetting it after it
+					deals with the astral characters.
+				*/
+				prop = -match[1] + "";
 			}
 			else if ((match = /(\d+)(?:st|[nr]d|th)/.exec(prop))) {
 				prop = match[1] - 1 + "";
 			}
 			else if (prop === "last") {
-				prop = obj.length - 1 + "";
+				prop = -1;
 			}
 			else if (prop !== "length") {
 				return TwineError.create("property",
@@ -460,6 +466,21 @@ function(Utils, State, Story, Colour, AssignmentRequest, OperationUtils, TwineEr
 				return prop;
 			}
 			/*
+				Due to Javascript's regrettable use of UCS-2 for string access,
+				astral plane glyphs won't be correctly regarded as single characters,
+				unless the following kludge is employed, using ES6 methods.
+			*/
+			if (typeof obj === "string") {
+				obj = Array.from(obj);
+			}
+			/*
+				From this point on, after doing that conversion, obj's JS length can be trusted.
+				So, negative indices passed into here can now be converted to proper JS indices.
+			*/
+			if (isSequential(obj) && +prop < 0) {
+				prop = obj.length + (+prop);
+			}
+			/*
 				An additional error condition exists for get(): if the property
 				doesn't exist, don't just return undefined.
 				
@@ -551,13 +572,32 @@ function(Utils, State, Story, Colour, AssignmentRequest, OperationUtils, TwineEr
 				if (obj instanceof Map) {
 					return obj.get(prop);
 				} else {
+					if (+prop < 0) {
+						prop = obj.length + (+prop);
+					}
 					return obj[prop];
 				}
 			}
+			/*
+				This one should only return either undefined, or a TwineError.
+			*/
 			function objectOrMapSet(obj, prop, value) {
 				if (obj instanceof Map) {
 					obj.set(prop, value);
 				} else {
+					if (+prop < 0) {
+						prop = obj.length + (+prop);
+					}
+					/*
+						Unlike in JavaScript, you can't change the length of
+						an array or string - it's fixed.
+					*/
+					if (isSequential(obj) && prop === "length") {
+						return TwineError.create(
+							"operation",
+							"I can't forcibly alter the length of " + objectName(obj) + "."
+						);
+					}
 					obj[prop] = value;
 				}
 			}
@@ -616,7 +656,7 @@ function(Utils, State, Story, Colour, AssignmentRequest, OperationUtils, TwineEr
 					if (isObject(value)) {
 						value = clone(value);
 					}
-					objectOrMapSet(this.deepestObject, this.deepestProperty, value);
+					return objectOrMapSet(this.deepestObject, this.deepestProperty, value);
 				},
 				delete: function() {
 					Operations.delete(this.deepestObject, this.deepestProperty);
