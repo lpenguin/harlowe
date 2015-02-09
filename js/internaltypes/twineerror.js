@@ -10,14 +10,15 @@ define(['jquery'], function($) {
 		This dictionary supplies extra explanations for the error types.
 	*/
 	var errorExplanations = {
-		operation: "You tried to use an operation on some data, but the data's type was incorrect.",
-		macrocall: "You tried to use a macro, but it wasn't written correctly.",
-		datatype: "You tried to use a macro, but gave the wrong type of data to it.",
-		keyword: "You used a keyword in a way that I didn't understand.",
-		property: "You tried to access a value in a string/array/datamap, but I couldn't find it.",
+		saving: "I tried to save or load the game, but I couldn't do it.",
+		operation: "I tried to use an operation on some data, but the data's type was incorrect.",
+		macrocall: "I tried to use a macro, but it wasn't written correctly.",
+		datatype: "I tried to use a macro, but gave the wrong type of data to it.",
+		keyword: "I used a keyword in a way that I didn't understand.",
+		property: "I tried to access a value in a string/array/datamap, but I couldn't find it.",
 		unimplemented: "I currently don't have this particular feature. I'm sorry.",
 		javascript: "This error message was reported by your browser's Javascript engine. "
-					+"It usually means that an expression was badly written.",
+			+ "I don't understand it either, but it usually means that an expression was badly written.",
 	},
 	
 	TwineError = {

@@ -43,9 +43,9 @@ define(['story', 'utils'], function(Story, Utils) {
 		*/
 		create: function (p, v) {
 			var ret = Object.create(Moment);
+			ret.passage = p || "";
 			// Variables are stored as deltas of the previous state's variables.
 			// This is implemented using JS's prototype chain :o
-			ret.passage = p || "";
 			// For the first moment, this becomes a call to Object.create(null),
 			// keeping the prototype chain clean.
 			ret.variables = Object.assign(Object.create(this.variables), v);
@@ -53,24 +53,37 @@ define(['story', 'utils'], function(Story, Utils) {
 		}
 	};
 	
-	// Stack of previous states.
-	// This includes both the past (moments the player has created) as well as the future (moments
-	// the player has undone).
-	// Count begins at 0 (the game start).
+	/*
+		Stack of previous states.
+		This includes both the past (moments the player has created) as well as the future (moments
+		the player has undone).
+		Count begins at 0 (the game start).
+	*/
 	var timeline = [ ];
 	
-	// Index to the game state just when the current passage was entered.
-	// This represents where the player is within the timeline.
-	// Everything beyond this index is the future. Everything before and including is the past.
-	// It usually equals timeline.length-1, except when the player undos.
+	/*
+		Index to the game state just when the current passage was entered.
+		This represents where the player is within the timeline.
+		Everything beyond this index is the future. Everything before and including is the past.
+		It usually equals timeline.length-1, except when the player undos.
+	*/
 	var recent = -1;
 	
-	// The present - the resultant game state after the current passage executed.
-	// This is a 'potential moment' - a moment that could become the newest to enter the timeline.
-	// This is pushed onto the timeline (becoming "recent") when going forward,
-	// and discarded when going backward.
-	// Its passage ID should equal that of recent.
+	/*
+		The present - the resultant game state after the current passage executed.
+		This is a 'potential moment' - a moment that could become the newest to enter the timeline.
+		This is pushed onto the timeline (becoming "recent") when going forward,
+		and discarded when going backward.
+		Its passage ID should equal that of recent.
+	*/
 	var present = Moment.create();
+	
+	/*
+		The serialisability status of the story state.
+		This starts as true, but will be irreversibly set to false
+		whenever a non-serialisable object is stored in a variable.
+	*/
+	var serialisable = true;
 
 	/*
 		The current game's state.
@@ -291,7 +304,7 @@ define(['story', 'utils'], function(Story, Utils) {
 		fastForward: function (arg) {
 			var steps = 1,
 				moved = false;
-
+			
 			if (typeof arg === "number") {
 				steps = arg;
 			}
@@ -303,6 +316,93 @@ define(['story', 'utils'], function(Story, Utils) {
 				this.newPresent(timeline[recent].passage);
 			}
 			return moved;
+		},
+		
+		/**
+			Serialise the game history, from the present backward (ignoring the redo cache)
+			into a JSON string.
+			
+			@method serialise
+			@return {String|Boolean} The serialised state, or false if serialisation failed.
+		*/
+		serialise: function() {
+			var ret = timeline.slice(0, recent + 1);
+			
+			/*
+				We must determine if the state is serialisable.
+				Once it is deemed unserialisable, it remains that way for the rest
+				of the story. (Note: currently, rewinding back past a point
+				where an unserialisable object was (set:) does NOT revert the
+				serialisability status.)
+			*/
+			serialisable = serialisable && ret.every(function(moment) {
+				return Object.keys(moment.variables).every(function(e) {
+					var variable = moment.variables[e];
+					
+					return (typeof variable === "number"
+						|| typeof variable === "boolean"
+						|| typeof variable === "string");
+				});
+			});
+			/*
+				If it can't be serialised, just return false. Don't worry, it's
+				the responsibility of the caller to create a proper TwineError
+				as a result of this.
+			*/
+			if (!serialisable) {
+				return false;
+			}
+			try {
+				return JSON.stringify(ret);
+			}
+			catch(e) {
+				return false;
+			}
+		},
+		
+		/**
+			Deserialise the string and replace the current history.
+			@method deserialise
+		*/
+		deserialise: function(str) {
+			var newTimeline,
+				lastVariables = null;
+			
+			try {
+				newTimeline = JSON.parse(str);
+			}
+			catch(e) {
+				return false;
+			}
+			/*
+				Verify that the timeline is an array.
+			*/
+			if (!Array.isArray(newTimeline)) {
+				return false;
+			}
+			
+			if (!newTimeline.every(function(moment) {
+				/*
+					Here, we do some brief verification that the moments in the array are
+					objects with "passage" and "variables" keys.
+				*/
+				if (typeof moment !== "object"
+						|| !moment.hasOwnProperty("passage")
+						|| !moment.hasOwnProperty("variables")) {
+					return false;
+				}
+				/*
+					Recreate the variables prototype chain. This doesn't use setPrototypeOf() due to
+					compatibility concerns.
+				*/
+				moment.variables = Object.assign(Object.create(lastVariables), moment.variables);
+				return true;
+			})) {
+				return false;
+			}
+			timeline = newTimeline;
+			recent = timeline.length - 1;
+			this.newPresent(timeline[recent].passage);
 		},
 		
 	};

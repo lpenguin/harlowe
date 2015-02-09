@@ -318,36 +318,37 @@ describe("basic twinemarkup syntax", function() {
 			var align = runPassage("==>\ngarply\n<==").find('tw-align');
 			expect(align.css('text-align')).toBe('right');
 			expect(align.text()).toBe('garply');
-			expect(align.css('margin')).toBe('');
+			expect(align.css('margin-left')).toMatch(/^(?:0px)?$/);
 		});
 		it("ignores the number of, and imbalance of, = signs used", function() {
 			[2,3,4,5,6,7,8,9,10].forEach(function(number) {
 				var align = runPassage("=".repeat(number) + ">\ngarply\n<" + "=".repeat(number+2)).find('tw-align');
 				expect(align.css('text-align')).toBe('right');
 				expect(align.text()).toBe('garply');
-				expect(align.css('margin')).toBe('');
+				expect(align.css('margin-left')).toMatch(/^(?:0px)?$/);
 			});
 		});
 		it("centres text with a balanced =><=", function() {
 			var align = runPassage("=><=\ngarply").find('tw-align');
 			expect(align.css('text-align')).toBe('center');
 			expect(align.text()).toBe('garply');
-			expect(align.css('margin')).toBe('');
+			expect(align.attr('style')).toMatch(/max-width:\s*50%/);
+			expect(align.attr('style')).toMatch(/margin-left:\s*25%/);
 		});
 		it("justifies text with <==>", function() {
 			var align = runPassage("<==>\ngarply\n<==").find('tw-align');
 			expect(align.css('text-align')).toBe('justify');
 			expect(align.text()).toBe('garply');
-			expect(align.css('margin')).toBe('');
+			expect(align.css('margin-left')).toMatch(/^(?:0px)?$/);
 		});
 		it("aligns text with unbalanced ==><=", function() {
 			var align = runPassage("==><====\ngarply").find('tw-align');
 			expect(align.css('text-align')).toBe('center');
-			expect(align.attr('style').includes('margin-left: 17%')).toBe(true);
+			expect(align.attr('style')).toMatch(/margin-left:\s*17%/);
 			
 			align = runPassage("=====><=\ngarply").find('tw-align');
 			expect(align.css('text-align')).toBe('center');
-			expect(align.attr('style').includes('margin-left: 42%')).toBe(true);
+			expect(align.attr('style')).toMatch(/margin-left:\s*42%/);
 		});
 		it("doesn't nest <tw-align> elements", function() {
 			var align = runPassage("<==>\ngarply\n==>\ngrault\n<==").find('tw-align');

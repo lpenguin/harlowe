@@ -1,5 +1,5 @@
-define(['macros', 'utils', 'story', 'engine'],
-function(Macros, Utils, Story, Engine) {
+define(['macros', 'utils', 'story', 'state', 'engine', 'internaltypes/twineerror'],
+function(Macros, Utils, Story, State, Engine, TwineError) {
 	"use strict";
 	
 	var
@@ -20,7 +20,7 @@ function(Macros, Utils, Story, Engine) {
 				Test for the existence of the named passage in the story.
 			*/
 			if (!Story.passageNamed(name)) {
-				return new ReferenceError(
+				return TwineError.create("macrocall",
 					"I can't display the passage '"
 					+ name
 					+ "' because it doesn't exist."
@@ -146,6 +146,58 @@ function(Macros, Utils, Story, Engine) {
 				};
 			},
 			[]
+		)
+		/*
+			(save-game:)
+			This command serialises the game state and stores it in localStorage, in a given
+			"slot name" (usually a numeric string, but potentially any string) and with a "file name"
+			(which will be used by a future macro for file data display).
+		*/
+		("savegame",
+			function savegame(_, slotName, fileName) {
+				return {
+					TwineScript_ObjectName: "a (save-game:) command",
+					TwineScript_TypeName:   "a (save-game:) command",
+					TwineScript_Print: function() {
+						var serialisation = State.serialise();
+						if (!serialisation) {
+							return TwineError.create(
+								"saving",
+								"The game's variables contain a complex data structure; the game can no longer be saved."
+							);
+						}
+						localStorage.setItem(
+							"(Saved Game) " + slotName,
+							'{"filename":' + JSON.stringify(fileName)
+							+ ',"state":' + serialisation + '}');
+						return "";
+					},
+				};
+			},
+			[String, String]
+		)
+		/*
+			(loadgame:)
+			This command attempts to load a saved game from the given slot, ending the current game and replacing it
+			with the loaded one.
+		*/
+		("loadgame",
+			function loadgame(_, slotName) {
+				return {
+					TwineScript_ObjectName: "a (load-game:) command",
+					TwineScript_TypeName:   "a (load-game:) command",
+					TwineScript_Print: function() {
+						var saveData = localStorage.getItem("(Saved Game) " + slotName);
+						
+						if (!saveData) {
+							return TwineError.create("saving", "I can't find a save slot named '" + slotName + "'!");
+						}
+						
+						State.deserialise(saveData.state);
+						return { earlyExit: 1 };
+					},
+				};
+			},
+			[String, optional(String)]
 		);
-		
 });
