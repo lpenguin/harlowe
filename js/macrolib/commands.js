@@ -6,6 +6,21 @@ function(Macros, Utils, Story, State, Engine, TwineError) {
 		Any = Macros.TypeSignature.Any,
 		optional = Macros.TypeSignature.optional;
 	
+	var hasStorage = !!localStorage
+		&& (function() {
+			/*
+				This is, to my knowledge, the only surefire way of measuring localStorage's
+				availability - on some browsers, setItem() will throw in Private Browsing mode.
+			*/
+			try {
+				localStorage.setItem("test", '1');
+				localStorage.removeItem("test");
+				return true;
+			} catch (e) {
+				return false;
+			}
+		}());
+	
 	Macros.add
 	
 		/*
@@ -18,8 +33,7 @@ function(Macros, Utils, Story, State, Engine, TwineError) {
 		("display", function display(_, name) {
 			/*
 				Test for the existence of the named passage in the story.
-			*/
-			if (!Story.passageNamed(name)) {
+			*/			if (!Story.passageNamed(name)) {
 				return TwineError.create("macrocall",
 					"I can't display the passage '"
 					+ name
@@ -149,32 +163,67 @@ function(Macros, Utils, Story, State, Engine, TwineError) {
 		)
 		/*
 			(save-game:)
-			This command serialises the game state and stores it in localStorage, in a given
+			This boolean macro serialises the game state and stores it in localStorage, in a given
 			"slot name" (usually a numeric string, but potentially any string) and with a "file name"
 			(which will be used by a future macro for file data display).
 		*/
 		("savegame",
 			function savegame(_, slotName, fileName) {
-				return {
-					TwineScript_ObjectName: "a (save-game:) command",
-					TwineScript_TypeName:   "a (save-game:) command",
-					TwineScript_Print: function() {
-						var serialisation = State.serialise();
-						if (!serialisation) {
-							return TwineError.create(
-								"saving",
-								"The game's variables contain a complex data structure; the game can no longer be saved."
-							);
-						}
-						localStorage.setItem(
-							"(Saved Game) " + slotName,
-							'{"filename":' + JSON.stringify(fileName)
-							+ ',"state":' + serialisation + '}');
-						return "";
-					},
-				};
+				/*
+					The default filename is the empty string.
+				*/
+				fileName = fileName || "";
+				
+				if (!hasStorage) {
+					/*
+						If storage isn't available, that's the unfortunate fault of the
+						browser. Return false, signifying that the save failed, and
+						allowing the author to display an apology message.
+					*/
+					return false;
+				}
+				var serialisation = State.serialise();
+				if (!serialisation) {
+					/*
+						On the other hand, if serialisation fails, that's presumably
+						the fault of the author, and an error should be given.
+					*/
+					return TwineError.create(
+						"saving",
+						"The game's variables contain a complex data structure; the game can no longer be saved."
+					);
+				}
+				/*
+					In case setItem() fails, let's run this in a try block.
+				*/
+				try {
+					localStorage.setItem(
+						/*
+							Saved games are prefixed with (Saved Game) to avoid collisions.
+							I'm loathe to use any particular prefix which brands the game
+							as a Twine creation: it should be able to stand with its own
+							identity, even in an obscure a place as its localStorage key names.
+						*/
+						"(Saved Game) " + slotName, serialisation);
+					
+					/*
+						The file name is saved separately from the state, so that it can be retrieved
+						without having to JSON.parse() the entire state.
+					*/
+					localStorage.setItem(
+						/*
+							Saved games are prefixed with (Saved Game Filename) to avoid collisions.
+						*/
+						"(Saved Game Filename) " + slotName, fileName);
+					return true;
+				} catch(e) {
+					/*
+						As above, if it fails, a return value of false is called for.
+					*/
+					return false;
+				}
 			},
-			[String, String]
+			[String, optional(String)]
 		)
 		/*
 			(loadgame:)
@@ -193,11 +242,12 @@ function(Macros, Utils, Story, State, Engine, TwineError) {
 							return TwineError.create("saving", "I can't find a save slot named '" + slotName + "'!");
 						}
 						
-						State.deserialise(saveData.state);
+						State.deserialise(saveData);
+						requestAnimationFrame(Engine.showPassage.bind(Engine,State.passage));
 						return { earlyExit: 1 };
 					},
 				};
 			},
-			[String, optional(String)]
+			[String]
 		);
 });

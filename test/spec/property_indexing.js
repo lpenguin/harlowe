@@ -32,6 +32,10 @@ describe("property indexing", function() {
 				expectMarkupToPrint('(set: $a to "abc"\'s last)$a', "c");
 				expectMarkupToPrint('(set: $a to "abc"\'s length)$a', "3");
 			});
+			it("prints an error if the index is out of bounds", function() {
+				expectMarkupToError('(print: "A"\'s 2nd)');
+				expectMarkupToError('(print: "Red"\'s 4th)');
+			});
 		});
 		describe("for arrays", function() {
 			it("'1st', '2nd', etc. access the indexed elements", function() {
@@ -66,6 +70,30 @@ describe("property indexing", function() {
 			});
 			it("can't (set:) the 'length', though", function() {
 				expectMarkupToError('(set: $a to (a:1,2,3))(set: $a\'s length to 2)');
+			});
+			it("prints an error if the index is out of bounds", function() {
+				expectMarkupToError('(print: (a:)\'s 1st)');
+				expectMarkupToError('(print: (a:1,2,3)\'s 4th)');
+			});
+		});
+	});
+	describe("string indices", function() {
+		describe("for datamaps", function() {
+			it("access the keyed properties", function() {
+				expectMarkupToPrint('(print: (datamap:"A",1)\'s A)','1');
+			});
+			it("prints an error if the key is out of bounds", function() {
+				expectMarkupToPrint('(print: (datamap:"A",1)\'s A)','1');
+			});
+		});
+	});
+	describe("computed indices", function() {
+		describe("for datamaps", function() {
+			it("access the indexed properties", function() {
+				expectMarkupToPrint('(print: (datamap:"A",1)\'s ("A"))','1');
+			});
+			it("can contain full expressions", function() {
+				expectMarkupToPrint('(print: (datamap:"BAAL",1)\'s ("BAA" + "LEON"\'s 1st))','1');
 			});
 		});
 	});

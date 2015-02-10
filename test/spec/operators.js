@@ -83,4 +83,44 @@ describe("twinescript operators", function () {
 			expectMarkupToPrint("(print: (dataset:2,3,4) is (dataset:2,3,4))","true");
 		});
 	});
+	describe("the 'contains' operator", function () {
+		it("checks for substrings in strings", function (){
+			expectMarkupToPrint("(print: 'Bee' contains 'Be')","true");
+			expectMarkupToPrint("(print: 'Bee' contains 'Bee')","true");
+			expectMarkupToPrint("(print: 'Bee' contains 'eeB')","false");
+		});
+		it("checks for elements in arrays", function (){
+			expectMarkupToPrint("(print: (a:'Bee') contains 'Bee')","true");
+			expectMarkupToPrint("(print: (a: 2) contains 2)","true");
+			expectMarkupToPrint("(print: (a:'Bee') contains 'eeB')","false");
+		});
+		it("checks for keys in datamaps", function (){
+			expectMarkupToPrint("(print: (datamap:'Bee',1) contains 'Bee')","true");
+			expectMarkupToPrint("(print: (datamap:'Bee',1) contains 1)","false");
+		});
+		it("checks for elements in datasets", function (){
+			expectMarkupToPrint("(print: (dataset:'Bee','Boo') contains 'Bee')","true");
+			expectMarkupToPrint("(print: (dataset:'Bee','Boo') contains 'ooB')","false");
+		});
+		it("reverts to 'is' comparison for non-string primitives", function (){
+			expectMarkupToPrint("(print: 2 contains 2)","true");
+			expectMarkupToPrint("(print: true contains true)","true");
+		});
+		it("can be used as an expression", function (){
+			expectMarkupToPrint("(print: 'Bee' contains 'Be' is true)","true");
+			expectMarkupToPrint("(print: 'Bee' contains 'eeB' is false)","true");
+		});
+		it("compares arrays by value", function (){
+			expectMarkupToPrint("(print: (a:(a:)) contains (a:))","true");
+			expectMarkupToPrint("(print: (a:(a:2,3,4)) contains (a:2,3,4))","true");
+		});
+		it("compares datamaps by value", function (){
+			expectMarkupToPrint("(print: (a:(datamap:)) contains (datamap:))","true");
+			expectMarkupToPrint("(print: (a:(datamap:'a',2,'b',4)) contains (datamap:'b',4,'a',2))","true");
+		});
+		it("compares datasets by value", function (){
+			expectMarkupToPrint("(print: (a:(dataset:)) contains (dataset:))","true");
+			expectMarkupToPrint("(print: (a:(dataset:2,3,4)) contains (dataset:2,3,4))","true");
+		});
+	});
 });

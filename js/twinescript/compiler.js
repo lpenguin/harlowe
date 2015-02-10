@@ -240,6 +240,7 @@ define(['utils'], function(Utils) {
 			<=
 			>
 			>=
+			contains
 			is
 			is not
 			and
@@ -307,7 +308,11 @@ define(['utils'], function(Utils) {
 		else if ((i = indexOfType(tokens, "and", "or")) >-1) {
 			operation = tokens[i].type;
 		}
-		else if ((i = indexOfType(tokens, "is", "isNot", "contains", "isIn")) >-1) {
+		else if ((i = indexOfType(tokens, "is", "isNot")) >-1) {
+			implicitLeftIt = true;
+			operation = tokens[i].type;
+		}
+		else if ((i = indexOfType(tokens, "contains", "isIn")) >-1) {
 			implicitLeftIt = true;
 			operation = tokens[i].type;
 		}

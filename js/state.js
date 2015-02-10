@@ -84,7 +84,7 @@ define(['story', 'utils'], function(Story, Utils) {
 		whenever a non-serialisable object is stored in a variable.
 	*/
 	var serialisable = true;
-
+	
 	/*
 		The current game's state.
 	*/
@@ -226,7 +226,6 @@ define(['story', 'utils'], function(Story, Utils) {
 			for (i = recent-1; i >= 0; i--) {
 				ret.unshift(Story.getPassageName(timeline[i].passage));
 			}
-
 			return ret;
 		},
 
@@ -327,7 +326,6 @@ define(['story', 'utils'], function(Story, Utils) {
 		*/
 		serialise: function() {
 			var ret = timeline.slice(0, recent + 1);
-			
 			/*
 				We must determine if the state is serialisable.
 				Once it is deemed unserialisable, it remains that way for the rest
@@ -381,7 +379,7 @@ define(['story', 'utils'], function(Story, Utils) {
 				return false;
 			}
 			
-			if (!newTimeline.every(function(moment) {
+			if ((newTimeline = newTimeline.map(function(moment) {
 				/*
 					Here, we do some brief verification that the moments in the array are
 					objects with "passage" and "variables" keys.
@@ -396,8 +394,13 @@ define(['story', 'utils'], function(Story, Utils) {
 					compatibility concerns.
 				*/
 				moment.variables = Object.assign(Object.create(lastVariables), moment.variables);
-				return true;
-			})) {
+				
+				lastVariables = moment.variables;
+				/*
+					Re-establish the moment objects' prototype link to Moment.
+				*/
+				return Object.assign(Object.create(Moment), moment);
+			})).indexOf(false) > -1) {
 				return false;
 			}
 			timeline = newTimeline;
