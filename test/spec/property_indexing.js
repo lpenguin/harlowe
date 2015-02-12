@@ -82,18 +82,26 @@ describe("property indexing", function() {
 			it("access the keyed properties", function() {
 				expectMarkupToPrint('(print: (datamap:"A",1)\'s A)','1');
 			});
-			it("prints an error if the key is out of bounds", function() {
-				expectMarkupToPrint('(print: (datamap:"A",1)\'s A)','1');
+			it("prints an error if the key is not present", function() {
+				expectMarkupToError('(print: (datamap:"A",1)\'s B)');
 			});
 		});
 	});
 	describe("computed indices", function() {
+		it("can contain full expressions", function() {
+			expectMarkupToNotError('(print: (a:1)\'s (2 - 1))');
+		});
 		describe("for datamaps", function() {
-			it("access the indexed properties", function() {
+			it("access the keyed properties", function() {
 				expectMarkupToPrint('(print: (datamap:"A",1)\'s ("A"))','1');
 			});
-			it("can contain full expressions", function() {
-				expectMarkupToPrint('(print: (datamap:"BAAL",1)\'s ("BAA" + "LEON"\'s 1st))','1');
+			it("prints an error if the key is not present", function() {
+				expectMarkupToError('(print: (datamap:"A",1)\'s ("B"))');
+			});
+		});
+		describe("for arrays", function() {
+			it("access the indexed elements", function() {
+				expectMarkupToPrint('(print: (datamap:"A",1)\'s ("A"))','1');
 			});
 		});
 	});

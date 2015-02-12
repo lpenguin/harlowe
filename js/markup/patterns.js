@@ -477,7 +477,7 @@
 		*/
 		number: number,
 		
-		boolean: "(true|false|null|undefined)",
+		boolean: "(true|false)",
 		
 		// Special identifiers
 		identifier: identifier,

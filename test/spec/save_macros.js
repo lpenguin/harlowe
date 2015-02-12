@@ -22,12 +22,21 @@ describe("save macros", function() {
 		});
 		it("saves the game in localStorage in JSON format", function() {
 			runPassage("(set:$foo to 1)", "corge");
-			expect(runPassage("(savegame:'1','Filename')", "qux").find('tw-error').length).toBe(0);
+			expectMarkupToNotError("(savegame:'1','Filename')", "qux");
 			
 			retrieveStoredState("(Saved Game) 1");
 		});
+		it("can save collection variables", function() {
+			runPassage(
+				"(set:$arr to (a:2,4))" +
+				"(set:$dm to (datamap:'HP',4))" +
+				"(set:$ds to (dataset:2,4))",
+				"corge"
+			);
+			expectMarkupToNotError("(savegame:'1')");
+		});
 		it("works from the start of the game", function() {
-			expect(runPassage("(savegame:'1','Filename')", "qux").find('tw-error').length).toBe(0);
+			expectMarkupToNotError("(savegame:'1','Filename')", "qux");
 			
 			retrieveStoredState("(Saved Game) 1");
 		});
@@ -35,13 +44,13 @@ describe("save macros", function() {
 			Array(1000).join().split(',').forEach(function(e) {
 				runPassage("(set:$V" + e + " to " + e + ")","P"+e);
 			});
-			expect(runPassage("(savegame:'1','Filename')", "qux").find('tw-error').length).toBe(0);
+			expectMarkupToNotError("(savegame:'1','Filename')", "qux");
 			
 			retrieveStoredState("(Saved Game) 1");
 		});
 		it("stores the save file's name", function() {
 			runPassage("(set:$foo to 1)", "corge");
-			expect(runPassage("(savegame:'1','Quux')", "qux").find('tw-error').length).toBe(0);
+			expectMarkupToNotError("(savegame:'1','Quux')", "qux");
 			
 			var storedItem = localStorage.getItem("(Saved Game Filename) 1");
 			expect(storedItem).toBe("Quux");
@@ -59,7 +68,7 @@ describe("save macros", function() {
 			runPassage("uno", "uno");
 			runPassage("dos(savegame:'1','Filename')", "dos");
 			runPassage("tres", "tres");
-			runPassage("cuatro(loadgame:'1')", "cuatro");
+			expectMarkupToNotError("cuatro(loadgame:'1')");
 			requestAnimationFrame(function() {
 				expect($("tw-passage").last().text()).toMatch("dos");
 				expectMarkupToPrint("(history:)","Start,uno,dos");
@@ -70,11 +79,26 @@ describe("save macros", function() {
 			runPassage("(set:$foo to 'egg')(set:$bar to 2)(set:$baz to true)", "uno");
 			runPassage("(set:$bar to it + 2)(savegame:'1','Filename')", "dos");
 			runPassage("(set:$bar to it + 2)(set:$foo to 'nut')", "tres");
-			runPassage("(set:$bar to it + 2)(loadgame:'1')", "cuatro");
+			expectMarkupToNotError("(set:$bar to it + 2)(loadgame:'1')");
 			requestAnimationFrame(function() {
 				expectMarkupToPrint("$foo $bar (text: $baz)","egg 4 true");
 				done();
 			});
 		});
+		it("can restore collection variables", function(done) {
+			runPassage(
+				"(set:$arr to (a:'egg'))" +
+				"(set:$dm to (datamap:'HP',4))" +
+				"(set:$ds to (dataset:2,4))" +
+				"(savegame:'1')",
+				"corge"
+			);
+			expectMarkupToNotError("(loadgame:'1')");
+			requestAnimationFrame(function() {
+				expectMarkupToPrint("$arr (text:$dm's HP) (text: $ds contains 4)","egg 4 true");
+				done();
+			});
+		});
 	});
 });
+

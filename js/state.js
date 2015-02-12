@@ -88,7 +88,7 @@ define(['story', 'utils'], function(Story, Utils) {
 	/*
 		The current game's state.
 	*/
-	var State = {
+	var State = Object.assign({
 		/*
 			Getters/setters
 		*/
@@ -317,6 +317,67 @@ define(['story', 'utils'], function(Story, Utils) {
 			return moved;
 		},
 		
+	},
+	/*
+		In addition to the above simple methods, two serialisation methods are also present.
+		These have a number of helper functions which are wrapped in this IIFE.
+	*/
+	(function(){
+		
+		/*
+			This helper checks if serialisation is possible for this data value.
+			Currently, most all native JS types are supported, but TwineScript
+			specific command objects aren't.
+		*/
+		function isSerialisable(variable) {
+			return (typeof variable === "number"
+				|| typeof variable === "boolean"
+				|| typeof variable === "string"
+				// Nulls shouldn't really ever appear in TwineScript, but technically they're allowed.
+				|| variable === null
+				|| Array.isArray(variable) && variable.every(isSerialisable)
+				|| variable instanceof Set && Array.from(variable).every(isSerialisable)
+				|| variable instanceof Map && Array.from(variable.values()).every(isSerialisable));
+		}
+		
+		/*
+			This is provided to JSON.stringify(), allowing Maps and Sets to be
+			stringified, albeit in a bespoke fashion.
+		*/
+		function replacer(name, variable) {
+			if (variable instanceof Set) {
+				return {
+					'(dataset:)': Array.from(variable),
+				};
+			}
+			if (variable instanceof Map) {
+				return {
+					/*
+						Array.from(map) converts the variable to
+						an array of key-value pairs.
+					*/
+					'(datamap:)': Array.from(variable),
+				};
+			}
+			return variable;
+		}
+		
+		/*
+			This is provided to JSON.parse(), allowing Maps and Sets to be
+			revived from the encoding method used above.
+		*/
+		function reviver(name, variable) {
+			if (Object.prototype.isPrototypeOf(variable)) {
+				if (Array.isArray(variable['(dataset:)'])) {
+					return new Set(variable['(dataset:)']);
+				}
+				if (Array.isArray(variable['(datamap:)'])) {
+					return new Map(variable['(datamap:)']);
+				}
+			}
+			return variable;
+		}
+		
 		/**
 			Serialise the game history, from the present backward (ignoring the redo cache)
 			into a JSON string.
@@ -324,7 +385,7 @@ define(['story', 'utils'], function(Story, Utils) {
 			@method serialise
 			@return {String|Boolean} The serialised state, or false if serialisation failed.
 		*/
-		serialise: function() {
+		function serialise() {
 			var ret = timeline.slice(0, recent + 1);
 			/*
 				We must determine if the state is serialisable.
@@ -336,10 +397,8 @@ define(['story', 'utils'], function(Story, Utils) {
 			serialisable = serialisable && ret.every(function(moment) {
 				return Object.keys(moment.variables).every(function(e) {
 					var variable = moment.variables[e];
-					
-					return (typeof variable === "number"
-						|| typeof variable === "boolean"
-						|| typeof variable === "string");
+				
+					return isSerialisable(variable);
 				});
 			});
 			/*
@@ -351,23 +410,23 @@ define(['story', 'utils'], function(Story, Utils) {
 				return false;
 			}
 			try {
-				return JSON.stringify(ret);
+				return JSON.stringify(ret, replacer);
 			}
 			catch(e) {
 				return false;
 			}
-		},
+		}
 		
 		/**
 			Deserialise the string and replace the current history.
 			@method deserialise
 		*/
-		deserialise: function(str) {
+		function deserialise(str) {
 			var newTimeline,
 				lastVariables = null;
 			
 			try {
-				newTimeline = JSON.parse(str);
+				newTimeline = JSON.parse(str, reviver);
 			}
 			catch(e) {
 				return false;
@@ -406,9 +465,12 @@ define(['story', 'utils'], function(Story, Utils) {
 			timeline = newTimeline;
 			recent = timeline.length - 1;
 			this.newPresent(timeline[recent].passage);
-		},
-		
-	};
+		}
+		return {
+			serialise: serialise,
+			deserialise: deserialise,
+		};
+	}()));
 	
 	Object.seal(Moment);
 	return Object.freeze(State);
