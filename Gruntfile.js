@@ -73,6 +73,8 @@ module.exports = function (grunt) {
       					describe : true,
       					expect   : true,
       					it       : true,
+      					afterEach: true,
+      					beforeEach:true,
       					// User-defined
       					createPassage : true,
       					runPassage : true,
