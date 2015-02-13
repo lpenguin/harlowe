@@ -370,7 +370,10 @@
 				*/
 				property: { fn: textTokenFn("name") },
 				
-				belongingProperty: { fn: textTokenFn("name") },
+				belongingProperty: {
+					cannotFollow: ["text"],
+					fn: textTokenFn("name"),
+				},
 				
 				computedPropertyFront: { fn: Object },
 				
@@ -397,6 +400,7 @@
 				},
 				
 				colour: {
+					cannotFollow: ["text"],
 					/*
 						The colour names are translated into hex codes here,
 						rather than later in TwineScript.
@@ -477,8 +481,15 @@
 				itsProperty:         { fn: textTokenFn("name") },
 				belongingItProperty: { fn: textTokenFn("name") },
 			},
-			["boolean", "is", "to", "into", "and", "or", "not", "isNot",
-			"comma", "spread", "contains", "isIn"].reduce(function(a, e) {
+			["boolean", "is", "to", "into", "and", "or", "not",
+			"isNot", "contains", "isIn"].reduce(function(a, e) {
+				a[e] = {
+					fn: Object,
+					cannotFollow: ["text"],
+				};
+				return a;
+			},{}),
+			["comma", "spread", "whitespace"].reduce(function(a, e) {
 				a[e] = { fn: Object };
 				return a;
 			},{})

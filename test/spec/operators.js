@@ -82,6 +82,9 @@ describe("twinescript operators", function () {
 			expectMarkupToPrint("(print: (dataset:) is (dataset:))","true");
 			expectMarkupToPrint("(print: (dataset:2,3,4) is (dataset:2,3,4))","true");
 		});
+		it("won't be matched from within text", function (){
+			expectMarkupToPrint("(print: typeof xxisxx)","undefined");
+		});
 	});
 	describe("the 'contains' operator", function () {
 		it("checks for substrings in strings", function (){
@@ -121,6 +124,52 @@ describe("twinescript operators", function () {
 		it("compares datasets by value", function (){
 			expectMarkupToPrint("(print: (a:(dataset:)) contains (dataset:))","true");
 			expectMarkupToPrint("(print: (a:(dataset:2,3,4)) contains (dataset:2,3,4))","true");
+		});
+		it("won't be matched from within text", function (){
+			expectMarkupToPrint("(print: typeof xxcontainsxx)","undefined");
+		});
+	});
+	describe("the 'is in' operator", function () {
+		it("checks for substrings in strings", function (){
+			expectMarkupToPrint("(print: 'Be' is in 'Bee')","true");
+			expectMarkupToPrint("(print: 'Bee' is in 'Bee')","true");
+			expectMarkupToPrint("(print: 'Bee' is in 'eeB')","false");
+		});
+		it("checks for elements in arrays", function (){
+			expectMarkupToPrint("(print: 'Bee' is in (a:'Bee'))","true");
+			expectMarkupToPrint("(print: 2 is in (a: 2))","true");
+			expectMarkupToPrint("(print: 'eeB' is in (a:'Bee'))","false");
+		});
+		it("checks for keys in datamaps", function (){
+			expectMarkupToPrint("(print: (datamap:'Bee',1) contains 'Bee')","true");
+			expectMarkupToPrint("(print: (datamap:'Bee',1) contains 1)","false");
+		});
+		it("checks for elements in datasets", function (){
+			expectMarkupToPrint("(print: 'Bee' is in (dataset:'Bee','Boo'))","true");
+			expectMarkupToPrint("(print: 'ooB' is in (dataset:'Bee','Boo'))","false");
+		});
+		it("reverts to 'is' comparison for non-string primitives", function (){
+			expectMarkupToPrint("(print: 2 is in 2)","true");
+			expectMarkupToPrint("(print: true is in true)","true");
+		});
+		it("can be used as an expression", function (){
+			expectMarkupToPrint("(print: true is 'Be' is in 'Bee')","true");
+			expectMarkupToPrint("(print: false is 'Bee' is in 'eeB')","true");
+		});
+		it("compares arrays by value", function (){
+			expectMarkupToPrint("(print: (a:) is in (a:(a:)))","true");
+			expectMarkupToPrint("(print: (a:2,3,4) is in (a:(a:2,3,4)))","true");
+		});
+		it("compares datamaps by value", function (){
+			expectMarkupToPrint("(print: (datamap:) is in (a:(datamap:)))","true");
+			expectMarkupToPrint("(print: (datamap:'b',4,'a',2) is in (a:(datamap:'a',2,'b',4)))","true");
+		});
+		it("compares datasets by value", function (){
+			expectMarkupToPrint("(print: (dataset:) is in (a:(dataset:)))","true");
+			expectMarkupToPrint("(print: (dataset:2,3,4) is in (a:(dataset:2,3,4)))","true");
+		});
+		it("won't be matched from within text", function (){
+			expectMarkupToPrint("(print: typeof xxis in Object)","false");
 		});
 	});
 });

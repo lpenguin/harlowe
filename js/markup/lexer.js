@@ -272,10 +272,20 @@
 							Conversely, check whether this rule cannot follow after
 							the previous rule.
 						*/
-						(!rule.cannotFollow ||
+						(!rule.cannotFollow || (
+							/*
+								For most cannotFollow items, this will suffice:
+							*/
 							rule.cannotFollow.indexOf(
 								lastToken && lastToken.type
-							) === -1) &&
+							) === -1 &&
+							/*
+								However, if cannotFollow contains "text", the check is more
+								tricky: the last text token hasn't been forged yet. So,
+								this line must be used:
+							*/
+							!(rule.cannotFollow.indexOf("text") > -1 && firstUnmatchedIndex < index)
+							)) &&
 						/*
 							If an opener is available, check that before running
 							the full match regexp.

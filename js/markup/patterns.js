@@ -208,7 +208,7 @@
 		
 		property = "'s" + ws + "(" + validPropertyName + ")",
 		
-		belongingProperty = "(" + validPropertyName + ")" + ws + "of",
+		belongingProperty = "(" + validPropertyName + ")" + ws.replace("*","+") + "of" + wb,
 		
 		/*
 			Computed properties are of the form:
@@ -222,14 +222,14 @@
 			Computed properties are of the form:
 			$a's (expression)
 		*/
-		computedBelongingPropertyBack = "\\)" + ws + "of",
+		computedBelongingPropertyBack = "\\)" + ws + "of" + wb,
 		
 		/*
 			Identifiers: either "it" or "time".
 			"it" is a bit of a problem because its possessive is "its", not "it's",
 			so we can't use a derivation similar to property.
 		*/
-		identifier = "\\b" + either("it","time","page") + "\\b",
+		identifier = either("it","time","page") + "\\b",
 		
 		itsProperty = "its" + ws + "(" + validPropertyName + ")",
 		
@@ -306,6 +306,7 @@
 		anyLetter:   anyLetter,
 		anyLetterStrict: anyLetterStrict,
 		
+		whitespace:  ws.replace("*","+"),
 		unquoted:    unquoted,
 		escapedLine: "\\\\\\n",
 		
@@ -459,7 +460,7 @@
 			Artificial types (non-JS primitives)
 		*/
 		
-		cssTime: "\\b(\\d+\\.?\\d*|\\d*\\.?\\d+)(m?s)\\b",
+		cssTime: "(\\d+\\.?\\d*|\\d*\\.?\\d+)(m?s)" + wb,
 		
 		colour: either(
 			// Hue name
@@ -477,7 +478,7 @@
 		*/
 		number: number,
 		
-		boolean: "(true|false)",
+		boolean: "(true|false)" + wb,
 		
 		// Special identifiers
 		identifier: identifier,
@@ -494,24 +495,24 @@
 			Macro operators
 		*/
 		
-		is:        wb + caseInsensitive("is") + notBefore(" not", " in") + wb,
-		isNot:     either(wb + caseInsensitive("is not") + wb, "!="),
+		is:        caseInsensitive("is") + notBefore(" not", " in") + wb,
+		isNot:     either(caseInsensitive("is not") + wb, "!="),
 		
-		and:       either(wb + caseInsensitive("and") + wb, "&&"),
-		or:        either(wb + caseInsensitive("or")  + wb, "\\|\\|"),
-		not:       either(wb + caseInsensitive("not") + wb, "!" + notBefore("=")),
+		and:       either(caseInsensitive("and") + wb, "&&"),
+		or:        either(caseInsensitive("or")  + wb, "\\|\\|"),
+		not:       either(caseInsensitive("not") + wb, "!" + notBefore("=")),
 		
 		inequality: either("<(?!=)", "<=", ">(?!=)", ">="),
 		
-		isIn:      wb + caseInsensitive("is in") + wb,
-		contains:  wb + caseInsensitive("contains") + wb,
+		isIn:       caseInsensitive("is in") + wb,
+		contains:   caseInsensitive("contains") + wb,
 
 		arithmetic: either("\\+", "\\-", "\\*", "\\\/", "%") + notBefore("="),
 		comma:      ",",
 		spread:     "\\.\\.\\." + notBefore("\\."),
 
-		to:        either(wb + caseInsensitive("to") + wb, "="),
-		into:      wb + "into" + wb,
+		to:        either(caseInsensitive("to") + wb, "="),
+		into:      "into" + wb,
 		augmentedAssign: either("\\+", "\\-", "\\*", "\\\/", "%") + "=",
 	};
 	

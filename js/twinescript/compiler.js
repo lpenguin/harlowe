@@ -331,7 +331,10 @@ define(['utils'], function(Utils) {
 			*/
 			if ("+-".includes(tokens[i].text)) {
 				left  = compile(tokens.slice(0,  i));
-				if (!left) {
+				/*
+					If only whitespace is to the left of this operator...
+				*/
+				if (!left.trim()) {
 					left = "0";
 				}
 			}
@@ -505,7 +508,11 @@ define(['utils'], function(Utils) {
 			Base case: just convert the tokens back into text.
 		*/
 		else if (tokens.length === 1) {
-			return ((token.value || token.text) + "").trim();
+			/*
+				This should default to a " " so that some separation lies between tokens.
+				Otherwise, some tokens like "contains" will break in certain (rare) circumstances.
+			*/
+			return ((token.value || token.text) + "").trim() || " ";
 		}
 		else {
 			return tokens.reduce(function(a, token) { return a + compile(token, isVarRef); }, "");

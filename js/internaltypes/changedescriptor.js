@@ -83,26 +83,7 @@ define(['jquery', 'utils', 'renderer'], function($, Utils, Renderer) {
 				return $();
 			}
 			/*
-				Render the TwineMarkup prose into a HTML DOM structure.
-			
-				You may notice that the design of this and renderInto() means
-				that, when a HookSet has multiple targets, each target has
-				its own distinct rendering of the same TwineMarkup.
-			
-				(Note: code may be '' if the descriptor's append method is "remove".
-				In which case, let it be an empty set.)
-				
-				Notice also that the entire expression is wrapped in $():
-				a jQuery must be returned by this method, and $(false)
-				conveniently evaluates to $().Otherwise, it converts the
-				array returned by $.parseHTML into a jQuery.
-			*/
-			
-			dom = $(code &&
-				$.parseHTML(Renderer.exec(code)));
-			
-			/*
-				Now, check to see that the given jQuery method in the descriptor
+				Check to see that the given jQuery method in the descriptor
 				actually exists, and potentially tweak the name if it does not.
 			*/
 			if (!(append in target)) {
@@ -125,6 +106,30 @@ define(['jquery', 'utils', 'renderer'], function($, Utils, Renderer) {
 					return;
 				}
 			}
+			/*
+				Render the TwineMarkup prose into a HTML DOM structure.
+			
+				You may notice that the design of this and renderInto() means
+				that, when a HookSet has multiple targets, each target has
+				its own distinct rendering of the same TwineMarkup.
+			
+				(Note: code may be '' if the descriptor's append method is "remove".
+				In which case, let it be an empty set.)
+				
+				Notice also that the entire expression is wrapped in $():
+				a jQuery must be returned by this method, and $(false)
+				conveniently evaluates to $().Otherwise, it converts the
+				array returned by $.parseHTML into a jQuery.
+				
+				This has to be run as close to insertion as possible because of
+				the possibility of <script> elements being present - 
+				$.parseHTML executes scripts immediately on encountering them (if
+				the third arg is true) and it wouldn't do to execute them and then
+				early-exit from this method.
+			*/
+			
+			dom = $(code &&
+				$.parseHTML(Renderer.exec(code), document, true));
 			
 			/*
 				Now, insert the DOM structure into the target element.
