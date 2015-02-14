@@ -96,7 +96,7 @@ function($, Utils, Selectors, Renderer, Environ, Story, State, HookUtils, HookSe
 			This must of course run after the sensor/changer function was run,
 			in case that provided an error.
 		*/
-		else if (Utils.containsError(result)) {
+		else if (TwineError.containsError(result)) {
 			if (result instanceof Error) {
 				result = TwineError.fromError(result);
 			}
@@ -132,7 +132,7 @@ function($, Utils, Selectors, Renderer, Environ, Story, State, HookUtils, HookSe
 				Alternatively (and more commonly), TwineScript_Print() can
 				return an Error object.
 			*/
-			else if (Utils.containsError(result)) {
+			else if (TwineError.containsError(result)) {
 				if (result instanceof Error) {
 					result = TwineError.fromError(result);
 				}

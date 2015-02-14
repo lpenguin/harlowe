@@ -64,7 +64,7 @@ function(Macros, Utils, Story, State, Engine, TwineError) {
 		*/
 		("print", function(_, expr) {
 
-			if (Utils.containsError(expr)) {
+			if (TwineError.containsError(expr)) {
 				return expr;
 			}
 			if (expr && typeof expr.TwineScript_Print === "function") {

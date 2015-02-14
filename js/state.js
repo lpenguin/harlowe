@@ -316,7 +316,6 @@ define(['story', 'utils'], function(Story, Utils) {
 			}
 			return moved;
 		},
-		
 	},
 	/*
 		In addition to the above simple methods, two serialisation methods are also present.

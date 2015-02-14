@@ -1,5 +1,5 @@
-define(['jquery', 'markup', 'utils/selectors', 'internaltypes/twineerror', 'utils/customelements'],
-function($, TwineMarkup, Selectors, TwineError) {
+define(['jquery', 'markup', 'utils/selectors', 'utils/customelements'],
+function($, TwineMarkup, Selectors) {
 	"use strict";
 
 	var
@@ -29,7 +29,7 @@ function($, TwineMarkup, Selectors, TwineError) {
 			Does not do a 'deep' lock - object properties may, in themselves, be modified.
 
 			@method lockProperties
-			@param {Object} obj		Object to lock
+			@param {Object} obj Object to lock
 			@return The locked object
 		*/
 
@@ -64,32 +64,6 @@ function($, TwineMarkup, Selectors, TwineError) {
 			value && (propDesc.value = value);
 			Object.defineProperty(obj, prop, propDesc);
 			return obj;
-		},
-
-		/**
-			In TwineScript, both the runtime (operations.js) and Javascript eval()
-			of compiled code (by compiler.js) can throw errors. They should be treated
-			as equivalent within the engine.
-			
-			If the arguments contain a native Error, this will return that error.
-			Or, if it contains a TwineError, return that as well.
-			This also recursively examines arrays' contents.
-
-			Maybe in the future, there could be a way to concatenate multiple
-			errors into a single "report"...
-
-			@method containsError
-			@return {Error|TwineError|Boolean} The first error encountered, or false.
-		*/
-		containsError: function(/*variadic*/) {
-			return Array.from(arguments).reduce(
-				function(last, e) {
-					return last ? last
-						: e instanceof Error ? e
-						: TwineError.isPrototypeOf(e) ? e
-						: Array.isArray(e) ? Utils.containsError.apply(this, e)
-						: false;
-					}, false);
 		},
 
 		/*

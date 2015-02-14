@@ -1,4 +1,4 @@
-define(['jquery'], function($) {
+define(['jquery', 'utils'], function($, Utils) {
 	"use strict";
 	/*
 		TwineErrors are errors created by the TwineScript runtime. They are supplied with as much
@@ -47,6 +47,32 @@ define(['jquery'], function($) {
 			return TwineError.create("javascript", "\u2615 " + error.message);
 		},
 		
+		/**
+			In TwineScript, both the runtime (operations.js) and Javascript eval()
+			of compiled code (by compiler.js) can throw errors. They should be treated
+			as equivalent within the engine.
+			
+			If the arguments contain a native Error, this will return that error.
+			Or, if it contains a TwineError, return that as well.
+			This also recursively examines arrays' contents.
+
+			Maybe in the future, there could be a way to concatenate multiple
+			errors into a single "report"...
+
+			@method containsError
+			@return {Error|TwineError|Boolean} The first error encountered, or false.
+		*/
+		containsError: function containsError(/*variadic*/) {
+			return Array.from(arguments).reduce(
+				function(last, e) {
+					return last ? last
+						: e instanceof Error ? e
+						: TwineError.isPrototypeOf(e) ? e
+						: Array.isArray(e) ? containsError.apply(this, e)
+						: false;
+					}, false);
+		},
+		
 		/*
 			Twine warnings are just errors with a special "warning" bit.
 		*/
@@ -57,9 +83,13 @@ define(['jquery'], function($) {
 		},
 		
 		render: function(titleText) {
+			/*
+				Default the titleText value. It may be undefined if, for instance, debug mode is off.
+			*/
+			titleText = titleText || "";
 			var errorElement = $("<tw-error class='"
 					+ (this.warning ? "warning" : "error")
-					+ "' title='" + titleText + "'>" + this.message + "</tw-error>"),
+					+ "' title='" + Utils.escape(titleText) + "'>" + Utils.escape(this.message) + "</tw-error>"),
 				/*
 					The explanation text element.
 				*/

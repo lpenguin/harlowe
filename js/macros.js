@@ -61,7 +61,7 @@ function($, Story, Utils, OperationUtils, TwineError) {
 			}, []);
 			
 			// Do the error check now.
-			var error = Utils.containsError(args);
+			var error = TwineError.containsError(args);
 
 			if (error) {
 				return error;
@@ -413,7 +413,7 @@ function($, Story, Utils, OperationUtils, TwineError) {
 		run: function(name, args) {
 			var fn;
 			// First and least, the error rejection check.
-			if (Utils.containsError(name)) {
+			if (TwineError.containsError(name)) {
 				return name;
 			}
 			/*

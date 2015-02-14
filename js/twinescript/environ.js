@@ -1,4 +1,11 @@
-define(['macros', 'state', 'utils', 'datatypes/colour', 'twinescript/operations'], function(Macros, State, Utils, Colour, OperationsProto) {
+define([
+	'macros',
+	'state',
+	'utils',
+	'datatypes/colour',
+	'internaltypes/varref',
+	'twinescript/operations'
+], function(Macros, State, Utils, Colour, VarRef, OperationsProto) {
 	"use strict";
 	/**
 		Creates a new script execution environment. This accepts and
@@ -14,13 +21,17 @@ define(['macros', 'state', 'utils', 'datatypes/colour', 'twinescript/operations'
 			Utils.impossible("TwineScript.environ", "no Section argument was given!");
 		}
 		
+		/*
+			Operations instances store the intermediary values of the Identifiers,
+			such as It and Time. Otherwise, they are indistinguishable from Operations.
+		*/
 		var Operations = OperationsProto.create(section);
 		
 		/*
 			This suppresses the JSHint unused warning.
 			In reality, this is used by the eval()'d code.
 		*/
-		Operations, Macros, State;
+		Operations;
 		
 		return Object.assign(section, {
 			eval: function(/* variadic */) {

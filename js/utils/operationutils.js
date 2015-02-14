@@ -125,9 +125,9 @@ define(['utils', 'internaltypes/twineerror'], function(Utils, TwineError) {
 			: obj instanceof Set ? "a dataset"
 			: (typeof obj === "string" || typeof obj === "number") ? 'the ' + typeof obj + " " + Utils.toJSLiteral(obj)
 			/*
-				If it's a null-object, it can't be stringified with String().
+				If it lacks a toString function, it can't be converted with toString().
 			*/
-			: Object.getPrototypeOf(Object(obj)) === null ? "a bare object"
+			: (typeof obj.toString !== "function") ? "a bare object"
 			/*
 				For ES6 symbol compatibility, we must use String(obj) here instead of obj + "".
 				I don't actually expect symbols to enter the TwineScript userland, but better safe.
@@ -335,6 +335,12 @@ define(['utils', 'internaltypes/twineerror'], function(Utils, TwineError) {
 		is: is,
 		contains: contains,
 		subset: subset,
+		/*
+			Used to determine if a property name is an array index.
+			If negative indexing sugar is ever added, this could
+			be replaced with a function.
+		*/
+		numericIndex: /^(?:[1-9]\d*|0)$/,
 	});
 	return OperationUtils;
 });

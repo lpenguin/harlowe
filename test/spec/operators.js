@@ -9,6 +9,7 @@ describe("twinescript operators", function () {
 		});
 		it("can be used to concatenate arrays", function () {
 			expectMarkupToPrint("(print: (a:1) + (a:2))", "1,2");
+			expectMarkupToPrint("(print: (a:1,3) + (a:2,4))", "1,3,2,4");
 		});
 	});
 	describe("the - operator", function () {

@@ -172,14 +172,14 @@ define(['utils'], function(Utils) {
 					/*
 						I don't think this is correct...
 					*/
-					return "Operations.makeVarRef(Operations.Identifiers, '" + token.text + "' )";
+					return "VarRef.create(Operations.Identifiers, '" + token.text + "' )";
 				}
 				return " Operations.Identifiers." + token.text + " ";
 			}
 			else if (token.type === "variable") {
-				return " Operations." + (isVarRef ? "makeVarRef" : "get") + "(State.variables,"
+				return "VarRef.create(State.variables,"
 					+ Utils.toJSLiteral(token.name)
-					+ ")";
+					+ ")" + (isVarRef ? "" : ".get()");
 			}
 			else if (token.type === "hookRef") {
 				/*
@@ -197,7 +197,7 @@ define(['utils'], function(Utils) {
 						TwineScript_Assignee is a setter accessor used as a TwineScript
 						assignment interface.
 					*/
-					return "Operations.makeVarRef(section.selectHook('?" + token.name + "'), 'TwineScript_Assignee')";
+					return "VarRef.create(section.selectHook('?" + token.name + "'), 'TwineScript_Assignee')";
 				}
 				return " section.selectHook('?" + token.name + "') ";
 			}
@@ -349,17 +349,16 @@ define(['utils'], function(Utils) {
 		/*
 			Notice that this one is right-associative instead of left-associative.
 			This must be so because, by branching on the rightmost token, it will compile to:
-				Operations.get(Operations.get(a,1),2)
+				VarRef.create(VarRef.create(a,1).get(),2).get()
 			instead of the incorrect:
-				Operations.get(a,1) Operations.get(,2)
+				VarRef.create(a,1).get() VarRef.create(,2).get()
 		*/
 		else if ((i = rightAssociativeIndexOfType(tokens, "property", "computedProperty")) >-1) {
 			/*
 				This is somewhat tricky - we need to manually wrap the left side
 				inside the Operations.get() call, while leaving the right side as is.
 			*/
-			left = "Operations." + (isVarRef ? "makeVarRef" : "get")
-				+ "("
+			left = "VarRef.create("
 				/*
 					belongingProperties place the variable on the right.
 				*/
@@ -374,7 +373,8 @@ define(['utils'], function(Utils) {
 					Utils.toJSLiteral() is used to both escape the name
 					string and wrap it in quotes.
 				*/
-				: Utils.toJSLiteral(tokens[i].name)) + ")";
+				: Utils.toJSLiteral(tokens[i].name)) + ")"
+				+ (isVarRef ? "" : ".get()");
 			midString = " ";
 			needsLeft = needsRight = false;
 		}
@@ -383,8 +383,7 @@ define(['utils'], function(Utils) {
 				As with the preceding case, we need to manually wrap the variable side
 				inside the Operations.get() call, while leaving the other side as is.
 			*/
-			right = "Operations." + (isVarRef ? "makeVarRef" : "get")
-				+ "("
+			right = "VarRef.create("
 				/*
 					belongingProperties place the variable on the right.
 				*/
@@ -395,7 +394,8 @@ define(['utils'], function(Utils) {
 				*/
 				+ (tokens[i].type.includes("computed")
 				? compile(tokens[i].children)
-				: Utils.toJSLiteral(tokens[i].name)) + ")";
+				: Utils.toJSLiteral(tokens[i].name)) + ")"
+				+ (isVarRef ? "" : ".get()");
 			midString = " ";
 			needsLeft = needsRight = false;
 		}
@@ -404,8 +404,8 @@ define(['utils'], function(Utils) {
 				This is actually identical to the above, but with the difference that
 				there is no left subtoken (it is always Identifiers.it).
 			*/
-			left = "Operations.get(Operations.Identifiers.it,"
-				+ Utils.toJSLiteral(tokens[i].name) + ")";
+			left = "VarRef.create(Operations.Identifiers.it,"
+				+ Utils.toJSLiteral(tokens[i].name) + ").get()";
 			midString = " ";
 			needsLeft = needsRight = false;
 		}
@@ -413,8 +413,8 @@ define(['utils'], function(Utils) {
 			/*
 				This corresponds to the expression "2nd of it", etc.
 			*/
-			right = "Operations.get(Operations.Identifiers.it,"
-				+ Utils.toJSLiteral(tokens[i].name) + ")";
+			right = "VarRef.create(Operations.Identifiers.it,"
+				+ Utils.toJSLiteral(tokens[i].name) + ").get()";
 			midString = " ";
 			needsLeft = needsRight = false;
 		}

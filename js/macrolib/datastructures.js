@@ -81,7 +81,7 @@ function(Macros, Utils, OperationUtils, State, AssignmentRequest, TwineError) {
 			
 			if (ar.src && ar.src.varref) {
 				get = ar.src.get();
-				if ((error = Utils.containsError(get))) {
+				if ((error = TwineError.containsError(get))) {
 					return error;
 				}
 				ar.dest.set(get);
