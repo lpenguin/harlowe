@@ -4,8 +4,9 @@ define([
 	'utils',
 	'datatypes/colour',
 	'internaltypes/varref',
+	'internaltypes/twineerror',
 	'twinescript/operations'
-], function(Macros, State, Utils, Colour, VarRef, OperationsProto) {
+], function(Macros, State, Utils, Colour, VarRef, TwineError, OperationsProto) {
 	"use strict";
 	/**
 		Creates a new script execution environment. This accepts and

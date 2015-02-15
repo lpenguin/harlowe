@@ -8,7 +8,7 @@ define([
 	'internaltypes/twineerror',
 	'internaltypes/varref',
 ],
-function(Utils, State, Story, Colour, AssignmentRequest, OperationUtils, TwineError, VarRef) {
+function(Utils, State, Story, Colour, AssignmentRequest, OperationUtils, TwineError) {
 	"use strict";
 	/**
 		Operation objects are a table of operations which TwineScript proxies
@@ -27,8 +27,13 @@ function(Utils, State, Story, Colour, AssignmentRequest, OperationUtils, TwineEr
 		collectionType  = OperationUtils.collectionType,
 		coerceToString  = OperationUtils.coerceToString,
 		objectName      = OperationUtils.objectName,
-		contains        = OperationUtils.contains
-		;
+		contains        = OperationUtils.contains,
+		/*
+			The "it" keyword is bound to whatever the last left-hand-side value
+			in a comparison operation was. Since its scope is so ephemeral,
+			it can just be a shared identifier right here.
+		*/
+		It = 0;
 	
 	/*
 		Here are some wrapping functions which will be applied to
@@ -118,7 +123,7 @@ function(Utils, State, Story, Colour, AssignmentRequest, OperationUtils, TwineEr
 	*/
 	function comparisonOp(fn) {
 		return function(left, right) {
-			VarRef.It = left;
+			It = left;
 			return fn(left, right);
 		};
 	}
@@ -148,7 +153,7 @@ function(Utils, State, Story, Colour, AssignmentRequest, OperationUtils, TwineEr
 			ret.Identifiers = {
 
 				get it() {
-					return VarRef.It;
+					return It;
 				},
 				
 				get page() {
@@ -363,7 +368,21 @@ function(Utils, State, Story, Colour, AssignmentRequest, OperationUtils, TwineEr
 			// The input is all clear, it seems.
 			return AssignmentRequest.create(dest, src, operator);
 		},
-		
+		/*
+			This helper function sets the It identifier to the computed value of a passed-in VarRef,
+			while returning the original VarRef.
+			It's used for easy compilation of assignment requests.
+		*/
+		setIt: function(e) {
+			/*
+				Propagate any errors passed in, as usual for these operations.
+			*/
+			if (TwineError.containsError(e)) {
+				return e;
+			}
+			Utils.assert(e.varref);
+			return It = e.get(), e;
+		},
 	};
 	return Object.freeze(Operations);
 });

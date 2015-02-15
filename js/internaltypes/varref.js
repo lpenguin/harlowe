@@ -22,13 +22,7 @@ function(State, TwineError, OperationUtils) {
 			The default defaultValue, used for all uninitialised properties
 			and variables, is 0.
 		*/
-		defaultValue = 0,
-		/*
-			The "it" keyword is bound to whatever the last left-hand-side value
-			in a comparison operation was. Since its scope is so ephemeral,
-			it can just be a shared identifier right here.
-		*/
-		It = 0;
+		defaultValue = 0;
 	
 	/*
 		This converts a TwineScript property index into a JavaScript property indexing
@@ -338,7 +332,7 @@ function(State, TwineError, OperationUtils) {
 		
 		create: function(object, propertyChain) {
 			var ret;
-		
+			
 			/*
 				Create the VarRefProto instance.
 			*/
@@ -351,20 +345,7 @@ function(State, TwineError, OperationUtils) {
 				propertyChain: [].concat(propertyChain),
 			});
 			
-			/*
-				This allows "it" to be used in e.g. (set: $red's x to it + 2)
-				by setting it to the correct object value ($red's x instead of $red).
-			*/
-			It = ret.get();
-			
 			return ret;
-		},
-		
-		get It() {
-			return It;
-		},
-		set It(e) {
-			It = e;
 		},
 	});
 	

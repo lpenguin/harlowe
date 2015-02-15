@@ -170,9 +170,9 @@ define(['utils'], function(Utils) {
 			if (token.type === "identifier") {
 				if (isVarRef) {
 					/*
-						I don't think this is correct...
+						This error message is a bit ugly, I must admit...
 					*/
-					return "VarRef.create(Operations.Identifiers, '" + token.text + "' )";
+					return "TwineError.create('keyword','I can\\'t use \\'" + token.text + "\\' in this position.') ";
 				}
 				return " Operations.Identifiers." + token.text + " ";
 			}
@@ -278,12 +278,12 @@ define(['utils'], function(Utils) {
 		}
 		else if ((i = indexOfType(tokens, "to")) >-1) {
 			assignment = "to";
-			left  = compile(tokens.slice(0,  i), "varRef");
+			left  = "Operations.setIt(" + compile(tokens.slice(0,  i), "varRef") + ")";
 		}
 		else if ((i = indexOfType(tokens, "into")) >-1) {
 			assignment = "into";
 			right = compile(tokens.slice(0,  i), "varRef");
-			left  = compile(tokens.slice(i + 1), "varRef");
+			left  = "Operations.setIt(" + compile(tokens.slice(i + 1), "varRef") + ")";
 		}
 		/*
 			I'm also not sure if augmented assignment is strictly necessary given that
@@ -485,7 +485,7 @@ define(['utils'], function(Utils) {
 				If there is no implicitLeftIt, produce an error message.
 			*/
 			if ((needsLeft && !left) || (needsRight && !right)) {
-				return "new SyntaxError('I need some code to be "
+				return "TwineError.create('operation','I need some code to be "
 					+ (needsLeft ? "left " : "")
 					+ (needsLeft && needsRight ? "and " : "")
 					+ (needsRight ? "right " : "")
