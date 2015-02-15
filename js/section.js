@@ -84,14 +84,6 @@ function($, Utils, Selectors, Renderer, Environ, Story, State, HookUtils, HookSe
 			runLiveHook.call(this, nextHook, result.delay, result.event);
 		}
 		/*
-			Otherwise, if it's a function:
-			Run it, passing the nearest hook and this.
-			I'm not sure what exactly relies on this... :|
-		*/
-		else if (typeof result === "function") {
-			result(nextHook, this);
-		}
-		/*
 			Print any error that resulted.
 			This must of course run after the sensor/changer function was run,
 			in case that provided an error.

@@ -13,20 +13,21 @@ define(['utils', 'macros', 'utils/operationutils', 'internaltypes/twineerror'], 
 	Macros.add
 		/*
 			(text:) convert the expressions to string.
-			This provides explicit coercion to String for TwineScript values.
+			This provides explicit coercion to String for certain values which
+			have a canonical string representation (primitives and arrays).
 			Concatenates multiple values.
 			Evaluates to a text string.
 		*/
 		(["text", "string"], function print(/*variadic */) {
 			/*
-				Since only primitives are passed into this, and we use
+				Since only primitives (and arrays) are passed into this, and we use
 				JS's default toString() for primitives, we don't need
 				to do anything more than join() the array.
 			*/
 			return Array.prototype.slice.call(arguments, 1).join('');
 		},
 		// (text: accepts a lot of any primitive)
-		[zeroOrMore(Macros.TypeSignature.either(String, Number, Boolean))])
+		[zeroOrMore(Macros.TypeSignature.either(String, Number, Boolean, Array))])
 
 		/*
 			(substring:)

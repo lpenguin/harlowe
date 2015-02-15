@@ -49,9 +49,6 @@ define([
 						This returns the Javascript error object verbatim
 						to the author, as a last-ditch and probably
 						unhelpful error message.
-						
-						Javascript error messages are presaged with a coffee cup,
-						to signify that the browser produced them and not Twine.
 					*/
 					Utils.log(e);
 					Utils.log(Array.from(arguments).join(''));

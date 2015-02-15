@@ -33,7 +33,8 @@ function(Macros, Utils, Story, State, Engine, TwineError) {
 		("display", function display(_, name) {
 			/*
 				Test for the existence of the named passage in the story.
-			*/			if (!Story.passageNamed(name)) {
+			*/
+			if (!Story.passageNamed(name)) {
 				return TwineError.create("macrocall",
 					"I can't display the passage '"
 					+ name

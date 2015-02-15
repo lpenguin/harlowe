@@ -14,7 +14,7 @@ define(['jquery', 'utils'], function($, Utils) {
 		operation: "I tried to use an operation on some data, but the data's type was incorrect.",
 		macrocall: "I tried to use a macro, but it wasn't written correctly.",
 		datatype: "I tried to use a macro, but gave the wrong type of data to it.",
-		keyword: "I used a keyword in a way that I didn't understand.",
+		keyword: "I was given a keyword in a way that I didn't understand.",
 		property: "I tried to access a value in a string/array/datamap, but I couldn't find it.",
 		unimplemented: "I currently don't have this particular feature. I'm sorry.",
 		javascript: "This error message was reported by your browser's Javascript engine. "
@@ -42,6 +42,9 @@ define(['jquery', 'utils'], function($, Utils) {
 		/*
 			This utility function converts a Javascript Error into a TwineError.
 			This allows them to be render()ed by Section.
+			
+			Javascript error messages are presaged with a coffee cup (\u2615),
+			to signify that the browser produced them and not Twine.
 		*/
 		fromError: function(error) {
 			return TwineError.create("javascript", "\u2615 " + error.message);
@@ -70,7 +73,7 @@ define(['jquery', 'utils'], function($, Utils) {
 						: TwineError.isPrototypeOf(e) ? e
 						: Array.isArray(e) ? containsError.apply(this, e)
 						: false;
-					}, false);
+				}, false);
 		},
 		
 		/*
