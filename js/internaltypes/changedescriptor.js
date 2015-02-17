@@ -18,10 +18,13 @@ define(['jquery', 'utils', 'renderer'], function($, Utils, Renderer) {
 		
 		// A ChangeDescriptor is a TwineScript internal object with the following values:
 		
-		// {String} code              Transformations made on the hook's code before it is run.
+		// {String} code              The hook's code, which can be finagled before it is run.
 		code:             "",
 		
-		// {Boolean} enabled         Whether or not this code is enabled.
+		// {Array} styles             A set of CSS styles to apply inline to the hook's element.
+		styles:           null,
+		
+		// {Boolean} enabled          Whether or not this code is enabled.
 		//                            (Disabled code won't be used until something enables it).
 		enabled:          true,
 		
@@ -51,7 +54,7 @@ define(['jquery', 'utils', 'renderer'], function($, Utils, Renderer) {
 			ChangeDescriptors can delegate to earlier descriptors if need be.
 		*/
 		create: function(properties) {
-			return Object.assign(Object.create(this), properties);
+			return Object.assign(Object.create(this), properties, { styles: [] });
 		},
 		
 		/**
@@ -71,6 +74,7 @@ define(['jquery', 'utils', 'renderer'], function($, Utils, Renderer) {
 				attr        = this.attr,
 				data        = this.data,
 				enabled     = this.enabled,
+				styles      = this.styles,
 				dom;
 			
 			Utils.assertOnlyHas(this, changeDescriptorShape);
@@ -153,7 +157,12 @@ define(['jquery', 'utils', 'renderer'], function($, Utils, Renderer) {
 				// As mentioned above, dom may be empty if append is "remove".
 				dom.length ? dom : undefined
 			);
-			
+			/*
+				Apply the style attributes to the target element.
+			*/
+			if (Array.isArray(styles)) {
+				target.css(Object.assign.apply(0, [{}].concat(styles)));
+			}
 			/*
 				If HTML attributes were included in the changerDescriptor, apply them now.
 			*/

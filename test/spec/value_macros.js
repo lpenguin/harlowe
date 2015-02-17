@@ -18,7 +18,7 @@ describe("basic value macros", function() {
 			expectMarkupToPrint("(text: 'gar', 'ply')","garply");
 		});
 		it("refuses object arguments", function() {
-			expect(runPassage("(text: (array:))").find('tw-error').length).toBe(1);
+			expect(runPassage("(text: (text-style:'shadow'))").find('tw-error').length).toBe(1);
 			expect(runPassage("(text: (datamap:))").find('tw-error').length).toBe(1);
 		});
 		it("is aliased as (string:)", function() {

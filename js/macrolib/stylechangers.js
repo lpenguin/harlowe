@@ -1,4 +1,5 @@
-define(['macros', 'utils', 'datatypes/colour', 'datatypes/changercommand'], function(Macros, Utils, Colour, ChangerCommand) {
+define(['jquery','macros', 'utils', 'utils/selectors', 'datatypes/colour', 'datatypes/changercommand'],
+function($, Macros, Utils, Selectors, Colour, ChangerCommand) {
 	"use strict";
 
 	/*
@@ -49,10 +50,34 @@ define(['macros', 'utils', 'datatypes/colour', 'datatypes/changercommand'], func
 				return ChangerCommand.create("font", [family]);
 			},
 			function(d, family) {
-				d.code = "<span style='font-family:" + family + "'>" + d.code + "</span>";
+				d.styles.push({'font-family': family});
 				return d;
 			},
 			[String]
+		)
+		
+		// (position-y:)
+		// A shortcut for positioning the element.
+		("position-y",
+			function positiony(_, percent) {
+				return ChangerCommand.create("position-y", percent);
+			},
+			function(d, percent) {
+				d.styles.push({ position:'absolute', top: percent * 100 + "%" });
+				return d;
+			},
+			[Number]
+		)
+		// (position-x:)
+		("position-x",
+			function positionx(_, percent) {
+				return ChangerCommand.create("position-x", percent);
+			},
+			function(d, percent) {
+				d.styles.push({ position:'absolute', left: percent * 100 + "%" });
+				return d;
+			},
+			[Number]
 		)
 		
 		/*
@@ -75,7 +100,7 @@ define(['macros', 'utils', 'datatypes/colour', 'datatypes/changercommand'], func
 				return ChangerCommand.create("text-colour", [CSScolour]);
 			},
 			function (d, CSScolour) {
-				d.code = "<span style='color:" + CSScolour + "'>" + d.code + "</span>";
+				d.styles.push({'color': CSScolour});
 				return d;
 			},
 			[either(String,Colour)]
@@ -99,7 +124,7 @@ define(['macros', 'utils', 'datatypes/colour', 'datatypes/changercommand'], func
 					Different kinds of values can be supplied to this macro
 				*/
 				if (Colour.isHexString(value)) {
-					property = "background-color";
+					property = {"background-color": value};
 				}
 				else {
 					/*
@@ -110,10 +135,9 @@ define(['macros', 'utils', 'datatypes/colour', 'datatypes/changercommand'], func
 						background-size:cover allows the image to fully cover the area
 						without tiling, which I believe is slightly more desired.
 					*/
-					property = "background-size:cover; background-image";
-					value = "url(" + value + ")";
+					property = {"background-size": "cover", "background-image":"url(" + value + ")"};
 				}
-				d.code = "<span style='" + property + ":" + value + "'>" + d.code + "</span>";
+				d.styles.push(property);
 				return d;
 			},
 			[either(String,Colour)]
@@ -129,39 +153,121 @@ define(['macros', 'utils', 'datatypes/colour', 'datatypes/changercommand'], func
 			(function() {
 				/*
 					This is a closure in which to cache the style-tagname mappings.
-					
-					These map style names, as input by the author as this macro's first argument,
-					to HTML element tag names to wrap them with.
 				*/
-				var styleTagNames = Object.assign(Object.create(null), {
-						bold:         "b",
-						italic:       "i",
-						underline:    "u",
-						strike:       "s",
-						superscript:  "sup",
-						subscript:    "sub",
-						blink:        "blink",
-						mark:         "mark",
-						delete:       "del",
-					},
+				var
 					/*
-						These are the Twine extra styles.
+						This is a shorthand used for the definitions below.
 					*/
-					["outline", "shadow", "emboss", "condense", "expand", "blur", "blurrier",
-						"smear", "mirror", "upside-down", "fade-in-out", "rumble", "shudder"]
-						.reduce(function(obj, e) {
-							obj[Utils.insensitiveName(e)] = "tw-" + e;
-							return obj;
-						}, {})
-					);
+					colourTransparent =  { color: "transparent", },
+					/*
+						These map style names, as input by the author as this macro's first argument,
+						to CSS attributes that implement the styles. These are all hand-coded.
+					*/
+					styleTagNames = Object.assign(Object.create(null), {
+						bold:         { 'font-weight': 'bold' },
+						italic:       { 'font-style': 'italic' },
+						underline:    { 'text-decoration': 'underline' },
+						strike:       { 'text-decoration': 'line-through' },
+						superscript:  { 'vertical-align': 'super', 'font-size': '.83em' },
+						subscript:    { 'vertical-align': 'sub', 'font-size': '.83em' },
+						blink: {
+							animation: "fade-in-out 1s steps(1,end) infinite alternate",
+							// .css() handles browser prefixes by itself.
+						},
+						"shudder": {
+							animation: "shudder linear 0.1s 0s infinite",
+							display: "inline-block",
+						},
+						mark: {
+							'background-color': 'hsla(60, 100%, 50%, 0.6)',
+						},
+						condense: {
+							"letter-spacing": "-0.08em",
+						},
+						expand: {
+							"letter-spacing": "0.1em",
+						},
+						outline: [{
+								"text-shadow": function() {
+									var colour = $(this).css('color');
+									return "-1px -1px 0 " + colour
+										+ ", 1px -1px 0 " + colour
+										+ ",-1px  1px 0 " + colour
+										+ ", 1px  1px 0 " + colour;
+								},
+							},
+							{
+								color: function() {
+									var elem = $(this),
+										colour;
+									/*
+										We need the visible background colour, but there
+										isn't a reliable way to retrieve it
+										without traversing up through the element tree.
+										So, alas, it must be done.
+									*/
+									while (elem[0] !== document
+										&& (colour = elem.css('background-color')) === "transparent") {
+										elem = elem.parent();
+										/*
+											If <tw-story> element is detached, we use the <body>,
+											colour as an emergency fallback.
+										*/
+										if (elem.length === 0) {
+											elem = $('body');
+										}
+									}
+									return colour;
+								},
+							}
+						],
+						shadow: {
+							"text-shadow": function() { return "0.08em 0.08em 0.08em " + $(this).css('color'); },
+						},
+						emboss: {
+							"text-shadow": function() { return "0.08em 0.08em 0em " + $(this).css('color'); },
+						},
+						smear: [{
+								"text-shadow": function() {
+									var colour = $(this).css('color');
+									return "0em   0em 0.02em " + colour + ","
+										+ "-0.2em 0em  0.5em " + colour + ","
+										+ " 0.2em 0em  0.5em " + colour;
+								},
+							},
+							// Order is important: as the above function queries the color,
+							// this one, eliminating the color, must run afterward.
+							colourTransparent
+						],
+						blur: [{
+								"text-shadow": function() { return "0em 0em 0.08em " + $(this).css('color'); },
+							},
+							colourTransparent
+						],
+						blurrier: [{
+								"text-shadow": function() { return "0em 0em 0.2em " + $(this).css('color'); },
+								"user-select": "none",
+							},
+							colourTransparent
+						],
+						mirror: {
+							display: "inline-block",
+							transform: "scaleX(-1)",
+						},
+						"upsidedown": {
+							display: "inline-block",
+							transform: "scaleY(-1)",
+						},
+						"fadeinout": {
+							animation: "fade-in-out 2s ease-in-out infinite alternate",
+						},
+						"rumble": {
+							animation: "rumble linear 0.1s 0s infinite",
+							display: "inline-block",
+						},
+					});
 				
 				return function text_style(d, styleName) {
-					var
-						/*
-							A pair of HTML strings to wrap the hook in.
-						*/
-						wrapperHTML = ['', ''];
-					
 					/*
 						The name should be insensitive to normalise both capitalisation,
 						and hyphenation of names like "upside-down".
@@ -170,12 +276,11 @@ define(['macros', 'utils', 'datatypes/colour', 'datatypes/changercommand'], func
 					
 					if (styleName in styleTagNames) {
 						/*
-							This is a bit of a hack to split the return value of
-							wrapHTMLTag into an array of just the wrapper components.
+							This uses [].concat's behaviour of behaving like [].push() when
+							given non-arrays.
 						*/
-						wrapperHTML = Utils.wrapHTMLTag("_", styleTagNames[styleName]).split("_");
+						d.styles = d.styles.concat(styleTagNames[styleName]);
 					}
-					d.code = wrapperHTML.join(d.code);
 					return d;
 				};
 			}()),
