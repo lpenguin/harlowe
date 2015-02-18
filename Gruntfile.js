@@ -1,18 +1,16 @@
 module.exports = function (grunt) {
 	"use strict";
-	var testTitle = 'Harlowe Test',
-		
+	var
 		// Source files
 		sourceHTML = ['template.html'],
-		jsFileList = ['js/*.js', 'js/utils/*.js', 'js/datatypes/*.js', 'js/twinescript/*.js', 'js/internaltypes/*.js', 'js/markup/*.js', 'js/macrolib/*.js'],
-		jsFullFileList = ['js/lib/*.js'].concat(jsFileList),
+		jsFileList = ['js/**.js'],
 		
 		// Destinations
 		destCSS = "./build/harlowe-css.css",
 		destJS = "./build/harlowe-min.js",
 		
 		destMarkupJS = "./build/twinemarkup-min.js",
-
+		
 		// Standard replacements
 		scriptStyleReplacements = [{
 			from: '{{CSS}}',
@@ -67,28 +65,28 @@ module.exports = function (grunt) {
 				files: {
 					src: ['test/spec/**.js'],
 				},
-      			options: {
-      				globals: {
-      					// Jasmine
-      					describe : true,
-      					expect   : true,
-      					it       : true,
-      					afterEach: true,
-      					beforeEach:true,
-      					// User-defined
-      					createPassage : true,
-      					runPassage : true,
-      					htmlOfPassage : true,
-      					expectMarkupToBecome : true,
-      					expectMarkupToPrint : true,
-      					expectMarkupToError : true,
-      					expectMarkupNotToError : true,
-      					expectMarkupToNotError : true,
-      					$ : true,
-      				},
-      				globalstrict: true,
-      			},
-      		},
+				options: {
+					globals: {
+						// Jasmine
+						describe : true,
+						expect   : true,
+						it       : true,
+						afterEach: true,
+						beforeEach:true,
+						// User-defined
+						createPassage : true,
+						runPassage : true,
+						htmlOfPassage : true,
+						expectMarkupToBecome : true,
+						expectMarkupToPrint : true,
+						expectMarkupToError : true,
+						expectMarkupNotToError : true,
+						expectMarkupToNotError : true,
+						$ : true,
+					},
+					globalstrict: true,
+				},
+			},
 		},
 
 		requirejs: {
@@ -172,7 +170,7 @@ module.exports = function (grunt) {
 			}
 		}
 	});
-
+	
 	grunt.registerTask('examplefile', "Create an example TwineJS output file", function() {
 		grunt.file.write('dist/exampleOutput.html',
 			[
@@ -192,7 +190,14 @@ module.exports = function (grunt) {
 				return a.replace(e.from, e.to());
 			}, grunt.file.read(sourceHTML)));
 	});
-
+	
+	/*
+		Load the auxiliary tasks.
+	*/
+	grunt.loadTasks('tasks');
+	/*
+		Load the standard plugins.
+	*/
 	grunt.loadNpmTasks('grunt-contrib-clean');
 	grunt.loadNpmTasks('grunt-contrib-jshint');
 	grunt.loadNpmTasks('grunt-contrib-watch');

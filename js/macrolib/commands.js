@@ -23,12 +23,23 @@ function(Macros, Utils, Story, State, Engine, TwineError) {
 	
 	Macros.add
 	
-		/*
-			(display:) evaluates to the TwineMarkup source of the passage
-			with the given name.
-			Evaluates to a DisplayCommand, an object which is by-and-large
-			unusable as a stored value, but renders to the full TwineMarkup
-			source of the given passage.
+		/*d:
+			(display: String)
+			This command writes out the contents of the passage with the given string name.
+			If a passage of that name does not exist, this produces an error.
+			
+			A special note: text-targeting macros (such as (replace:)) inside the
+			displayed passage will affect the text and hooks in the outer passage
+			that occur earlier than the (display:) command. For instance,
+			if passage A contains `(replace:Prince)[Frog]`, then another passage
+			containing `Princes(display:'A')` will result in the text `Frogs`.
+			
+			When set to a variable, it evaluates to a DisplayCommand, an object
+			which is by-and-large unusable as a stored value, but activates
+			when it's placed in the passage.
+			
+			Example usage:
+			`(display: "Cellar")` prints the contents of the passage named "Cellar".
 		*/
 		("display", function display(_, name) {
 			/*
@@ -58,10 +69,30 @@ function(Macros, Utils, Story, State, Engine, TwineError) {
 		},
 		[String])
 		
-		/*
-			(print:) is a command to print a string. It's very similar to (text:),
-			insofar as it converts its expr to string, but changer commands can be
-			stapled onto it.
+		/*d:
+			(print: Any)
+			This command prints out any single argument provided to it, as text.
+			
+			It is capable of printing things which (text:) cannot convert to a string,
+			such as changer commands - but these will usually become bare descriptive
+			text like `[A (font:) command]`. But, for debugging purposes this can be helpful.
+			
+			When set to a variable, it evaluates to a PrintCommand. Notably, the
+			expression to print is stored in the PrintCommand. So, a passage
+			that contains:
+			```
+			(set: $name to "Dracula")
+			(set: $p to (print: "Count " + $name))
+			(set: $name to "Alucard")
+			$p
+			```
+			will still result in the text `Count Dracula`.
+			
+			Example usage:
+			`(print: $var)`
+			
+			See also:
+			(text:), (display:)
 		*/
 		("print", function(_, expr) {
 
@@ -90,13 +121,30 @@ function(Macros, Utils, Story, State, Engine, TwineError) {
 		},
 		[Any])
 		
-		/*
-			(goto:) sends the player to a new passage, as soon as it is printed.
+		/*d:
+			(goto: String)
+			This command stops passage code and sends the player to a new passage.
+			If the passage named by the string does not exist, this produces an error.
+			
+			(goto:) prevents any macros and text after it from running.
+			So, a passage that contains:
+			```
+			(set: $listen to "I love")
+			(goto: "Train")
+			(set: $listen to it + " you")
+			```
+			will *not* cause `$listen` to become `"I love you"` when it runs.
+			
+			Example usage:
+			`(goto: "The Distant Future")`
+			
+			See also:
+			(loadgame:)
 		*/
 		("goto", function (_, name) {
 			var id = Story.getPassageID(name);
 			if (!id) {
-				return new RangeError("There's no passage named '" + name + "'.");
+				return TwineError.create("macrocall", "There's no passage named '" + name + "'.");
 			}
 			return {
 				TwineScript_ObjectName: "a (goto: " + Utils.toJSLiteral(name) + ") command",
@@ -125,7 +173,7 @@ function(Macros, Utils, Story, State, Engine, TwineError) {
 		[String])
 		
 		/*
-			(live:)
+			(live: optional Number)
 			This "command" attaches to hooks, similar to the way changers do.
 			Makes an attached hook become "live", which means that it's repeatedly re-run
 			every certain number of seconds. This is the main means of
@@ -227,7 +275,7 @@ function(Macros, Utils, Story, State, Engine, TwineError) {
 			[String, optional(String)]
 		)
 		/*
-			(loadgame:)
+			(load-game:)
 			This command attempts to load a saved game from the given slot, ending the current game and replacing it
 			with the loaded one.
 		*/

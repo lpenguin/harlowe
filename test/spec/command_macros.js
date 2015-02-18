@@ -37,6 +37,13 @@ describe("basic command macros", function() {
 			expect(expr.text()).toBe("grault");
 			expect(expr.children().is('i')).toBe(true);
 		});
+		it("stores its expression in its PrintCommand", function() {
+			expectMarkupToPrint('(set: $name to "Dracula")'
+				+ '(set: $p to (print: "Count " + $name))'
+				+ '(set: $name to "Alucard")'
+				+ '$p',
+				"Count Dracula");
+		});
 	});
 	describe("the (display:) macro", function() {
 		it("requires exactly 1 string argument", function() {
@@ -49,12 +56,18 @@ describe("basic command macros", function() {
 			error = runPassage("(display:'A','B')").find('tw-error');
 			expect(error.length).toBe(1);
 		});
-		it("evaluates to the markup of a passage", function() {
+		it("when placed in a passage, prints out the markup of another passage", function() {
 			createPassage("''Red''", "grault");
 			var expr = runPassage("(display: 'grault')").find('tw-expression');
 
 			expect(expr.text()).toBe("Red");
 			expect(expr.children().is('b')).toBe(true);
+		});
+		it("macros in the displayed passage affect the host passage", function() {
+			createPassage("(replace:'Big')[Small]", "grault");
+			var expr = runPassage("Big(display: 'grault')");
+
+			expect(expr.text()).toBe("Small");
 		});
 		it("evaluates to a command object that can't be +'d", function() {
 			createPassage("''Red''", "grault");
