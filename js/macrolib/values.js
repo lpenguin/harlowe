@@ -11,12 +11,34 @@ define(['utils', 'macros', 'utils/operationutils', 'internaltypes/twineerror'], 
 		Any = Macros.TypeSignature.Any;
 	
 	Macros.add
-		/*
-			(text:) convert the expressions to string.
-			This provides explicit coercion to String for certain values which
-			have a canonical string representation (primitives and arrays).
-			Concatenates multiple values.
-			Evaluates to a text string.
+		/*d:
+			(text: [Number or String or Boolean or Array]...) -> String
+			Also known as: (string:)
+			
+			(text:) accepts any amount of expressions and tries to convert them all
+			to a single String.
+			
+			Example usages:
+			* `(text: $cash + 200)`
+			* `(if: (text: $cash)'s length > 3)[Phew! Over four digits!]`
+			
+			Rationale:
+			Unlike in Twine 1, Twine 2 will only convert numbers into strings, or strings
+			into numbers, if you explictly ask it to. This extra carefulness decreases
+			the likelihood of unusual bugs creeping into stories (such as adding `1` and `"22"`
+			and getting `"122"`). The (text:) macro (along with (num:)) is how you can convert
+			non-string values to a string.
+			
+			Details:
+			This macro can also be used much like the (print:) macro - as it evaluates to a
+			string, and strings can be placed in the story prose freely,
+			
+			If you give an array to (text:), it will attempt to convert every element
+			contained in the array to a String, and then join them up with commas. So,
+			`(text: (a: 2, "Hot", 4, "U"))` will result in the string `"2,Hot,4,U"`.
+			
+			See also:
+			(num:)
 		*/
 		(["text", "string"], function print(/*variadic */) {
 			/*
@@ -29,11 +51,31 @@ define(['utils', 'macros', 'utils/operationutils', 'internaltypes/twineerror'], 
 		// (text: accepts a lot of any primitive)
 		[zeroOrMore(Macros.TypeSignature.either(String, Number, Boolean, Array))])
 
-		/*
-			(substring:)
-			Produces a slice of the given string, cut from
-			the *inclusive* one-indexed indices a and b.
-			A match of (subarray:).
+		/*d:
+			(substring: String, Number, Number) -> String
+			
+			This macro produces a substring of the given string, cut from two *inclusive* number positions.
+			
+			Example usage:
+			`(substring: "growl", 3, 5)` (results in the string `"owl"`).
+			
+			Rationale:
+			If you need to examine a portion of a string between certain character positions, or
+			wanted to strip off a known number of characters from either end of a string,
+			this macro can be used. Simply provide it with the string itself, then the number position
+			of the leftmost character of the substring, then the position of the rightmost character.
+			
+			Details:
+			If you provide negative numbers, they will be treated as being offset from the end
+			of the string - `-2` will specify the `2ndlast` character, just as 2 will specify
+			the `2nd` character.
+			
+			If the last number given is larger than the first (for instance, in `(substring: "hewed", 4, 2)`)
+			then the macro will still work - in that case returning `"ewe"` as if the numbers were in
+			the correct order.
+			
+			See also:
+			(subarray:)
 		*/
 		("substring", function substring(_, string, a, b) {
 			return OperationUtils.subset(string, a, b);

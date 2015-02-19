@@ -24,11 +24,23 @@ function(Macros, Utils, Story, State, Engine, TwineError) {
 	Macros.add
 	
 		/*d:
-			(display: String)
+			(display: String) -> DisplayCommand
+			
 			This command writes out the contents of the passage with the given string name.
 			If a passage of that name does not exist, this produces an error.
 			
-			A special note: text-targeting macros (such as (replace:)) inside the
+			Example usage:
+			`(display: "Cellar")` prints the contents of the passage named "Cellar".
+			
+			Rationale:
+			Suppose you have a section of code or prose that you need to include in several different
+			passages. It could be a status display, or a few lines of descriptive text. Instead of
+			manually copy-pasting it into each passage, consider placing it all by itself in another passage,
+			and using (display:) to place it in every passage. This gives you a lot of flexibility: you can,
+			for instance, change the code throughout the story by just editing the displayed passage.
+			
+			Details:
+			Text-targeting macros (such as (replace:)) inside the
 			displayed passage will affect the text and hooks in the outer passage
 			that occur earlier than the (display:) command. For instance,
 			if passage A contains `(replace:Prince)[Frog]`, then another passage
@@ -37,9 +49,6 @@ function(Macros, Utils, Story, State, Engine, TwineError) {
 			When set to a variable, it evaluates to a DisplayCommand, an object
 			which is by-and-large unusable as a stored value, but activates
 			when it's placed in the passage.
-			
-			Example usage:
-			`(display: "Cellar")` prints the contents of the passage named "Cellar".
 		*/
 		("display", function display(_, name) {
 			/*
@@ -70,9 +79,13 @@ function(Macros, Utils, Story, State, Engine, TwineError) {
 		[String])
 		
 		/*d:
-			(print: Any)
+			(print: Any) -> PrintCommand
 			This command prints out any single argument provided to it, as text.
 			
+			Example usage:
+			`(print: $var)`
+			
+			Details:
 			It is capable of printing things which (text:) cannot convert to a string,
 			such as changer commands - but these will usually become bare descriptive
 			text like `[A (font:) command]`. But, for debugging purposes this can be helpful.
@@ -87,9 +100,6 @@ function(Macros, Utils, Story, State, Engine, TwineError) {
 			$p
 			```
 			will still result in the text `Count Dracula`.
-			
-			Example usage:
-			`(print: $var)`
 			
 			See also:
 			(text:), (display:)
@@ -122,21 +132,38 @@ function(Macros, Utils, Story, State, Engine, TwineError) {
 		[Any])
 		
 		/*d:
-			(goto: String)
+			(go-to: String) -> GotoCommand
 			This command stops passage code and sends the player to a new passage.
 			If the passage named by the string does not exist, this produces an error.
 			
-			(goto:) prevents any macros and text after it from running.
+			Example usage:
+			`(go-to: "The Distant Future")`
+			
+			Rationale:
+			There are plenty of occasions where you may want to instantly advance to a new
+			passage without the player's volition. (go-to:) provides access to this ability.
+			
+			(go-to:), as with all macros, can accept any expression which evaluates to
+			a string. You can, for instance, go to a randomly selected passage by combining it with
+			(either:) - `(go-to: (either: "Win", "Lose", "Draw"))`.
+			
+			(go-to:) can be combined with (link:) to produce a structure not unlike a
+			normal passage link: `(link:"Enter the hole")[(go-to:"Falling")]` However, you
+			can include other macros inside the hook to run before the (go-to:), such as (set:),
+			(put:) or (save-game:).
+			
+			Details:
+			(go-to:) prevents any macros and text after it from running.
 			So, a passage that contains:
 			```
 			(set: $listen to "I love")
-			(goto: "Train")
+			(go-to: "Train")
 			(set: $listen to it + " you")
 			```
 			will *not* cause `$listen` to become `"I love you"` when it runs.
 			
-			Example usage:
-			`(goto: "The Distant Future")`
+			Going to a passage using this macro will count as a new "turn" in the game's passage history,
+			much as if a passage link was clicked.
 			
 			See also:
 			(loadgame:)
@@ -172,18 +199,34 @@ function(Macros, Utils, Story, State, Engine, TwineError) {
 		},
 		[String])
 		
-		/*
-			(live: optional Number)
-			This "command" attaches to hooks, similar to the way changers do.
-			Makes an attached hook become "live", which means that it's repeatedly re-run
-			every certain number of seconds. This is the main means of
-			making a passage dynamic and changing over time, or in reaction to an event.
+		/*d:
+			(live: [Number]) -> LiveCommand
+			When you attach this macro to a hook, the hook becomes "live", which means that it's repeatedly re-run
+			every certain number of milliseconds, replacing the prose inside of the hook with a newly computed version.
 			
+			Rationale:
+			Twine passage text generally behaves like a HTML document: it starts as code, is changed into a
+			rendered page when you "open" it, and remains so until you leave. But, you may want a part of the
+			page to change itself before the player's eyes, for its code to be re-renders "live"
+			in front of the player, while the remainder of the passage remains the same.
+			
+			Certain macros, such as the (link:) macro, allow a hook to be withheld until after an element is
+			interacted with. The (live:) macro is more versatile: it re-renders a hook every specified number of
+			milliseconds. If (if:) or (unless:) macros are inside the hook, they of course will be re-evaluated each time.
+			By using these two kinds of macros, you can make a (live:) macro repeatedly check if an event has occurred, and
+			only change its text at that point.
+			
+			Details:
+			Live hooks will continue to re-render themselves until they encounter and print a (stop:) macro.
+		*/
+		/*
 			Yes, the actual implementation of this is in Section, not here.
 		*/
 		("live",
 			function live(_, delay) {
 				return {
+					TwineScript_ObjectName: "a (live: " + delay + ") command",
+					TwineScript_TypeName:   "a (live:) command",
 					live: true,
 					delay: delay
 				};
@@ -191,12 +234,20 @@ function(Macros, Utils, Story, State, Engine, TwineError) {
 			[optional(Number)]
 		)
 		
-		/*
-			(stop:)
-			This zero-arity macro creates a (stop:) command, which is not configurable.
+		/*d
+			(stop:) -> StopCommand
+			This macro, which accepts no arguments, creates a (stop:) command, which is not configurable.
 			
-			Clunky though it looks, it serves an important purpose: inside a (live:)
-			macro, its appearance signals that the macro must stop running.
+			Example usage:
+			`(live:)[(if: $escaped)[You're free! (stop:)]]`
+			
+			Rationale:
+			Clunky though it looks, this macro serves a single important purpose: inside a (live:)
+			macro's hook, its appearance signals that the macro must stop running. In every other occasion,
+			this macro does nothing.
+			
+			See also:
+			(live:)
 		*/
 		("stop",
 			function stop() {
@@ -210,11 +261,46 @@ function(Macros, Utils, Story, State, Engine, TwineError) {
 			},
 			[]
 		)
-		/*
-			(save-game:)
-			This boolean macro serialises the game state and stores it in localStorage, in a given
-			"slot name" (usually a numeric string, but potentially any string) and with a "file name"
-			(which will be used by a future macro for file data display).
+		/*d:
+			(save-game: String, [String]) -> Boolean
+			
+			This macro saves the current game's state in browser storage, in the given save slot,
+			and including a special filename. It can then be restored using (load-game:).
+			
+			Rationale:
+			
+			Many web games use browser cookies to save the player's place in the game.
+			Twine allows you to save the game, including all of the variables that were (set:)
+			or (put:), and the passages the player visited, to the player's browser storage.
+			
+			(save-game:) is a single operation that can be used as often or as little as you
+			want to. You can include it on every page; You can put it at the start of each "chapter";
+			You can put it inside a (link:) hook, such as
+			```
+			{(link:"Save game")[
+			  (if:(save-game:"A"))[
+			    Game saved!
+			  ](else: )[
+			    Save failed!
+			  ]
+			]}
+			```
+			and let the player choose when to save.
+			
+			Details:
+			
+			(save-game:)'s first String is a slot name in which to store the game. You can have as many slots
+			as you like. If you only need one slot, you can just call it `"A"` and use `(save-game:"A")`.
+			You can tie them to a name the player gives, such as `(save-game: $playerName)`, if multiple players
+			are likely to play this game - at an exhibition, for instance.
+			
+			Giving the saved game a file name is optional, but allows that name to be displayed when examining
+			____, cluing the player into the saved game's contents.
+			
+			(save-game:) evaluates to a boolean - true if the game was indeed saved, and false if the browser prevented
+			it (because they're using private browsing, their browser's storage is full, or some other reason).
+			Since there's always a possibility of a save failing, you should use (if:) and (else:) with (save-game:)
+			to display an apology message in the event that it returns false.
 		*/
 		("savegame",
 			function savegame(_, slotName, fileName) {
