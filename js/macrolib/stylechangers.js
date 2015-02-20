@@ -63,7 +63,16 @@ function($, Macros, Utils, Selectors, Colour, ChangerCommand) {
 				return ChangerCommand.create("position-y", percent);
 			},
 			function(d, percent) {
-				d.styles.push({ position:'absolute', top: percent * 100 + "%" });
+				d.styles.push({
+					position:'absolute',
+					/*
+						This is necessary to retain the normal width of the element,
+						but it will supplant any previously defined width.
+						Ideally this should be a special "defaulting" object which
+						gets sorted out before.
+					*/
+					width: "100%",
+					top: percent * 100 + "%" });
 				return d;
 			},
 			[Number]
@@ -74,7 +83,13 @@ function($, Macros, Utils, Selectors, Colour, ChangerCommand) {
 				return ChangerCommand.create("position-x", percent);
 			},
 			function(d, percent) {
-				d.styles.push({ position:'absolute', left: percent * 100 + "%" });
+				d.styles.push({
+					position:'absolute',
+					/*
+						As it is for position-y, so it is here.
+					*/
+					width: "100%",
+					left: percent * 100 + "%" });
 				return d;
 			},
 			[Number]

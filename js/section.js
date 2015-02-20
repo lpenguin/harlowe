@@ -439,7 +439,7 @@ function($, Utils, Selectors, Renderer, Environ, Story, State, HookUtils, HookSe
 					Honestly, having non-changer descriptor-altering objects
 					is a bit displeasingly rough-n-ready, but it's convenient...
 				*/
-				if (!changer.changer) {
+				if (!changer || !changer.changer) {
 					Object.assign(desc, changer);
 				}
 				else {

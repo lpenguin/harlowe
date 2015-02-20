@@ -114,7 +114,12 @@ function ($, Story, Utils, Selectors, State, Section) {
 				passageData.html()
 			),
 			newPassage,
-			{ transition: "dissolve" }
+			/*
+				Use the author's styles, assigned using TwineScript,
+				as well as this basic, default ChangeDescriptor-like object
+				supplying the transition.
+			*/
+			[{ transition: "dissolve" }, State.variables.Styles.get("Passage")]
 		);
 		
 		parent.append(story);

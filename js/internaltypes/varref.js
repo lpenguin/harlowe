@@ -34,9 +34,11 @@ function(State, TwineError, OperationUtils) {
 	*/
 	function compilePropertyIndex(obj, prop) {
 		var
-			// Hoisted variable.
+			// Hoisted variables.
 			match,
-			error;
+			error,
+			// Cache this value for easy lookup.
+			sequential = isSequential(obj);
 		
 		/*
 			First, check for and propagate earlier errors.
@@ -50,10 +52,11 @@ function(State, TwineError, OperationUtils) {
 			and numbers to be used.
 			(This kind of defeats the point of (datamap:), though...
 		*/
-		if(typeof prop !== "string" && typeof prop !== "number") {
+		if(typeof prop !== "string" && (!sequential || typeof prop !== "number")) {
 			return TwineError.create(
 				"property",
-				"Only strings and numbers can be used as property names, not " + objectName(prop) + "."
+				"Only strings " + (sequential ? "and numbers " : "") +
+				"can be used as property names for " + objectName(obj) + ", not " + objectName(prop) + "."
 				);
 		}
 		/*

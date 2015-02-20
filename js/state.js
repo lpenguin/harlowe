@@ -1,4 +1,4 @@
-define(['story', 'utils'], function(Story, Utils) {
+define(['story', 'utils', 'systemvariables'], function(Story, Utils, SystemVariables) {
 	"use strict";
 	/**
 		State
@@ -24,10 +24,11 @@ define(['story', 'utils'], function(Story, Utils) {
 		
 		/**
 			Variables
+			The root prototype for every Moment's variables collection.
 			@property {Object} variables
 			@for Moment
 		*/
-		variables: null,
+		variables: SystemVariables,
 
 		/**
 			Make a new Moment that comes temporally after this.
@@ -422,7 +423,7 @@ define(['story', 'utils'], function(Story, Utils) {
 		*/
 		function deserialise(str) {
 			var newTimeline,
-				lastVariables = null;
+				lastVariables = SystemVariables;
 			
 			try {
 				newTimeline = JSON.parse(str, reviver);

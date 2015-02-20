@@ -76,6 +76,14 @@ describe("property indexing", function() {
 				expectMarkupToError('(print: (a:1,2,3)\'s 4th)');
 			});
 		});
+		it("cannot be used with datamaps", function() {
+			expectMarkupToError('(print: (datamap: "Sword", "Steel")\'s 1st)');
+			expectMarkupToError('(print: (datamap: "Sword", "Steel")\'s last)');
+		});
+		it("cannot be used with datasets", function() {
+			expectMarkupToError('(print: (dataset: 2,3)\'s 1st)');
+			expectMarkupToError('(print: (dataset: 2,3)\'s last)');
+		});
 	});
 	describe("string indices", function() {
 		describe("for datamaps", function() {
@@ -85,6 +93,12 @@ describe("property indexing", function() {
 			it("prints an error if the key is not present", function() {
 				expectMarkupToError('(print: (datamap:"A",1)\'s B)');
 			});
+		});
+		it("cannot be used with arrays", function() {
+			expectMarkupToError('(set: $a to (a: 2,3))(set: $a\'s thing to 4)');
+		});
+		it("cannot be used with datasets", function() {
+			expectMarkupToError('(set: $s to (dataset: 2,3))(set: $s\'s thing to 4)');
 		});
 	});
 	describe("computed indices", function() {
