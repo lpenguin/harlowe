@@ -195,6 +195,8 @@
 			sup:     { fn: textTokenFn() },
 			
 			comment: { fn:        Object },
+			// This must come before the generic tag rule
+			scriptStyleTag: { fn:        Object },
 			tag:     { fn:        Object },
 			url:     { fn:        Object },
 			
@@ -324,6 +326,8 @@
 								"macro",
 							computedPropertyFront:
 								"computedProperty",
+							computedItsPropertyFront:
+								"computedItsProperty",
 						},
 					};
 				},
@@ -368,7 +372,12 @@
 					pattern - "$a's b's" resembles a string literal. To ensure that
 					the former is always matched first, this rule must come before it.
 				*/
-				property: { fn: textTokenFn("name") },
+				property: {
+					fn: textTokenFn("name"),
+					canFollow: ["variable", "hookRef", "property",
+						"itsProperty", "belongingItProperty", "computedProperty",
+						"computedItsProperty", "macro", "grouping", "string"],
+				},
 				
 				belongingProperty: {
 					cannotFollow: ["text"],
@@ -376,6 +385,8 @@
 				},
 				
 				computedPropertyFront: { fn: Object },
+				
+				computedItsPropertyFront: { fn: Object },
 				
 				computedBelongingPropertyBack: {
 					fn: function() {

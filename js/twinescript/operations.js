@@ -66,8 +66,10 @@ function(Utils, State, Story, Colour, AssignmentRequest, OperationUtils, TwineEr
 				return error;
 			}
 			if (typeof left !== type || typeof right !== type) {
-				return TwineError.create("operation", "I can only " + operationVerb + " " + type + "s, not " +
-				objectName(typeof left !== type ? left : right) + ".");
+				return TwineError.create("operation", "I can only "
+				+ operationVerb + " " + type + "s, not "
+				+ objectName(typeof left !== type ? left : right)
+				+ ".");
 			}
 			return fn(left, right);
 		};
@@ -343,9 +345,9 @@ function(Utils, State, Story, Colour, AssignmentRequest, OperationUtils, TwineEr
 			*/
 			if (!isObject(dest) || !("propertyChain" in dest)) {
 				return TwineError.create("operation",
-					"I can't give "
+					"I can't store a new value inside "
 					+ objectName(dest)
-					+ " a new value.");
+					+ ".");
 			}
 			/*
 				Also refuse if the propertyChain contains an error.
@@ -380,7 +382,16 @@ function(Utils, State, Story, Colour, AssignmentRequest, OperationUtils, TwineEr
 			if (TwineError.containsError(e)) {
 				return e;
 			}
-			Utils.assert(e.varref);
+			/*
+				If a non-varRef was passed in, a syntax error has occurred.
+			*/
+			if (!e.varref) {
+				return TwineError.create("operation",
+					"I can't put a new value into "
+					+ objectName(e)
+					+ "."
+				);
+			}
 			return It = e.get(), e;
 		},
 	};

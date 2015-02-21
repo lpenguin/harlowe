@@ -39,4 +39,9 @@ describe("HTML in twinemarkup", function() {
 			delete window.foo;
 		});
 	});
+	describe("<style> tags", function() {
+		it("can be used without escaping their contents", function() {
+			expect(runPassage("<style>b { box-sizing: content-box; }</style><b>Hey</b>").find('b').css('box-sizing')).toBe('content-box');
+		});
+	});
 });

@@ -105,6 +105,10 @@ describe("property indexing", function() {
 		it("can contain full expressions", function() {
 			expectMarkupToNotError('(print: (a:1)\'s (2 - 1))');
 		});
+		it("can have properties accessed from it", function (){
+			expectMarkupToPrint("(print: (a:'Red')\'s (2 - 1)'s 1st)","R");
+			expectMarkupToPrint("(print: (a:'Red')\'s (2 - 1)'s (2 - 1))","R");
+		});
 		describe("for datamaps", function() {
 			it("access the keyed properties", function() {
 				expectMarkupToPrint('(print: (datamap:"A",1)\'s ("A"))','1');

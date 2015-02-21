@@ -126,7 +126,7 @@ describe("basic twinemarkup syntax", function() {
 	});
 
 	describe("bulleted lists", function() {
-		it("wraps 1 or more adjacent lines starting with * (plus optional whitespace) in <ul><li>", function() {
+		it("wraps 1 or more adjacent lines starting with, * plus whitespace, in <ul><li>", function() {
 			expectMarkupToBecome(
 				"* A",
 				"<ul><li>A</li></ul>"
@@ -140,6 +140,16 @@ describe("basic twinemarkup syntax", function() {
 			expectMarkupToBecome(
 				"A B *C",
 				"A B *C"
+			);
+		});
+		it("won't work unless whitespace follows the *", function() {
+			expectMarkupToBecome(
+				"*Red",
+				"*Red"
+			);
+			expectMarkupToBecome(
+				" *Red",
+				" *Red"
 			);
 		});
 		it("(unlike Markdown) allows nested lists by the addition of more consecutive *'s", function() {

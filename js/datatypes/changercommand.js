@@ -14,10 +14,6 @@ define(['utils', 'macros', 'utils/operationutils'], function(Utils, Macros, Oper
 		
 		changer: true,
 		
-		get TwineScript_ObjectName() {
-			return "a ("  + this.macroName + ":) command";
-		},
-		
 		TwineScript_TypeName:
 			"a changer command",
 		
@@ -47,6 +43,7 @@ define(['utils', 'macros', 'utils/operationutils'], function(Utils, Macros, Oper
 					with. In this way, composed ChangerCommands are linked lists.
 				*/
 				next:                     next || null,
+				TwineScript_ObjectName:   "a ("  + macroName + ":) command",
 			});
 		},
 		

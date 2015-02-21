@@ -195,6 +195,7 @@ define(['utils', 'markup', 'twinescript/compiler'], function(Utils, TwineMarkup,
 						out += '<a class="link" href="' + escape(token.text) + '">' + token.text + '</a>';
 						break;
 					}
+					case "scriptStyleTag":
 					case "tag": {
 						out += token.text;
 						break;

@@ -137,6 +137,10 @@
 		// This includes all forms of whitespace except \n and \r
 		ws = "[ \\f\\t\\v\u00a0\u1680\u180e\u2000-\u200a\u2028\u2029\u202f\u205f\u3000]*",
 		
+		// Mandatory whitespace
+		mws = ws.replace("*","+"),
+		
+		// Word break
 		wb = "\\b",
 		
 		// Checks if text appears before line-breaks or end-of-input.
@@ -163,9 +167,9 @@
 			In the field, lists are structurally not that useful in Twine, except for pure
 			presentational purposes: putting a bullet-point before a line.
 		*/
-		bullet = "(?:\\*)",
+		bullet = "\\*",
 		
-		bulleted = "(?:\n|^)" + ws + "(" + bullet + "+)" + ws + "([^\\n]*)" + eol,
+		bulleted = "(?:\n|^)" + ws + "(" + bullet + "+)" + mws + "([^\\n]*)" + eol,
 		
 		numberPoint = "(?:0\\.)",
 		
@@ -206,9 +210,9 @@
 		*/
 		variable = "\\$(" + validPropertyName + ")",
 		
-		property = "'s" + ws + "(" + validPropertyName + ")",
+		property = "'s" + mws + "(" + validPropertyName + ")",
 		
-		belongingProperty = "(" + validPropertyName + ")" + ws.replace("*","+") + "of" + wb,
+		belongingProperty = "(" + validPropertyName + ")" + mws + "of" + wb,
 		
 		/*
 			Computed properties are of the form:
@@ -216,7 +220,7 @@
 			or
 			(expression) of $a
 		*/
-		computedPropertyFront = "'s" + ws + "\\(",
+		computedPropertyFront = "'s" + mws + "\\(",
 		
 		/*
 			Computed properties are of the form:
@@ -231,9 +235,11 @@
 		*/
 		identifier = either("it","time","page") + "\\b",
 		
-		itsProperty = "its" + ws + "(" + validPropertyName + ")",
+		itsProperty = "its" + mws + "(" + validPropertyName + ")",
 		
-		belongingItProperty = "(" + validPropertyName + ")" + ws + "of" + ws + "it",
+		computedItsPropertyFront = "its" + mws  + "\\(",
+		
+		belongingItProperty = "(" + validPropertyName + ")" + mws + "of" + mws + "it",
 		
 		macro = {
 			opener:            "\\(",
@@ -306,7 +312,7 @@
 		anyLetter:   anyLetter,
 		anyLetterStrict: anyLetterStrict,
 		
-		whitespace:  ws.replace("*","+"),
+		whitespace:  mws,
 		unquoted:    unquoted,
 		escapedLine: "\\\\\\n",
 		
@@ -320,6 +326,12 @@
 		
 		tag:         "<\\/?" + tag.name + tag.attrs + ">",
 		tagOpener:                            opener("<"),
+		
+		scriptStyleTag: "<(" + either(caseInsensitive("script"),caseInsensitive("style"))
+			+ ")" + tag.attrs + ">"
+			+ "[^]*?" + "<\\/\\1>",
+		
+		scriptStyleTagOpener: opener("<"),
 		
 		url:         "(" + either("https?","mailto","javascript","ftp","data") + ":\\/\\/[^\\s<]+[^<.,:;\"')\\]\\s])",
 		
@@ -444,6 +456,9 @@
 		
 		computedPropertyFront:
 			computedPropertyFront,
+		
+		computedItsPropertyFront:
+			computedItsPropertyFront,
 		
 		computedBelongingPropertyBack:
 			computedBelongingPropertyBack,

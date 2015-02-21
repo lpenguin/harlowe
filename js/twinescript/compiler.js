@@ -399,13 +399,15 @@ define(['utils'], function(Utils) {
 			midString = " ";
 			needsLeft = needsRight = false;
 		}
-		else if ((i = rightAssociativeIndexOfType(tokens, "itsProperty")) >-1) {
+		else if ((i = rightAssociativeIndexOfType(tokens, "itsProperty", "computedItsProperty")) >-1) {
 			/*
 				This is actually identical to the above, but with the difference that
 				there is no left subtoken (it is always Identifiers.it).
 			*/
 			left = "VarRef.create(Operations.Identifiers.it,"
-				+ Utils.toJSLiteral(tokens[i].name) + ").get()";
+				+ (tokens[i].type.includes("computed")
+				? compile(tokens[i].children)
+				: Utils.toJSLiteral(tokens[i].name)) + ").get()";
 			midString = " ";
 			needsLeft = needsRight = false;
 		}

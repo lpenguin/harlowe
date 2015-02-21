@@ -123,16 +123,10 @@ define(['utils', 'internaltypes/twineerror'], function(Utils, TwineError) {
 			: Array.isArray(obj) ? "an array"
 			: obj instanceof Map ? "a datamap"
 			: obj instanceof Set ? "a dataset"
-			: (typeof obj === "string" || typeof obj === "number") ? 'the ' + typeof obj + " " + Utils.toJSLiteral(obj)
-			/*
-				If it lacks a toString function, it can't be converted with toString().
-			*/
-			: (typeof obj.toString !== "function") ? "a bare object"
-			/*
-				For ES6 symbol compatibility, we must use String(obj) here instead of obj + "".
-				I don't actually expect symbols to enter the TwineScript userland, but better safe.
-			*/
-			: String(obj);
+			: typeof obj === "boolean" ? "the logic value '" + obj + "'"
+			: (typeof obj === "string" || typeof obj === "number")
+				? 'the ' + typeof obj + " " + Utils.toJSLiteral(obj)
+			: "...whatever this is";
 	}
 	/*
 		The TypeName method is also used to supply error messages relating to type signature

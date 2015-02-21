@@ -47,6 +47,7 @@ Rough documentation is at http://twine2.neocities.org/
   * `(loadgame:)` takes one value - a slot name such as that provided to `(savegame:)` - and loads a game from that slot, replacing the current game session entirely. Think of it as a `(goto:)` - if it succeeds, the passage is immediately exited.
   * A means of querying whether a saveslot exists, and retrieving its name, is still forthcoming.
  * `<script>` tags in passage text will now run. However, their behaviour is not well-defined yet - it's unclear even to me what sort of DOM they would have access to.
+ * `<style>` tags in passage text can now be used without needing to escape their contents with the verbatim syntax (backticks).
 
 ###1.0.1 changes:
 

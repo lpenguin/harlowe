@@ -18,7 +18,7 @@ function($, Macros, Utils, Selectors, Colour, ChangerCommand) {
 		// Allows the author to give a hook a computed tag name.
 		(["hook"],
 			function hook(_, name) {
-				return ChangerCommand.create("hook", [name]);	
+				return ChangerCommand.create("hook", [name]);
 			},
 			function(d, name) {
 				d.attr = Object.assign(d.attr || {}, {
@@ -60,7 +60,7 @@ function($, Macros, Utils, Selectors, Colour, ChangerCommand) {
 		// A shortcut for positioning the element.
 		("position-y",
 			function positiony(_, percent) {
-				return ChangerCommand.create("position-y", percent);
+				return ChangerCommand.create("position-y", [percent]);
 			},
 			function(d, percent) {
 				d.styles.push({
@@ -80,7 +80,7 @@ function($, Macros, Utils, Selectors, Colour, ChangerCommand) {
 		// (position-x:)
 		("position-x",
 			function positionx(_, percent) {
-				return ChangerCommand.create("position-x", percent);
+				return ChangerCommand.create("position-x", [percent]);
 			},
 			function(d, percent) {
 				d.styles.push({

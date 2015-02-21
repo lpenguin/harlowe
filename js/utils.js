@@ -32,7 +32,6 @@ function($, TwineMarkup, Selectors) {
 			@param {Object} obj Object to lock
 			@return The locked object
 		*/
-
 		lockProperties: function (obj) {
 			var i, prop,
 				keys = Object.keys(obj),
@@ -56,7 +55,6 @@ function($, TwineMarkup, Selectors) {
 			@param {String} value	A value to set the property to
 			@return The affected object
 		*/
-
 		lockProperty: function (obj, prop, value) {
 			// Object.defineProperty does walk the prototype chain
 			// when reading a property descriptor dict.
@@ -64,6 +62,22 @@ function($, TwineMarkup, Selectors) {
 			value && (propDesc.value = value);
 			Object.defineProperty(obj, prop, propDesc);
 			return obj;
+		},
+		
+		/**
+			Retrieve a property descriptor for an object,
+			searching through the prototype chain.
+			
+			@method getInheritedPropertyDescriptor
+			@param {Object} obj The object
+			@param {String} prop The property to investigate.
+			@return The descriptor, or null.
+		*/
+		getInheritedPropertyDescriptor: function(obj, prop) {
+			while(obj && !obj.hasOwnProperty(prop)) {
+				obj = Object.getPrototypeOf(obj);
+			}
+			return (obj && Object.getOwnPropertyDescriptor(obj, prop)) || null;
 		},
 
 		/*

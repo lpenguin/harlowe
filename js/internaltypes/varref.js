@@ -1,5 +1,5 @@
-define(['state', 'internaltypes/twineerror', 'utils/operationutils'],
-function(State, TwineError, OperationUtils) {
+define(['utils','state', 'internaltypes/twineerror', 'utils/operationutils'],
+function(Utils, State, TwineError, OperationUtils) {
 	'use strict';
 	/*
 		VarRefs are essentially objects pairing a chain of properties
@@ -17,6 +17,7 @@ function(State, TwineError, OperationUtils) {
 		isObject        = OperationUtils.isObject,
 		isSequential    = OperationUtils.isSequential,
 		objectName      = OperationUtils.objectName,
+		collectionType  = OperationUtils.collectionType,
 		clone           = OperationUtils.clone,
 		/*
 			The default defaultValue, used for all uninitialised properties
@@ -58,6 +59,12 @@ function(State, TwineError, OperationUtils) {
 				"Only strings " + (sequential ? "and numbers " : "") +
 				"can be used as property names for " + objectName(obj) + ", not " + objectName(prop) + "."
 				);
+		}
+		/*
+			This is to ensure that TwineScript properties are not exposed to userland code.
+		*/
+		if(typeof prop === "string" && prop.startsWith("TwineScript") && prop !== "TwineScript_Assignee") {
+			return TwineError.create("property", "Only I can use data keys beginning with 'TwineScript'.");
 		}
 		/*
 			Sequentials have special sugar property indices:
@@ -144,8 +151,19 @@ function(State, TwineError, OperationUtils) {
 		This one should only return either undefined, or a TwineError.
 	*/
 	function objectOrMapSet(obj, prop, value) {
+		var propDesc;
+		
 		if (obj instanceof Map) {
-			obj.set(prop, value);
+			/*
+				The "sealed" expando property means that this map cannot be
+				expanded (presumably because it's a system variable).
+			*/
+			if (obj.sealed && !obj.has(prop)) {
+				return TwineError.create("operation", "I won't add '" + prop
+					+ "' to " + objectName(obj)
+					+ " because it's one of my special system collections.");
+			}
+			return obj.set(prop, value);
 		} else {
 			if (+prop < 0) {
 				prop = obj.length + (+prop);
@@ -165,6 +183,19 @@ function(State, TwineError, OperationUtils) {
 						"I can't forcibly alter the length of " + objectName(obj) + "."
 					);
 				}
+			}
+			/*
+				If the object is sealed and the property doesn't exist,
+				or a same named property on the prototype chain is non-writable,
+				then we can't set it at all.
+			*/
+			propDesc = Utils.getInheritedPropertyDescriptor(obj,prop);
+			
+			if (!propDesc ? Object.isSealed(obj) : propDesc.writable === false) {
+				return TwineError.create(
+					"operation",
+					"I can't alter the '" + prop + "' data because it's read-only."
+				);
 			}
 			obj[prop] = value;
 		}
@@ -273,11 +304,13 @@ function(State, TwineError, OperationUtils) {
 		},
 		
 		set: function(value) {
-			/*
-				Compile the property index - returning the error if
-				one was produced during compilation.
-			*/
-			var prop = compilePropertyIndex(this.deepestObject, this.deepestProperty);
+			var result, assignedObj,
+				/*
+					Compile the property index - returning the error if
+					one was produced during compilation.
+				*/
+				prop = compilePropertyIndex(this.deepestObject, this.deepestProperty);
+			
 			if (TwineError.containsError(prop)) {
 				return prop;
 			}
@@ -296,7 +329,29 @@ function(State, TwineError, OperationUtils) {
 			if (isObject(value)) {
 				value = clone(value);
 			}
-			return objectOrMapSet(this.deepestObject, prop, value);
+			result = objectOrMapSet(this.deepestObject, prop, value);
+			
+			if (!TwineError.containsError(result)) {
+				/*
+					Tag the object with a TwineScript_ObjectName, which is used
+					for providing more informative error messages involving
+					this piece of data.
+				*/
+				if (this.deepestObject instanceof Map) {
+					assignedObj = this.deepestObject.get(prop);
+				}
+				else {
+					assignedObj = this.deepestObject[prop];
+				}
+				/*
+					Obviously, only non-primitives can be given this expando property.
+				*/
+				if (isObject(assignedObj)) {
+					assignedObj.TwineScript_ObjectName
+						= objectName(assignedObj) + " stored in '" + this.deepestProperty + "'";
+				}
+			}
+			return result;
 		},
 		
 		/*
@@ -347,9 +402,10 @@ function(State, TwineError, OperationUtils) {
 				*/
 				propertyChain: [].concat(propertyChain),
 			});
-			
 			return ret;
 		},
+		
+		TwineScript_ObjectName: "a variable I'm trying to assign a value to"
 	});
 	
 	return VarRefProto;

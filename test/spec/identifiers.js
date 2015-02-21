@@ -30,5 +30,20 @@ describe("identifiers", function () {
 		it("also accesses properties from the left side of a 'to' operation", function (){
 			expectMarkupToPrint("(set:$red to 'Bee')(set:$red to its 1st)$red","B");
 		});
+		it("can have properties accessed from it", function (){
+			expectMarkupToPrint("(set:$red to (a:'Bee'))(set:$red to its 1st's 1st)$red","B");
+		});
+	});
+	describe("the computed 'its' property access syntax", function () {
+		it("accesses properties from the left side of a recent comparison", function (){
+			expectMarkupToPrint("(set:$red to 'egg')(print: $red is 'egg' and its ('length') is 3)","true");
+		});
+		it("also accesses properties from the left side of a 'to' operation", function (){
+			expectMarkupToPrint("(set:$red to 'Bee')(set:$red to its (1))$red","B");
+		});
+		it("can have properties accessed from it", function (){
+			expectMarkupToPrint("(set:$red to (a:'Bee'))(set:$red to its (1)'s 1st)$red","B");
+			expectMarkupToPrint("(set:$red to (a:'Bee'))(set:$red to its (1)'s (1))$red","B");
+		});
 	});
 });

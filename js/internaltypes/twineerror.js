@@ -91,6 +91,7 @@ define(['jquery', 'utils'], function($, Utils) {
 			*/
 			titleText = titleText || "";
 			var errorElement = $("<tw-error class='"
+					+ (this.type === "javascript" ? "javascript ": "")
 					+ (this.warning ? "warning" : "error")
 					+ "' title='" + Utils.escape(titleText) + "'>" + Utils.escape(this.message) + "</tw-error>"),
 				/*
