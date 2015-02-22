@@ -18,7 +18,7 @@ function($, Macros, Utils, Selectors, Story, State, Engine, ChangerCommand) {
 		is "attached" via a jQuery .data() key, and must be called
 		from this <html> handler.
 	*/
-	$(document.documentElement).on(
+	$(Utils.storyElement).on(
 		/*
 			The jQuery event namespace is "passage-link".
 		*/

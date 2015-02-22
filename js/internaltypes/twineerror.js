@@ -12,8 +12,8 @@ define(['jquery', 'utils'], function($, Utils) {
 	var errorExplanations = {
 		saving: "I tried to save or load the game, but I couldn't do it.",
 		operation: "I tried to use an operation on some data, but the data's type was incorrect.",
-		macrocall: "I tried to use a macro, but it wasn't written correctly.",
-		datatype: "I tried to use a macro, but gave the wrong type of data to it.",
+		macrocall: "I tried to use a macro, but its call wasn't written correctly.",
+		datatype: "I tried to use a macro, but was given the wrong type of data to it.",
 		keyword: "I was given a keyword in a way that I didn't understand.",
 		property: "I tried to access a value in a string/array/datamap, but I couldn't find it.",
 		unimplemented: "I currently don't have this particular feature. I'm sorry.",

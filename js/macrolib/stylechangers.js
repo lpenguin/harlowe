@@ -121,6 +121,26 @@ function($, Macros, Utils, Selectors, Colour, ChangerCommand) {
 			[either(String,Colour)]
 		)
 		/*
+			(rotate:)
+			A shortcut for applying a CSS rotation to a span of text.
+		*/
+		("rotate",
+			function transform(_, rotation) {
+				return ChangerCommand.create("rotate", [rotation]);
+			},
+			function (d, rotation) {
+				d.styles.push({display: 'inline-block', 'transform': function() {
+					var currentTransform = $(this).css('transform') || '';
+					if (currentTransform === "none") {
+						currentTransform = '';
+					}
+					return currentTransform + " rotate(" + rotation + "deg)";
+				}});
+				return d;
+			},
+			[Number]
+		)
+		/*
 			(background:)
 			This sets the changer's background-color or background-image,
 			depending on what is supplied.

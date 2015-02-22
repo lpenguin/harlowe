@@ -119,7 +119,7 @@ function ($, Story, Utils, Selectors, State, Section) {
 				as well as this basic, default ChangeDescriptor-like object
 				supplying the transition.
 			*/
-			[{ transition: "dissolve" }, State.variables.Styles.get("Passage")]
+			[{ transition: "dissolve" }]
 		);
 		
 		parent.append(story);

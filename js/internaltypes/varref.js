@@ -17,7 +17,6 @@ function(Utils, State, TwineError, OperationUtils) {
 		isObject        = OperationUtils.isObject,
 		isSequential    = OperationUtils.isSequential,
 		objectName      = OperationUtils.objectName,
-		collectionType  = OperationUtils.collectionType,
 		clone           = OperationUtils.clone,
 		/*
 			The default defaultValue, used for all uninitialised properties
@@ -304,7 +303,7 @@ function(Utils, State, TwineError, OperationUtils) {
 		},
 		
 		set: function(value) {
-			var result, assignedObj,
+			var
 				/*
 					Compile the property index - returning the error if
 					one was produced during compilation.
@@ -329,29 +328,7 @@ function(Utils, State, TwineError, OperationUtils) {
 			if (isObject(value)) {
 				value = clone(value);
 			}
-			result = objectOrMapSet(this.deepestObject, prop, value);
-			
-			if (!TwineError.containsError(result)) {
-				/*
-					Tag the object with a TwineScript_ObjectName, which is used
-					for providing more informative error messages involving
-					this piece of data.
-				*/
-				if (this.deepestObject instanceof Map) {
-					assignedObj = this.deepestObject.get(prop);
-				}
-				else {
-					assignedObj = this.deepestObject[prop];
-				}
-				/*
-					Obviously, only non-primitives can be given this expando property.
-				*/
-				if (isObject(assignedObj)) {
-					assignedObj.TwineScript_ObjectName
-						= objectName(assignedObj) + " stored in '" + this.deepestProperty + "'";
-				}
-			}
-			return result;
+			return objectOrMapSet(this.deepestObject, prop, value);
 		},
 		
 		/*

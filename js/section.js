@@ -297,13 +297,13 @@ function($, Utils, Selectors, Renderer, Environ, Story, State, HookUtils, HookSe
 		
 		/**
 			A quick check to see if this section's DOM is connected to the
-			document's DOM.
+			story's DOM.
 			Currently only used by recursiveSensor().
 			
 			@method inDOM
 		*/
 		inDOM: function() {
-			return $(document.documentElement).find(this.dom).length > 0;
+			return $(Utils.storyElement).find(this.dom).length > 0;
 		},
 
 		/**
@@ -486,10 +486,24 @@ function($, Utils, Selectors, Renderer, Environ, Story, State, HookUtils, HookSe
 						Then, render using that descriptor.
 					*/
 					dom = dom.add(desc.create({ target: e }).render());
+					/*
+						Now, apply the system $Design changer commands to the target.
+						It may seem counterintuitive that this is done after initial rendering,
+						but remember: inline changers are executed in separate Sections,
+						and as such will override these by themselves.
+					*/
+					State.variables.Design.applyDesign(e);
 				});
 			}
 			else {
+				/*
+					Now, run the changer.
+				*/
 				dom = desc.render();
+				/*
+					As described above, we now apply the $Design changers.
+				*/
+				State.variables.Design.applyDesign(desc.target);
 			}
 			
 			/*

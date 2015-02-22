@@ -3,7 +3,7 @@ module.exports = function (grunt) {
 	var
 		// Source files
 		sourceHTML = ['template.html'],
-		jsFileList = ['js/**.js'],
+		jsFileList = ['js/**/*.js'],
 		
 		// Destinations
 		destCSS = "./build/harlowe-css.css",
@@ -39,7 +39,6 @@ module.exports = function (grunt) {
 					define  : true,
 					module  : true,
 					global  : true,
-					requestAnimationFrame : true
 				},
 				// Enforcing options
 				eqeqeq   : true,
@@ -213,8 +212,5 @@ module.exports = function (grunt) {
 	grunt.loadNpmTasks('grunt-text-replace');
 
 	grunt.registerTask('default', [ 'clean', 'jshint:harlowe', 'jshint:tests', 'sass', 'cssmin', 'requirejs', ]);
-	grunt.registerTask('runtime', [ 'requirejs', 'yuidoc', 'sass', 'cssmin', 'replace:runtime', 'examplefile', ]);
-	grunt.registerTask('release', [
-		'clean', 'yuidoc'
-	]);
+	grunt.registerTask('runtime', [ 'clean', 'sass', 'cssmin', 'requirejs', 'replace:runtime', 'examplefile', ]);
 };

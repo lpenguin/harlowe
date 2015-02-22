@@ -306,7 +306,7 @@ function($, TwineMarkup, Selectors) {
 			@return {jQuery} jQuery result
 		*/
 		findAndFilter: function (q, selector) {
-			q = $(q || document.documentElement);
+			q = $(q || Utils.storyElement);
 			return q.filter(selector).add(q.find(selector));
 		},
 
@@ -494,7 +494,9 @@ function($, TwineMarkup, Selectors) {
 		},
 
 		/**
-			Runs a jQuery selector, but ignores elements that are transitioning out.
+			Runs a jQuery selector, but:
+			- uses the <tw-story> element as context, unless one was given.
+			- ignores elements that are transitioning out.
 
 			@method $
 			@param str			jQuery selector
@@ -502,7 +504,7 @@ function($, TwineMarkup, Selectors) {
 		*/
 
 		$: function (str, context) {
-			return $(str, context).not(".transition-out, .transition-out *");
+			return $(str, context || Utils.storyElement).not(".transition-out, .transition-out *");
 		},
 
 		/*
@@ -590,9 +592,7 @@ function($, TwineMarkup, Selectors) {
 			@static
 		*/
 
-		get storyElement() {
-			return $(Selectors.story);
-		}
+		storyElement: $(Selectors.story),
 	};
 
 	return Object.freeze(Utils);

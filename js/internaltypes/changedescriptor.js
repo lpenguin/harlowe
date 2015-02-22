@@ -53,8 +53,43 @@ define(['jquery', 'utils', 'renderer'], function($, Utils, Renderer) {
 			another shorthand for the old create-assign pattern.
 			ChangeDescriptors can delegate to earlier descriptors if need be.
 		*/
-		create: function(properties) {
-			return Object.assign(Object.create(this), properties, { styles: [] });
+		create: function(properties, changer) {
+			var ret = Object.assign(Object.create(this), { styles: [] }, properties);
+			/*
+				If a ChangerCommand was passed in, run it.
+			*/
+			if (changer) {
+				changer.run(ret);
+			}
+			return ret;
+		},
+		
+		/**
+			This method applies the style/attribute/data entries of this descriptor
+			to the target HTML element. It's called whenever $Design is changed.
+		*/
+		update: function() {
+			var target = this.target;
+			
+			/*
+				Apply the style attributes to the target element.
+			*/
+			if (Array.isArray(this.styles)) {
+				target.attr('style','');
+				target.css(Object.assign.apply(0, [{}].concat(this.styles)));
+			}
+			/*
+				If HTML attributes were included in the changerDescriptor, apply them now.
+			*/
+			if (this.attr) {
+				target.attr(this.attr);
+			}
+			/*
+				Same with jQuery data (such as functions to call in event of, say, clicking).
+			*/
+			if (this.data) {
+				target.data(this.data);
+			}
 		},
 		
 		/**
@@ -71,10 +106,7 @@ define(['jquery', 'utils', 'renderer'], function($, Utils, Renderer) {
 				code        = this.code,
 				append      = this.append,
 				transition  = this.transition,
-				attr        = this.attr,
-				data        = this.data,
 				enabled     = this.enabled,
-				styles      = this.styles,
 				dom;
 			
 			Utils.assertOnlyHas(this, changeDescriptorShape);
@@ -112,11 +144,11 @@ define(['jquery', 'utils', 'renderer'], function($, Utils, Renderer) {
 			}
 			/*
 				Render the TwineMarkup prose into a HTML DOM structure.
-			
+				
 				You may notice that the design of this and renderInto() means
 				that, when a HookSet has multiple targets, each target has
 				its own distinct rendering of the same TwineMarkup.
-			
+				
 				(Note: code may be '' if the descriptor's append method is "remove".
 				In which case, let it be an empty set.)
 				
@@ -158,24 +190,10 @@ define(['jquery', 'utils', 'renderer'], function($, Utils, Renderer) {
 				dom.length ? dom : undefined
 			);
 			/*
-				Apply the style attributes to the target element.
+				Apply the style/data/attr attributes to the target element.
 			*/
-			if (Array.isArray(styles)) {
-				target.css(Object.assign.apply(0, [{}].concat(styles)));
-			}
-			/*
-				If HTML attributes were included in the changerDescriptor, apply them now.
-			*/
-			if (attr) {
-				target.attr(attr);
-			}
-			/*
-				Same with jQuery data (such as functions to call in event of, say, clicking).
-			*/
-			if (data) {
-				target.data(data);
-			}
-			
+			this.update();
+
 			/*
 				Transition it using this descriptor's given transition.
 			*/

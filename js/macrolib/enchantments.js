@@ -82,7 +82,7 @@ define(['jquery', 'utils', 'macros', 'datatypes/hookset', 'datatypes/changercomm
 			is "attached" via a jQuery .data() key, and must be called
 			from this <html> handler.
 		*/
-		$(document.documentElement).on(
+		$(Utils.storyElement).on(
 			/*
 				Put this event in the "enchantment" jQuery event
 				namespace, solely for personal tidiness.
