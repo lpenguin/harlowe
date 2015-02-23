@@ -71,7 +71,7 @@ describe("save macros", function() {
 			expectMarkupToNotError("cuatro(loadgame:'1')");
 			requestAnimationFrame(function() {
 				expect($("tw-passage").last().text()).toMatch("dos");
-				expectMarkupToPrint("(history:)","Start,uno,dos");
+				expectMarkupToPrint("(history:)","1,uno,dos");
 				done();
 			});
 		});

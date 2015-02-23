@@ -8,7 +8,7 @@ describe("links", function() {
 		
 			expect(link.parent().is('tw-expression')).toBe(true);
 			expect(link.tag()).toBe("tw-link");
-			expect(link.attr("passage-id")).toBe("mire");
+			expect(link.attr("passage-name")).toBe("mire");
 		});
 		it("becomes a <tw-broken-link> if the linked passage is absent", function() {
 			var link = runPassage("(link-goto: 'mire')").find('tw-broken-link');
@@ -70,7 +70,7 @@ describe("links", function() {
 			
 				expect(link.tag()).toBe("tw-link");
 				expect(link.html()).toBe("mi<b>r</b>e");
-				expect(link.attr("passage-id")).toBe("mire");
+				expect(link.attr("passage-name")).toBe("mire");
 			});
 			it("may contain line breaks", function() {
 				createPassage("","mire");
@@ -78,7 +78,7 @@ describe("links", function() {
 			
 				expect(link.tag()).toBe("tw-link");
 				expect(link.html()).toBe("<br>mire<br>");
-				expect(link.attr("passage-id")).toBe("mire");
+				expect(link.attr("passage-name")).toBe("mire");
 			});
 		});
 		describe("proper link syntax", function() {
@@ -100,12 +100,12 @@ describe("links", function() {
 				var link = runPassage("[[in->out]]").find('tw-link');
 			
 				expect(link.parent().is('tw-expression')).toBe(true);
-				expect(link.attr("passage-id")).toBe("out");
+				expect(link.attr("passage-name")).toBe("out");
 			
 				link = runPassage("[[out<-in]]").find('tw-link');
 			
 				expect(link.parent().is('tw-expression')).toBe(true);
-				expect(link.attr("passage-id")).toBe("out");
+				expect(link.attr("passage-name")).toBe("out");
 			});
 			it("uses the rightmost right arrow (or, in its absence, leftmost left arrow) as the separator", function() {
 				createPassage("", "E");
@@ -113,21 +113,21 @@ describe("links", function() {
 				var link = runPassage("[[A->B->C->D->E]]").find('tw-link');
 			
 				expect(link.text()).toBe("A->B->C->D");
-				expect(link.attr("passage-id")).toBe("E");
+				expect(link.attr("passage-name")).toBe("E");
 			
 				link = runPassage("[[E<-D<-C<-B<-A]]").find('tw-link');
 			
 				expect(link.text()).toBe("D<-C<-B<-A");
-				expect(link.attr("passage-id")).toBe("E");
+				expect(link.attr("passage-name")).toBe("E");
 			
 				link = runPassage("[[A<-B<-C->D->E]]").find('tw-link');
 			
-				expect(link.attr("passage-id")).toBe("E");
+				expect(link.attr("passage-name")).toBe("E");
 			
 				createPassage("", "C<-D<-E");
 				link = runPassage("[[A->B->C<-D<-E]]").find('tw-link');
 			
-				expect(link.attr("passage-id")).toBe("C<-D<-E");
+				expect(link.attr("passage-name")).toBe("C<-D<-E");
 			});
 		});
 	});

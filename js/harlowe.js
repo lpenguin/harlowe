@@ -21,8 +21,8 @@ require.config({
 		'jqueryplugins',
 	],
 });
-require(['jquery', 'renderer', 'story', 'state', 'engine', 'utils', 'utils/selectors', 'macrolib', 'repl'],
-		function ($, Renderer, Story, State, Engine, Utils, Selectors) {
+require(['jquery', 'renderer', 'state', 'engine', 'utils', 'utils/selectors', 'macrolib', 'repl'],
+		function ($, Renderer, State, Engine, Utils, Selectors) {
 	"use strict";
 	/**
 		Harlowe, the default story format for Twine 2.
@@ -61,7 +61,7 @@ require(['jquery', 'renderer', 'story', 'state', 'engine', 'utils', 'utils/selec
 		});
 		
 		// If the debug option is on, add the debugger.
-		if (Story.options.debug) {
+		if (Engine.options.debug) {
 			$(document.body).append(debugHTML);
 			$('.show-invisibles').click(function() {
 				html.toggleClass('debug-mode').is(".debug-mode");
@@ -76,6 +76,7 @@ require(['jquery', 'renderer', 'story', 'state', 'engine', 'utils', 'utils/selec
 	$(document).ready(function main() {
 		var header = $(Selectors.storyData),
 			options,
+			startPassage,
 			script = $(Selectors.script),
 			stylesheet = $(Selectors.stylesheet);
 
@@ -89,19 +90,20 @@ require(['jquery', 'renderer', 'story', 'state', 'engine', 'utils', 'utils/selec
 
 		if (options) {
 			options.split(/\s/).forEach(function(b) {
-				Renderer.options[b] = Story.options[b] = true;
+				Renderer.options[b] = Engine.options[b] = true;
 			});
 		}
-		Story.startPassage = header.attr('startnode');
+		startPassage = header.attr('startnode');
 		
 		// If there's no set start passage, find the passage with the
 		// lowest passage ID, and use that.
-		if (!Story.startPassage) {
-			Story.startPassage = [].reduce.call($(Selectors.passageData), function(id, el) {
+		if (!startPassage) {
+			startPassage = [].reduce.call($(Selectors.passageData), function(id, el) {
 				var pid = el.getAttribute('pid');
 				return (pid < id ? pid : id);
 			}, Infinity);
 		}
+		startPassage = $(Selectors.passageData + "[pid=" + startPassage + "]").attr('name');
 
 		// Init game engine
 
@@ -133,6 +135,6 @@ require(['jquery', 'renderer', 'story', 'state', 'engine', 'utils', 'utils/selec
 			}
 		}
 		// Show first passage!
-		Engine.goToPassage(Story.startPassage);
+		Engine.goToPassage(startPassage);
 	});
 });

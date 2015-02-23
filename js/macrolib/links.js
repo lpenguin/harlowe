@@ -1,5 +1,5 @@
-define(['jquery', 'macros', 'utils', 'utils/selectors', 'story', 'state', 'engine', 'datatypes/changercommand'],
-function($, Macros, Utils, Selectors, Story, State, Engine, ChangerCommand) {
+define(['jquery', 'macros', 'utils', 'utils/selectors', 'state', 'engine', 'datatypes/changercommand', 'systemvariables/passages'],
+function($, Macros, Utils, Selectors, State, Engine, ChangerCommand, Passages) {
 	"use strict";
 	/*
 		This module defines the behaviour of links in Harlowe - both
@@ -41,7 +41,7 @@ function($, Macros, Utils, Selectors, Story, State, Engine, ChangerCommand) {
 				If no event was registered, then this must be
 				a passage link.
 			*/
-			var next = link.attr('passage-id');
+			var next = link.attr('passage-name');
 			
 			if (next) {
 				// TODO: stretchtext
@@ -84,7 +84,7 @@ function($, Macros, Utils, Selectors, Story, State, Engine, ChangerCommand) {
 				TwineScript_ObjectName: "a (link-goto:) command",
 				
 				TwineScript_Print: function() {
-					var visited = -1, passageID, passageName;
+					var visited = -1, passageName;
 					/*
 						The string representing the passage name is evaluated as TwineMarkup here -
 						the link syntax accepts TwineMarkup in both link and passage position
@@ -109,22 +109,25 @@ function($, Macros, Utils, Selectors, Story, State, Engine, ChangerCommand) {
 						*/
 						return passageName;
 					}
-					passageID = Story.getPassageID(passageName);
 					
-					if (passageID) {
-						visited = (State.passageIDVisited(passageID));
+					if (Passages.has(passageName)) {
+						visited = (State.passageNameVisited(passageName));
 					} else {
 						// Not an internal link?
 						if (!~visited) {
-							return '<tw-broken-link passage-id="' + passageID + '">'
+							return '<tw-broken-link passage-name="' + passageName + '">'
 								+ (text || passage)
 								+ '</tw-broken-link>';
 						}
 					}
 					
+					/*
+						This regrettably exposes the destination passage name in the DOM...
+						but I hope to somehow eliminate this in the near future.
+					*/
 					return '<tw-link tabindex=0 ' + (visited > 0 ? 'class="visited" ' : '')
-						+ (Story.options.debug ? 'passage-name="' + passageName + '" ' : '')
-						+ 'passage-id="' + passageID + '">' + (text || passage) + '</tw-link>';
+						+ 'passage-name="' + passageName
+						+ '">' + (text || passage) + '</tw-link>';
 				}
 			};
 		},

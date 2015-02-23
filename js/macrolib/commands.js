@@ -1,5 +1,5 @@
-define(['macros', 'utils', 'story', 'state', 'engine', 'internaltypes/twineerror', 'utils/operationutils'],
-function(Macros, Utils, Story, State, Engine, TwineError, OperationUtils) {
+define(['macros', 'utils', 'state', 'engine', 'systemvariables/passages', 'internaltypes/twineerror', 'utils/operationutils'],
+function(Macros, Utils, State, Engine, Passages, TwineError, OperationUtils) {
 	"use strict";
 	
 	var
@@ -54,7 +54,7 @@ function(Macros, Utils, Story, State, Engine, TwineError, OperationUtils) {
 			/*
 				Test for the existence of the named passage in the story.
 			*/
-			if (!Story.passageNamed(name)) {
+			if (!Passages.has(name)) {
 				return TwineError.create("macrocall",
 					"I can't display the passage '"
 					+ name
@@ -72,7 +72,7 @@ function(Macros, Utils, Story, State, Engine, TwineError, OperationUtils) {
 					"a (display:) command",
 				
 				TwineScript_Print: function() {
-					return Utils.unescape(Story.passageNamed(name).html());
+					return Utils.unescape(Passages.get(name).get('code'));
 				},
 			};
 		},
@@ -217,8 +217,7 @@ function(Macros, Utils, Story, State, Engine, TwineError, OperationUtils) {
 			(loadgame:)
 		*/
 		("goto", function (_, name) {
-			var id = Story.getPassageID(name);
-			if (!id) {
+			if (!Passages.has(name)) {
 				return TwineError.create("macrocall", "There's no passage named '" + name + "'.");
 			}
 			return {
@@ -232,7 +231,7 @@ function(Macros, Utils, Story, State, Engine, TwineError, OperationUtils) {
 						So, the change of passage must be deferred until just after
 						the passage has ceased rendering.
 					*/
-					requestAnimationFrame(Engine.goToPassage.bind(Engine,id));
+					requestAnimationFrame(Engine.goToPassage.bind(Engine,name));
 					/*
 						But how do you immediately cease rendering the passage?
 						

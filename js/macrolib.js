@@ -1,10 +1,5 @@
 define([
-	'jquery',
-	'markup',
-	'story',
-	'macros',
 	'utils',
-	'datatypes/changercommand',
 	'macrolib/values',
 	'macrolib/commands',
 	'macrolib/datastructures',
@@ -12,7 +7,7 @@ define([
 	'macrolib/enchantments',
 	'macrolib/links',
 ],
-function($, TwineMarkup, Story, Macros, Utils) {
+function(Utils) {
 	"use strict";
 	/*
 		Twine macro standard library.

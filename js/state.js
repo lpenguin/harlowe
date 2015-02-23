@@ -1,4 +1,4 @@
-define(['story', 'utils', 'systemvariables'], function(Story, Utils, SystemVariables) {
+define(['utils', 'systemvariables/design', 'systemvariables/passages'], function(Utils, Design, Passages) {
 	"use strict";
 	/**
 		State
@@ -7,6 +7,20 @@ define(['story', 'utils', 'systemvariables'], function(Story, Utils, SystemVaria
 		@class State
 		@static
 	*/
+	
+	/*
+		The root prototype for every Moment's variables collection.
+	*/
+	var SystemVariables = Object.freeze({
+		/*
+			Note that due to the above Object.freeze() call, this is non-writable and
+			non-shadowable on the prototype chain: no other variables called $Design
+			can be created.
+		*/
+		Design: Design,
+		Passages: Passages,
+		TwineScript_ObjectName: "this story's variables",
+	});
 
 	/**
 		Prototype object for states remembered by the game.
@@ -16,7 +30,7 @@ define(['story', 'utils', 'systemvariables'], function(Story, Utils, SystemVaria
 	*/
 	var Moment = {
 		/**
-			Current passage ID
+			Current passage name
 			@property {String} passage
 			@for Moment
 		*/
@@ -24,7 +38,6 @@ define(['story', 'utils', 'systemvariables'], function(Story, Utils, SystemVaria
 		
 		/**
 			Variables
-			The root prototype for every Moment's variables collection.
 			@property {Object} variables
 			@for Moment
 		*/
@@ -38,8 +51,8 @@ define(['story', 'utils', 'systemvariables'], function(Story, Utils, SystemVaria
 			
 			@method create
 			@for Moment
-			@param {String} p The ID of the passage that the player is at in this moment.
-			@param {Object} [v]	Variables to include in this moment.
+			@param {String} p The name of the passage that the player is at in this moment.
+			@param {Object} [v] Variables to include in this moment.
 			@returns {Moment} created object
 		*/
 		create: function (p, v) {
@@ -75,7 +88,7 @@ define(['story', 'utils', 'systemvariables'], function(Story, Utils, SystemVaria
 		This is a 'potential moment' - a moment that could become the newest to enter the timeline.
 		This is pushed onto the timeline (becoming "recent") when going forward,
 		and discarded when going backward.
-		Its passage ID should equal that of recent.
+		Its passage name should equal that of recent.
 	*/
 	var present = Moment.create();
 	
@@ -95,7 +108,7 @@ define(['story', 'utils', 'systemvariables'], function(Story, Utils, SystemVaria
 		*/
 
 		/**
-			Get the current passage ID.
+			Get the current passage name.
 			Used as a common argument to Engine.showPassage()
 			
 			@property {String} passage
@@ -139,27 +152,13 @@ define(['story', 'utils', 'systemvariables'], function(Story, Utils, SystemVaria
 			@return {Boolean} Whether it was visited.
 		*/
 		passageNameVisited: function (name) {
-			var id = Story.getPassageID(name);
-
-			return this.passageIDVisited(id);
-		},
-
-		/**
-			Did we ever visit this passage, given its id?
-			Return the number of times visited.
-			
-			@method passageIDVisited
-			@param {String} id ID of the passage.
-			@return {Boolean} Whether it was visited.
-		*/
-		passageIDVisited: function (id) {
 			var i, ret = 0;
 
-			if (!Story.passageWithID(id)) {
+			if (!Passages.get(name)) {
 				return 0;
 			}
 			for (i = 0; i <= recent; i++) {
-				ret += +(id === timeline[i].passage);
+				ret += +(name === timeline[i].passage);
 			}
 
 			return ret;
@@ -173,45 +172,23 @@ define(['story', 'utils', 'systemvariables'], function(Story, Utils, SystemVaria
 			@return {Number} How many turns ago it was visited.
 		*/
 		passageNameLastVisited: function (name) {
-			var id = Story.getPassageID(name);
-
-			return this.passageIDLastVisited(id);
-		},
-
-		/**
-			Return how long ago this passage has been visited.
-			
-			@method passageIDLastVisited
-			@param {String} id ID of the passage.
-			@return {Number} How many turns ago it was visited.
-		*/
-		passageIDLastVisited: function (id) {
 			var i;
 
-			if (!Story.passageWithID(id)) {
+			if (!Passages.get(name)) {
 				return Infinity;
 			}
 
-			if (id === present.passage) {
+			if (name === present.passage) {
 				return 0;
 			}
 
 			for (i = recent; i > 0; i--) {
-				if (timeline[i].passage === id) {
+				if (timeline[i].passage === name) {
 					return (recent-i) + 1;
 				}
 			}
 
 			return Infinity;
-		},
-		
-		/**
-			Returns the ID of the previous passage visited.
-			@method previousPassage
-			@return {String} ID of the previous passage.
-		*/
-		previousPassage: function () {
-			return timeline[recent].passage;
 		},
 
 		/**
@@ -225,7 +202,7 @@ define(['story', 'utils', 'systemvariables'], function(Story, Utils, SystemVaria
 			var i, ret = [];
 
 			for (i = recent-1; i >= 0; i--) {
-				ret.unshift(Story.getPassageName(timeline[i].passage));
+				ret.unshift(timeline[i].passage);
 			}
 			return ret;
 		},
@@ -237,29 +214,29 @@ define(['story', 'utils', 'systemvariables'], function(Story, Utils, SystemVaria
 		/**
 			Create a new present after altering the state
 			@method newPresent
-			@param {String} newPassageID The ID of the passage the player is now currently at.
+			@param {String} newPassageName The name of the passage the player is now currently at.
 		*/
-		newPresent: function(newPassageID) {
-			present = (timeline[recent] || Moment).create(newPassageID);
+		newPresent: function(newPassageName) {
+			present = (timeline[recent] || Moment).create(newPassageName);
 		},
 
 		/**
 			Push the present state to the timeline, and create a new state.
 			@method play
-			@param {String} newPassageID The ID of the passage the player is now currently at.
+			@param {String} newPassageName The name of the passage the player is now currently at.
 		*/
-		play: function (newPassageID) {
+		play: function (newPassageName) {
 			if (!present) {
 				Utils.impossible("State.play","present is undefined!");
 			}
-			// Assign the passage ID
-			present.passage = newPassageID;
+			// Assign the passage name
+			present.passage = newPassageName;
 			// Clear the future, and add the present to the timeline
 			timeline = timeline.slice(0,recent+1).concat(present);
 			recent += 1;
 			
 			// Create a new present
-			this.newPresent(newPassageID);
+			this.newPresent(newPassageName);
 		},
 
 		/**
@@ -275,7 +252,7 @@ define(['story', 'utils', 'systemvariables'], function(Story, Utils, SystemVaria
 
 			if (arg) {
 				if (typeof arg === "string") {
-					steps = this.passageIDLastVisited(arg);
+					steps = this.passageNameLastVisited(arg);
 					if (steps === Infinity) {
 						return;
 					}

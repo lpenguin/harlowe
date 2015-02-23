@@ -1,5 +1,5 @@
-define(['jquery', 'story', 'utils', 'utils/selectors', 'state', 'section'],
-function ($, Story, Utils, Selectors, State, Section) {
+define(['jquery', 'utils', 'utils/selectors', 'state', 'section', 'systemvariables/passages'],
+function ($, Utils, Selectors, State, Section, Passages) {
 	"use strict";
 	
 	/**
@@ -8,6 +8,19 @@ function ($, Story, Utils, Selectors, State, Section) {
 		@class Engine
 		@static
 	*/
+	
+	/**
+		Story options, loaded at startup and provided to other modules that may use them.
+		
+		Implemented values:
+		
+		debug : debug mode is ready. Click the bug icon to reveal all macro spans.
+		undo : enable the undo button.
+		redo : enable the redo button.
+		
+		@property {Object} options
+	*/
+	var options = Object.create(null);
 
 	/**
 		Creates the HTML structure of the <tw-passage>. Sub-function of showPassage().
@@ -25,7 +38,7 @@ function ($, Story, Utils, Selectors, State, Section) {
 			Generate the HTML for the permalink.
 			(This is currently unavailable as of Harlowe 1.0)
 		*/
-		if (Story.options.permalink && State.save) {
+		if (options.permalink && State.save) {
 			sidebar.append(
 				'<tw-icon tabindex=0 class="permalink" title="Permanent link to this passage"><a href="#' + State.save() + '">&sect;'
 			);
@@ -50,18 +63,18 @@ function ($, Story, Utils, Selectors, State, Section) {
 
 		@method showPassage
 		@private
-		@param {String} id
+		@param {String} name
 		@param {Boolean} stretch Is stretchtext
 	*/
-	function showPassage (id, stretch) {
+	function showPassage (name, stretch) {
 		var
 			// Passage element to create
 			newPassage,
 			// Transition ID
 			// Temporary measure: must change when customisable links are implemented.
 			t8n = "instant",
-			// The <tw-passagedata> element
-			passageData = Story.passageWithID(id),
+			// The passage
+			passageData = Passages.get(name),
 			oldPassages,
 			section,
 			// The <tw-story> element
@@ -72,10 +85,10 @@ function ($, Story, Utils, Selectors, State, Section) {
 			*/
 			parent = story.parent();
 		/*
-			Early exit: the wrong passage ID was supplied.
+			Early exit: the wrong passage name was supplied.
 		*/
 		if (!passageData) {
-			Utils.impossible("Engine.showPassage", "There's no passage with the id \""+id+"\"!");
+			Utils.impossible("Engine.showPassage", "There's no passage with the name \""+name+"\"!");
 			return;
 		}
 		
@@ -110,9 +123,7 @@ function ($, Story, Utils, Selectors, State, Section) {
 		*/
 		
 		section.renderInto(
-			Utils.unescape(
-				passageData.html()
-			),
+			passageData.get('code'),
 			newPassage,
 			/*
 				Use the author's styles, assigned using TwineScript,
@@ -180,6 +191,8 @@ function ($, Story, Utils, Selectors, State, Section) {
 			Used exclusively by state-loading routines.
 		*/
 		showPassage: showPassage,
+		
+		options: options,
 	};
 	
 	return Object.freeze(Engine);

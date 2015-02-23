@@ -4,7 +4,6 @@ define([
 	'utils/selectors',
 	'renderer',
 	'twinescript/environ',
-	'story',
 	'state',
 	'utils/hookutils',
 	'datatypes/hookset',
@@ -12,7 +11,7 @@ define([
 	'internaltypes/changedescriptor',
 	'internaltypes/twineerror',
 ],
-function($, Utils, Selectors, Renderer, Environ, Story, State, HookUtils, HookSet, PseudoHookSet, ChangeDescriptor, TwineError) {
+function($, Utils, Selectors, Renderer, Environ, State, HookUtils, HookSet, PseudoHookSet, ChangeDescriptor, TwineError) {
 	"use strict";
 
 	var Section;

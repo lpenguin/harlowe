@@ -1,14 +1,13 @@
 define([
 	'utils',
 	'state',
-	'story',
 	'datatypes/colour',
 	'datatypes/assignmentrequest',
 	'utils/operationutils',
 	'internaltypes/twineerror',
 	'internaltypes/varref',
 ],
-function(Utils, State, Story, Colour, AssignmentRequest, OperationUtils, TwineError) {
+function(Utils, State, Colour, AssignmentRequest, OperationUtils, TwineError) {
 	"use strict";
 	/**
 		Operation objects are a table of operations which TwineScript proxies
@@ -156,10 +155,6 @@ function(Utils, State, Story, Colour, AssignmentRequest, OperationUtils, TwineEr
 
 				get it() {
 					return It;
-				},
-				
-				get page() {
-					return Story.page;
 				},
 				
 				/*

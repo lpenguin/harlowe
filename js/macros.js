@@ -1,5 +1,5 @@
-define(['jquery', 'story', 'utils', 'utils/operationutils', 'internaltypes/twineerror'],
-function($, Story, Utils, OperationUtils, TwineError) {
+define(['jquery', 'systemvariables/passages', 'utils', 'utils/operationutils', 'internaltypes/twineerror'],
+function($, Passages, Utils, OperationUtils, TwineError) {
 	"use strict";
 	/**
 		This contains a registry of macro definitions, and methods to add to that registry.
@@ -420,19 +420,11 @@ function($, Story, Utils, OperationUtils, TwineError) {
 				Check if the macro exists as a built-in.
 			*/
 			if (!Macros.has(name)) {
-				/*
-					If not, then try and find an author-defined passage to run.
-					Unlike macros, this uses the exact name (no insensitivity).
-					That's a bit of a discrepancy, I know...
-				*/
-				if (!Story.passageNamed(name)) {
-					return TwineError.create("macrocall", 
-						"I can't run the macro '"
-						+ name
-						+ "' because it doesn't exist."
-					);
-				}
-				return TwineError.create("unimplemented", "Passage macros are not implemented yet.");
+				return TwineError.create("macrocall",
+					"I can't run the macro '"
+					+ name
+					+ "' because it doesn't exist."
+				);
 			}
 			else fn = Macros.get(name);
 			
