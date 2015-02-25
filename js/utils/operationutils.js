@@ -56,10 +56,12 @@ define(['utils', 'internaltypes/twineerror'], function(Utils, TwineError) {
 			For ES6 collections, we can depend on the constructors.
 		*/
 		if (value instanceof Map) {
-			return new Map(value);
+			// TODO: This should maybe deep-clone the own-properties in value
+			// instead of just reassigning them.
+			return Object.assign(new Map(value), value);
 		}
 		if (value instanceof Set) {
-			return new Set(value);
+			return Object.assign(new Set(value), value);
 		}
 		/*
 			If it's a function, Function#bind() makes a copy without altering its 'this'.

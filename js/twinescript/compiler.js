@@ -359,10 +359,7 @@ define(['utils'], function(Utils) {
 				inside the Operations.get() call, while leaving the right side as is.
 			*/
 			left = "VarRef.create("
-				/*
-					belongingProperties place the variable on the right.
-				*/
-				+ compile(tokens.slice (0, i))
+				+ compile(tokens.slice (0, i), "varref")
 				+ ","
 				/*
 					computedProperties have children... properties merely have a name.
@@ -387,7 +384,7 @@ define(['utils'], function(Utils) {
 				/*
 					belongingProperties place the variable on the right.
 				*/
-				+ compile(tokens.slice (i + 1))
+				+ compile(tokens.slice (i + 1), "varref")
 				+ ","
 				/*
 					The following is the same as in the preceding case.

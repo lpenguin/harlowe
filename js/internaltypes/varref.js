@@ -90,7 +90,7 @@ function(Utils, State, TwineError, OperationUtils) {
 				Note that this glibly allows "1rd" or "2st".
 				There's no real problem with this.
 			*/
-			else if ((match = /(\d+)(?:st|[nr]d|th)last/.exec(prop))) {
+			else if ((match = /(\d+)(?:st|[nr]d|th)last/i.exec(prop))) {
 				/*
 					obj.length cannot be trusted here: if it's an astral-plane
 					string, then it will be incorrect. So, just pass a negative index
@@ -99,7 +99,7 @@ function(Utils, State, TwineError, OperationUtils) {
 				*/
 				prop = -match[1] + "";
 			}
-			else if ((match = /(\d+)(?:st|[nr]d|th)/.exec(prop))) {
+			else if ((match = /(\d+)(?:st|[nr]d|th)/i.exec(prop))) {
 				prop = match[1] - 1 + "";
 			}
 			else if (prop === "last") {
@@ -107,7 +107,7 @@ function(Utils, State, TwineError, OperationUtils) {
 			}
 			else if (prop !== "length") {
 				return TwineError.create("property",
-					"You can only use positions ('4th', 'last', '2ndlast', etc.) and 'length' with "
+					"You can only use positions ('4th', 'last', '2ndlast', (2), etc.) and 'length' with "
 					+ objectName(obj) + ", not '" + prop + "'.");
 			}
 		}
@@ -182,6 +182,21 @@ function(Utils, State, TwineError, OperationUtils) {
 						"I can't forcibly alter the length of " + objectName(obj) + "."
 					);
 				}
+				/*
+					Sequentials can only have 'length' (addressed above)
+					and number keys (addressed below) assigned to.
+					I hope this check is sufficient to distinguish integer indices...
+				*/
+				else if (+prop !== (prop|0)) {
+					return TwineError.create("property",
+						objectName(obj) + " can only have position keys ('3rd', '1st', (5), etc.), not '"
+						/*
+							TODO: This routine and error message can't distinguish between computed indices and the
+							syntactic kind. When given the former, it should really use objectName(obj).
+						*/
+						+ prop + "'."
+					);
+				}
 			}
 			/*
 				If the object is sealed and the property doesn't exist,
@@ -201,26 +216,31 @@ function(Utils, State, TwineError, OperationUtils) {
 	}
 	
 	/*
+		This helper function wraps a TwineError so that it can be a valid return
+		value for VarRefProto.create().
+	*/
+	function wrapError(error) {
+		/*
+			VarRefProto's return value is generally assumed to have these three
+			methods on it. By providing this dummy wrapper whenever an error
+			is returned, the error can be safely delivered when those expected
+			methods are called.
+		*/
+		function self() {
+			return error;
+		};
+		return {
+			get: self,
+			set: self,
+			delete: self
+		};
+	}
+	
+	/*
 		The prototype object for VarRefs.
 	*/
 	var VarRefProto = Object.freeze({
 		varref: true,
-		
-		/*
-			Get to the farthest object in the chain, by advancing through all
-			but the last part of the chain (which must be withheld and used
-			for the assignment operation).
-		*/
-		get deepestObject() {
-			return this.propertyChain.slice(0, -1).reduce(objectOrMapGet, this.object);
-		},
-		
-		/*
-			Shortcut to the final property from the chain.
-		*/
-		get deepestProperty() {
-			return this.propertyChain.slice(-1)[0];
-		},
 		
 		/*
 			A wrapper around Javascript's [[get]], which
@@ -240,23 +260,6 @@ function(Utils, State, TwineError, OperationUtils) {
 				*/
 				oldProp = prop;
 			
-			if (obj === null || obj === undefined) {
-				return TwineError.create("property",
-					"I can't get a property named '"
-					+ prop
-					+ "' from "
-					+ typeof obj
-					+ "."
-				);
-			}
-			/*
-				Compile the property index - returning the error if
-				one was produced during compilation.
-			*/
-			prop = compilePropertyIndex(obj, prop);
-			if (TwineError.containsError(prop)) {
-				return prop;
-			}
 			/*
 				Due to Javascript's regrettable use of UCS-2 for string access,
 				astral plane glyphs won't be correctly regarded as single characters,
@@ -303,16 +306,7 @@ function(Utils, State, TwineError, OperationUtils) {
 		},
 		
 		set: function(value) {
-			var
-				/*
-					Compile the property index - returning the error if
-					one was produced during compilation.
-				*/
-				prop = compilePropertyIndex(this.deepestObject, this.deepestProperty);
-			
-			if (TwineError.containsError(prop)) {
-				return prop;
-			}
+			var obj;
 			/*
 				If value has a TwineScript_AssignValue() method
 				(i.e. is a HookSet) then its returned value is used
@@ -322,13 +316,46 @@ function(Utils, State, TwineError, OperationUtils) {
 				value = value.TwineScript_AssignValue();
 			}
 			/*
+				Since Twine has undos and State.variables, in-place mutation of collection
+				objects is unallowable. Each (set:) must create a new entry in State.variables.
+				
+				So, the following algorithm must be run:
+				
+				For each element in the property chain, the object it references, if
+				existant, must be deep-cloned and reassigned to its home object.
+			*/
+			obj = this.object;
+			this.compiledPropertyChain.slice(0,-1).every(function(prop) {
+				
+				if (OperationUtils.isObject(obj[prop])) {
+					
+					var newObj = clone(obj[prop]);
+					/*
+						This overrides the writability of the object on the prototype chain!
+						Thus, it should only be applied in a manner inaccessible to user code,
+						such as now.
+					*/
+					Object.defineProperty(obj, prop,
+						Object.assign(
+							Utils.getInheritedPropertyDescriptor(obj, prop) || { writable:true, enumerable:true },
+							{ value: newObj, configurable:true }
+						)
+					);
+					obj = newObj;
+					return true;
+				}
+				return false;
+			});
+			this.deepestObject = obj;
+			
+			/*
 				Most all objects in TwineScript are passed by value.
 				Hence, setting to an object duplicates it.
 			*/
 			if (isObject(value)) {
 				value = clone(value);
 			}
-			return objectOrMapSet(this.deepestObject, prop, value);
+			return objectOrMapSet(this.deepestObject, this.deepestProperty, value);
 		},
 		
 		/*
@@ -365,21 +392,72 @@ function(Utils, State, TwineError, OperationUtils) {
 			}
 		},
 		
+		/*
+			This creator function accepts an object and a property chain.
+			But, it can also expand another VarRef that's passed into it.
+			This is almost always called by compiled TwineScript code.
+		*/
 		create: function(object, propertyChain) {
-			var ret;
+			var error,
+				deepestObject,
+				compiledPropertyChain = [];
+			/*
+				First, propagate passed-in errors.
+			*/
+			if ((error = TwineError.containsError(object))) {
+				return wrapError(error);
+			}
+			/*
+				The propertyChain argument can be an arrays of strings, and single strings.
+				So, convert a single passed string to an array of itself.
+			*/
+			propertyChain = [].concat(propertyChain);
+			/*
+				If the passed-in object is another varRef, expand the
+				propertyChain to include its own, and use its object.
+			*/
+			if (VarRefProto.isPrototypeOf(object)) {
+				propertyChain = object.propertyChain.concat(propertyChain);
+				object = object.object;
+			}
+			deepestObject = object;
+			/*
+				Compile the property chain, converting "2ndlast" etc. into proper indices,
+				and determining the deepestObject.
+			*/
+			compiledPropertyChain = propertyChain.reduce(function(arr, e, i) {
+				var error;
+				
+				e = compilePropertyIndex(deepestObject, e);
+				
+				if ((error = TwineError.containsError([arr].concat(e)))) {
+					return error;
+				}
+				if (i < propertyChain.length-1) {
+					deepestObject = objectOrMapGet(deepestObject, e);
+				}
+				return arr.concat(e);
+			},[]);
+			/*
+				If that caused an error, report it now.
+			*/
+			if ((error = TwineError.containsError(compiledPropertyChain))) {
+				return wrapError(error);
+			}
 			
 			/*
 				Create the VarRefProto instance.
 			*/
-			ret =  Object.assign(Object.create(VarRefProto), {
+			return Object.assign(Object.create(VarRefProto), {
 				object: object,
+				propertyChain: propertyChain,
+				compiledPropertyChain: compiledPropertyChain,
 				/*
-					The propertyChain argument can be an arrays of strings, and single strings.
-					So, convert a single passed string to an array of itself.
+					Shortcut to the final property from the chain.
 				*/
-				propertyChain: [].concat(propertyChain),
+				deepestProperty: compiledPropertyChain.slice(-1)[0],
+				deepestObject: deepestObject,
 			});
-			return ret;
 		},
 		
 		TwineScript_ObjectName: "a variable I'm trying to assign a value to"

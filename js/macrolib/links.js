@@ -18,37 +18,39 @@ function($, Macros, Utils, Selectors, State, Engine, ChangerCommand, Passages) {
 		is "attached" via a jQuery .data() key, and must be called
 		from this <html> handler.
 	*/
-	$(Utils.storyElement).on(
-		/*
-			The jQuery event namespace is "passage-link".
-		*/
-		"click.passage-link",
-		Selectors.internalLink,
-		function clickLinkEvent() {
-			var link = $(this),
-				/*
-					This could be a (link:) link. Such links' events
-					are, due to limitations in the ChangeDescriptor format,
-					attached to the <tw-expression> enclosing it.
-				*/
-				event = link.parent().data('clickEvent');
-			
-			if (event) {
-				event(link);
-				return;
-			}
+	$(document).ready(function() {
+		$(Utils.storyElement).on(
 			/*
-				If no event was registered, then this must be
-				a passage link.
+				The jQuery event namespace is "passage-link".
 			*/
-			var next = link.attr('passage-name');
+			"click.passage-link",
+			Selectors.internalLink,
+			function clickLinkEvent() {
+				var link = $(this),
+					/*
+						This could be a (link:) link. Such links' events
+						are, due to limitations in the ChangeDescriptor format,
+						attached to the <tw-expression> enclosing it.
+					*/
+					event = link.parent().data('clickEvent');
 			
-			if (next) {
-				// TODO: stretchtext
-				Engine.goToPassage(next,false);
+				if (event) {
+					event(link);
+					return;
+				}
+				/*
+					If no event was registered, then this must be
+					a passage link.
+				*/
+				var next = link.attr('passage-name');
+			
+				if (next) {
+					// TODO: stretchtext
+					Engine.goToPassage(next,false);
+				}
 			}
-		}
-	);
+		);
+	});
 	
 	Macros.addChanger
 		(["link"], function(_, expr) {

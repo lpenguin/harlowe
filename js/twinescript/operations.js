@@ -344,29 +344,14 @@ function(Utils, State, Colour, AssignmentRequest, OperationUtils, TwineError) {
 					+ objectName(dest)
 					+ ".");
 			}
-			/*
-				Also refuse if the propertyChain contains an error.
-			*/
-			propertyChain = dest.propertyChain;
-			if ((error = TwineError.containsError(propertyChain))) {
-				return error;
-			}
-			/*
-				Refuse if the dest is an Array and the property chain's
-				first property is not a numeric index.
-			*/
-			if (Array.isArray(dest.object[propertyChain[0]])
-					&& propertyChain[1] && !OperationUtils.numericIndex.exec(propertyChain[1])) {
-				return TwineError.create("property",
-					"Arrays can only have number data keys (not '"
-					+ propertyChain[1] + "')."
-				);
-			}
+			propertyChain = dest.compiledPropertyChain;
+			
 			// The input is all clear, it seems.
 			return AssignmentRequest.create(dest, src, operator);
 		},
+		
 		/*
-			This helper function sets the It identifier to the computed value of a passed-in VarRef,
+			This helper function sets the It identifier to a passed-in VarRef,
 			while returning the original VarRef.
 			It's used for easy compilation of assignment requests.
 		*/
@@ -387,7 +372,7 @@ function(Utils, State, Colour, AssignmentRequest, OperationUtils, TwineError) {
 					+ "."
 				);
 			}
-			return It = e.get(), e;
+			return (It = e.get()), e;
 		},
 	};
 	return Object.freeze(Operations);

@@ -12,8 +12,10 @@ function($, TwineMarkup, Selectors) {
 		t8nAnimationTimes = {
 			"transition-in": Object.create(null),
 			"transition-out": Object.create(null)
-		};
-
+		},
+		//A binding for the cached <tw-story> reference (see below).
+		storyElement;
+	
 	/**
 		A static class with helper methods used throughout Harlowe.
 
@@ -45,7 +47,6 @@ function($, TwineMarkup, Selectors) {
 
 			return Object.defineProperties(obj, propDesc);
 		},
-
 		/**
 			Locks a particular property of an object.
 
@@ -592,8 +593,19 @@ function($, TwineMarkup, Selectors) {
 			@static
 		*/
 
-		storyElement: $(Selectors.story),
+		get storyElement() {
+			return storyElement;
+		},
 	};
+	
+	/*
+		The reference to the <tw-story> should be set at startup, so that it can be
+		used even when it is disconnected from the DOM (which occurs when a new
+		passage is being rendered into it).
+	*/
+	$(document).ready(function() {
+		storyElement = $(Selectors.story);
+	});
 
 	return Object.freeze(Utils);
 });

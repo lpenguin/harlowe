@@ -7,6 +7,11 @@ describe("property indexing", function() {
 				expectMarkupToPrint('(print: "Red"\'s 2nd)', "e");
 				expectMarkupToPrint('(print: "Red"\'s 3rd)', "d");
 			});
+			it("are case-insensitive", function() {
+				expectMarkupToPrint('(print: "Red"\'s 1sT)', "R");
+				expectMarkupToPrint('(print: "Red"\'s 2Nd)', "e");
+				expectMarkupToPrint('(print: "Red"\'s 3RD)', "d");
+			});
 			it("ignores the exact ordinal used", function() {
 				expectMarkupToPrint('(print: "Red"\'s 1th)', "R");
 				expectMarkupToPrint('(print: "Red"\'s 2rd)', "e");
@@ -118,8 +123,9 @@ describe("property indexing", function() {
 			});
 		});
 		describe("for arrays", function() {
-			it("access the indexed elements", function() {
-				expectMarkupToPrint('(print: (datamap:"A",1)\'s ("A"))','1');
+			it("must be numbers", function (){
+				expectMarkupToError("(print: (a:'Red')\'s ('1'))");
+				expectMarkupToError("(print: (a:'Red')\'s ('13'\'s 1st))");
 			});
 		});
 	});
