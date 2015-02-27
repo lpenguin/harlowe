@@ -35,6 +35,8 @@ define(['utils', 'internaltypes/twineerror'], function(Utils, TwineError) {
 	}
 	/*
 		Now, a function to clone arbitrary values.
+		This is only a shallow clone, designed for use by VarRef.set()
+		to make a distinct copy of an object after assignment.
 	*/
 	function clone(value) {
 		if (!isObject(value)) {
@@ -56,8 +58,6 @@ define(['utils', 'internaltypes/twineerror'], function(Utils, TwineError) {
 			For ES6 collections, we can depend on the constructors.
 		*/
 		if (value instanceof Map) {
-			// TODO: This should maybe deep-clone the own-properties in value
-			// instead of just reassigning them.
 			return Object.assign(new Map(value), value);
 		}
 		if (value instanceof Set) {
@@ -67,7 +67,7 @@ define(['utils', 'internaltypes/twineerror'], function(Utils, TwineError) {
 			If it's a function, Function#bind() makes a copy without altering its 'this'.
 		*/
 		if (typeof value === "function") {
-			return value.bind();
+			return Object.assign(value.bind(), value);
 		}
 		/*
 			If it's a plain object or null object, you can rely on Object.assign().
@@ -80,9 +80,7 @@ define(['utils', 'internaltypes/twineerror'], function(Utils, TwineError) {
 		}
 		/*
 			If we've gotten here, something unusual has been passed in.
-			(If I allow ES6 Maps into Twine userland, I'd better change this function.)
 		*/
-		Utils.log(value);
 		Utils.impossible("Operations.clone", "The value " + value + " cannot be cloned!");
 		return value;
 	}

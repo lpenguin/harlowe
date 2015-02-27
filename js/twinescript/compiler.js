@@ -97,18 +97,6 @@ define(['utils'], function(Utils) {
 		return (array.length - 1) - indexOfType.apply(0, a);
 	}
 	
-	/*
-		This helper function for compile() emits code for a makeAssignmentRequest call.
-		Placing it here is a bit clearer than being cloistered deep in compile().
-	*/
-	function compileAssignmentRequest(left, right, operator) {
-		return "Operations.makeAssignmentRequest("
-			+ left + ","
-			+ right + ","
-			+ Utils.toJSLiteral(operator)
-			+")";
-	}
-	
 	/**
 		This takes an array from TwineMarkup, rooted at an expression,
 		and returns raw Javascript code for the expression's execution.
@@ -365,7 +353,7 @@ define(['utils'], function(Utils) {
 					computedProperties have children... properties merely have a name.
 				*/
 				+ (tokens[i].type.includes("computed")
-				? compile(tokens[i].children)
+				? "{computed:true,value:" + compile(tokens[i].children) + "}"
 				/*
 					Utils.toJSLiteral() is used to both escape the name
 					string and wrap it in quotes.
@@ -390,30 +378,22 @@ define(['utils'], function(Utils) {
 					The following is the same as in the preceding case.
 				*/
 				+ (tokens[i].type.includes("computed")
-				? compile(tokens[i].children)
+				? "{computed:true,value:" + compile(tokens[i].children) + "}"
 				: Utils.toJSLiteral(tokens[i].name)) + ")"
 				+ (isVarRef ? "" : ".get()");
 			midString = " ";
 			needsLeft = needsRight = false;
 		}
-		else if ((i = rightAssociativeIndexOfType(tokens, "itsProperty", "computedItsProperty")) >-1) {
+		else if ((i = rightAssociativeIndexOfType(tokens, "itsProperty", "computedItsProperty")) >-1
+				|| (i = indexOfType(tokens, "belongingItProperty", "computedBelongingItProperty")) >-1) {
 			/*
 				This is actually identical to the above, but with the difference that
 				there is no left subtoken (it is always Identifiers.it).
 			*/
 			left = "VarRef.create(Operations.Identifiers.it,"
 				+ (tokens[i].type.includes("computed")
-				? compile(tokens[i].children)
+				? "{computed:true,value:" + compile(tokens[i].children) + "}"
 				: Utils.toJSLiteral(tokens[i].name)) + ").get()";
-			midString = " ";
-			needsLeft = needsRight = false;
-		}
-		else if ((i = indexOfType(tokens, "belongingItProperty")) >-1) {
-			/*
-				This corresponds to the expression "2nd of it", etc.
-			*/
-			right = "VarRef.create(Operations.Identifiers.it,"
-				+ Utils.toJSLiteral(tokens[i].name) + ").get()";
 			midString = " ";
 			needsLeft = needsRight = false;
 		}
@@ -497,7 +477,9 @@ define(['utils'], function(Utils) {
 				return left + midString + right;
 			}
 			else if (assignment) {
-				return compileAssignmentRequest(left, right, assignment);
+				return "Operations.makeAssignmentRequest("
+					+ [left, right, Utils.toJSLiteral(assignment)]
+					+")";
 			}
 			else if (operation) {
 				return " Operations[" + Utils.toJSLiteral(operation) + "](" + left + "," + right + ") ";

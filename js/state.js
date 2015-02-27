@@ -11,16 +11,20 @@ define(['utils', 'systemvariables/design', 'systemvariables/passages'], function
 	/*
 		The root prototype for every Moment's variables collection.
 	*/
-	var SystemVariables = Object.freeze({
+	var SystemVariables = {
 		/*
-			Note that due to the above Object.freeze() call, this is non-writable and
-			non-shadowable on the prototype chain: no other variables called $Design
-			can be created.
+			Note that it's not possible for userland TwineScript to directly access or
+			modify this base object.
 		*/
 		Design: Design,
 		Passages: Passages,
 		TwineScript_ObjectName: "this story's variables",
-	});
+		/*
+			This property means that these property names cannot be modified,
+			or shadowed on the prototype chain.
+		*/
+		TwineScript_Writeproof: ["Design", "Passages"],
+	};
 
 	/**
 		Prototype object for states remembered by the game.

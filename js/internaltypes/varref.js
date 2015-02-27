@@ -135,81 +135,114 @@ function(Utils, State, TwineError, OperationUtils) {
 		than arrays, these tiny utility functions are needed.
 		They have the slight bonus that they can fit into some .reduce() calls
 		below, which potentially offsets the cost of being re-created for each varRef.
+		
+		Note: strings cannot be passed in here because of their UCS-2 .length:
+		you must pass Array.from(str) instead.
 	*/
 	function objectOrMapGet(obj, prop) {
 		if (obj instanceof Map) {
 			return obj.get(prop);
 		} else {
-			if (+prop < 0) {
+			/*
+				As mentioned in compilePropertyIndex, obj.length
+				cannot be accurately determined until here and now.
+			*/
+			if (isSequential(obj) && +prop < 0) {
 				prop = obj.length + (+prop);
 			}
 			return obj[prop];
 		}
 	}
+	
 	/*
-		This one should only return either undefined, or a TwineError.
+		A helper for canSet, and VarRef.get(), this renders computed indices
+		in (brackets) and syntax indices in 'single-quotes', for
+		error message purposes.
 	*/
-	function objectOrMapSet(obj, prop, value) {
-		var propDesc;
+	function propertyDebugName(prop) {
+		if (prop.computed) {
+			return "(" + objectName(prop.value) + ")";
+		}
+		return "'" + prop + "'";
+	}
+	
+	/*
+		Determine, before running objectOrMapSet, whether trying to
+		set this property will work. If not, create a TwineError.
+	*/
+	function canSet(obj, prop) {
+		var
+			// Error messages which must be identical in both cases where they are used.
+			specialCollectionErrorMsg = "I won't add " + propertyDebugName(prop)
+				+ " to " + objectName(obj)
+				+ " because it's one of my special system collections.",
+			writeproofErrorMsg = "I can't modify '" + propertyDebugName(prop)
+				+ "' because it holds one of my special system collections.";
 		
 		if (obj instanceof Map) {
 			/*
-				The "sealed" expando property means that this map cannot be
+				The "TwineScript_Sealed" expando property means that this map/object cannot be
 				expanded (presumably because it's a system variable).
 			*/
-			if (obj.sealed && !obj.has(prop)) {
-				return TwineError.create("operation", "I won't add '" + prop
-					+ "' to " + objectName(obj)
-					+ " because it's one of my special system collections.");
+			if (obj.TwineScript_Sealed && !obj.has(prop)) {
+				return TwineError.create("operation", specialCollectionErrorMsg);
 			}
-			return obj.set(prop, value);
-		} else {
-			if (+prop < 0) {
-				prop = obj.length + (+prop);
+			if (obj.TwineScript_Writeproof &&
+					obj.TwineScript_Writeproof.indexOf(prop) > -1) {
+				return TwineError.create("operation", writeproofErrorMsg);
 			}
+			return true;
+		}
+		/*
+			As sequentials have limited valid property names, subject
+			the prop to some further examination.
+		*/
+		if (isSequential(obj)) {
 			/*
-				As sequentials have limited valid property names, subject
-				the prop to some further examination.
+				Unlike in JavaScript, you can't change the length of
+				an array or string - it's fixed.
 			*/
-			if (isSequential(obj)) {
-				/*
-					Unlike in JavaScript, you can't change the length of
-					an array or string - it's fixed.
-				*/
-				if(prop === "length") {
-					return TwineError.create(
-						"operation",
-						"I can't forcibly alter the length of " + objectName(obj) + "."
-					);
-				}
-				/*
-					Sequentials can only have 'length' (addressed above)
-					and number keys (addressed below) assigned to.
-					I hope this check is sufficient to distinguish integer indices...
-				*/
-				else if (+prop !== (prop|0)) {
-					return TwineError.create("property",
-						objectName(obj) + " can only have position keys ('3rd', '1st', (5), etc.), not '"
-						/*
-							TODO: This routine and error message can't distinguish between computed indices and the
-							syntactic kind. When given the former, it should really use objectName(obj).
-						*/
-						+ prop + "'."
-					);
-				}
-			}
-			/*
-				If the object is sealed and the property doesn't exist,
-				or a same named property on the prototype chain is non-writable,
-				then we can't set it at all.
-			*/
-			propDesc = Utils.getInheritedPropertyDescriptor(obj,prop);
-			
-			if (!propDesc ? Object.isSealed(obj) : propDesc.writable === false) {
+			if(prop === "length") {
 				return TwineError.create(
 					"operation",
-					"I can't alter the '" + prop + "' data because it's read-only."
+					"I can't forcibly alter the length of " + objectName(obj) + "."
 				);
+			}
+			/*
+				Sequentials can only have 'length' (addressed above)
+				and number keys (addressed below) assigned to.
+				I hope this check is sufficient to distinguish integer indices...
+			*/
+			else if (+prop !== (prop|0)) {
+				return TwineError.create("property",
+					objectName(obj) + " can only have position keys ('3rd', '1st', (5), etc.), not "
+					+ propertyDebugName(prop) + "."
+				);
+			}
+		}
+		if (obj.TwineScript_Sealed && !(prop in obj)) {
+			return TwineError.create("operation", specialCollectionErrorMsg);
+		}
+		if (obj.TwineScript_Writeproof &&
+				obj.TwineScript_Writeproof.indexOf(prop) > -1) {
+			return TwineError.create("operation", writeproofErrorMsg);
+		}
+		return true;
+	}
+	
+	/*
+		This should only be run after canSet(), above, has verified it is safe.
+	*/
+	function objectOrMapSet(obj, prop, value) {
+		if (obj instanceof Map) {
+			obj.set(prop, value);
+		} else {
+			/*
+				As mentioned in compilePropertyIndex, obj.length
+				cannot be accurately determined until here and now.
+			*/
+			if (isSequential(obj) && (+prop < 0)) {
+				prop = obj.length + (+prop);
 			}
 			obj[prop] = value;
 		}
@@ -228,7 +261,7 @@ function(Utils, State, TwineError, OperationUtils) {
 		*/
 		function self() {
 			return error;
-		};
+		}
 		return {
 			get: self,
 			set: self,
@@ -253,12 +286,7 @@ function(Utils, State, TwineError, OperationUtils) {
 		*/
 		get: function() {
 			var obj = this.deepestObject,
-				prop = this.deepestProperty,
-				/*
-					We save the value of prop, so that it can be used in an error message
-					even after it's been compiled into a real property index.
-				*/
-				oldProp = prop;
+				prop = this.deepestProperty;
 			
 			/*
 				Due to Javascript's regrettable use of UCS-2 for string access,
@@ -299,14 +327,21 @@ function(Utils, State, TwineError, OperationUtils) {
 				if (obj === State.variables) {
 					return defaultValue;
 				}
-				return TwineError.create("property", "I can't find a '" + oldProp + "' data key in "
+				return TwineError.create("property", "I can't find a "
+					// Use the original non-compiled property key in the error message.
+					+ propertyDebugName(this.propertyChain.slice(-1)[0])
+					+ " data key in "
 					+ objectName(obj));
 			}
 			return (obj instanceof Map) ? obj.get(prop) : obj[prop];
 		},
 		
+		/*
+			A wrapper around Javascript's [[set]], which does a lot of
+			preparation before the assignment is performed.
+		*/
 		set: function(value) {
-			var obj;
+			var obj, error;
 			/*
 				If value has a TwineScript_AssignValue() method
 				(i.e. is a HookSet) then its returned value is used
@@ -316,31 +351,31 @@ function(Utils, State, TwineError, OperationUtils) {
 				value = value.TwineScript_AssignValue();
 			}
 			/*
+				Because the following transformations modify the referenced objects
+				in preparation for the set operation, this check must be done now.
+			*/
+			if ((error = TwineError.containsError(
+					canSet(this.deepestObject, this.deepestProperty)
+				))) {
+				return error;
+			}
+			/*
 				Since Twine has undos and State.variables, in-place mutation of collection
 				objects is unallowable. Each (set:) must create a new entry in State.variables.
 				
-				So, the following algorithm must be run:
-				
-				For each element in the property chain, the object it references, if
-				existant, must be deep-cloned and reassigned to its home object.
+				So, for each element in the property chain, the object it references, if
+				existant, must be cloned and reassigned to its home object.
 			*/
 			obj = this.object;
 			this.compiledPropertyChain.slice(0,-1).every(function(prop) {
 				
 				if (OperationUtils.isObject(obj[prop])) {
-					
 					var newObj = clone(obj[prop]);
 					/*
-						This overrides the writability of the object on the prototype chain!
-						Thus, it should only be applied in a manner inaccessible to user code,
-						such as now.
+						This assumes that this.object will never have locked
+						properties, and that this assignment will always succeed.
 					*/
-					Object.defineProperty(obj, prop,
-						Object.assign(
-							Utils.getInheritedPropertyDescriptor(obj, prop) || { writable:true, enumerable:true },
-							{ value: newObj, configurable:true }
-						)
-					);
+					obj[prop] = newObj;
 					obj = newObj;
 					return true;
 				}
@@ -355,7 +390,7 @@ function(Utils, State, TwineError, OperationUtils) {
 			if (isObject(value)) {
 				value = clone(value);
 			}
-			return objectOrMapSet(this.deepestObject, this.deepestProperty, value);
+			objectOrMapSet(this.deepestObject, this.deepestProperty, value);
 		},
 		
 		/*
@@ -408,8 +443,9 @@ function(Utils, State, TwineError, OperationUtils) {
 				return wrapError(error);
 			}
 			/*
-				The propertyChain argument can be an arrays of strings, and single strings.
-				So, convert a single passed string to an array of itself.
+				The propertyChain argument can be an arrays of strings and/or
+				computed property objects, or just a single one of those.
+				So, convert a single passed value to an array of itself.
 			*/
 			propertyChain = [].concat(propertyChain);
 			/*
@@ -423,23 +459,34 @@ function(Utils, State, TwineError, OperationUtils) {
 			deepestObject = object;
 			/*
 				Compile the property chain, converting "2ndlast" etc. into proper indices,
+				converting computed property objects into single indices,
 				and determining the deepestObject.
 			*/
-			compiledPropertyChain = propertyChain.reduce(function(arr, e, i) {
+			compiledPropertyChain = propertyChain.reduce(function(arr, prop, i) {
 				var error;
 				
-				e = compilePropertyIndex(deepestObject, e);
-				
-				if ((error = TwineError.containsError([arr].concat(e)))) {
+				/*
+					If the property is computed, just compile its value.
+				*/
+				if (prop.computed) {
+					prop = prop.value;
+				}
+				prop = compilePropertyIndex(deepestObject, prop);
+				/*
+					Either the current compiled property contains an error, or a previous
+					property resulted in an error. Due to the inability of .reduce to early-exit,
+					we must check on every loop.
+				*/
+				if ((error = TwineError.containsError([arr].concat(prop)))) {
 					return error;
 				}
 				if (i < propertyChain.length-1) {
-					deepestObject = objectOrMapGet(deepestObject, e);
+					deepestObject = objectOrMapGet(deepestObject, prop);
 				}
-				return arr.concat(e);
+				return arr.concat(prop);
 			},[]);
 			/*
-				If that caused an error, report it now.
+				If one of those resulted in an error, report it now.
 			*/
 			if ((error = TwineError.containsError(compiledPropertyChain))) {
 				return wrapError(error);

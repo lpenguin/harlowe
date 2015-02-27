@@ -42,11 +42,10 @@ define(['jquery', 'utils', 'utils/selectors', 'internaltypes/changedescriptor'],
 		["HoveringLinks", null],
 	]), {
 		/*
-			This adds a "sealed" expando property to the map,
-			meaning that VarRef's objectOrMapSet() cannot add properties
-			to it.
+			This expando property means that VarRef's objectOrMapSet() cannot
+			add properties to it.
 		*/
-		sealed: true,
+		TwineScript_Sealed: true,
 		
 		TwineScript_ObjectName: "the $Design datamap",
 		/*

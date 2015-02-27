@@ -379,14 +379,35 @@
 						"computedItsProperty", "macro", "grouping", "string"],
 				},
 				
+				/*
+					Since this is a superset of the belongingProperty rule,
+					this must come before it.
+				*/
+				belongingItProperty: {
+					cannotFollow: ["text"],
+					fn: textTokenFn("name")
+				},
+				
 				belongingProperty: {
 					cannotFollow: ["text"],
 					fn: textTokenFn("name"),
 				},
 				
-				computedPropertyFront: { fn: Object },
-				
-				computedItsPropertyFront: { fn: Object },
+				/*
+					The same here.
+					Yes, it's a little #awkward having computedBelongingItProperty
+					necessarily be separate from computedBelongingProperty + Identifier.
+				*/
+				computedBelongingItPropertyBack: {
+					fn: function() {
+						return {
+							matches: {
+								groupingFront:
+									"computedBelongingItProperty",
+							},
+						};
+					},
+				},
 				
 				computedBelongingPropertyBack: {
 					fn: function() {
@@ -398,6 +419,10 @@
 						};
 					},
 				},
+				
+				computedPropertyFront: { fn: Object },
+				
+				computedItsPropertyFront: { fn: Object },
 				
 				string: { fn: Object, },
 				
@@ -490,7 +515,6 @@
 				},
 				identifier:          { fn: textTokenFn("name") },
 				itsProperty:         { fn: textTokenFn("name") },
-				belongingItProperty: { fn: textTokenFn("name") },
 			},
 			["boolean", "is", "to", "into", "and", "or", "not",
 			"isNot", "contains", "isIn"].reduce(function(a, e) {

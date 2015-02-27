@@ -338,7 +338,7 @@ function(Utils, State, Colour, AssignmentRequest, OperationUtils, TwineError) {
 			/*
 				Also refuse if the dest is not, actually, a VarRef.
 			*/
-			if (!isObject(dest) || !("propertyChain" in dest)) {
+			if (!isObject(dest) || !("compiledPropertyChain" in dest)) {
 				return TwineError.create("operation",
 					"I can't store a new value inside "
 					+ objectName(dest)

@@ -31,6 +31,10 @@ define(['jquery', 'utils', 'utils/selectors'], function($, Utils, Selectors) {
 		]),{
 			TwineScript_TypeName: "passage datamap",
 			TwineScript_ObjectName: "a passage datamap",
+			/*
+				This does not have TwineScript_Sealed because I want
+				authors to be able to dynamically modify passages at runtime.
+			*/
 		});
 	}
 	

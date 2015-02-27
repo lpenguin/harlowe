@@ -212,7 +212,7 @@
 		
 		property = "'s" + mws + "(" + validPropertyName + ")",
 		
-		belongingProperty = "(" + validPropertyName + ")" + mws + "of" + wb,
+		belongingProperty = "(" + validPropertyName + ")" + mws + "of" + wb + notBefore("it" + wb),
 		
 		/*
 			Computed properties are of the form:
@@ -240,6 +240,8 @@
 		computedItsPropertyFront = "its" + mws  + "\\(",
 		
 		belongingItProperty = "(" + validPropertyName + ")" + mws + "of" + mws + "it",
+		
+		computedBelongingItPropertyBack = "\\)" + ws + "of" + wb + mws + "it",
 		
 		macro = {
 			opener:            "\\(",
@@ -499,6 +501,7 @@
 		identifier: identifier,
 		itsProperty: itsProperty,
 		belongingItProperty: belongingItProperty,
+		computedBelongingItPropertyBack: computedBelongingItPropertyBack,
 		
 		string:
 			either(
