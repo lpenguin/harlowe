@@ -334,6 +334,27 @@ define(['utils'], function(Utils) {
 				+ ")";
 			needsLeft = false;
 		}
+		else if ((i = indexOfType(tokens, "belongingProperty", "computedBelongingProperty")) >-1) {
+			/*
+				As with the preceding case, we need to manually wrap the variable side
+				inside the Operations.get() call, while leaving the other side as is.
+			*/
+			right = "VarRef.create("
+				/*
+					belongingProperties place the variable on the right.
+				*/
+				+ compile(tokens.slice (i + 1), "varref")
+				+ ","
+				/*
+					The following is the same as in the preceding case.
+				*/
+				+ (tokens[i].type.includes("computed")
+				? "{computed:true,value:" + compile(tokens[i].children) + "}"
+				: Utils.toJSLiteral(tokens[i].name)) + ")"
+				+ (isVarRef ? "" : ".get()");
+			midString = " ";
+			needsLeft = needsRight = false;
+		}
 		/*
 			Notice that this one is right-associative instead of left-associative.
 			This must be so because, by branching on the rightmost token, it will compile to:
@@ -358,27 +379,6 @@ define(['utils'], function(Utils) {
 					Utils.toJSLiteral() is used to both escape the name
 					string and wrap it in quotes.
 				*/
-				: Utils.toJSLiteral(tokens[i].name)) + ")"
-				+ (isVarRef ? "" : ".get()");
-			midString = " ";
-			needsLeft = needsRight = false;
-		}
-		else if ((i = indexOfType(tokens, "belongingProperty", "computedBelongingProperty")) >-1) {
-			/*
-				As with the preceding case, we need to manually wrap the variable side
-				inside the Operations.get() call, while leaving the other side as is.
-			*/
-			right = "VarRef.create("
-				/*
-					belongingProperties place the variable on the right.
-				*/
-				+ compile(tokens.slice (i + 1), "varref")
-				+ ","
-				/*
-					The following is the same as in the preceding case.
-				*/
-				+ (tokens[i].type.includes("computed")
-				? "{computed:true,value:" + compile(tokens[i].children) + "}"
 				: Utils.toJSLiteral(tokens[i].name)) + ")"
 				+ (isVarRef ? "" : ".get()");
 			midString = " ";

@@ -41,6 +41,10 @@ describe("property indexing", function() {
 				expectMarkupToError('(print: "A"\'s 2nd)');
 				expectMarkupToError('(print: "Red"\'s 4th)');
 			});
+			it("can be used with 'it', as 'its'", function() {
+				expectMarkupToPrint('(set:$s to "R")(set: $s to its 1st)$s','R');
+				expectMarkupToPrint('(set:$s to "Red")(set: $s to its length)$s','3');
+			});
 		});
 		describe("for arrays", function() {
 			it("'1st', '2nd', etc. access the indexed elements", function() {
@@ -80,6 +84,10 @@ describe("property indexing", function() {
 				expectMarkupToError('(print: (a:)\'s 1st)');
 				expectMarkupToError('(print: (a:1,2,3)\'s 4th)');
 			});
+			it("can be used with 'it', as 'its'", function() {
+				expectMarkupToPrint('(set:$a to (a:7,8))(set: $a to its 1st)$a','7');
+				expectMarkupToPrint('(set:$a to (a:1,1,1))(set: $a to its length)$a','3');
+			});
 		});
 		it("cannot be used with datamaps", function() {
 			expectMarkupToError('(print: (datamap: "Sword", "Steel")\'s 1st)');
@@ -98,6 +106,9 @@ describe("property indexing", function() {
 			it("prints an error if the key is not present", function() {
 				expectMarkupToError('(print: (datamap:"A",1)\'s B)');
 			});
+			it("can be used with 'it', as 'its'", function() {
+				expectMarkupToPrint('(set:$d to (datamap:"A",7))(set: $d to its A)$d','7');
+			});
 		});
 		it("cannot be used with arrays", function() {
 			expectMarkupToError('(set: $a to (a: 2,3))(set: $a\'s thing to 4)');
@@ -106,13 +117,53 @@ describe("property indexing", function() {
 			expectMarkupToError('(set: $s to (dataset: 2,3))(set: $s\'s thing to 4)');
 		});
 	});
+	describe("belonging indices", function() {
+		it("can be used with strings", function() {
+			expectMarkupToPrint('(print: 1st of "Red")', "R");
+			expectMarkupToPrint('(print: length of 1st of "Red")', "1");
+		});
+		it("can be used with arrays", function() {
+			expectMarkupToPrint('(print: 1st of (a:"R",2))', "R");
+			expectMarkupToPrint('(print: 1st of 1st of (a:(a:"R")))', "R");
+		});
+		it("can be used with datamaps", function() {
+			expectMarkupToPrint('(print: A of (datamap:"A",7))', "7");
+		});
+		it("can be used with 'it'", function() {
+			expectMarkupToPrint('(set:$a to (a:7,8))(set: $a to 1st of it)$a','7');
+		});
+		it("won't conflict with possessive indices", function() {
+			expectMarkupToPrint('(print: length of "Red"\'s 1st)', "1");
+			expectMarkupToPrint('(print: 1st of 1st of (a:(a:"Red"),(a:"Blue"))\'s last)', "B");
+		});
+		it("won't conflict with 'its' indices", function() {
+			expectMarkupToPrint('(set:$a to (a:(a:7,8),(a:9,0)))(set: $a to 2nd of its 1st)$a', "8");
+		});
+	});
 	describe("computed indices", function() {
 		it("can contain full expressions", function() {
 			expectMarkupToNotError('(print: (a:1)\'s (2 - 1))');
+			expectMarkupToNotError('(print: (2 - 1) of (a:1))');
+			expectMarkupToNotError('(print: (a:1)\'s ((either:1))');
+			expectMarkupToNotError('(print: ((either:1)) of (a:1))');
 		});
 		it("can have properties accessed from it", function (){
 			expectMarkupToPrint("(print: (a:'Red')\'s (2 - 1)'s 1st)","R");
 			expectMarkupToPrint("(print: (a:'Red')\'s (2 - 1)'s (2 - 1))","R");
+			expectMarkupToPrint("(print: 1st of (a:'Red')\'s (2 - 1))","R");
+			expectMarkupToPrint("(print: (2 - 1) of (a:'Red')\'s (2 - 1))","R");
+		});
+		it("can be used in assignments", function (){
+			expectMarkupToPrint("(set: $a to (a:1,2))(set: $a\'s (1) to 2)$a","2,2");
+			expectMarkupToPrint("(set: $a to (a:1,2))(set: (1) of $a\ to 2)$a","2,2");
+		});
+		it("can be used with 'it' and 'its'", function (){
+			expectMarkupToPrint("(set: $a to (a:3,4))(set: $a to its (2))$a","4");
+			expectMarkupToPrint("(set: $a to (a:3,4))(set: $a to (2) of it)$a","4");
+		});
+		it("can have other 'it' accesses nested in it", function (){
+			expectMarkupToPrint("(set: $a to (a:3,4))(set: $a to (its (2)) of 'Blue')$a","e");
+			expectMarkupToPrint("(set: $a to (a:3,4))(set: $a to ((2) of it) of 'Blue')$a","e");
 		});
 		describe("for datamaps", function() {
 			it("access the keyed properties", function() {
@@ -121,12 +172,19 @@ describe("property indexing", function() {
 			it("prints an error if the key is not present", function() {
 				expectMarkupToError('(print: (datamap:"A",1)\'s ("B"))');
 			});
+			it("can be used in assignments", function (){
+				expectMarkupToPrint("(set: $d to (datamap:'A',2))(set: $d\'s ('A') to 4)(print:$d's A)","4");
+			});
+			it("prints an error if the key is numeric", function() {
+				expectMarkupToError('(print: (datamap:1,1)\'s (1))');
+			});
 		});
 		describe("for arrays", function() {
 			it("must be numbers", function (){
-				expectMarkupToError("(print: (a:'Red')\'s ('1'))");
+				expectMarkupToError("(print: (a:'Red','Blue')\'s ('1'))");
 				expectMarkupToError("(print: (a:'Red')\'s ('13'\'s 1st))");
 			});
 		});
 	});
 });
+

@@ -233,15 +233,15 @@
 			"it" is a bit of a problem because its possessive is "its", not "it's",
 			so we can't use a derivation similar to property.
 		*/
-		identifier = either("it","time","page") + "\\b",
+		identifier = either("it","time") + wb,
 		
 		itsProperty = "its" + mws + "(" + validPropertyName + ")",
 		
 		computedItsPropertyFront = "its" + mws  + "\\(",
 		
-		belongingItProperty = "(" + validPropertyName + ")" + mws + "of" + mws + "it",
+		belongingItProperty = "(" + validPropertyName + ")" + mws + "of" + mws + "it" + wb,
 		
-		computedBelongingItPropertyBack = "\\)" + ws + "of" + wb + mws + "it",
+		computedBelongingItPropertyBack = "\\)" + ws + "of" + wb + mws + "it" + wb,
 		
 		macro = {
 			opener:            "\\(",

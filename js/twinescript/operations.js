@@ -363,6 +363,13 @@ function(Utils, State, Colour, AssignmentRequest, OperationUtils, TwineError) {
 				return e;
 			}
 			/*
+				Errors returned by nested VarRef calls are wrapped in an object that
+				has a .get() method.
+			*/
+			else if (e.get && TwineError.containsError(e.get())) {
+				return e.get();
+			}
+			/*
 				If a non-varRef was passed in, a syntax error has occurred.
 			*/
 			if (!e.varref) {

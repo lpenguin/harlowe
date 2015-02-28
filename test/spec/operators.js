@@ -74,14 +74,57 @@ describe("twinescript operators", function () {
 		it("compares arrays by value", function (){
 			expectMarkupToPrint("(print: (a:) is (a:))","true");
 			expectMarkupToPrint("(print: (a:2,3,4) is (a:2,3,4))","true");
+			expectMarkupToPrint("(print: (a:2,3,4) is (a:2,3,5))","false");
+			expectMarkupToPrint("(print: (a:(a:)) is (a:(a:)))","true");
 		});
 		it("compares datamaps by value", function (){
 			expectMarkupToPrint("(print: (datamap:) is (datamap:))","true");
 			expectMarkupToPrint("(print: (datamap:'a',2,'b',4) is (datamap:'b',4,'a',2))","true");
+			expectMarkupToPrint("(print: (datamap:) is (datamap:1))","false");
+			expectMarkupToPrint("(print: (datamap:'a',2,'b',4) is (datamap:'b',4,'a',3))","false");
 		});
 		it("compares datasets by value", function (){
 			expectMarkupToPrint("(print: (dataset:) is (dataset:))","true");
 			expectMarkupToPrint("(print: (dataset:2,3,4) is (dataset:2,3,4))","true");
+			expectMarkupToPrint("(print: (dataset:2,3,4) is (dataset:2,3,4,5))","false");
+		});
+		it("won't be matched from within text", function (){
+			expectMarkupToPrint("(print: typeof xxisxx)","undefined");
+		});
+	});
+	describe("the 'is not' operator", function () {
+		it("compares primitives by value", function (){
+			expectMarkupToPrint("(print: 2 is not 2)","false");
+			expectMarkupToPrint("(print: '2' is not '2')","false");
+			expectMarkupToPrint("(print: true is not true)","false");
+			expectMarkupToPrint("(print: 2 is not 1)","true");
+			expectMarkupToPrint("(print: '3' is not '2')","true");
+			expectMarkupToPrint("(print: true is not false)","true");
+		});
+		it("doesn't coerce values", function (){
+			expectMarkupToPrint("(print: 2 is not '2')","true");
+			expectMarkupToPrint("(print: 1 is not true)","true");
+		});
+		it("can be used as an expression", function (){
+			expectMarkupToPrint("(print: 2 is not '2' is not true)","true");
+			expectMarkupToPrint("(print: true is not true is not false)","false");
+		});
+		it("compares arrays by value", function (){
+			expectMarkupToPrint("(print: (a:) is not (a:))","false");
+			expectMarkupToPrint("(print: (a:2,3,4) is not (a:2,3,4))","false");
+			expectMarkupToPrint("(print: (a:2,3,4) is not (a:2,3,5))","true");
+			expectMarkupToPrint("(print: (a:(a:)) is not (a:(a:)))","false");
+		});
+		it("compares datamaps by value", function (){
+			expectMarkupToPrint("(print: (datamap:) is not (datamap:))","false");
+			expectMarkupToPrint("(print: (datamap:'a',2,'b',4) is not (datamap:'b',4,'a',2))","false");
+			expectMarkupToPrint("(print: (datamap:) is not (datamap:1))","true");
+			expectMarkupToPrint("(print: (datamap:'a',2,'b',4) is not (datamap:'b',4,'a',3))","true");
+		});
+		it("compares datasets by value", function (){
+			expectMarkupToPrint("(print: (dataset:) is not (dataset:))","false");
+			expectMarkupToPrint("(print: (dataset:2,3,4) is not (dataset:2,3,4))","false");
+			expectMarkupToPrint("(print: (dataset:2,3,4) is not (dataset:2,3,4,5))","true");
 		});
 		it("won't be matched from within text", function (){
 			expectMarkupToPrint("(print: typeof xxisxx)","undefined");
