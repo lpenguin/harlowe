@@ -34,6 +34,9 @@ describe("basic value macros", function() {
 		it("converts string arguments to a number", function() {
 			expectMarkupToPrint("(number: '2.' + '5')", "2.5");
 		});
+		it("shows an error if it does not succeed", function() {
+			expectMarkupToError("(number: 'Dogs')");
+		});
 		it("is aliased as (num:)", function() {
 			expectMarkupToPrint("(num: '2')", "2");
 		});

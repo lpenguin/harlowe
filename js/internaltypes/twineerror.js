@@ -24,6 +24,9 @@ define(['jquery', 'utils'], function($, Utils) {
 	TwineError = {
 		
 		create: function(type, message) {
+			if (!message) {
+				Utils.impossible("TwineError.create", "called with only 1 string.");
+			}
 			return Object.assign(Object.create(this), {
 				/*
 					The type of the TwineError consists of one of the following strings:

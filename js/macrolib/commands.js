@@ -1,5 +1,5 @@
-define(['macros', 'utils', 'state', 'engine', 'systemvariables/passages', 'internaltypes/twineerror', 'utils/operationutils'],
-function(Macros, Utils, State, Engine, Passages, TwineError, OperationUtils) {
+define(['macros', 'utils', 'state', 'engine', 'internaltypes/twineerror', 'utils/operationutils'],
+function(Macros, Utils, State, Engine, TwineError, OperationUtils) {
 	"use strict";
 	
 	var
@@ -54,7 +54,7 @@ function(Macros, Utils, State, Engine, Passages, TwineError, OperationUtils) {
 			/*
 				Test for the existence of the named passage in the story.
 			*/
-			if (!Passages.has(name)) {
+			if (!State.variables.Passages.has(name)) {
 				return TwineError.create("macrocall",
 					"I can't display the passage '"
 					+ name
@@ -72,7 +72,7 @@ function(Macros, Utils, State, Engine, Passages, TwineError, OperationUtils) {
 					"a (display:) command",
 				
 				TwineScript_Print: function() {
-					return Utils.unescape(Passages.get(name).get('code'));
+					return Utils.unescape(State.variables.Passages.get(name).get('code'));
 				},
 			};
 		},
@@ -88,7 +88,7 @@ function(Macros, Utils, State, Engine, Passages, TwineError, OperationUtils) {
 			Details:
 			It is capable of printing things which (text:) cannot convert to a string,
 			such as changer commands - but these will usually become bare descriptive
-			text like `[A (font:) command]`. But, for debugging purposes this can be helpful.
+			text like `[A (font: ) command]`. But, for debugging purposes this can be helpful.
 			
 			When set to a variable, it evaluates to a PrintCommand. Notably, the
 			expression to print is stored in the PrintCommand. So, a passage
@@ -99,7 +99,8 @@ function(Macros, Utils, State, Engine, Passages, TwineError, OperationUtils) {
 			(set: $name to "Alucard")
 			$p
 			```
-			will still result in the text `Count Dracula`.
+			will still result in the text `Count Dracula`. This is not particularly useful
+			compared to just setting `$p` to a string, but is available nonetheless.
 			
 			See also:
 			(text:), (display:)
@@ -217,7 +218,7 @@ function(Macros, Utils, State, Engine, Passages, TwineError, OperationUtils) {
 			(loadgame:)
 		*/
 		("goto", function (_, name) {
-			if (!Passages.has(name)) {
+			if (!State.variables.Passages.has(name)) {
 				return TwineError.create("macrocall", "There's no passage named '" + name + "'.");
 			}
 			return {
@@ -250,6 +251,13 @@ function(Macros, Utils, State, Engine, Passages, TwineError, OperationUtils) {
 			(live: [Number]) -> LiveCommand
 			When you attach this macro to a hook, the hook becomes "live", which means that it's repeatedly re-run
 			every certain number of milliseconds, replacing the prose inside of the hook with a newly computed version.
+			
+			Example usage:
+			```
+			{(live: 0.5s)[
+			    (either: "Bang!", "Kaboom!", "Whammo!", "Pow!")
+			]}
+			```
 			
 			Rationale:
 			Twine passage text generally behaves like a HTML document: it starts as code, is changed into a
@@ -286,7 +294,12 @@ function(Macros, Utils, State, Engine, Passages, TwineError, OperationUtils) {
 			This macro, which accepts no arguments, creates a (stop:) command, which is not configurable.
 			
 			Example usage:
-			`(live:)[(if: $escaped)[You're free! (stop:)]]`
+			```
+			{(live: 1s)[
+			    (if: $packedBags)[OK, let's go!(stop:)]
+			    (else: )[(either:"Are you ready yet?","We mustn't be late!")]
+			]}
+			```
 			
 			Rationale:
 			Clunky though it looks, this macro serves a single important purpose: inside a (live:)

@@ -12,7 +12,6 @@ define(['jquery', 'utils', 'utils/selectors'], function($, Utils, Selectors) {
 		Passage objects are simple Maps.
 	*/
 	function passage(elem) {
-		var name = elem.attr('name');
 		return Object.assign(new Map([
 			/*
 				Passage objects have the following properties:
@@ -26,8 +25,11 @@ define(['jquery', 'utils', 'utils/selectors'], function($, Utils, Selectors) {
 			/*
 				name: its name, which can be altered to change how
 				passage links can refer to this (!!!).
+				
+				Sadly, it's not yet possible to rebind this within $Passages
+				just by changing this attribute.
 			*/
-			["name", name],
+			["name", elem.attr('name')],
 		]),{
 			TwineScript_TypeName: "passage datamap",
 			TwineScript_ObjectName: "a passage datamap",

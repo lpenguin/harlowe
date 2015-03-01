@@ -82,45 +82,147 @@ define(['utils', 'macros', 'utils/operationutils', 'internaltypes/twineerror'], 
 		},
 		[String, Number, Number])
 		
-		/*
-			(num:), (number:)
-			This provides explicit coercion to Number.
-			Currently, it only works on a single string, as there's no other
-			type that has an obvious numeric representation.
+		/*d:
+			(number: String) -> Number
+			Also known as: (num:)
+			
+			This macro converts strings to numbers by reading the digits in the entire
+			string. It can handle decimal fractions and negative numbers.
+			If any letters or other unusual characters appear in the number, it will
+			result in an error.
+			
+			Example usage:
+			`(num: "25")` results in the number `25`.
+			
+			Rationale:
+			Unlike in Twine 1, Twine 2 will only convert numbers into strings, or strings
+			into numbers, if you explictly ask it to using macros such as this. This extra
+			carefulness decreases the likelihood of unusual bugs creeping into stories
+			(such as performing `"Eggs: " + 2 + 1` and getting `"Eggs: 21"`).
+			
+			Usually, you will only work with numbers and strings of your own creation, but
+			if you're receiving user input and need to perform arithmetic on it,
+			this macro will be necessary.
+			
+			See also:
+			(text:)
 		*/
 		(["num", "number"], function number(_, expr) {
 			/*
 				This simply uses JS's toNumber conversion, meaning that
-				decimals and leading spaces are handled, but leading spaces etc. are not.
+				decimals and leading spaces are handled, but leading letters etc. are not.
 			*/
+			if (Number.isNaN(+expr)) {
+				return TwineError.create("macrocall", "I couldn't convert " + OperationUtils.objectName(expr)
+					+ " to a number.");
+			}
 			return +expr;
 		},
 		[String])
 		
-		/*
-			(if:) converts the expression to boolean.
+		/*d:
+			(if: Boolean) -> Boolean
 			
+			This macro accepts only booleans, and returns the value as-is: true if it was true,
+			and false if it was false. It's not useful at all in expressions, but its main purpose
+			in Twine 2 is to be attached to hooks, as it will hide them if the value is false.
+			
+			Example usage:
+			`(if: $legs is 8)[You're a spider!]` will show the `You're a spider!` hook if `$legs` is `8`.
+			Otherwise, it is not run.
+			
+			Rationale:
+			In any story with multiple paths or threads, where certain events could occur or not occur,
+			it's common to want to run a slightly modified version of a passage reflecting the current
+			state of the world. The (if:), (unless:), (else-if:) and (else:) macros let these modifications be
+			switched on or off depending on variables, comparisons or calculations of your choosing.
+			
+			Alternatives:
+			The (if:) macro is not the only attachment that can hide or show hooks! In fact,
+			any variable that contains a boolean can be used in its place. For example:
+			
+			```
+			(set: $isAWizard to $foundWand and $foundHat and $foundBeard)
+			
+			$isAWizard[You wring out your beard with a quick twisting spell.]
+			You step into the ruined library.
+			$isAWizard[The familiar scent of stale parchment comforts you.]
+			```
+			By storing a boolean inside `$isAWizard`, it can be used repeatedly throughout the story to
+			hide or show hooks as you please.
+			
+			See also:
+			(unless:), (else-if:), (else:)
+		*/
+		/*
 			TODO: Should this actually be a Changer?? For instance:
 			(set: $robotAdvice to (font:Consolas) + (if: $choseTheRobot))
 		*/
 		("if", function _if(section, expr) {
 			return !!expr;
 		},
-		[Any])
+		[Boolean])
 		
-		/*
-			(unless:) the negated form of (if:).
-			Evaluates to a boolean.
+		/*d:
+			(unless: Boolean) -> Boolean
+			
+			This macro is the negated form of (if:): it accepts only booleans, and becomes
+			the opposite boolean of the value: false if it was true, and true if it was false.
+			It's not useful at all in expressions, but its main purpose in Twine 2 is to be
+			attached to hooks, as it will hide them if the value is true.
+			
+			For more information, see the documentation of (if:).
 		*/
 		("unless", function unless(section, expr) {
 			return !expr;
 		},
 		[Any])
 		
-		/*
-			(elseif:) only true if the previous conditional hook was not shown,
-			and its own expression is true.
-			Evaluates to a boolean.
+		/*d:
+			(else-if: Boolean) -> Boolean
+			
+			This macro's result changes depending on whether the previous hook in the passage
+			was shown or hidden. If the previous hook was shown, then this always becomes false.
+			Otherwise, it takes the passed-in boolean value and returns it. If there was no
+			preceding hook before this, then an error message will be printed.
+			
+			It's not useful at all in expressions, but its main purpose in Twine 2 is to be
+			attached to hooks, as it will hide them if the value is true.
+			
+			Example usage:
+			```
+			Your stomach makes {
+			(if: $size is 'giant')[
+			    an intimidating rumble!
+			](else-if: $size is 'big')[
+			    a loud growl
+			](else:)[
+			    a faint gurgle
+			]}.
+			```
+			
+			Rationale:
+			If you use the (if:) macro, you may find you commonly use it in forked branches of
+			prose: places where only one of a set of hooks should be displayed. In order to
+			make this so, you would have to phrase your (if:) expressions as "if A happened",
+			"if A didn't happen and B happened", "if A and B didn't happen and C happened", and so forth,
+			in that order.
+			
+			The (else-if:) and (else:) macros are convenient variants of (if:) designed to make this easier: you
+			can merely say "if A happened", "else, if B happened", "else, if C happened" in your code.
+			
+			Note:
+			You may be familiar with the `if` keyword in other programming languages. Do heed this, then:
+			the (else-if:) and (else:) macros need *not* be paired with (if:)! You can use (else-if:) and (else:)
+			in conjunction with variable attachments, like so:
+			```
+			$married[You hope this warrior will someday find the sort of love you know.]
+			(else-if: not $date)[You hope this warrior isn't doing anything this Sunday (because
+			you've got overtime on Saturday.)]
+			```
+			
+			See also:
+			(if:), (unless:), (else:)
 		*/
 		("elseif", function elseif(section, expr) {
 			/*
@@ -134,9 +236,31 @@ define(['utils', 'macros', 'utils/operationutils', 'internaltypes/twineerror'], 
 		},
 		[Any])
 		
-		/*
-			(else:) only true if the previous conditional hook was not shown.
-			Evaluates to a boolean.
+		/*d:
+			(else:) -> Boolean
+			
+			This is a convenient limited variant of the (else-if:) macro. It will simply become
+			true if the preceding hook was hidden, and false if it was shown.
+			If there was no preceding hook before this, then an error message will be printed.
+			
+			Rationale:
+			After you've written a series of hooks guarded by (if:) and (else-if:), you'll often have one final
+			branch to show, when none of the above have been shown. (else:) is the "none of the above" variant
+			of (else-if:), which needs no boolean expression to be provided. It's essentially the same as
+			`(else-if: true)`, but shorter and more readable.
+			
+			For more information, see the documentation of (else-if:).
+			
+			Note:
+			Due to a mysterious quirk, it's possible to use multiple (else:) macro calls in succession:
+			```
+			$isUtterlyEvil[You suddenly grip their ankles and spread your warm smile int​o a searing smirk.]
+			(else:​)[In silence, you gently, reverently rub their soles.]
+			(else:​)[Before they can react, you unleash a typhoon of tickles!]
+			(else:​)[They sigh contentedly, filling your pious heart with joy.]
+			```
+			This usage can result in a somewhat puzzling passage prose structure, where each (else:) hook
+			alternates between visible and hidden depending on the first such hook. So, it is best avoided.
 		*/
 		("else", function _else(section) {
 			if (!("lastHookShown" in section.stack[0])) {

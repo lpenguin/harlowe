@@ -1,5 +1,5 @@
-define(['jquery', 'macros', 'utils', 'utils/selectors', 'state', 'engine', 'datatypes/changercommand', 'systemvariables/passages'],
-function($, Macros, Utils, Selectors, State, Engine, ChangerCommand, Passages) {
+define(['jquery', 'macros', 'utils', 'utils/selectors', 'state', 'engine', 'datatypes/changercommand'],
+function($, Macros, Utils, Selectors, State, Engine, ChangerCommand) {
 	"use strict";
 	/*
 		This module defines the behaviour of links in Harlowe - both
@@ -112,7 +112,7 @@ function($, Macros, Utils, Selectors, State, Engine, ChangerCommand, Passages) {
 						return passageName;
 					}
 					
-					if (Passages.has(passageName)) {
+					if (State.variables.Passages.has(passageName)) {
 						visited = (State.passageNameVisited(passageName));
 					} else {
 						// Not an internal link?

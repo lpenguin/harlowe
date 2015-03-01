@@ -1,5 +1,5 @@
-define(['jquery', 'utils', 'utils/selectors', 'state', 'section', 'systemvariables/passages'],
-function ($, Utils, Selectors, State, Section, Passages) {
+define(['jquery', 'utils', 'utils/selectors', 'state', 'section'],
+function ($, Utils, Selectors, State, Section) {
 	"use strict";
 	
 	/**
@@ -74,7 +74,9 @@ function ($, Utils, Selectors, State, Section, Passages) {
 			// Temporary measure: must change when customisable links are implemented.
 			t8n = "instant",
 			// The passage
-			passageData = Passages.get(name),
+			// This must use State.variables.Passages instead of SystemVariables/Passages
+			// in case the author (set:) a new datamap to it.
+			passageData = State.variables.Passages.get(name),
 			oldPassages,
 			section,
 			// The <tw-story> element

@@ -5,7 +5,7 @@ module.exports = function(grunt) {
 	*/
 	var
 		macroEmpty = /\(([\w\-\d]+):\)(?!`)/g,
-		macroWithTypeSignature = /\(([\w\-\d]+):([\s\w\.\,\[\]]+)\) -> ([\w]+)/,
+		macroWithTypeSignature = /\(([\w\-\d]+):([\s\w\.\,\[\]]*)\) -> ([\w]+)/,
 		/*
 			This matches a mixed-case type name, optionally plural, but not whenever
 			it seems to be part of a macro name.

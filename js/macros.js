@@ -1,5 +1,5 @@
-define(['jquery', 'systemvariables/passages', 'utils', 'utils/operationutils', 'internaltypes/twineerror'],
-function($, Passages, Utils, OperationUtils, TwineError) {
+define(['jquery', 'utils', 'utils/operationutils', 'internaltypes/twineerror'],
+function($, Utils, OperationUtils, TwineError) {
 	"use strict";
 	/**
 		This contains a registry of macro definitions, and methods to add to that registry.
