@@ -358,16 +358,12 @@ function(Utils, State, Colour, AssignmentRequest, OperationUtils, TwineError) {
 		setIt: function(e) {
 			/*
 				Propagate any errors passed in, as usual for these operations.
+				Note that this does NOT handle errors returned in
+				wrappers by VarRef.create(), because those should only be unwrapped
+				when the compiler tries to .get() them.
 			*/
 			if (TwineError.containsError(e)) {
 				return e;
-			}
-			/*
-				Errors returned by nested VarRef calls are wrapped in an object that
-				has a .get() method.
-			*/
-			else if (e.get && TwineError.containsError(e.get())) {
-				return e.get();
 			}
 			/*
 				If a non-varRef was passed in, a syntax error has occurred.

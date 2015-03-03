@@ -50,7 +50,7 @@ function(Utils, State, TwineError, OperationUtils) {
 			The computed variable property syntax means that basically
 			any value can be used as a property key. Currently, we only allow strings
 			and numbers to be used.
-			(This kind of defeats the point of (datamap:), though...
+			(This kind of defeats the point of using ES6 Maps, though...)
 		*/
 		if(typeof prop !== "string" && (!sequential || typeof prop !== "number")) {
 			return TwineError.create(
@@ -333,7 +333,7 @@ function(Utils, State, TwineError, OperationUtils) {
 					+ " data key in "
 					+ objectName(obj));
 			}
-			return (obj instanceof Map) ? obj.get(prop) : obj[prop];
+			return objectOrMapGet(obj, prop);
 		},
 		
 		/*
@@ -367,15 +367,20 @@ function(Utils, State, TwineError, OperationUtils) {
 				existant, must be cloned and reassigned to its home object.
 			*/
 			obj = this.object;
+			/*
+				(this.object will almost always be State.variables, by the way).
+			*/
 			this.compiledPropertyChain.slice(0,-1).every(function(prop) {
+				var newObj,
+					oldObj = objectOrMapGet(obj, prop);
 				
-				if (OperationUtils.isObject(obj[prop])) {
-					var newObj = clone(obj[prop]);
+				if (OperationUtils.isObject(oldObj)) {
+					newObj = clone(oldObj);
 					/*
 						This assumes that this.object will never have locked
 						properties, and that this assignment will always succeed.
 					*/
-					obj[prop] = newObj;
+					obj instanceof Map ? obj.set(prop, newObj) : obj[prop] = newObj;
 					obj = newObj;
 					return true;
 				}
@@ -491,7 +496,6 @@ function(Utils, State, TwineError, OperationUtils) {
 			if ((error = TwineError.containsError(compiledPropertyChain))) {
 				return wrapError(error);
 			}
-			
 			/*
 				Create the VarRefProto instance.
 			*/

@@ -85,16 +85,6 @@
 	}
 	
 	/*
-		Converts the given REstring (assumed to be entirely [A-Za-z] characters)
-		into a case-insensitive version.
-	*/
-	function caseInsensitive(name) {
-		return name.replace(/(?:([A-Z])|([a-z]))/g, function(a, $1, $2) {
-			return "[" + ($1 || $2.toUpperCase())
-				+ ($2 || $1.toLowerCase()) + "]"; });
-	}
-	
-	/*
 		Opener lookaheads come in two forms: a simple string to match, when
 		only one option for the syntax's opening exists, and a RegExp when
 		there are multiple options. This function returns the former when
@@ -329,7 +319,7 @@
 		tag:         "<\\/?" + tag.name + tag.attrs + ">",
 		tagOpener:                            opener("<"),
 		
-		scriptStyleTag: "<(" + either(caseInsensitive("script"),caseInsensitive("style"))
+		scriptStyleTag: "<(" + either("script","style")
 			+ ")" + tag.attrs + ">"
 			+ "[^]*?" + "<\\/\\1>",
 		
@@ -481,11 +471,11 @@
 		
 		colour: either(
 			// Hue name
-			caseInsensitive(either(
+			either(
 				"Red", "Orange", "Yellow", "Lime", "Green",
 				"Cyan", "Aqua", "Blue", "Navy", "Purple",
 				"Fuchsia", "Magenta","White", "Gray", "Grey", "Black"
-			)),
+			),
 			// Hexadecimal
 			"#[\\dA-Fa-f]{3}(?:[\\dA-Fa-f]{3})?"
 		),
@@ -495,7 +485,7 @@
 		*/
 		number: number,
 		
-		boolean: "(true|false)" + wb,
+		boolean: either("true","false") + wb,
 		
 		// Special identifiers
 		identifier: identifier,
@@ -513,23 +503,23 @@
 			Macro operators
 		*/
 		
-		is:        caseInsensitive("is") + notBefore(" not", " in") + wb,
-		isNot:     either(caseInsensitive("is not") + wb, "!="),
+		is:        "is" + notBefore(" not", " in") + wb,
+		isNot:     "is not" + wb,
 		
-		and:       either(caseInsensitive("and") + wb, "&&"),
-		or:        either(caseInsensitive("or")  + wb, "\\|\\|"),
-		not:       either(caseInsensitive("not") + wb, "!" + notBefore("=")),
+		and:       "and" + wb,
+		or:        "or"  + wb,
+		not:       "not" + wb,
 		
 		inequality: either("<(?!=)", "<=", ">(?!=)", ">="),
 		
-		isIn:       caseInsensitive("is in") + wb,
-		contains:   caseInsensitive("contains") + wb,
+		isIn:       "is in" + wb,
+		contains:   "contains" + wb,
 
 		arithmetic: either("\\+", "\\-", "\\*", "\\\/", "%") + notBefore("="),
 		comma:      ",",
 		spread:     "\\.\\.\\." + notBefore("\\."),
 
-		to:        either(caseInsensitive("to") + wb, "="),
+		to:        either("to" + wb, "="),
 		into:      "into" + wb,
 		augmentedAssign: either("\\+", "\\-", "\\*", "\\\/", "%") + "=",
 	};

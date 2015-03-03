@@ -162,7 +162,7 @@ define(['utils'], function(Utils) {
 					*/
 					return "TwineError.create('keyword','I can\\'t use \\'" + token.text + "\\' in this position.') ";
 				}
-				return " Operations.Identifiers." + token.text + " ";
+				return " Operations.Identifiers." + token.text.toLowerCase() + " ";
 			}
 			else if (token.type === "variable") {
 				return "VarRef.create(State.variables,"

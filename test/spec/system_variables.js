@@ -31,5 +31,11 @@ describe("system variables", function () {
 				"White"
 			);
 		});
+		it("passage datamaps can be added", function (){
+			expectMarkupToPrint(
+				"(set: $Passages's ('The Parlour') to (datamap:'code','Blue'))(display:'The Parlour')",
+				"Blue"
+			);
+		});
 	});
 });

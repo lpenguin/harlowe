@@ -20,8 +20,9 @@ define(['utils', 'systemvariables/design', 'systemvariables/passages'], function
 		Passages: Passages,
 		TwineScript_ObjectName: "this story's variables",
 		/*
-			This property means that these property names cannot be modified,
-			or shadowed on the prototype chain.
+			This property means that these property names cannot be set to new
+			user values via (set:). Of course, mutating their contents
+			will cause new versions of them to appear in the Moment's variables map.
 		*/
 		TwineScript_Writeproof: ["Design", "Passages"],
 	};

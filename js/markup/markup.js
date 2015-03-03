@@ -570,7 +570,13 @@
 				allRules[key].pattern = re;
 			}
 			else {
-				allRules[key].pattern = new RegExp("^(?:" + re + ")");
+				allRules[key].pattern = new RegExp(
+					"^(?:" + re + ")",
+					/*
+						All TwineMarkup patterns are case-insensitive.
+					*/
+					"i"
+				);
 			}
 			/*
 				If an opener is available, include that as well.

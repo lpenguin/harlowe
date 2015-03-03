@@ -6,6 +6,9 @@ describe("identifiers", function () {
 			expectMarkupToPrint("(set:$red to 'egg')(print: $red contains 'g' and it contains 'e')","true");
 			expectMarkupToPrint("(set:$red to 'egg')(set:$blue to 'g')(print: $blue is in $red and it is in 'go')","true");
 		});
+		it("is case-insensitive", function (){
+			expectMarkupToPrint("(set:$red to 'Bee')(set:$red to IT + 's')(set:$red to iT + '!')$red","Bees!");
+		});
 		it("also refers to the left side of a 'to' operation", function (){
 			expectMarkupToPrint("(set:$red to 'Bee')(set:$red to it + 's')$red","Bees");
 		});
