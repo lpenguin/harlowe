@@ -52,16 +52,6 @@ function(Macros, Utils, State, Engine, TwineError, OperationUtils) {
 		*/
 		("display", function display(_, name) {
 			/*
-				Test for the existence of the named passage in the story.
-			*/
-			if (!State.variables.Passages.has(name)) {
-				return TwineError.create("macrocall",
-					"I can't display the passage '"
-					+ name
-					+ "' because it doesn't exist."
-				);
-			}
-			/*
 				Create a DisplayCommand.
 			*/
 			return {
@@ -72,7 +62,29 @@ function(Macros, Utils, State, Engine, TwineError, OperationUtils) {
 					"a (display:) command",
 				
 				TwineScript_Print: function() {
-					return Utils.unescape(State.variables.Passages.get(name).get('code'));
+					var passage = State.variables.Passages.get(name);
+					/*
+						Test for the existence of the named passage in the story.
+						This and the next check must be made now, because the Passages
+						datamap could've been tinkered with since this was created.
+					*/
+					if (!passage) {
+						return TwineError.create("macrocall",
+							"I can't display the passage '"
+							+ name
+							+ "' because it doesn't exist."
+						);
+					}
+					/*
+						Test that the passage is indeed a usable Map. (The author
+						could have modified $Passage, after all.)
+					*/
+					if (!(passage instanceof Map) || !passage.has('code')) {
+						return TwineError.create("operation",
+							"The passage '" + name + "' isn't a datamap with a 'code' data key."
+						);
+					}
+					return Utils.unescape(passage.get('code'));
 				},
 			};
 		},
@@ -218,13 +230,24 @@ function(Macros, Utils, State, Engine, TwineError, OperationUtils) {
 			(loadgame:)
 		*/
 		("goto", function (_, name) {
-			if (!State.variables.Passages.has(name)) {
-				return TwineError.create("macrocall", "There's no passage named '" + name + "'.");
-			}
+
 			return {
-				TwineScript_ObjectName: "a (goto: " + Utils.toJSLiteral(name) + ") command",
-				TwineScript_TypeName:   "a (goto:) command",
+				TwineScript_ObjectName: "a (go-to: " + Utils.toJSLiteral(name) + ") command",
+				TwineScript_TypeName:   "a (go-to:) command",
 				TwineScript_Print: function() {
+					var passageMap = State.variables.Passages.get(name);
+					if (!passageMap) {
+						return TwineError.create("macrocall", "There's no passage named '" + name + "'.");
+					}
+					/*
+						This passageMap could be an author-created-at-runtime datamap,
+						and as such should be carefully examined.
+					*/
+					if (!(passageMap instanceof Map) || !passageMap.has('code')) {
+						return TwineError.create("operation",
+							"The passage '" + name + "' isn't a datamap with a 'code' data key."
+						);
+					}
 					/*
 						When a passage is being rendered, <tw-story> is detached from the main DOM.
 						If we now call another Engine.goToPassage in here, it will attempt

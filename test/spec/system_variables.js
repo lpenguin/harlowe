@@ -37,5 +37,21 @@ describe("system variables", function () {
 				"Blue"
 			);
 		});
+		it("will error if an incomplete datamap is supplied", function (){
+			expectMarkupToNotError(
+				"(set: $Passages's ('The Attic') to (datamap:))"
+			);
+			expectMarkupToError("(display:'The Attic')");
+			expectMarkupToError("[[The Attic]]");
+			expectMarkupToError("(go-to:'The Attic')");
+		});
+		it("will error if a non-datamap is supplied", function (){
+			expectMarkupToNotError(
+				"(set: $Passages's ('The Porch') to 52)"
+			);
+			expectMarkupToError("(display:'The Porch')");
+			expectMarkupToError("[[The Porch]]");
+			expectMarkupToError("(go-to:'The Porch')");
+		});
 	});
 });

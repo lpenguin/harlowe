@@ -88,10 +88,10 @@ function ($, Utils, Selectors, State, Section) {
 			parent = story.parent();
 		/*
 			Early exit: the wrong passage name was supplied.
+			Author error must never propagate to this method - it should have been caught earlier.
 		*/
-		if (!passageData) {
+		if (!passageData || !(passageData instanceof Map) || !passageData.has('code')) {
 			Utils.impossible("Engine.showPassage", "There's no passage with the name \""+name+"\"!");
-			return;
 		}
 		
 		/*

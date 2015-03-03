@@ -1,5 +1,5 @@
-define(['jquery', 'macros', 'utils', 'utils/selectors', 'state', 'engine', 'datatypes/changercommand'],
-function($, Macros, Utils, Selectors, State, Engine, ChangerCommand) {
+define(['jquery', 'macros', 'utils', 'utils/selectors', 'state', 'engine', 'datatypes/changercommand', 'internaltypes/twineerror'],
+function($, Macros, Utils, Selectors, State, Engine, ChangerCommand, TwineError) {
 	"use strict";
 	/*
 		This module defines the behaviour of links in Harlowe - both
@@ -86,7 +86,7 @@ function($, Macros, Utils, Selectors, State, Engine, ChangerCommand) {
 				TwineScript_ObjectName: "a (link-goto:) command",
 				
 				TwineScript_Print: function() {
-					var visited = -1, passageName;
+					var visited = -1, passageMap, passageName;
 					/*
 						The string representing the passage name is evaluated as TwineMarkup here -
 						the link syntax accepts TwineMarkup in both link and passage position
@@ -112,10 +112,23 @@ function($, Macros, Utils, Selectors, State, Engine, ChangerCommand) {
 						return passageName;
 					}
 					
-					if (State.variables.Passages.has(passageName)) {
+					passageMap = State.variables.Passages.get(passageName);
+					if (passageMap) {
+						/*
+							This passageMap could be an author-created-at-runtime datamap,
+							and as such should be carefully examined.
+						*/
+						if (!(passageMap instanceof Map) || !passageMap.has('code')) {
+							return TwineError.create("operation",
+								"The passage '" + name + "' isn't a datamap with a 'code' data key."
+							);
+						}
 						visited = (State.passageNameVisited(passageName));
 					} else {
-						// Not an internal link?
+						/*
+							If it's not an internal link, we create a broken link.
+							TODO: Maybe this should be an error as well??
+						*/
 						if (!~visited) {
 							return '<tw-broken-link passage-name="' + passageName + '">'
 								+ (text || passage)
