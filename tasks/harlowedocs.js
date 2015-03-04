@@ -10,7 +10,8 @@ module.exports = function(grunt) {
 			This matches a mixed-case type name, optionally plural, but not whenever
 			it seems to be part of a macro name.
 		*/
-		typeName = /\b(string|number|boolean|array|data(?:map|set))(s?)(?!\:\))\b/ig,
+		typeName = /\b(any|nothing|command|string|number|boolean|array|data(?:map|set))(s?)(?!\:\))\b/ig,
+		typeDefinition = /([\w]+) data\n/,
 		
 		// Type definitions
 		typeDefs = {},
@@ -43,30 +44,38 @@ module.exports = function(grunt) {
 	*/
 	function macroSignature(name, sig, returnType) {
 		return "<h2 id=macro_" + name + ">" +
-		"(" + name + ": <i>" +
-		parameterSignature(sig) +
-		"</i>) <span class=macro_returntype>&rarr;</span> <i>" +
-		returnType +
-		"</i></h2>";
+			"(" + name + ": <i>" +
+			parameterSignature(sig) +
+			"</i>) <span class=macro_returntype>&rarr;</span> <i>" +
+			returnType +
+			"</i></h2>";
 	}
 	
-	function processMacroDefinition(match) {
+	/*
+		Convert various structures or terms in the passed-in body text
+		into hyperlinks to their definitions, etc.
+		(But don't link terms more than once, or link the title term.)
+	*/
+	function processTextTerms(text, match) {
 		/*
 			A record of which type names were hyperlinked.
-			As a rule, only hyperlink type names once each per macro definition.
+			As a rule, only hyperlink type names once each per definition.
 		*/
-		var typeNamesLinked = [];
+		var typeNamesLinked = [],
+			title = match[1];
 		
-		title = match[0];
-		text = match.input.trim()
-			/*
-				Convert the title signature into an anchor and an augmented parameter signature.
-			*/
-			.replace(title,macroSignature(match[1], match[2], match[3]))
+		text = text
 			/*
 				Convert type names into hyperlinks.
 			*/
 			.replace(typeName, function(text, $1, $2){
+				/*
+					...but don't hyperlink references to this own type.
+					(This targets mixed-case singular and plural.)
+				*/
+				if ($1.toLowerCase().indexOf(title.toLowerCase()) === 0) {
+					return text;
+				}
 				if (typeNamesLinked.indexOf($1) === -1) {
 					typeNamesLinked.push($1);
 					return "[" + $1 + $2 + "](#type_" + $1 + ")";
@@ -81,7 +90,7 @@ module.exports = function(grunt) {
 					...but don't hyperlink references to this own macro.
 					(e.g. don't hyperlink (goto:) in the (goto:) article.)
 				*/
-				if ($1 === match[1]) {
+				if ($1.toLowerCase().indexOf(match[1].toLowerCase()) === 0) {
 					return "<b>" + text + "</b>";
 				}
 				return "[(" + $1 + ":)](#macro_" + $1 + ")";
@@ -91,9 +100,32 @@ module.exports = function(grunt) {
 			*/
 			.replace(/\n([A-Z][\w\s\d]+:)\n/g,"\n####$1\n");
 		/*
+			We're done.
+		*/
+		typeDefs[title] = text;
+	}
+	
+	function processMacroDefinition(match) {
+		title = match[0];
+		text = match.input.trim()
+			/*
+				Convert the title signature into an anchor and an augmented parameter signature.
+			*/
+			.replace(title,macroSignature(match[1], match[2], match[3]));
+		
+		text = processTextTerms(text, match);
+		
+		/*
 			Now, do it! Output the text!
 		*/
 		macroDefs[title] = text;
+	}
+	
+	function processTypeDefinition(match) {
+		return processTextTerms(
+			match.input.trim().replace(match[0], "<h2 id=type_" + match[1] + ">" + match[0] + "</h2>\n"),
+			match
+		);
 	}
 	
 	grunt.registerTask('harlowedocs', "Make Harlowe documentation", function() {
@@ -119,6 +151,12 @@ module.exports = function(grunt) {
 				if ((match = defText.match(macroWithTypeSignature))) {
 					processMacroDefinition(match);
 				}
+				/*
+					Is it a type definition?
+				*/
+				if ((match = defText.match(typeDefinition))) {
+					processTypeDefinition(match);
+				}
 			});
 		});
 		/*
@@ -128,7 +166,11 @@ module.exports = function(grunt) {
 		/*
 			Output macro definitions.
 		*/
-		outputFile += "<h1 id=section_macros>List of macros</h1>\n";
+		outputFile += "\n<h1 id=section_types>Types of data</h1>\n";
+		Object.keys(typeDefs).sort().forEach(function(e) {
+			outputFile += typeDefs[e];
+		});
+		outputFile += "\n<h1 id=section_macros>List of macros</h1>\n";
 		Object.keys(macroDefs).sort().forEach(function(e) {
 			outputFile += macroDefs[e];
 		});

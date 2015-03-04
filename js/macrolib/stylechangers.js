@@ -178,8 +178,10 @@ function($, Macros, Utils, Selectors, Colour, ChangerCommand) {
 			[either(String,Colour)]
 		)
 		
-		/*
-			(text-style:)
+		/*d:
+			(text-style: String) -> Command
+			
+			
 		*/
 		("text-style",
 			function textstyle(_, styleName) {
@@ -320,5 +322,51 @@ function($, Macros, Utils, Selectors, Colour, ChangerCommand) {
 				};
 			}()),
 			[String]
-		);
+		)
+		
+		/*d:
+			(css: String) -> Command
+			
+			This takes a string of inline CSS, and applies it to the hook, as if it
+			were HTML "style" property.
+			
+			Usage example:
+			```
+			(css: "background-color:indigo")
+			```
+			
+			Rationale:
+			The built-in macros for layout and styling hooks, such as (text-style:),
+			are powerful and geared toward ease-of-use, but do not entirely provide
+			comprehensive access to the browser's styling. This changer macro allows
+			extended styling, using inline CSS, to be applied to hooks.
+			
+			This is, however, intended solely as a "macro of last resort" - as it requires
+			basic knowledge of CSS - a separate language distinct from TwineScript - to use,
+			and requires it be provided a single inert string, it's not as accommodating as
+			the other such macros.
+			
+			See also:
+			(text-style:)
+		*/
+		("css",
+			function css(_, text) {
+				/*
+					Add a trailing ; if one was neglected. This allows it to
+					be concatenated with existing styles.
+				*/
+				if (!text.trim().endsWith(";")) {
+					text += ';';
+				}
+				return ChangerCommand.create("css", [text]);
+			},
+			function (d, text) {
+				d.attr = (d.attr || []).concat({'style': function() {
+					return ($(this).attr('style') || "") + text;
+				}});
+				return d;
+			},
+			[String]
+		)
+		;
 });

@@ -42,7 +42,7 @@ describe("system variables", function () {
 				"(set: $Passages's ('The Attic') to (datamap:))"
 			);
 			expectMarkupToError("(display:'The Attic')");
-			expectMarkupToError("[[The Attic]]");
+			expect(runPassage("[[The Attic]]").find('tw-broken-link').length).toBe(1);
 			expectMarkupToError("(go-to:'The Attic')");
 		});
 		it("will error if a non-datamap is supplied", function (){
@@ -50,7 +50,7 @@ describe("system variables", function () {
 				"(set: $Passages's ('The Porch') to 52)"
 			);
 			expectMarkupToError("(display:'The Porch')");
-			expectMarkupToError("[[The Porch]]");
+			expect(runPassage("[[The Porch]]").find('tw-broken-link').length).toBe(1);
 			expectMarkupToError("(go-to:'The Porch')");
 		});
 	});

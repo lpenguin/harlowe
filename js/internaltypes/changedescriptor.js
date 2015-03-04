@@ -22,6 +22,7 @@ define(['jquery', 'utils', 'renderer'], function($, Utils, Renderer) {
 		code:             "",
 		
 		// {Array} styles             A set of CSS styles to apply inline to the hook's element.
+		//                            Currently, nothing uses this.
 		styles:           null,
 		
 		// {Boolean} enabled          Whether or not this code is enabled.
@@ -75,14 +76,15 @@ define(['jquery', 'utils', 'renderer'], function($, Utils, Renderer) {
 				Apply the style attributes to the target element.
 			*/
 			if (Array.isArray(this.styles)) {
-				target.attr('style','');
 				target.css(Object.assign.apply(0, [{}].concat(this.styles)));
 			}
 			/*
 				If HTML attributes were included in the changerDescriptor, apply them now.
 			*/
 			if (this.attr) {
-				target.attr(this.attr);
+				this.attr.forEach(function(e) {
+					target.attr(e);
+				});
 			}
 			/*
 				Same with jQuery data (such as functions to call in event of, say, clicking).

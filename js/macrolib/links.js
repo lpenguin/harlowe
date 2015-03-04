@@ -86,7 +86,7 @@ function($, Macros, Utils, Selectors, State, Engine, ChangerCommand, TwineError)
 				TwineScript_ObjectName: "a (link-goto:) command",
 				
 				TwineScript_Print: function() {
-					var visited = -1, passageMap, passageName;
+					var visited = -1, error, passageName;
 					/*
 						The string representing the passage name is evaluated as TwineMarkup here -
 						the link syntax accepts TwineMarkup in both link and passage position
@@ -111,30 +111,23 @@ function($, Macros, Utils, Selectors, State, Engine, ChangerCommand, TwineError)
 						*/
 						return passageName;
 					}
-					
-					passageMap = State.variables.Passages.get(passageName);
-					if (passageMap) {
+					/*
+						Check that the passage is indeed available.
+					*/
+					if ((error = TwineError.containsError(State.passageExists(passageName)))) {
 						/*
-							This passageMap could be an author-created-at-runtime datamap,
-							and as such should be carefully examined.
-						*/
-						if (!(passageMap instanceof Map) || !passageMap.has('code')) {
-							return TwineError.create("operation",
-								"The passage '" + name + "' isn't a datamap with a 'code' data key."
-							);
-						}
-						visited = (State.passageNameVisited(passageName));
-					} else {
-						/*
-							If it's not an internal link, we create a broken link.
+							Since the passage isn't available, create a broken link.
 							TODO: Maybe this should be an error as well??
 						*/
-						if (!~visited) {
-							return '<tw-broken-link passage-name="' + passageName + '">'
-								+ (text || passage)
-								+ '</tw-broken-link>';
-						}
+						return '<tw-broken-link passage-name="' + passageName + '">'
+							+ (text || passage)
+							+ '</tw-broken-link>';
 					}
+					/*
+						Previously visited passages may be styled differently compared
+						to unvisited passages.
+					*/
+					visited = (State.passageNameVisited(passageName));
 					
 					/*
 						This regrettably exposes the destination passage name in the DOM...

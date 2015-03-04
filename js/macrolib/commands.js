@@ -2,6 +2,16 @@ define(['macros', 'utils', 'state', 'engine', 'internaltypes/twineerror', 'utils
 function(Macros, Utils, State, Engine, TwineError, OperationUtils) {
 	"use strict";
 	
+	/*d:
+		Command data
+		
+		Commands are special kinds of data which perform an effect when they're placed in the passage.
+		Most commands are created from macros placed directly in the passage, but, like all forms of
+		data, they can be saved into variables using (set:) and (put:), and stored for later use.
+		
+		Many commands only have an effect when they're attached to hooks, and modify the
+		hook in a certain manner.
+	*/
 	var
 		Any = Macros.TypeSignature.Any,
 		optional = Macros.TypeSignature.optional;
@@ -24,7 +34,7 @@ function(Macros, Utils, State, Engine, TwineError, OperationUtils) {
 	Macros.add
 	
 		/*d:
-			(display: String) -> DisplayCommand
+			(display: String) -> Command
 			
 			This command writes out the contents of the passage with the given string name.
 			If a passage of that name does not exist, this produces an error.
@@ -62,36 +72,23 @@ function(Macros, Utils, State, Engine, TwineError, OperationUtils) {
 					"a (display:) command",
 				
 				TwineScript_Print: function() {
-					var passage = State.variables.Passages.get(name);
 					/*
 						Test for the existence of the named passage in the story.
 						This and the next check must be made now, because the Passages
 						datamap could've been tinkered with since this was created.
 					*/
-					if (!passage) {
-						return TwineError.create("macrocall",
-							"I can't display the passage '"
-							+ name
-							+ "' because it doesn't exist."
-						);
+					var error;
+					if ((error = TwineError.containsError(State.passageExists(name)))) {
+						return error;
 					}
-					/*
-						Test that the passage is indeed a usable Map. (The author
-						could have modified $Passage, after all.)
-					*/
-					if (!(passage instanceof Map) || !passage.has('code')) {
-						return TwineError.create("operation",
-							"The passage '" + name + "' isn't a datamap with a 'code' data key."
-						);
-					}
-					return Utils.unescape(passage.get('code'));
+					return Utils.unescape(State.variables.Passages.get(name).get('code'));
 				},
 			};
 		},
 		[String])
 		
 		/*d:
-			(print: Any) -> PrintCommand
+			(print: Any) -> Command
 			This command prints out any single argument provided to it, as text.
 			
 			Example usage:
@@ -193,7 +190,7 @@ function(Macros, Utils, State, Engine, TwineError, OperationUtils) {
 		[Any])
 		
 		/*d:
-			(go-to: String) -> GotoCommand
+			(go-to: String) -> Command
 			This command stops passage code and sends the player to a new passage.
 			If the passage named by the string does not exist, this produces an error.
 			
@@ -230,23 +227,16 @@ function(Macros, Utils, State, Engine, TwineError, OperationUtils) {
 			(loadgame:)
 		*/
 		("goto", function (_, name) {
-
 			return {
 				TwineScript_ObjectName: "a (go-to: " + Utils.toJSLiteral(name) + ") command",
 				TwineScript_TypeName:   "a (go-to:) command",
 				TwineScript_Print: function() {
-					var passageMap = State.variables.Passages.get(name);
-					if (!passageMap) {
-						return TwineError.create("macrocall", "There's no passage named '" + name + "'.");
-					}
 					/*
-						This passageMap could be an author-created-at-runtime datamap,
-						and as such should be carefully examined.
+						First, of course, check for the passage's existence.
 					*/
-					if (!(passageMap instanceof Map) || !passageMap.has('code')) {
-						return TwineError.create("operation",
-							"The passage '" + name + "' isn't a datamap with a 'code' data key."
-						);
+					var error = TwineError.containsError(State.passageExists(name));
+					if (error) {
+						return error;
 					}
 					/*
 						When a passage is being rendered, <tw-story> is detached from the main DOM.
@@ -271,7 +261,7 @@ function(Macros, Utils, State, Engine, TwineError, OperationUtils) {
 		[String])
 		
 		/*d:
-			(live: [Number]) -> LiveCommand
+			(live: [Number]) -> Command
 			When you attach this macro to a hook, the hook becomes "live", which means that it's repeatedly re-run
 			every certain number of milliseconds, replacing the prose inside of the hook with a newly computed version.
 			
@@ -313,7 +303,7 @@ function(Macros, Utils, State, Engine, TwineError, OperationUtils) {
 		)
 		
 		/*d
-			(stop:) -> StopCommand
+			(stop:) -> Command
 			This macro, which accepts no arguments, creates a (stop:) command, which is not configurable.
 			
 			Example usage:
@@ -361,10 +351,10 @@ function(Macros, Utils, State, Engine, TwineError, OperationUtils) {
 			You can put it inside a (link:) hook, such as
 			```
 			{(link:"Save game")[
-			  (if:(save-game:"A"))[
+			  (if:(save-game:"Slot A"))[
 			    Game saved!
 			  ](else: )[
-			    Save failed!
+			    Sorry, I couldn't save your game.
 			  ]
 			]}
 			```
@@ -377,13 +367,21 @@ function(Macros, Utils, State, Engine, TwineError, OperationUtils) {
 			You can tie them to a name the player gives, such as `(save-game: $playerName)`, if multiple players
 			are likely to play this game - at an exhibition, for instance.
 			
-			Giving the saved game a file name is optional, but allows that name to be displayed when examining
-			____, cluing the player into the saved game's contents.
+			Giving the saved game a file name is optional, but allows that name to be displayed by finding it in the
+			$Saves datamap. This can be combined with a (load-game:)(link:) to clue the players into the save's contents:
+			```
+			(link: "Load game: " + ("Slot 1") of Saves)[
+			  (load-game: "Slot 1")
+			]
+			```
 			
 			(save-game:) evaluates to a boolean - true if the game was indeed saved, and false if the browser prevented
 			it (because they're using private browsing, their browser's storage is full, or some other reason).
 			Since there's always a possibility of a save failing, you should use (if:) and (else:) with (save-game:)
-			to display an apology message in the event that it returns false.
+			to display an apology message in the event that it returns false (as seen above).
+			
+			See also:
+			(load-game:)
 		*/
 		("savegame",
 			function savegame(_, slotName, fileName) {
@@ -443,10 +441,30 @@ function(Macros, Utils, State, Engine, TwineError, OperationUtils) {
 			},
 			[String, optional(String)]
 		)
-		/*
-			(load-game:)
+		/*d:
+			(load-game: String) -> Command
+			
 			This command attempts to load a saved game from the given slot, ending the current game and replacing it
-			with the loaded one.
+			with the loaded one. This causes the passage to change.
+			
+			Example usage:
+			```
+			{(if: $Saves contains "Slot A")[
+			  (link: "Load game")[(load-game:"Slot A")]
+			]}
+			```
+			
+			Details:
+			Just as (save-game:) exists to store the current game session, (load-game:) exists to retrieve a past
+			game session, whenever you want. This command, when given the string name of a slot, will attempt to
+			load the save, completely and instantly replacing the variables and move history with that of the
+			save, and going to the passage where that save was made.
+			
+			This macro assumes that the save slot exists and contains a game, which you can check by seeing if
+			`$Saves contains` the slot name before running (load-game:).
+			
+			See also:
+			(save-game:)
 		*/
 		("loadgame",
 			function loadgame(_, slotName) {
@@ -461,6 +479,11 @@ function(Macros, Utils, State, Engine, TwineError, OperationUtils) {
 						}
 						
 						State.deserialise(saveData);
+						/*
+							There's not a strong reason to check for the destination passage existing,
+							because (save-game:) can only be run inside a passage. If this fails,
+							the save itself is drastically incorrect.
+						*/
 						requestAnimationFrame(Engine.showPassage.bind(Engine,State.passage));
 						return { earlyExit: 1 };
 					},
