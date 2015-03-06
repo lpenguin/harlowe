@@ -280,14 +280,16 @@
 					};
 				},
 			},
-			collapsed: {
-				fn: function(match) {
+			collapsedFront: {
+				fn: Object,
+			},
+			collapsedBack: {
+				fn: function() {
 					return {
-						/*
-							TODO: Currently, this eliminates line breaks inside
-							string literals inside macros. This shouldn't be the case.
-						*/
-						innerText: match[1].replace(/[\s\n]+/g, ' ').trim()
+						type: "collapsedBack",
+						matches: {
+							collapsedFront: "collapsed",
+						},
 					};
 				},
 			},
@@ -336,6 +338,8 @@
 			hookRef:  { fn: textTokenFn("name") },
 			
 			variable:   { fn: textTokenFn("name") },
+			
+			whitespace: { fn: Object },
 		});
 		
 		/*
@@ -524,7 +528,7 @@
 				};
 				return a;
 			},{}),
-			["comma", "spread", "whitespace"].reduce(function(a, e) {
+			["comma", "spread"].reduce(function(a, e) {
 				a[e] = { fn: Object };
 				return a;
 			},{})

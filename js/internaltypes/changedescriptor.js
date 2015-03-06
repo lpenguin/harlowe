@@ -1,7 +1,6 @@
 define(['jquery', 'utils', 'renderer'], function($, Utils, Renderer) {
 	"use strict";
 	/**
-		
 		When a new Section (generally a hook or expression) is about to be rendered,
 		a ChangeDescriptor is created and fed into all of the ChangerCommands which are
 		attached to the Section. They mutate the ChangeDescriptor, and the result describes
@@ -20,10 +19,6 @@ define(['jquery', 'utils', 'renderer'], function($, Utils, Renderer) {
 		
 		// {String} code              The hook's code, which can be finagled before it is run.
 		code:             "",
-		
-		// {Array} styles             A set of CSS styles to apply inline to the hook's element.
-		//                            Currently, nothing uses this.
-		styles:           null,
 		
 		// {Boolean} enabled          Whether or not this code is enabled.
 		//                            (Disabled code won't be used until something enables it).
@@ -55,7 +50,7 @@ define(['jquery', 'utils', 'renderer'], function($, Utils, Renderer) {
 			ChangeDescriptors can delegate to earlier descriptors if need be.
 		*/
 		create: function(properties, changer) {
-			var ret = Object.assign(Object.create(this), { styles: [] }, properties);
+			var ret = Object.assign(Object.create(this), properties);
 			/*
 				If a ChangerCommand was passed in, run it.
 			*/
@@ -72,12 +67,6 @@ define(['jquery', 'utils', 'renderer'], function($, Utils, Renderer) {
 		update: function() {
 			var target = this.target;
 			
-			/*
-				Apply the style attributes to the target element.
-			*/
-			if (Array.isArray(this.styles)) {
-				target.css(Object.assign.apply(0, [{}].concat(this.styles)));
-			}
 			/*
 				If HTML attributes were included in the changerDescriptor, apply them now.
 			*/

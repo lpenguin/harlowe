@@ -358,10 +358,8 @@
 		verbatim:        "(`+)" + ws + "([^]*?[^`])" + ws + "\\1(?!`)",
 		verbatimOpener:                                    opener("`"),
 		
-		/*
-			TODO: Make the collapsed syntax nestable.
-		*/
-		collapsed:        "{([^}]*)}",
+		collapsedFront:                                            "{",
+		collapsedBack:                                             "}",
 		collapsedOpener:                                   opener("{"),
 		
 		bulleted:    bulleted,

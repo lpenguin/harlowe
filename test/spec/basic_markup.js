@@ -311,8 +311,8 @@ describe("basic twinemarkup syntax", function() {
 		});
 		it("leaves other syntax as is", function() {
 			expectMarkupToBecome(
-				"{   ''A''   }",
-				"<b>A</b>"
+				"{   ''A ''   }",
+				"<b>A </b>"
 			);
 		});
 		it("collapses runs of whitespace between non-whitespace down to a single space", function() {
@@ -320,6 +320,29 @@ describe("basic twinemarkup syntax", function() {
 				"{   A   B   }",
 				"A B"
 			);
+			expectMarkupToBecome(
+				"X{   A   B   }Y",
+				"XA BY"
+			);
+		});
+		it("can be nested", function() {
+			expectMarkupToBecome(
+				"{{   ''A''   }}  B  C",
+				"<b>A</b>  B  C"
+			);
+			expectMarkupToBecome(
+				"{  A {   ''B''   }} C",
+				"A <b>B</b> C"
+			);
+		});
+		it("won't affect text inside HTML tags", function() {
+			var p = runPassage("{<span title='   '> <br> </span>}");
+			expect(p.find('span').attr('title')).toBe("   ");
+			expect(p.text()).toBe(" ");
+		});
+		it("as a result, it won't affect text inside macros", function() {
+			var p = runPassage("{(print:'Red   Blue')}");
+			expect(p.text()).toBe("Red   Blue");
 		});
 	});
 	
@@ -365,6 +388,11 @@ describe("basic twinemarkup syntax", function() {
 			expect(align.first().text()).toBe('garply');
 			expect(align.last().text()).toBe('grault');
 			expect(align.parent().children().length).toBe(2);
+		});
+	});
+	describe("Twine 1 macro syntax", function() {
+		it("will simply print an error", function() {
+			expectMarkupToError("<<set $red to 1>>");
 		});
 	});
 });

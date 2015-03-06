@@ -1,4 +1,4 @@
-define(['utils', 'markup', 'twinescript/compiler'], function(Utils, TwineMarkup, Compiler) {
+define(['utils', 'markup', 'twinescript/compiler', 'internaltypes/twineerror'], function(Utils, TwineMarkup, Compiler, TwineError) {
 	"use strict";
 	/**
 		The Renderer takes the syntax tree from TwineMarkup and returns a HTML string.
@@ -101,14 +101,8 @@ define(['utils', 'markup', 'twinescript/compiler'], function(Utils, TwineMarkup,
 				token = tokens[i];
 				switch(token.type) {
 					case "twine1Macro": {
-						/*
-							TODO: abstract out the renderError method from Section, and use it here.
-						*/
-						out += "<tw-error class='error' title=\""
-							+ escape(token.text)
-							+ "\">"
-							+ "Twine 2 macros use a different syntax to Twine 1 macros."
-							+ "</tw-error>";
+						out += TwineError.create("macrocall","Twine 2 macros use a different syntax to Twine 1 macros.")
+							.render(escape(token.text))[0].outerHTML;
 						break;
 					}
 					case "numbered":
@@ -247,7 +241,16 @@ define(['utils', 'markup', 'twinescript/compiler'], function(Utils, TwineMarkup,
 						break;
 					}
 					case "collapsed": {
-						out += token.children && token.children.length ? render(token.children) : token.innerText;
+						out += token.children && token.children.length
+							? render(token.children)
+								/*
+									This gigantic expression reduces <br> tags and whitespace to single spaces,
+									then trims the ends off.
+									(This doesn't need to be case-sensitive since render() only produces
+									lowercase <br>'s.)
+								*/
+								.replace(new RegExp("(?:" + TwineMarkup.Patterns.whitespace + "|<br>)+(?=[^>]*(?:<[^>]*>)*[^<]*$)",'g'),' ').trim()
+							: token.innerText;
 						break;
 					}
 					/*

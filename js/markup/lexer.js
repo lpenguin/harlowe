@@ -97,7 +97,7 @@
 			// This token
 			fn(this);
 			// All of its children
-			this.children.forEach(function() { forEach(fn); });
+			this.children.forEach(function(e) { e.forEach(fn); });
 		},
 		
 		/*
@@ -178,9 +178,14 @@
 		*/
 		isWhitespace: function isWhitespace() {
 			return this.everyLeaf(function(e) {
-				return !e.text.trim();
+				/*
+					Check if it's the 'whitespace' type... or if it's a
+					mislabeled text leaf.
+				*/
+				return e.type === "whitespace" || !e.text.trim();
 			});
 		},
+		
 		/*
 			Convert this token into a text token, in the simplest manner possible.
 			

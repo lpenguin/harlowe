@@ -13,7 +13,7 @@ define(['jquery', 'utils', 'utils/selectors', 'internaltypes/changedescriptor'],
 		a :hover style via inline CSS, it must be implemented using JS instead.
 	*/
 	$(Utils.storyElement).on('mouseenter', Selectors.internalLink, function() {
-		var changer = Design.get("HoveringLinks"),
+		var changer = Design.get("Hovering Links"),
 			elem = $(this);
 		/*
 			Don't apply the changer if A) it doesn't exist, or
@@ -39,7 +39,7 @@ define(['jquery', 'utils', 'utils/selectors', 'internaltypes/changedescriptor'],
 		["Passages",      null],
 		["Page",          null],
 		["Links",         null],
-		["HoveringLinks", null],
+		["Hovering Links",null],
 	]), {
 		/*
 			This expando property means that VarRef's objectOrMapSet() cannot

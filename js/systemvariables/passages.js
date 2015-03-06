@@ -4,7 +4,7 @@ define(['jquery', 'utils', 'utils/selectors'], function($, Utils, Selectors) {
 		$Passages
 		A userland registry of Passage objects.
 		
-		@class $Design
+		@class $Passages
 		@static
 	*/
 	
@@ -40,7 +40,9 @@ define(['jquery', 'utils', 'utils/selectors'], function($, Utils, Selectors) {
 		});
 	}
 	
-	var Passages = new Map();
+	var Passages = Object.assign(new Map(), {
+		TwineScript_ObjectName: "the $Passages datamap",
+	});
 	
 	/*
 		Unfortunately, the DOM isn't visible until the page is loaded, so we can't
