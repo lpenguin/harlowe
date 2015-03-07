@@ -9,8 +9,12 @@ function(Macros, Utils, State, Engine, TwineError, OperationUtils) {
 		Most commands are created from macros placed directly in the passage, but, like all forms of
 		data, they can be saved into variables using (set:) and (put:), and stored for later use.
 		
+		Macros that produce commands include (display:), (print:), (go-to:), (save-game:), (load-game:),
+		(link-goto:), and more.
+		
 		Many commands only have an effect when they're attached to hooks, and modify the
-		hook in a certain manner.
+		hook in a certain manner. Macros that work like this include (text-style:), (font:), (transition:),
+		(rotate:), (position-x:), (position-y:), (hook:), (click:), (link:), and more.
 	*/
 	var
 		Any = Macros.TypeSignature.Any,

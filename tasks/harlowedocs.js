@@ -1,4 +1,5 @@
 module.exports = function(grunt) {
+	'use strict';
 	/*
 		This generates end-user Harlowe macro and syntax documentation (in Markup) by reading
 		/*d: delimited comments from the source file.
@@ -10,7 +11,7 @@ module.exports = function(grunt) {
 			This matches a mixed-case type name, optionally plural, but not whenever
 			it seems to be part of a macro name.
 		*/
-		typeName = /\b(any|nothing|command|string|number|boolean|array|data(?:map|set))(s?)(?!\:\))\b/ig,
+		typeName = /\b(variabletovalue|any|nothing|command|string|number|boolean|array|data(?:map|set))(s?)(?!\:\))\b/ig,
 		typeDefinition = /([\w]+) data\n/,
 		
 		// Type definitions
@@ -43,12 +44,12 @@ module.exports = function(grunt) {
 		* Then, afterward, a return type signature.
 	*/
 	function macroSignature(name, sig, returnType) {
-		return "<h2 id=macro_" + name + ">" +
+		return "\n<h2 id=macro_" + name.toLowerCase() + ">" +
 			"(" + name + ": <i>" +
 			parameterSignature(sig) +
 			"</i>) <span class=macro_returntype>&rarr;</span> <i>" +
 			returnType +
-			"</i></h2>";
+			"</i></h2>\n";
 	}
 	
 	/*
@@ -73,12 +74,12 @@ module.exports = function(grunt) {
 					...but don't hyperlink references to this own type.
 					(This targets mixed-case singular and plural.)
 				*/
-				if ($1.toLowerCase().indexOf(title.toLowerCase()) === 0) {
+				if ($1.toLowerCase() === title.toLowerCase()) {
 					return text;
 				}
 				if (typeNamesLinked.indexOf($1) === -1) {
 					typeNamesLinked.push($1);
-					return "[" + $1 + $2 + "](#type_" + $1 + ")";
+					return "[" + $1 + $2 + "](#type_" + $1.toLowerCase() + ")";
 				}
 				return text;
 			})
@@ -90,24 +91,21 @@ module.exports = function(grunt) {
 					...but don't hyperlink references to this own macro.
 					(e.g. don't hyperlink (goto:) in the (goto:) article.)
 				*/
-				if ($1.toLowerCase().indexOf(match[1].toLowerCase()) === 0) {
+				if ($1.toLowerCase() === match[1].toLowerCase()) {
 					return "<b>" + text + "</b>";
 				}
-				return "[(" + $1 + ":)](#macro_" + $1 + ")";
+				return "[(" + $1 + ":)](#macro_" + $1.toLowerCase() + ")";
 			})
 			/*
 				Convert the minor headings into <h4> elements.
 			*/
 			.replace(/\n([A-Z][\w\s\d]+:)\n/g,"\n####$1\n");
-		/*
-			We're done.
-		*/
-		typeDefs[title] = text;
+		return text;
 	}
 	
 	function processMacroDefinition(match) {
-		title = match[0];
-		text = match.input.trim()
+		var title = match[0];
+		var text = match.input.trim()
 			/*
 				Convert the title signature into an anchor and an augmented parameter signature.
 			*/
@@ -119,13 +117,17 @@ module.exports = function(grunt) {
 			Now, do it! Output the text!
 		*/
 		macroDefs[title] = text;
+		console.log('Macro: ' + title);
 	}
 	
 	function processTypeDefinition(match) {
-		return processTextTerms(
-			match.input.trim().replace(match[0], "<h2 id=type_" + match[1] + ">" + match[0] + "</h2>\n"),
-			match
-		);
+		var title = match[0],
+			text = processTextTerms(
+				match.input.trim().replace(match[0], "\n<h2 id=type_" + match[1].toLowerCase() + ">" + match[0] + "</h2>\n"),
+				match
+			);
+		typeDefs[title] = text;
+		console.log('Datatype: ' + title.trim());
 	}
 	
 	grunt.registerTask('harlowedocs', "Make Harlowe documentation", function() {
@@ -143,8 +145,7 @@ module.exports = function(grunt) {
 				return e.replace(/\t/g,'').slice(4,-2).trim();
 				
 			}).forEach(function(defText) {
-				var match, title, text;
-				
+				var match;
 				/*
 					Is it a macro definition?
 				*/

@@ -390,9 +390,11 @@ function($, Utils, OperationUtils, TwineError) {
 				return {pattern: "rest",             innerType: type };
 			},
 			
-			/*
-				As this isn't a method, but a stand-in "type" alongside
-				Array and String, its name is capitalised.
+			/*d:
+				Any data
+				
+				A macro that is said to accept "Any" will accept any kind of data,
+				without complaint, as long as the data does not contain any errors.
 			*/
 			Any: {
 				TwineScript_TypeName: "anything",
