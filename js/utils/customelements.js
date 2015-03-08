@@ -90,10 +90,10 @@ define([], function() {
 	
 	// Hooks (inline)
 	// - name: the name of the hook.
-	// - code: the code that it should render, if it's not yet rendered.
+	// - prose: the prose that it should render, if it's not yet rendered.
 	// Classes:
 	// .link: Is a hook-link.
-	('tw-hook', 'name', 'code')
+	('tw-hook', 'name', 'prose')
 	// Pseudo-hooks (inline)
 	// Classes:
 	// .link: Is a hook-link.

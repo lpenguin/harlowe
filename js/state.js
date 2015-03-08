@@ -1,4 +1,10 @@
-define(['utils', 'systemvariables/design', 'systemvariables/passages', 'internaltypes/twineerror'], function(Utils, Design, Passages, TwineError) {
+define([
+	'utils',
+	'systemvariables/design',
+	'systemvariables/passages',
+	'systemvariables/saves',
+	'internaltypes/twineerror',
+], function(Utils, Design, Passages, Saves, TwineError) {
 	"use strict";
 	/**
 		State
@@ -16,8 +22,9 @@ define(['utils', 'systemvariables/design', 'systemvariables/passages', 'internal
 			Note that it's not possible for userland TwineScript to directly access or
 			modify this base object.
 		*/
-		Design: Design,
-		Passages: Passages,
+		Design:     Design,
+		Passages:   Passages,
+		Saves:      Saves,
 		TwineScript_ObjectName: "this story's variables",
 		/*
 			This property means that these property names cannot be set to new
@@ -170,9 +177,9 @@ define(['utils', 'systemvariables/design', 'systemvariables/passages', 'internal
 				Even if it exists, the passageMap could be an author-created-at-runtime
 				datamap, and as such should be carefully examined.
 			*/
-			if (!(passageMap instanceof Map) || !passageMap.has('code')) {
+			if (!(passageMap instanceof Map) || !passageMap.has('prose')) {
 				return TwineError.create("operation",
-					"The passage '" + name + "' isn't a datamap with a 'code' data key."
+					"The passage '" + name + "' isn't a datamap with a 'prose' data key."
 				);
 			}
 			return true;

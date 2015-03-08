@@ -366,7 +366,8 @@ describe("basic twinemarkup syntax", function() {
 			expect(align.css('text-align')).toBe('center');
 			expect(align.text()).toBe('garply');
 			expect(align.attr('style')).toMatch(/max-width:\s*50%/);
-			expect(align.attr('style')).toMatch(/margin-left:\s*25%/);
+			expect(align.attr('style')).toMatch(/margin-left:\sauto/);
+			expect(align.attr('style')).toMatch(/margin-right:\sauto/);
 		});
 		it("justifies text with <==>", function() {
 			var align = runPassage("<==>\ngarply\n<==").find('tw-align');
@@ -387,7 +388,7 @@ describe("basic twinemarkup syntax", function() {
 			var align = runPassage("<==>\ngarply\n==>\ngrault\n<==").find('tw-align');
 			expect(align.first().text()).toBe('garply');
 			expect(align.last().text()).toBe('grault');
-			expect(align.parent().children().length).toBe(2);
+			expect(align.length).toBe(2);
 		});
 	});
 	describe("Twine 1 macro syntax", function() {

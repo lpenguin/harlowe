@@ -6,7 +6,7 @@ define(['jquery', 'utils', 'renderer'], function($, Utils, Renderer) {
 		attached to the Section. They mutate the ChangeDescriptor, and the result describes
 		all of the changes that must be made to the Section on rendering.
 	*/
-	var	ChangeDescriptor,
+	var ChangeDescriptor,
 		/*
 			changeDescriptorShape is an array of all expected properties on
 			ChangeDescriptor instances. It's cached for performance paranoia.
@@ -17,17 +17,17 @@ define(['jquery', 'utils', 'renderer'], function($, Utils, Renderer) {
 		
 		// A ChangeDescriptor is a TwineScript internal object with the following values:
 		
-		// {String} code              The hook's code, which can be finagled before it is run.
-		code:             "",
+		// {String} prose             The hook's prose, which can be finagled before it is run.
+		prose:             "",
 		
 		// {Boolean} enabled          Whether or not this code is enabled.
 		//                            (Disabled code won't be used until something enables it).
 		enabled:          true,
 		
-		// {jQuery} target            Where to render the code, if not the hookElement.
+		// {jQuery} target            Where to render the prose, if not the hookElement.
 		target:           null,
 		
-		// {String} append            Which jQuery method name to append the code to the dest with.
+		// {String} append            Which jQuery method name to append the prose to the dest with.
 		append:           "append",
 		
 		// {String} [transition]      Which built-in transition to use.
@@ -35,6 +35,10 @@ define(['jquery', 'utils', 'renderer'], function($, Utils, Renderer) {
 		
 		// {Number} [transitionTime]  The duration of the transition, in ms. CURRENTLY UNUSED.
 		transitionTime:   0,
+		
+		// {Array} styles             A set of CSS styles to apply inline to the hook's element.
+		//                            Used by (position-x:), etc.
+		styles:           null,
 		
 		// {Object} [attr]            Attributes to apply to the <tw-expression> using $.fn.attr().
 		//                            Used only by (hook:).
@@ -50,7 +54,10 @@ define(['jquery', 'utils', 'renderer'], function($, Utils, Renderer) {
 			ChangeDescriptors can delegate to earlier descriptors if need be.
 		*/
 		create: function(properties, changer) {
-			var ret = Object.assign(Object.create(this), properties);
+			var ret = Object.assign(Object.create(this), {
+					attr:   [],
+					styles: [],
+				}, properties);
 			/*
 				If a ChangerCommand was passed in, run it.
 			*/
@@ -66,7 +73,12 @@ define(['jquery', 'utils', 'renderer'], function($, Utils, Renderer) {
 		*/
 		update: function() {
 			var target = this.target;
-			
+			/*
+				Apply the style attributes to the target element.
+			*/
+			if (Array.isArray(this.styles)) {
+				target.css(Object.assign.apply(0, [{}].concat(this.styles)));
+			}
 			/*
 				If HTML attributes were included in the changerDescriptor, apply them now.
 			*/
@@ -94,7 +106,7 @@ define(['jquery', 'utils', 'renderer'], function($, Utils, Renderer) {
 		render: function() {
 			var
 				target      = this.target,
-				code        = this.code,
+				prose       = this.prose,
 				append      = this.append,
 				transition  = this.transition,
 				enabled     = this.enabled,
@@ -140,7 +152,7 @@ define(['jquery', 'utils', 'renderer'], function($, Utils, Renderer) {
 				that, when a HookSet has multiple targets, each target has
 				its own distinct rendering of the same TwineMarkup.
 				
-				(Note: code may be '' if the descriptor's append method is "remove".
+				(Note: prose may be '' if the descriptor's append method is "remove".
 				In which case, let it be an empty set.)
 				
 				Notice also that the entire expression is wrapped in $():
@@ -155,8 +167,8 @@ define(['jquery', 'utils', 'renderer'], function($, Utils, Renderer) {
 				early-exit from this method.
 			*/
 			
-			dom = $(code &&
-				$.parseHTML(Renderer.exec(code), document, true));
+			dom = $(prose &&
+				$.parseHTML(Renderer.exec(prose), document, true));
 			
 			/*
 				Now, insert the DOM structure into the target element.

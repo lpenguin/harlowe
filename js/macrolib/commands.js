@@ -85,7 +85,7 @@ function(Macros, Utils, State, Engine, TwineError, OperationUtils) {
 					if ((error = TwineError.containsError(State.passageExists(name)))) {
 						return error;
 					}
-					return Utils.unescape(State.variables.Passages.get(name).get('code'));
+					return Utils.unescape(State.variables.Passages.get(name).get('prose'));
 				},
 			};
 		},
@@ -435,6 +435,11 @@ function(Macros, Utils, State, Engine, TwineError, OperationUtils) {
 							Saved games are prefixed with (Saved Game Filename) to avoid collisions.
 						*/
 						"(Saved Game Filename) " + slotName, fileName);
+					/*
+						Update the $Saves datamap with this change, replacing an existing
+						filename if it was there.
+					*/
+					State.variables.Saves.set(slotName, fileName);
 					return true;
 				} catch(e) {
 					/*

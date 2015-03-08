@@ -157,6 +157,9 @@
 							to convert to a percentage.)
 						*/
 						align = Math.round(centerIndex / (arrow.length - 2) * 50);
+						if (align === 25) {
+							align = "center";
+						}
 					} else if (arrow[0] === "<" && arrow.slice(-1) === ">") {
 						align = "justify";
 					} else if (arrow.includes(">")) {

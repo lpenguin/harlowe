@@ -44,7 +44,7 @@ define(['jquery', 'utils', 'macros', 'datatypes/hookset', 'datatypes/changercomm
 		
 		An "enchantment" is a process by which selected hooks in a passage are
 		automatically wrapped in <tw-enchantment> elements that have certain styling classes,
-		and can trigger the rendering of the attached TwineMarkup code when they experience
+		and can trigger the rendering of the attached TwineMarkup prose when they experience
 		an event.
 		
 		In short, it allows various words to become links etc., and do something when
@@ -165,7 +165,7 @@ define(['jquery', 'utils', 'macros', 'datatypes/hookset', 'datatypes/changercomm
 					enchantments = $();
 				
 				/*
-					Prevent the target's code from running immediately.
+					Prevent the target's prose from running immediately.
 					This is unset when the event is finally triggered.
 				*/
 				desc.enabled = false;
@@ -266,14 +266,14 @@ define(['jquery', 'utils', 'macros', 'datatypes/hookset', 'datatypes/changercomm
 									/*
 										At last, the target originally specified
 										by the ChangeDescriptor can now be filled with the
-										ChangeDescriptor's original code.
+										ChangeDescriptor's original prose.
 										
 										By passing the desc as the third argument,
 										all its values are assigned, not just the target.
 										The second argument may be extraneous. #awkward
 									*/
 									desc.section.renderInto(
-										desc.code,
+										desc.prose,
 										null,
 										Object.assign({}, desc, { enabled: true })
 									);

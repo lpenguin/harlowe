@@ -70,6 +70,7 @@ Rough documentation is at http://twine2.neocities.org/
      * You can also edit these datamaps, and rewrite the story while it's being played - or, add a new passage datamap to `$Passages`, by running `(set: $Passages's ("My New Passage") to (datamap: "code", "My passage's text", "tags", (a:"my-tag", "my-tag-2"))` etc.
  * Added `(position-x:)` and `(position-y:)`: shorthands for giving a hook the CSS property `position:absolute` and a percentage `left` or `top`. The percentage argument is a number, ostensibly from 0 to 1, but potentially any number. One problem: while it should position the hook relative to the passage, it doesn't work correctly when nested - because, of course, `position:absolute` uses the nearest positioned element.
  * Added `(css:)` as a 'last resort' solution for styling elements, which is essentially the same as a raw HTML `<span style='...'>` tag, but can be combined with other changer commands. I feel obliged to offer this to provide some CSS-familiar users some access to higher functionality, even though it's not intended for general use in place of `(text-style:)`, `(position-x:)` or whatever.
+ * Added `(align:)`, a macro form of the aligner syntax. It accepts a string containing an ASCII arrow of the same type that makes up the syntax ('==>', '=><==', etc). 
 
 ###1.0.1 changes:
 

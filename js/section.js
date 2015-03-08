@@ -65,7 +65,7 @@ function($, Utils, Selectors, Renderer, Environ, State, HookUtils, HookSet, Pseu
 						The use of popAttr prevents the hook from executing normally
 						if it wasn't actually the eventual target of the changer function.
 					*/
-					nextHook.popAttr('code'),
+					nextHook.popAttr('prose'),
 					/*
 						Don't forget: nextHook may actually be empty.
 						This is acceptable - the result changer could alter the
@@ -152,7 +152,7 @@ function($, Utils, Selectors, Renderer, Environ, State, HookUtils, HookSet, Pseu
 		else if   (result === false
 				|| result === null
 				|| result === undefined) {
-			nextHook.removeAttr('code');
+			nextHook.removeAttr('prose');
 			expr.addClass("false");
 			
 			if (nextHook.length) {
@@ -196,7 +196,7 @@ function($, Utils, Selectors, Renderer, Environ, State, HookUtils, HookSet, Pseu
 			(We also remove (pop) the code from the hook
 			so that doExpressions() doesn't render it.)
 		*/
-		var code = target.popAttr('code') || "",
+		var prose = target.popAttr('prose') || "",
 			recursive;
 		
 		/*
@@ -212,7 +212,7 @@ function($, Utils, Selectors, Renderer, Environ, State, HookUtils, HookSet, Pseu
 			all that useful.
 		*/
 		recursive = (function() {
-			this.renderInto(code, target, {append:'replace'});
+			this.renderInto(prose, target, {append:'replace'});
 			/*
 				The (stop:) command causes the nearest (live:) command enclosing
 				it to be stopped. Inside an (if:), it allows one-off live events to be coded.
@@ -406,7 +406,7 @@ function($, Utils, Selectors, Renderer, Environ, State, HookUtils, HookSet, Pseu
 				*/
 				desc = ChangeDescriptor.create({
 					target: target,
-					code: source,
+					prose: source,
 				}),
 				/*
 					This stores the returned DOM created by rendering the changeDescriptor.
@@ -464,12 +464,12 @@ function($, Utils, Selectors, Renderer, Environ, State, HookUtils, HookSet, Pseu
 			*/
 			if (!desc.target) {
 				Utils.impossible("Section.renderInto",
-					"ChangeDescriptor has code but not a target!");
+					"ChangeDescriptor has prose but not a target!");
 				return;
 			}
 			
 			/*
-				Render the code into the target.
+				Render the prose into the target.
 				
 				When a non-jQuery is the target in the descriptor, it is bound to be
 				a HookSet or PseudoHookSet, and each word or hook within that set
@@ -522,9 +522,9 @@ function($, Utils, Selectors, Renderer, Environ, State, HookUtils, HookSet, Pseu
 				switch(expr.tag()) {
 					case Selectors.hook:
 					{
-						if (expr.attr('code')) {
-							section.renderInto(expr.attr('code'), expr);
-							expr.removeAttr('code');
+						if (expr.attr('prose')) {
+							section.renderInto(expr.attr('prose'), expr);
+							expr.removeAttr('prose');
 						}
 						break;
 					}

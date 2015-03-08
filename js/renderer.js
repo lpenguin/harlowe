@@ -154,7 +154,7 @@ define(['utils', 'markup', 'twinescript/compiler', 'internaltypes/twineerror'], 
 							
 							switch(align) {
 								case "center":
-									style += center + "margin:auto;";
+									style += center + "margin-left: auto; margin-right: auto;";
 									break;
 								case "justify":
 								case "right":
@@ -226,7 +226,7 @@ define(['utils', 'markup', 'twinescript/compiler', 'internaltypes/twineerror'], 
 							+ (token.name ? 'name="' + token.name + '"' : '')
 							// Debug mode: show the hook destination as a title.
 							+ ((Renderer.options.debug && token.name) ? ' title="Hook: ?' + token.name + '"' : '')
-							+ ' code="' + escape(token.innerText) + '">'
+							+ ' prose="' + escape(token.innerText) + '">'
 							+'</tw-hook>';
 						break;
 					}

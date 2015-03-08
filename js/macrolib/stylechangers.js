@@ -1,5 +1,5 @@
-define(['jquery','macros', 'utils', 'utils/selectors', 'datatypes/colour', 'datatypes/changercommand'],
-function($, Macros, Utils, Selectors, Colour, ChangerCommand) {
+define(['jquery','macros', 'utils', 'utils/selectors', 'datatypes/colour', 'datatypes/changercommand', 'internaltypes/twineerror'],
+function($, Macros, Utils, Selectors, Colour, ChangerCommand, TwineError) {
 	"use strict";
 
 	/*
@@ -52,6 +52,64 @@ function($, Macros, Utils, Selectors, Colour, ChangerCommand) {
 			function(d, family) {
 				d.styles.push({'font-family': family});
 				return d;
+			},
+			[String]
+		)
+		
+		// (align:)
+		// A composable shortcut for the ===><== aligner syntax.
+		("align",
+			function align(_, arrow) {
+				/*
+					I've decided to reimplement the aligner arrow parsing algorithm
+					used in markup/Markup and Renderer here for decoupling purposes.
+				*/
+				var style,
+					alignPercent,
+					centerIndex = arrow.indexOf("><");
+				
+				if (!/^(==+>|<=+|=+><=+|<==+>)$/.test(arrow)) {
+					return TwineError.create('macrocall', 'The (align:) macro requires an alignment arrow '
+						+ '("==>", "<==","==><=" etc.) be provided.');
+				}
+				
+				if (~centerIndex) {
+					/*
+						Find the left-align value
+						(Since offset-centered text is centered,
+						halve the left-align - hence I multiply by 50 instead of 100
+						to convert to a percentage.)
+					*/
+					alignPercent = Math.round(centerIndex / (arrow.length - 2) * 50);
+					style = Object.assign({
+							'text-align'  : 'center',
+							'max-width'   : '50%',
+						},
+						/*
+							25% alignment is centered, so it should use margin-auto.
+						*/
+						(alignPercent === 25) ? {
+							'margin-left' : 'auto',
+							'margin-right': 'auto',
+						} : {
+							'margin-left' : alignPercent + '%',
+					});
+				} else if (arrow[0] === "<" && arrow.slice(-1) === ">") {
+					style = {
+						'text-align'  : 'justify',
+						'max-width'   : '50%',
+					};
+				} else if (arrow.includes(">")) {
+					style = {
+						'text-align'  : 'right'
+					};
+				}
+				// This final property is necessary for margins to appear.
+				style.display = 'block';
+				return ChangerCommand.create("align", [style]);
+			},
+			function(d, style) {
+				d.styles.push(style);
 			},
 			[String]
 		)
@@ -361,7 +419,7 @@ function($, Macros, Utils, Selectors, Colour, ChangerCommand) {
 				return ChangerCommand.create("css", [text]);
 			},
 			function (d, text) {
-				d.attr = (d.attr || []).concat({'style': function() {
+				d.attr.push({'style': function() {
 					return ($(this).attr('style') || "") + text;
 				}});
 				return d;

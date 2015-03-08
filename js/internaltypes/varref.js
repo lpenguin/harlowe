@@ -5,7 +5,7 @@ function(Utils, State, TwineError, OperationUtils) {
 		VarRefs are essentially objects pairing a chain of properties
 		with an initial variable reference - "$red's blue's gold" would be
 		a VarRef pairing $red with ["blue","gold"]. They represent variables
-		in TwineScript code.
+		in TwineScript prose.
 		Accessing variable values is compiled to a VarRef.get() call, setting
 		them amounts to a VarRef.set() call made by the (set:) or (put:) macro,
 		and deleting them amounts to a VarRef.delete() call.

@@ -326,14 +326,6 @@ function($, Utils, OperationUtils, TwineError) {
 			as an argument, augmented with some other values, and returned as the ChangerCommand
 			result.
 			
-			A ChangeDescriptor is a plain object with the following values:
-			
-			{String} transition      Which transition to use.
-			{Number} transitionTime  The duration of the transition, in ms. CURRENTLY UNUSED.
-			{String} code            Transformations made on the hook's code before it is run.
-			{jQuery} target          Where to render the code, if not the hookElement.
-			{String} append          Which jQuery method to append the code to the dest with.
-			
 			@method addChanger
 			@param {String} name
 			@param {Function} fn

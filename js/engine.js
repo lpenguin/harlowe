@@ -90,7 +90,7 @@ function ($, Utils, Selectors, State, Section) {
 			Early exit: the wrong passage name was supplied.
 			Author error must never propagate to this method - it should have been caught earlier.
 		*/
-		if (!passageData || !(passageData instanceof Map) || !passageData.has('code')) {
+		if (!passageData || !(passageData instanceof Map) || !passageData.has('prose')) {
 			Utils.impossible("Engine.showPassage", "There's no passage with the name \""+name+"\"!");
 		}
 		
@@ -125,7 +125,7 @@ function ($, Utils, Selectors, State, Section) {
 		*/
 		
 		section.renderInto(
-			passageData.get('code'),
+			passageData.get('prose'),
 			newPassage,
 			/*
 				Use the author's styles, assigned using TwineScript,

@@ -130,10 +130,12 @@ describe("property indexing", function() {
 				expectMarkupToPrint('(print: (datamap:"W",(datamap:"W",1))\'s W\'s W)', "1");
 			});
 		});
-		it("cannot be used with arrays", function() {
-			expectMarkupToError('(set: $a to (a: 2,3))(set: $a\'s thing to 4)');
+		it("only 'length' can be used with arrays", function() {
+			expectMarkupToPrint('(set: $s to (a: 2,3))(print: $s\'s length)', '2');
+			expectMarkupToError('(set: $s to (a: 2,3))(set: $s\'s thing to 4)');
 		});
-		it("cannot be used with datasets", function() {
+		it("only 'length' can be used with datasets", function() {
+			expectMarkupToPrint('(set: $s to (dataset: 2,3))(print: $s\'s length)', '2');
 			expectMarkupToError('(set: $s to (dataset: 2,3))(set: $s\'s thing to 4)');
 		});
 	});
