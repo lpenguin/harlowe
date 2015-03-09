@@ -256,7 +256,7 @@ define(['utils', 'macros', 'utils/operationutils', 'internaltypes/twineerror'], 
 		("unless", function unless(section, expr) {
 			return !expr;
 		},
-		[Any])
+		[Boolean])
 		
 		/*d:
 			(else-if: Boolean) -> Boolean
