@@ -336,6 +336,18 @@ define([
 			}
 			return moved;
 		},
+		
+		/**
+			This method is only for debugging purposes. It is called nowhere except for the test specs.
+			
+			@method reset
+		*/
+		reset: function() {
+			timeline = [];
+			recent = -1;
+			present = Moment.create();
+			serialisable = true;
+		},
 	},
 	/*
 		In addition to the above simple methods, two serialisation methods are also present.

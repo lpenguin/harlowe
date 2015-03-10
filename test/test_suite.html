@@ -40,7 +40,7 @@ window.expectMarkupNotToError = window.expectMarkupToNotError = function(markup)
 	expect(runPassage(markup).find('tw-error').length).toBe(0);
 };
 window.clearState = function() {
-	State.rewind(State.pastLength+1);
+	State.reset();
 	State.variables.Passages.clear();
 	State.variables.Saves.clear();
 };
@@ -66,15 +66,15 @@ afterAll(function() {
 <!-- include spec files here... -->
 <script src="spec/basic_markup.js"></script>
 <script src="spec/html_in_markup.js"></script>
-<script src="spec/link_markup.js"></script>
-<script src="spec/command_macros.js"></script>
 <script src="spec/operators.js"></script>
 <script src="spec/identifiers.js"></script>
 <script src="spec/value_macros.js"></script>
+<script src="spec/command_macros.js"></script>
+<script src="spec/link_markup.js"></script>
 <script src="spec/property_indexing.js"></script>
 <script src="spec/style_changer_macros.js"></script>
 <script src="spec/save_macros.js"></script>
 <script src="spec/system_variables.js"></script>
-
-<tw-storydata options="" startnode="1">
+<script src="spec/setup_passages.js"></script>
+<tw-storydata options="debug" startnode="1">
 <tw-passagedata pid="1" name="1">

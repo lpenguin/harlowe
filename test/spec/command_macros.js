@@ -92,7 +92,7 @@ describe("basic command macros", function() {
 			createPassage("", "grault");
 			runPassage("(go-to: 'grault')","garply");
 			setTimeout(function() {
-				expectMarkupToPrint('(print:(history:))','1,garply,grault');
+				expectMarkupToPrint('(print:(history:))','garply,grault');
 				done();
 			}, 2);
 		});

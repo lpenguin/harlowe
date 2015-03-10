@@ -79,6 +79,9 @@ function ($, Utils, Selectors, State, Section) {
 			passageData = State.variables.Passages.get(name),
 			oldPassages,
 			section,
+			// The prose to render, which is drawn from both the passageData and the
+			// setup passages, if any.
+			prose,
 			// The <tw-story> element
 			story = Utils.storyElement,
 			/*
@@ -99,13 +102,13 @@ function ($, Utils, Selectors, State, Section) {
 			the <tw-story> is detached before and reattached after.
 		*/
 		story.detach();
-
+		
 		/*
 			Find out how many tw-passage elements there are currently in the
 			destination element.
 		*/
 		oldPassages = Utils.$(story.children(Utils.passageSelector));
-
+		
 		/*
 			If this isn't a stretchtext transition, send away all of the
 			old passage instances.
@@ -122,10 +125,44 @@ function ($, Utils, Selectors, State, Section) {
 		
 		/*
 			Actually do the work of rendering the passage now.
+			First, gather the prose of the passage in question.
 		*/
 		
+		prose = passageData.get('prose');
+		
+		/*
+			Now, we add to it the prose of the 'passage-setup' tagged passages.
+			We explicitly include these passages inside <tw-passage-setup> elements
+			so that they're visible to the author when they're in debug mode, and can clearly
+			see the effect they have on the passage.
+		*/
+		prose = State.variables.Passages.getTagged('passage-setup').map(function(setupPassage) {
+			return "<tw-passage-setup title='"
+				+ Utils.escape(setupPassage.get('name'))
+				+ "'>"
+				+ setupPassage.get('prose')
+				+ "</tw-passage-setup>";
+		})
+		.join('') + prose;
+		/*
+			We only add the story-setup passages if this is the very first passage.
+		*/
+		if (State.pastLength <= 0) {
+			prose = State.variables.Passages.getTagged('story-setup').map(function(setupPassage) {
+				return "<tw-story-setup title='"
+					+ Utils.escape(setupPassage.get('name'))
+					+ "'>"
+					+ setupPassage.get('prose')
+					+ "</tw-story-setup>";
+			})
+			.join('') + prose;
+		}
+		
+		/*
+			Then, run the actual passage.
+		*/
 		section.renderInto(
-			passageData.get('prose'),
+			prose,
 			newPassage,
 			/*
 				Use the author's styles, assigned using TwineScript,

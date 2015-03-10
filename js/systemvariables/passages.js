@@ -42,6 +42,25 @@ define(['jquery', 'utils', 'utils/selectors'], function($, Utils, Selectors) {
 	
 	var Passages = Object.assign(new Map(), {
 		TwineScript_ObjectName: "the $Passages datamap",
+		
+		/*
+			This method retrieves passages which have a given tag.
+		*/
+		getTagged: function(tag) {
+			var ret = [];
+			this.forEach(function(v) {
+				/*
+					We need this instanceof check in case a non-datamap was added by the author.
+				*/
+				var tags = v instanceof Map && v.get('tags');
+				if (Array.isArray(tags) && tags.indexOf(tag) >-1) {
+					ret.push(v);
+				}
+			});
+			return ret.sort(function(left, right) {
+				return left.get('name') > right.get('name');
+			});
+		},
 	});
 	
 	/*

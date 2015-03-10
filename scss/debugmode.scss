@@ -135,6 +135,21 @@
 		@include tiny-annotation();
 		content: attr(passage-name);
 	}
+	
+	tw-passage-setup {
+		background-color: hsla(30,60%,50%,0.1);
+		&::after {
+			@include tiny-annotation();
+			content: 'passage-setup';
+		}
+	}
+	tw-story-setup {
+		background-color: hsla(180,50%,50%,0.1);
+		&::after {
+			@include tiny-annotation();
+			content: 'story-setup';
+		}
+	}
 }
 
 @keyframes enchantment {
