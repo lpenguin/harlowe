@@ -49,6 +49,8 @@
 			&.false                 { background-color: hsla(0,  100%,50%,0.2) !important; }
 			&[name="a"],
 			&[name="array"],
+			&[name="datamap"],
+			&[name="dataset"],
 			&[name="colour"],
 			&[name="color"],
 			&[name="num"],
@@ -59,16 +61,15 @@
 			&[name="set"]           { background-color: hsla(30, 100%,50%,0.2) !important; }
 			&[name="script"]        { background-color: hsla(45, 100%,50%,0.2) !important; }
 			&[name="style"]         { background-color: hsla(180, 10%,75%,0.2) !important; }
-			&[name^="click"] ,
+			&[name^="link"],
+			&[name^="click"],
 			&[name^="mouseover"],
 			&[name^="mouseout"]     { background-color: hsla(90,  75%,50%,0.2) !important; }
 			&[name^="replace"],
 			&[name^="prepend"],
 			&[name^="append"],
 			&[name^="remove"]       { background-color: hsla(20,  75%,50%,0.2) !important; }
-			&[name="when"],
-			&[name="until"],
-			&[name="whenever"]      { background-color: hsla(220, 75%,50%,0.2) !important; }
+			&[name="live"]          { background-color: hsla(220, 75%,50%,0.2) !important; }
 		
 			/* Show the macro name */
 			&::before
@@ -107,6 +108,16 @@
 	}
 	tw-pseudo-hook {
 		background-color: hsla(40,100%,50%,0.1) !important;
+	}
+	tw-collapsed {
+		&::before {
+			@include tiny-annotation();
+			content: "{"
+		}
+		&::after {
+			@include tiny-annotation();
+			content: "}"
+		}
 	}
 	tw-align {
 		&[style*="text-align: center"] {

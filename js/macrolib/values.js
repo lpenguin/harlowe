@@ -350,9 +350,38 @@ define(['utils', 'macros', 'utils/operationutils', 'internaltypes/twineerror'], 
 		},
 		null)
 		
-		/*
-			(first-nonzero:) returns the leftmost non-zero number of the numbers given to it.
-			It's designed to serve the same purpose as JS's defaulting OR "||" operator.
+		/*d:
+			(nonzero: Number, [...Number]) -> Number
+			Also known as: (first-nonzero:)
+			
+			This accepts any quantity of numbers, and returns the leftmost non-zero number
+			of the numbers given to it.
+			
+			Rationale:
+			
+			This macro can be put to several uses, but probably the most common use is as follows:
+			
+			There are situations where you wish to use a given value, or, if it is zero,
+			a different value. Consider a situation where a variable may have been (set:)
+			to a value in a prior passage, depending on the player's decisions - but if it hasn't,
+			it must be (set:) now. You could use an (if:) macro to determine whether to perform
+			the (set:)... or, you could use (nonzero:) inside the (set:) like so:
+			```
+			(set: $mushrooms to (nonzero: it, 2)
+			```
+			If `$mushrooms` is nonzero, then the (set:) essentially does nothing. Otherwise, it
+			becomes 2.
+			
+			This may seem a bit limited, but this macro can also be used with multiple values:
+			```
+			(set: $attack to (nonzero: $handAttack, $footAttack, $headAttack))
+			```
+			The example above first checks if `$handWeapon`, `$footAttack` or `$headAttack` are nonzero,
+			in that order. If not, it simply uses 0 (the last value), reflecting that the player, in this
+			scenario, has no means of attack.
+			
+			See also:
+			(nonempty:)
 		*/
 		(["nonzero", "first-nonzero"], function first_nonzero(/*variadic*/) {
 			return Array.from(arguments).slice(1).filter(Boolean)[0] || false;

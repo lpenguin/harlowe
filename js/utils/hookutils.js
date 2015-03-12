@@ -58,27 +58,6 @@ define(['jquery', 'utils', 'utils/selectors'], function($, Utils, Selectors) {
 	}
 	
 	/*
-		This slightly complicated procedure is necessary to select all
-		descendent text nodes in jQuery.
-	*/
-	function textNodes(dom) {
-		/*
-			First, create an array containing all descendent and contents nodes
-			which are text nodes.
-		*/
-		return Array.apply(0, $(dom).find('*').addBack().contents().filter(function() {
-			return this.nodeType === Node.TEXT_NODE;
-		}))
-		/*
-			the addBack() call adds back the descendents in an unwanted order, so we must
-			sort the returned array using compareDocumentPosition.
-		*/
-		.sort(function(left, right) {
-			return (left.compareDocumentPosition(right)) === 2 ? 1 : -1;
-		});
-	}
-	
-	/*
 		This complicated function takes an array of contiguous sequential
 		text nodes, and a search string, and does the following:
 		
@@ -222,7 +201,7 @@ define(['jquery', 'utils', 'utils/selectors'], function($, Utils, Selectors) {
 			@return {jQuery} A jQuery set holding the created HTML wrapper tags.
 		*/
 		wrapTextNodes: function(searchString, dom, htmlTag) {
-			var nodes = findTextInNodes(textNodes(dom), searchString),
+			var nodes = findTextInNodes(dom.textNodes(), searchString),
 				ret = $();
 			nodes.forEach(function(e) {
 				ret = ret.add($(e).wrapAll(htmlTag));

@@ -32,23 +32,20 @@ function($, Utils, Selectors, Renderer, Environ, State, HookUtils, HookSet, Pseu
 	*/
 	
 	/**
-		Run a newly rendered <tw-expression> element's code, obtain the resulting value,
-		and apply it to the next <tw-hook> element, if present.
+		Apply the result of a <tw-expression>'s evaluation to the next hook.
+		If the result is a changer command, live command or boolean, this will cause the hook
+		to be rendered differently.
 		
 		@method runExpression
 		@private
-		@param {jQuery} expr The expression to run.
+		@param {jQuery} expr The <tw-expression> element.
+		@param {Any} result The result of running the expression.
 	*/
-	function runExpression(expr) {
+	function applyExpressionToHook(expr, result) {
 		/*
-			Become cognizant of any hook connected to this expression.
-			To be connected, it must be the very next element. 
+			To be considered connected, the next hook must be the very next element.
 		*/
-		var nextHook = expr.next(Selectors.hook),
-			/*
-				Execute the expression.
-			*/
-			result = this.eval(expr.popAttr('js') || '');
+		var nextHook = expr.next(Selectors.hook);
 		
 		/*
 			If result is a ChangerCommand, please run it.
@@ -83,11 +80,59 @@ function($, Utils, Selectors, Renderer, Environ, State, HookUtils, HookSet, Pseu
 			runLiveHook.call(this, nextHook, result.delay, result.event);
 		}
 		/*
+			And finally, the falsy primitive case.
+			This is special: as it prevents hooks from being run, an (else:)
+			that follows this will return true.
+		*/
+		else if   (result === false
+				|| result === null
+				|| result === undefined) {
+			nextHook.removeAttr('prose');
+			expr.addClass("false");
+			
+			if (nextHook.length) {
+				/*
+					Unfortunately, (else-if:) must be special-cased, so that it doesn't affect
+					lastHookShown, instead preserving the value of the original (if:).
+				*/
+				if (Utils.insensitiveName(expr.attr('name')) !== "elseif") {
+					this.stack[0].lastHookShown = false;
+				}
+				return;
+			}
+		}
+		/*
+			The (else:) and (elseif:) macros require a little bit of state to be
+			saved after every hook interaction: whether or not the preceding hook
+			was shown or hidden by the attached expression.
+			Sadly, we must oblige with this overweening demand.
+		*/
+		if (nextHook.length) {
+			this.stack[0].lastHookShown = true;
+		}
+	}
+	
+	/**
+		Run a newly rendered <tw-expression> element's code, obtain the resulting value,
+		and apply it to the next <tw-hook> element, if present.
+		
+		@method runExpression
+		@private
+		@param {jQuery} expr The <tw-expression> to run.
+	*/
+	function runExpression(expr) {
+		var
+			/*
+				Execute the expression, and obtain its result value.
+			*/
+			result = this.eval(expr.popAttr('js') || '');
+		
+		/*
 			Print any error that resulted.
 			This must of course run after the sensor/changer function was run,
 			in case that provided an error.
 		*/
-		else if (TwineError.containsError(result)) {
+		if (TwineError.containsError(result)) {
 			if (result instanceof Error) {
 				result = TwineError.fromError(result);
 			}
@@ -96,7 +141,7 @@ function($, Utils, Selectors, Renderer, Environ, State, HookUtils, HookSet, Pseu
 		/*
 			If the expression had a TwineScript_Print method, do that.
 		*/
-		else if (result && result.TwineScript_Print) {
+		else if (result && result.TwineScript_Print && !result.changer) {
 			/*
 				TwineScript_Print() typically emits side-effects. These
 				will occur... now.
@@ -144,37 +189,69 @@ function($, Utils, Selectors, Renderer, Environ, State, HookUtils, HookSet, Pseu
 			*/
 			this.renderInto(result + '', expr);
 		}
+		else {
+			applyExpressionToHook.call(this, expr, result);
+		}
+	}
+	
+	/**
+		<tw-collapsed> elements should collapse whitespace inside them in a specific manner - only
+		single spaces between non-whitespace should remain.
+		This function performs this transformation by modifying the text nodes of the passed-in element.
+		
+		@method collapse
+		@private
+		@param {jQuery} elem The element whose whitespace must collapse.
+	*/
+	function collapse(elem) {
+		var finalNode, lastVisibleNode;
 		/*
-			And finally, the falsy primitive case.
-			This is special: as it prevents hooks from being run, an (else:)
-			that follows this will return true.
+			- If the node contains <br>, replace with a single space.
 		*/
-		else if   (result === false
-				|| result === null
-				|| result === undefined) {
-			nextHook.removeAttr('prose');
-			expr.addClass("false");
-			
-			if (nextHook.length) {
-				/*
-					Unfortunately, (else-if:) must be special-cased, so that it doesn't affect
-					lastHookShown, instead preserving the value of the original (if:).
-				*/
-				if (Utils.insensitiveName(expr.attr('name')) !== "elseif") {
-					this.stack[0].lastHookShown = false;
-				}
-				return;
+		elem.find('br').replaceWith(new Text(" "));
+		
+		finalNode = elem.textNodes().reduce(function(prevNode, node) {
+			/*
+				- If the node contains runs of whitespace, reduce all runs to single spaces.
+				(This reduces nodes containing only whitespace to just a single space.)
+			*/
+			node.textContent = node.textContent.replace(/\s+/g,' ');
+			/*
+				- If the node begins with a space and previous node ended with whitespace or is empty, trim left.
+				(This causes nodes containing only whitespace to be emptied.)
+			*/
+			if (node.textContent[0] === " "
+					&& (!prevNode || !prevNode.textContent || prevNode.textContent.search(/\s$/) >-1)) {
+				node.textContent = node.textContent.slice(1);
 			}
+			/*
+				Save the last visible node for a following step.
+			*/
+			if (node.textContent && node.textContent.search(/^\s*$/) === -1) {
+				lastVisibleNode = node;
+			}
+			return node;
+		}, null);
+		/*
+			- If this is the final node, trim it right.
+			In the case of { <b>A</b> }, the final node is not the last visible node,
+			and the last visible node doesn't end with whitespace.
+		*/
+		if (finalNode) {
+			finalNode.textContent = finalNode.textContent.replace(/\s+$/, '');
 		}
 		/*
-			The (else:) and (elseif:) macros require a little bit of state to be
-			saved after every hook interaction: whether or not the preceding hook
-			was shown or hidden by the attached expression.
-			Sadly, we must oblige with this overweening demand.
+			- If the last visible node ends with whitespace, trim it right.
+			In the case of { <b>A </b> }, the final node has been trimmed,
+			but this one has not.
 		*/
-		if (nextHook.length) {
-			this.stack[0].lastHookShown = true;
+		if (lastVisibleNode) {
+			lastVisibleNode.textContent = lastVisibleNode.textContent.replace(/\s+$/, '');
 		}
+		/*
+			Now that we're done, normalise the nodes.
+		*/
+		elem[0].normalize();
 	}
 	
 	/**
@@ -515,8 +592,8 @@ function($, Utils, Selectors, Renderer, Environ, State, HookUtils, HookSet, Pseu
 				Execute the expressions immediately.
 			*/
 			
-			Utils.findAndFilter(dom, Selectors.hook + ","
-				+ Selectors.expression).each(function doExpressions () {
+			Utils.findAndFilter(dom, [Selectors.hook, Selectors.expression, Selectors.collapsed]+'')
+					.each(function doExpressions () {
 				var expr = $(this);
 				
 				switch(expr.tag()) {
@@ -535,6 +612,11 @@ function($, Utils, Selectors, Renderer, Environ, State, HookUtils, HookSet, Pseu
 							will terminate, thus halting expression evaluation.
 						*/
 						return runExpression.call(section, expr);
+					}
+					case Selectors.collapsed:
+					{
+						collapse(expr);
+						break;
 					}
 				}
 			});

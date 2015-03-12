@@ -304,45 +304,78 @@ describe("basic twinemarkup syntax", function() {
 
 	describe("collapsing whitespace syntax", function() {
 		it("eliminates runs of whitespace between { and }", function() {
-			expectMarkupToBecome(
-				"{   \n   }",
-				""
+			expectMarkupToPrint(
+				"A{   \n   }B",
+				"AB"
+			);
+		});
+		it("reduces whitespace between non-whitespace to single spaces", function() {
+			expectMarkupToPrint(
+				"A { A  \n  B } B",
+				"A A B B"
 			);
 		});
 		it("leaves other syntax as is", function() {
-			expectMarkupToBecome(
-				"{   ''A ''   }",
-				"<b>A </b>"
+			var p = runPassage("{   ''A ''   } B");
+			expect(p.text()).toBe("A B");
+			expect(p.find('b').length).toBe(1);
+			
+			expectMarkupToPrint(
+				"{A '' B''}",
+				"A B"
+			);
+			expectMarkupToPrint(
+				"{''B '' C}",
+				"B C"
 			);
 		});
 		it("collapses runs of whitespace between non-whitespace down to a single space", function() {
-			expectMarkupToBecome(
+			expectMarkupToPrint(
 				"{   A   B   }",
 				"A B"
 			);
-			expectMarkupToBecome(
+			expectMarkupToPrint(
+				"{   A B   }",
+				"A B"
+			);
+			expectMarkupToPrint(
 				"X{   A   B   }Y",
 				"XA BY"
 			);
 		});
 		it("can be nested", function() {
-			expectMarkupToBecome(
+			expectMarkupToPrint(
 				"{{   ''A''   }}  B  C",
-				"<b>A</b>  B  C"
+				"A  B  C"
 			);
-			expectMarkupToBecome(
+			expectMarkupToPrint(
 				"{  A {   ''B''   }} C",
-				"A <b>B</b> C"
+				"A B C"
+			);
+		});
+		it("can collapse spaces in empty elements", function() {
+			expectMarkupToPrint(
+				"{A '' '' B}",
+				"A B"
+			);
+		});
+		it("collapses through invisible expressions", function() {
+			expectMarkupToPrint(
+				"{ (set: $r to 1)\n(set: $r to 2) }",
+				""
+			);
+			expectMarkupToPrint(
+				"{A(set: $r to 1)B}",
+				"AB"
 			);
 		});
 		it("won't affect text inside HTML tags", function() {
 			var p = runPassage("{<span title='   '> <br> </span>}");
 			expect(p.find('span').attr('title')).toBe("   ");
-			expect(p.text()).toBe(" ");
+			expect(p.text()).toBe("");
 		});
 		it("as a result, it won't affect text inside macros", function() {
-			var p = runPassage("{(print:'Red   Blue')}");
-			expect(p.text()).toBe("Red   Blue");
+			expectMarkupToPrint("{(print:'Red   Blue')}", "Red   Blue");
 		});
 	});
 	

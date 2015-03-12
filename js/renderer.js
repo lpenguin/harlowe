@@ -241,16 +241,7 @@ define(['utils', 'markup', 'twinescript/compiler', 'internaltypes/twineerror'], 
 						break;
 					}
 					case "collapsed": {
-						out += token.children && token.children.length
-							? render(token.children)
-								/*
-									This gigantic expression reduces <br> tags and whitespace to single spaces,
-									then trims the ends off.
-									(This doesn't need to be case-sensitive since render() only produces
-									lowercase <br>'s.)
-								*/
-								.replace(new RegExp("(?:" + TwineMarkup.Patterns.whitespace + "|<br>)+(?=[^>]*(?:<[^>]*>)*[^<]*$)",'g'),' ').trim()
-							: token.innerText;
+						out += renderTag(token, "tw-collapsed");
 						break;
 					}
 					/*

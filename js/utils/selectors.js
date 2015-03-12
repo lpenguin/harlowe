@@ -18,5 +18,6 @@ define([], function() {
 		storyData: "tw-storydata",
 		passageData: "tw-passagedata",
 		whitespace: "tw-char[char=space], tw-char[char=tab], br",
+		collapsed: "tw-collapsed",
 	});
 });
