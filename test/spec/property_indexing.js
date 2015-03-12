@@ -162,12 +162,12 @@ describe("property indexing", function() {
 			expectMarkupToPrint('(set:$a to (a:(a:7,8),(a:9,0)))(set: $a to 2nd of its 1st)$a', "8");
 		});
 	});
-	describe("computed indices", function() {
-		it("can contain full expressions", function() {
-			expectMarkupToNotError('(print: (a:1)\'s (2 - 1))');
-			expectMarkupToNotError('(print: (2 - 1) of (a:1))');
-			expectMarkupToNotError('(print: (a:1)\'s ((either:1))');
-			expectMarkupToNotError('(print: ((either:1)) of (a:1))');
+	describe("the possessive and belonging operators", function() {
+		it("perform property accesses with full expressions", function() {
+			expectMarkupToPrint('(print: (a:7)\'s (2 - 1))','7');
+			expectMarkupToPrint('(print: (2 - 1) of (a:7))','7');
+			expectMarkupToPrint('(print: (a:7)\'s (either:1))','7');
+			expectMarkupToPrint('(print: ((either:1)) of (a:7))','7');
 		});
 		it("can be chained", function (){
 			expectMarkupToPrint("(print: (a:'Red')\'s (2 - 1)'s 1st)","R");
@@ -204,7 +204,7 @@ describe("property indexing", function() {
 				expectMarkupToPrint("(set: $a to (a:(a:1)))(set: $a\'s 1st\'s 1st to 2)$a","2");
 				expectMarkupToPrint("(set: $a to (a:(a:1)))(set: (1) of (1) of $a\ to 2)$a","2");
 			});
-			it("must be numbers", function (){
+			it("must have numbers on the right side", function (){
 				expectMarkupToError("(print: (a:'Red','Blue')\'s ('1'))");
 				expectMarkupToError("(print: (a:'Red')\'s ('13'\'s 1st))");
 			});

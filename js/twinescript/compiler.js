@@ -124,8 +124,9 @@ define(['utils'], function(Utils) {
 				- for midString, a plain JS infix operation between left and right;
 				- for operation, an Operations method call with left and right as arguments.
 				- for assignment, an AssignmentRequest.
+				- for possessive, a special VarRef.create() call.
 			*/
-			midString, operation, assignment,
+			midString, operation, assignment, possessive,
 			/*
 				Some operators should present a simple error when one of their sides is missing.
 			*/
@@ -334,7 +335,7 @@ define(['utils'], function(Utils) {
 				+ ")";
 			needsLeft = false;
 		}
-		else if ((i = indexOfType(tokens, "belongingProperty", "computedBelongingProperty")) >-1) {
+		else if ((i = indexOfType(tokens, "belongingProperty")) >-1) {
 			/*
 				As with the preceding case, we need to manually wrap the variable side
 				inside the Operations.get() call, while leaving the other side as is.
@@ -346,14 +347,20 @@ define(['utils'], function(Utils) {
 				+ compile(tokens.slice (i + 1), "varref")
 				+ ","
 				/*
-					The following is the same as in the preceding case.
+					Utils.toJSLiteral() is used to both escape the name
+					string and wrap it in quotes.
 				*/
-				+ (tokens[i].type.includes("computed")
-				? "{computed:true,value:" + compile(tokens[i].children) + "}"
-				: Utils.toJSLiteral(tokens[i].name)) + ")"
+				+ Utils.toJSLiteral(tokens[i].name) + ")"
 				+ (isVarRef ? "" : ".get()");
 			midString = " ";
 			needsLeft = needsRight = false;
+		}
+		else if ((i = indexOfType(tokens, "belongingOperator", "belongingItOperator")) >-1) {
+			if (tokens[i].type.includes("It")) {
+				right = "Operations.Identifiers.it";
+				needsRight = false;
+			}
+			possessive = "belonging";
 		}
 		/*
 			Notice that this one is right-associative instead of left-associative.
@@ -362,7 +369,7 @@ define(['utils'], function(Utils) {
 			instead of the incorrect:
 				VarRef.create(a,1).get() VarRef.create(,2).get()
 		*/
-		else if ((i = rightAssociativeIndexOfType(tokens, "property", "computedProperty")) >-1) {
+		else if ((i = rightAssociativeIndexOfType(tokens, "property")) >-1) {
 			/*
 				This is somewhat tricky - we need to manually wrap the left side
 				inside the Operations.get() call, while leaving the right side as is.
@@ -371,31 +378,31 @@ define(['utils'], function(Utils) {
 				+ compile(tokens.slice (0, i), "varref")
 				+ ","
 				/*
-					computedProperties have children... properties merely have a name.
-				*/
-				+ (tokens[i].type.includes("computed")
-				? "{computed:true,value:" + compile(tokens[i].children) + "}"
-				/*
 					Utils.toJSLiteral() is used to both escape the name
 					string and wrap it in quotes.
 				*/
-				: Utils.toJSLiteral(tokens[i].name)) + ")"
+				+ Utils.toJSLiteral(tokens[i].name) + ")"
 				+ (isVarRef ? "" : ".get()");
 			midString = " ";
 			needsLeft = needsRight = false;
 		}
-		else if ((i = rightAssociativeIndexOfType(tokens, "itsProperty", "computedItsProperty")) >-1
-				|| (i = indexOfType(tokens, "belongingItProperty", "computedBelongingItProperty")) >-1) {
+		else if ((i = rightAssociativeIndexOfType(tokens, "itsProperty")) >-1
+				|| (i = indexOfType(tokens, "belongingItProperty")) >-1) {
 			/*
 				This is actually identical to the above, but with the difference that
 				there is no left subtoken (it is always Identifiers.it).
 			*/
 			left = "VarRef.create(Operations.Identifiers.it,"
-				+ (tokens[i].type.includes("computed")
-				? "{computed:true,value:" + compile(tokens[i].children) + "}"
-				: Utils.toJSLiteral(tokens[i].name)) + ").get()";
+				+ Utils.toJSLiteral(tokens[i].name) + ").get()";
 			midString = " ";
 			needsLeft = needsRight = false;
+		}
+		else if ((i = rightAssociativeIndexOfType(tokens, "possessiveOperator", "itsOperator")) >-1) {
+			if (tokens[i].type.includes("it")) {
+				left = "Operations.Identifiers.it";
+				needsLeft = false;
+			}
+			possessive = "possessive";
 		}
 		else if ((i = indexOfType(tokens, "macro")) >-1) {
 			/*
@@ -480,6 +487,14 @@ define(['utils'], function(Utils) {
 				return "Operations.makeAssignmentRequest("
 					+ [left, right, Utils.toJSLiteral(assignment)]
 					+")";
+			}
+			else if (possessive) {
+				return "VarRef.create("
+					+ (possessive === "belonging" ? right : left)
+					+ ",{computed:true,value:"
+					+ (possessive === "belonging" ? left : right)
+					+ "})"
+					+ (isVarRef ? "" : ".get()");
 			}
 			else if (operation) {
 				return " Operations[" + Utils.toJSLiteral(operation) + "](" + left + "," + right + ") ";

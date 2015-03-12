@@ -5,7 +5,6 @@ define([
 	'datatypes/assignmentrequest',
 	'utils/operationutils',
 	'internaltypes/twineerror',
-	'internaltypes/varref',
 ],
 function(Utils, State, Colour, AssignmentRequest, OperationUtils, TwineError) {
 	"use strict";

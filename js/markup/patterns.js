@@ -210,13 +210,13 @@
 			or
 			(expression) of $a
 		*/
-		computedPropertyFront = "'s" + mws + "\\(",
+		possessiveOperator = "'s" + mws,
 		
 		/*
 			Computed properties are of the form:
 			$a's (expression)
 		*/
-		computedBelongingPropertyBack = "\\)" + ws + "of" + wb,
+		belongingOperator = "of" + wb,
 		
 		/*
 			Identifiers: either "it" or "time".
@@ -227,11 +227,11 @@
 		
 		itsProperty = "its" + mws + "(" + validPropertyName + ")",
 		
-		computedItsPropertyFront = "its" + mws  + "\\(",
+		itsOperator = "its" + mws,
 		
 		belongingItProperty = "(" + validPropertyName + ")" + mws + "of" + mws + "it" + wb,
 		
-		computedBelongingItPropertyBack = "\\)" + ws + "of" + wb + mws + "it" + wb,
+		belongingItOperator = "of" + wb + mws + "it" + wb,
 		
 		macro = {
 			opener:            "\\(",
@@ -423,10 +423,8 @@
 			This must be differentiated from macroFront.
 		*/
 		groupingFront: "\\(" + notBefore(macro.name),
-		/*
-			This must be differentiated from computedBelongingPropertyBack.
-		*/
-		groupingBack:  "\\)" + notBefore(ws + "of"),
+		
+		groupingBack:  "\\)",
 		
 		twine1Macro:
 			twine1Macro,
@@ -440,19 +438,22 @@
 		
 		property:
 			property,
-			
+		
 		belongingProperty:
 			belongingProperty,
 		
-		computedPropertyFront:
-			computedPropertyFront,
+		possessiveOperator:
+			possessiveOperator,
 		
-		computedItsPropertyFront:
-			computedItsPropertyFront,
+		belongingOperator:
+			belongingOperator,
 		
-		computedBelongingPropertyBack:
-			computedBelongingPropertyBack,
-			
+		itsOperator:
+			itsOperator,
+		
+		belongingItOperator:
+			belongingItOperator,
+		
 		variable:
 			variable,
 		
@@ -489,7 +490,6 @@
 		identifier: identifier,
 		itsProperty: itsProperty,
 		belongingItProperty: belongingItProperty,
-		computedBelongingItPropertyBack: computedBelongingItPropertyBack,
 		
 		string:
 			either(

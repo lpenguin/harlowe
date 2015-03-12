@@ -329,10 +329,6 @@
 								"grouping",
 							macroFront:
 								"macro",
-							computedPropertyFront:
-								"computedProperty",
-							computedItsPropertyFront:
-								"computedItsProperty",
 						},
 					};
 				},
@@ -382,9 +378,14 @@
 				property: {
 					fn: textTokenFn("name"),
 					canFollow: ["variable", "hookRef", "property",
-						"itsProperty", "belongingItProperty", "computedProperty",
-						"computedItsProperty", "macro", "grouping", "string"],
+						"itsProperty", "belongingItProperty", "macro", "grouping", "string"],
 				},
+				
+				possessiveOperator: { fn: Object },
+				
+				itsProperty:         { fn: textTokenFn("name") },
+				
+				itsOperator: { fn: Object },
 				
 				/*
 					Since this is a superset of the belongingProperty rule,
@@ -395,41 +396,20 @@
 					fn: textTokenFn("name")
 				},
 				
+				belongingItOperator: {
+					cannotFollow: ["text"],
+					fn: Object
+				},
+				
 				belongingProperty: {
 					cannotFollow: ["text"],
 					fn: textTokenFn("name"),
 				},
 				
-				/*
-					The same here.
-					Yes, it's a little #awkward having computedBelongingItProperty
-					necessarily be separate from computedBelongingProperty + Identifier.
-				*/
-				computedBelongingItPropertyBack: {
-					fn: function() {
-						return {
-							matches: {
-								groupingFront:
-									"computedBelongingItProperty",
-							},
-						};
-					},
+				belongingOperator: {
+					cannotFollow: ["text"],
+					fn: Object
 				},
-				
-				computedBelongingPropertyBack: {
-					fn: function() {
-						return {
-							matches: {
-								groupingFront:
-									"computedBelongingProperty",
-							},
-						};
-					},
-				},
-				
-				computedPropertyFront: { fn: Object },
-				
-				computedItsPropertyFront: { fn: Object },
 				
 				string: { fn: Object, },
 				
@@ -521,7 +501,6 @@
 					},
 				},
 				identifier:          { fn: textTokenFn("name") },
-				itsProperty:         { fn: textTokenFn("name") },
 			},
 			["boolean", "is", "to", "into", "and", "or", "not",
 			"isNot", "contains", "isIn"].reduce(function(a, e) {
