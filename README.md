@@ -11,7 +11,7 @@ Rough documentation is at http://twine2.neocities.org/
  * Now, if text markup potentially creates empty HTML elements, these elements are not created.
  * Fixed nested list items in both kinds of list markup. Formerly, writing nested lists (with either bullets or numbers) wouldn't work at all.
  * Fixed a bug where the collapsed syntax wouldn't work for runs of just whitespace.
- * Also, explicit <br>s are now generated inside the verbatim syntax, fixing a minor browser issue where the text, when copied, would lack line breaks.
+ * Also, explicit `<br>`s are now generated inside the verbatim syntax, fixing a minor browser issue where the text, when copied, would lack line breaks.
  * Changed the previous scrolling fix so that, in non-stretchtext settings, the page scrolls to the top of the `<tw-story>`'s parent element (which is usually, but not always, `<body>`) instead of `<html>`.
  * Fixed a bug where the (move:) macro didn't work on data structures with compiled properties (i.e. arrays).
  * Now, the error message for NaN computations (such as `(log10: 0)`) is more correct.
@@ -29,6 +29,8 @@ Rough documentation is at http://twine2.neocities.org/
  * Now, the style changer commands do not wrap arbitrary HTML around the hooks' elements, but by altering the `<tw-hook>`'s style attribute. This produces flatter DOM trees (admittedly not that big a deal) and has made several macros' behaviour more flexible (for instance, (text-style:"shadow") now properly uses the colour of the text instead of defaulting to black).
  * Now, during every `(set:)` operation on a TwineScript collection such as a datamap or array, the entire collection is cloned and reassigned to that particular moment's variables. Thus, the collection can be rolled back when the undo button is pressed.
  * Fixed some bugs where "its" would sometimes incorrectly be parsed as "it" plus the text "s".
+ * Improved the collapsing whitespace syntax (`{` and `}`)'s handling of whitespace considerably. Now, whitespace between multiple invisible elements, like `(set:)` macro calls, should be removed outright and not allowed to accumulate.
+    * Furthermore, it can be safely nested inside itself, and will no longer collapse whitespace inside macros' strings, or HTML tags' attributes.
 
 ####Alterations
 
@@ -39,14 +41,13 @@ Rough documentation is at http://twine2.neocities.org/
  * Altered the CSS of `<tw-story>` to use vertical padding instead of vertical margins.
  * Now, division operators will produce an error if used to divide by zero.
  * Reordered the precedence of `contains` - it should now be higher than `is`, so that e.g. `(print: "ABC" contains "A" is true)` should now work as expected.
- * Now, the collapsing whitespace syntax (`{` and `}`) can be safely nested inside itself, and furthermore will no longer collapse whitespace inside macros' strings, or HTML tags' attributes.
  * A few variable names in TwineScript are now controlled by the game engine, and are read-only. These are `$Passages`, `$Design`, and `$Saves`. See below for explanations as to what purpose these now serve.
  * Now, giving a datamap to `(print:)` will cause that macro to print out the datamap in a rough HTML `<table>` structure, showing each key and value. This is a superior alternative to just printing "[object Object]".
 
 ####New Features
 
  * Added computed property indexing syntax to TwineScript. Properties on collections can now be accessed via a variant of the possessive syntax: `$a's (expression)`.
-    * Using this syntax, you can supply numbers as 1-indexed indices to arrays and strings. So, `"Red"'s ($i)`, where `$i` is 1, would be the same as `"Red"'s 1st`. Note, however, that if `$i` was the string `"1st"`, it would also work too - but not if it was just the string `"1"`.
+    * Using this syntax, you can supply numbers as 1-indexed indices to arrays and strings. So, `"Red"'s $i`, where `$i` is 1, would be the same as `"Red"'s 1st`. Note, however, that if `$i` was the string `"1st"`, it would also work too - but not if it was just the string `"1"`.
  * Links and buttons in compiled stories are now accessible via the keyboard's Tab and Enter keys. `<tw-link>`, `<tw-icon>` and other clickable elements now have a tabindex attribute, and Harlowe sets up an event handler that allows them to behave as if clicked when the Enter key is pressed.
  * Added 'error explanations', curt sentences which crudely explain the error message, which are visible as fold-downs on each error message.
  * Added `(nonzero:)` and `(nonempty:)` macros.
@@ -61,16 +62,17 @@ Rough documentation is at http://twine2.neocities.org/
     * `(savegame:)` currently has a significant **limitation**: it will fail if the story's variables contain values which aren't strings, booleans, arrays, datamaps or datasets. If, for instance, you put a changer command in a variable, like `(set: $fancytext to (font:"Arnold Bocklin"))`, `(savegame:)` would no longer work. I must apologise for this, and hope to eliminate this problem in future versions.
     * `(savegame:)` evaluates to a boolean `true` if it succeeds and `false` if it fails (because the browser's local storage is disabled for some reason). You should write something like `(if: (savegame:"A","At the crossroads") is false)[The game could not be saved!]` to provide the reader with an apology if `(savegame:)` fails.
     * `(loadgame:)` takes one value - a slot name such as that provided to `(savegame:)` - and loads a game from that slot, replacing the current game session entirely. Think of it as a `(goto:)` - if it succeeds, the passage is immediately exited.
-    * Harlowe automatically records the names of existing save files in the datamap `$Saves`. The expression `$Saves contains ("Slot name")` will be `true` if that slot name is currently used.
+    * Harlowe automatically records the names of existing save files in the datamap `$Saves`. The expression `$Saves contains "Slot name"` will be `true` if that slot name is currently used.
     * The filename of a file in a slot can be displayed thus: `(print: $Saves's ("Slot name"))`.
  * `<script>` tags in passage text will now run. However, their behaviour is not well-defined yet - it's unclear even to me what sort of DOM they would have access to.
  * `<style>` tags in passage text can now be used without needing to escape their contents with the verbatim syntax (backticks).
  * `$Design` is a special datamap variable created at startup by Harlowe. Its purpose is to allow the author to roughly style their story without CSS. It currently has the data keys "Passages", "Page", "Links" and "Hovering Links". You can style these entities as if they were hooks: `(set: $Design's Passages to (font: "Courier") + (text-color: gray))`, for instance, will cause the passages to be styled using those commands, from now on.
- * `$Passages` is another special datamap variable - it's a "datamap of datamaps", where each data key is the name of a passage in the story, and each data value is a datamap containing information about that passage. For instance, you can obtain the code for the "Cloister" passage with `$Passages's Cloister's code`, or the tags with `$Passages's Cloister's tags`.
-     * You can also edit these datamaps, and rewrite the story while it's being played - or, add a new passage datamap to `$Passages`, by running `(set: $Passages's ("My New Passage") to (datamap: "code", "My passage's text", "tags", (a:"my-tag", "my-tag-2"))` etc.
+ * `$Passages` is another special datamap variable - it's a "datamap of datamaps", where each data key is the name of a passage in the story, and each data value is a datamap containing information about that passage. For instance, you can obtain the prose for the "Cloister" passage with `$Passages's Cloister's prose`, or the tags with `$Passages's Cloister's tags`.
+    * You can also edit these datamaps, and rewrite the story while it's being played - or, add a new passage datamap to `$Passages`, by running `(set: $Passages's ("My New Passage") to (datamap: "code", "My passage's text", "tags", (a:"my-tag", "my-tag-2"))` etc.
  * Added `(position-x:)` and `(position-y:)`: shorthands for giving a hook the CSS property `position:absolute` and a percentage `left` or `top`. The percentage argument is a number, ostensibly from 0 to 1, but potentially any number. One problem: while it should position the hook relative to the passage, it doesn't work correctly when nested - because, of course, `position:absolute` uses the nearest positioned element.
  * Added `(css:)` as a 'last resort' solution for styling elements, which is essentially the same as a raw HTML `<span style='...'>` tag, but can be combined with other changer commands. I feel obliged to offer this to provide some CSS-familiar users some access to higher functionality, even though it's not intended for general use in place of `(text-style:)`, `(position-x:)` or whatever.
  * Added `(align:)`, a macro form of the aligner syntax. It accepts a string containing an ASCII arrow of the same type that makes up the syntax ('==>', '=><==', etc). 
+ * Added special behaviour for passages tagged with `passage-setup` or `story-setup`: their code will be *automatically* `(display:)`ed at the start of passages, allowing you to set up code actions (like `(click: ?switch)` etc.) or give passages a textual header. `passage-setup` passages are prepended to every passage, whereas `story-setup` passages are only prepended to the first passage in the game.
 
 ###1.0.1 changes:
 

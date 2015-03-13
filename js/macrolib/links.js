@@ -52,6 +52,24 @@ function($, Macros, Utils, Selectors, State, Engine, ChangerCommand, TwineError)
 		);
 	});
 	
+	/*d:
+		(link: String) -> Command
+		
+		Makes a command to create a special link that can be used to show spans of text.
+		
+		Rationale:
+		
+		As you're aware, links are what the player uses to traverse your story. However,
+		links can also be used to simply display text or run macros inside hooks. Just
+		use the (link:) macro, and the entire hook will not run or appear at all until the
+		player clicks the link.
+		
+		Details:
+		This creates a link which is visually indistinguishable from normal passage links.
+		
+		See also:
+		(link-goto:), (click:)
+	*/
 	Macros.addChanger
 		(["link"], function(_, expr) {
 			return ChangerCommand.create("link", [expr]);

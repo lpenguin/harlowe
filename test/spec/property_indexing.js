@@ -162,26 +162,26 @@ describe("property indexing", function() {
 			expectMarkupToPrint('(set:$a to (a:(a:7,8),(a:9,0)))(set: $a to 2nd of its 1st)$a', "8");
 		});
 	});
-	describe("the possessive and belonging operators", function() {
+	describe("the possessive operators", function() {
 		it("perform property accesses with full expressions", function() {
 			expectMarkupToPrint('(print: (a:7)\'s (2 - 1))','7');
-			expectMarkupToPrint('(print: (2 - 1) of (a:7))','7');
 			expectMarkupToPrint('(print: (a:7)\'s (either:1))','7');
-			expectMarkupToPrint('(print: ((either:1)) of (a:7))','7');
 		});
 		it("can be chained", function (){
 			expectMarkupToPrint("(print: (a:'Red')\'s (2 - 1)'s 1st)","R");
 			expectMarkupToPrint("(print: (a:'Red')\'s (2 - 1)'s (2 - 1))","R");
-			expectMarkupToPrint("(print: 1st of (a:'Red')\'s (2 - 1))","R");
-			expectMarkupToPrint("(print: (2 - 1) of (a:'Red')\'s (2 - 1))","R");
 		});
 		it("can be used with 'it' and 'its'", function (){
 			expectMarkupToPrint("(set: $a to (a:3,4))(set: $a to its (2))$a","4");
-			expectMarkupToPrint("(set: $a to (a:3,4))(set: $a to (2) of it)$a","4");
+		});
+		it("requires numbers to be bracketed", function (){
+			expectMarkupToError("(print: (a:6,12)'s 1)");
+		});
+		it("has low precedence", function (){
+			expectMarkupToPrint("(print: (a:6,12)'s (1) + 1)","7");
 		});
 		it("can have other 'it' accesses nested in it", function (){
 			expectMarkupToPrint("(set: $a to (a:3,4))(set: $a to (its (2)) of 'Blue')$a","e");
-			expectMarkupToPrint("(set: $a to (a:3,4))(set: $a to ((2) of it) of 'Blue')$a","e");
 		});
 		describe("for datamaps", function() {
 			it("access the keyed properties", function() {
@@ -200,15 +200,80 @@ describe("property indexing", function() {
 		describe("for arrays", function() {
 			it("can be used in assignments", function (){
 				expectMarkupToPrint("(set: $a to (a:1,2))(set: $a\'s (1) to 2)$a","2,2");
-				expectMarkupToPrint("(set: $a to (a:1,2))(set: (1) of $a\ to 2)$a","2,2");
 				expectMarkupToPrint("(set: $a to (a:(a:1)))(set: $a\'s 1st\'s 1st to 2)$a","2");
-				expectMarkupToPrint("(set: $a to (a:(a:1)))(set: (1) of (1) of $a\ to 2)$a","2");
 			});
 			it("must have numbers on the right side", function (){
-				expectMarkupToError("(print: (a:'Red','Blue')\'s ('1'))");
+				expectMarkupToError("(print: (a:'Red','Blue')\'s '1')");
 				expectMarkupToError("(print: (a:'Red')\'s ('13'\'s 1st))");
+			});
+		});
+		describe("for strings", function() {
+			it("must have numbers on the right side, or 'length'", function (){
+				expectMarkupToPrint("(print: \"Red\"'s 1)","R");
+				expectMarkupToPrint("(print: \"Red\"'s 'length')","3");
+				expectMarkupToError("(print: 'Red'\'s '1')");
+				expectMarkupToError("(print: 'Blue'\'s ('13'\'s 1st))");
+			});
+			it("can be used with single-quoted strings", function (){
+				expectMarkupToPrint("(print: 'Red'\'s (1))","R");
+			});
+		});
+	});
+	describe("the belonging operator", function() {
+		it("performs property accesses with full expressions", function() {
+			expectMarkupToPrint('(print: (2 - 1) of (a:7))','7');
+			expectMarkupToPrint('(print: ((either:1)) of (a:7))','7');
+		});
+		it("can be chained", function (){
+			expectMarkupToPrint("(print: 1st of (a:'Red')\'s (2 - 1))","R");
+			expectMarkupToPrint("(print: (2 - 1) of (a:'Red')\'s (2 - 1))","R");
+		});
+		it("has low precedence", function (){
+			expectMarkupToPrint("(print: 1 + (1) of (a:6,12))","7");
+		});
+		it("requires numbers to be bracketed", function (){
+			expectMarkupToError("(print: 1 of (a:6,12))");
+		});
+		it("has lower precedence than the possessive operator", function (){
+			expectMarkupToPrint("(print: (1) of (a:'Foo','Daa')'s 1st)","F");
+		});
+		it("can be used with 'it' and 'its'", function (){
+			expectMarkupToPrint("(set: $a to (a:3,4))(set: $a to (2) of it)$a","4");
+		});
+		it("can have other 'it' accesses nested in it", function (){
+			expectMarkupToPrint("(set: $a to (a:3,4))(set: $a to ((2) of it) of 'Blue')$a","e");
+		});
+		describe("for datamaps", function() {
+			it("accesses the keyed properties", function() {
+				expectMarkupToPrint('(print: "A" of (datamap:"A",1))','1');
+			});
+			it("prints an error if the key is not present", function() {
+				expectMarkupToError('(print: "B" of (datamap:"A",1))');
+			});
+			it("can be used in assignments", function (){
+				expectMarkupToPrint("(set: $d to (datamap:'A',2))(set: 'A' of $d\ to 4)(print:$d's A)","4");
+			});
+			it("prints an error if the key is numeric", function() {
+				expectMarkupToError('(print: 1 of (datamap:1,2))');
+			});
+		});
+		describe("for arrays", function() {
+			it("can be used in assignments", function (){
+				expectMarkupToPrint("(set: $a to (a:1,2))(set: (1) of $a\ to 2)$a","2,2");
+				expectMarkupToPrint("(set: $a to (a:(a:1)))(set: (1) of (1) of $a\ to 2)$a","2");
+			});
+			it("must have numbers on the left side", function (){
+				expectMarkupToError("(print: '1' of (a:'Red','Blue'))");
+				expectMarkupToError("(print: ('13'\'s 1st) of (a:'Red'))");
+			});
+		});
+		describe("for strings", function() {
+			it("must have numbers on the left side, or 'length'", function (){
+				expectMarkupToPrint("(print: (1) of 'Red')","R");
+				expectMarkupToPrint("(print: 'length' of \"Red\")","3");
+				expectMarkupToError("(print: '1' of 'Red')");
+				expectMarkupToError("(print: (1st of '13') of 'Blue')");
 			});
 		});
 	});
 });
-

@@ -1,5 +1,14 @@
-define(['macros', 'utils', 'utils/operationutils', 'state', 'datatypes/assignmentrequest', 'internaltypes/twineerror'],
-function(Macros, Utils, OperationUtils, State, AssignmentRequest, TwineError) {
+define([
+	'jquery',
+	'macros',
+	'utils',
+	'utils/operationutils',
+	'state',
+	'engine',
+	'datatypes/assignmentrequest',
+	'internaltypes/twineerror',
+	'internaltypes/twinenotifier'],
+function($, Macros, Utils, OperationUtils, State, Engine, AssignmentRequest, TwineError, TwineNotifier) {
 	"use strict";
 	
 	var
@@ -55,7 +64,8 @@ function(Macros, Utils, OperationUtils, State, AssignmentRequest, TwineError) {
 			(push:)
 		*/
 		("set", function set(_, assignmentRequests /*variadic*/) {
-			var i, ar, result;
+			var i, ar, result,
+				debugMessage = "";
 			
 			assignmentRequests = Array.prototype.slice.call(arguments, 1);
 			
@@ -76,8 +86,15 @@ function(Macros, Utils, OperationUtils, State, AssignmentRequest, TwineError) {
 				if (TwineError.isPrototypeOf(result)) {
 					return result;
 				}
+				if (Engine.options.debug) {
+					// Add a semicolon only if a previous iteration appended a message.
+					debugMessage += (debugMessage ? "; " : "")
+						+ OperationUtils.objectName(ar.dest)
+						+ " is now "
+						+ OperationUtils.objectName(ar.src);
+				}
 			}
-			return "";
+			return debugMessage && TwineNotifier.create(debugMessage);
 		},
 		[rest(AssignmentRequest)])
 		

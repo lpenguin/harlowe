@@ -511,7 +511,16 @@ function(Utils, State, TwineError, OperationUtils) {
 			});
 		},
 		
-		TwineScript_ObjectName: "a variable I'm trying to assign a value to"
+		get TwineScript_ObjectName() {
+			/*
+				If this.object is State.variables, then
+				print a $ instead of "[name]'s"
+			*/
+			return (this.object === State.variables ? "$" : (objectName(this.object) + "'s "))
+				+ this.propertyChain.reduce(function(a, e) {
+					return a + "'s " + propertyDebugName(e);
+				});
+		},
 	});
 	
 	return VarRefProto;

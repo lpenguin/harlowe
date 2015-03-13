@@ -10,8 +10,9 @@ define([
 	'internaltypes/pseudohookset',
 	'internaltypes/changedescriptor',
 	'internaltypes/twineerror',
+	'internaltypes/twinenotifier',
 ],
-function($, Utils, Selectors, Renderer, Environ, State, HookUtils, HookSet, PseudoHookSet, ChangeDescriptor, TwineError) {
+function($, Utils, Selectors, Renderer, Environ, State, HookUtils, HookSet, PseudoHookSet, ChangeDescriptor, TwineError, TwineNotifier) {
 	"use strict";
 
 	var Section;
@@ -137,6 +138,13 @@ function($, Utils, Selectors, Renderer, Environ, State, HookUtils, HookSet, Pseu
 				result = TwineError.fromError(result);
 			}
 			expr.replaceWith(result.render(expr.attr('title'), expr));
+		}
+		/*
+			If we're in debug mode, a TwineNotifier may have been sent.
+			In which case, print that *inside* the expr, not replacing it.
+		*/
+		else if (TwineNotifier.isPrototypeOf(result)) {
+			expr.append(result.render());
 		}
 		/*
 			If the expression had a TwineScript_Print method, do that.

@@ -164,6 +164,16 @@ tw-error-explanation-button {
 		display:inline-block;
 	}
 }
+tw-notifier {
+	border-radius: 0.2em;
+	padding: 0.2em;
+	font-size: 1rem;
+	background-color: hsla(45, 72%, 55%, 0.4); // A bright yellow.
+	display: none; // Only available in debug mode.
+	.debug-mode & {
+		display: inline;
+	}
+}
 
 /*
 	When a Colour type is printed, it comes out as a <tw-colour> element.
