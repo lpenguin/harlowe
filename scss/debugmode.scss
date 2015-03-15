@@ -10,7 +10,7 @@
 		
 		&[type=hookref] {
 			background-color: hsla(220, 10%, 50%, 0.15);
-	
+			
 			/* Show the IDs of hooks */
 			&::after {
 				@include tiny-annotation();
@@ -19,7 +19,7 @@
 		}
 		&[type=variable] {
 			background-color: hsla(30, 10%, 50%, 0.15);
-
+			
 			/* Show the IDs of hooks */
 			&::after {
 				@include tiny-annotation();
@@ -28,25 +28,29 @@
 		}
 		&[type=macro] {
 			display:inline-block;
-		
-			&[title] {
-				cursor: help;
-			}
+			
 			/* Colours for generic macros */
 			&:nth-of-type(4n+0)     { background-color: hsla(80, 20%,50%,0.15); }
 			&:nth-of-type(2n+1)     { background-color: hsla(120,20%,50%,0.15); }
 			&:nth-of-type(4n+2)     { background-color: hsla(160,20%,50%,0.15); }
-
+			
 			/* Colours for specific macros */
 			&[name="display"]       { background-color: hsla(200,100%,50%,0.1) !important; }
 			&[name="if"],
+			&[name="unless"],
 			&[name="elseif"],
 			&[name="else"]          {
+				/* (if:), (elseif:), (else:) and (unless:) have special hook colouring. */
 				&, & + tw-hook:not([name]) {
 					background-color: hsla(120,100%,50%,0.1) !important;
 				}
 			}
-			&.false                 { background-color: hsla(0,  100%,50%,0.2) !important; }
+			&.false                 {
+				background-color: hsla(0,  100%,50%,0.2) !important;
+				& + tw-hook:not([name]) {
+					display:none;
+				}
+			}
 			&[name="a"],
 			&[name="array"],
 			&[name="datamap"],
@@ -70,11 +74,11 @@
 			&[name^="append"],
 			&[name^="remove"]       { background-color: hsla(20,  75%,50%,0.2) !important; }
 			&[name="live"]          { background-color: hsla(220, 75%,50%,0.2) !important; }
-		
-			/* Show the macro name */
+			
+			/* Show the macro call */
 			&::before
 			{
-				content: attr(name);
+				content: attr(title);
 				padding: 0 0.5rem;
 				font-size: 1rem;
 				vertical-align: middle;
@@ -94,12 +98,16 @@
 			
 			But, of course, anonymous hooks shouldn't be highlighted like this.
 		*/
+		&::before {
+			@include tiny-annotation();
+			content: "["
+		}
+		&::after {
+			@include tiny-annotation();
+			content: "]"
+		}
 		&[name] {
-			&::before {
-				@include tiny-annotation();
-				content: "["
-			}
-			/* Show the IDs of hooks */
+			/* Show the IDs of named hooks */
 			&::after {
 				@include tiny-annotation();
 				content: "]<" attr(name) "|"

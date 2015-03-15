@@ -322,9 +322,6 @@ function($, Utils, Selectors, Renderer, Environ, State, HookUtils, HookSet, Pseu
 	}
 	
 	Section = {
-		// Used for duck-typing
-		section: true,
-		
 		/**
 			Creates a new Section which inherits from this one.
 			Note: while all Section use the methods on this Section prototype,
@@ -504,11 +501,11 @@ function($, Utils, Selectors, Renderer, Environ, State, HookUtils, HookSet, Pseu
 				section = this;
 				
 			/*
-				Also define a non-writable property linking it back to this section.
+				Also define a property linking it back to this section.
 				This is used by enchantment macros to determine where to register
 				their enchantments to.
 			*/
-			Object.defineProperty(desc, "section", { value:this });
+			desc.section = section;
 			
 			/*
 				Run all the changer functions.
@@ -634,6 +631,35 @@ function($, Utils, Selectors, Renderer, Environ, State, HookUtils, HookSet, Pseu
 				The data is purely temporary and can be safely discarded.
 			*/
 			this.stack.shift();
+			
+			/*
+				Finally, update the enchantments now that the DOM is modified.
+				We should only run updateEnchantments in the "top level" render call,
+				to save on unnecessary DOM mutation.
+				This can be determined by just checking that this Section's stack is empty.
+			*/
+			if (this.stack.length === 0) {
+				this.updateEnchantments();
+			}
+		},
+		
+		/**
+			Updates all enchantments in the section. Should be called after every
+			DOM manipulation within the section (such as, at the end of .render()).
+
+			@method updateEnchantments
+		*/
+		updateEnchantments: function () {
+			this.enchantments.forEach(function(e) {
+				/*
+					This first method removes old <tw-enchantment> elements...
+				*/
+				e.refreshScope();
+				/*
+					...and this one adds new ones.
+				*/
+				e.enchantScope();
+			});
 		},
 		
 	};

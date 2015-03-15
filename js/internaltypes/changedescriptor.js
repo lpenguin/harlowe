@@ -48,6 +48,11 @@ define(['jquery', 'utils', 'renderer'], function($, Utils, Renderer) {
 		//                            Used only by (link:).
 		data:             null,
 		
+		// {Object} [section]         A Section that 'owns' this ChangeDescriptor.
+		//                            Used by enchantment macros to determine where to register
+		//                            their enchantments to.
+		section:          null,
+		
 		/**
 			This creates an inheriting ChangeDescriptor, and is basically
 			another shorthand for the old create-assign pattern.

@@ -189,8 +189,12 @@
 		
 		/*
 			This determines the valid characters for a property name. Sadly, "-" is not allowed.
+			As of 1.1, this must include at least 1 non-numeral.
 		*/
-		validPropertyName = anyLetter.replace("\\-", "") + "+",
+		validPropertyName =
+			anyLetter.replace("\\-", "") + "*"
+			+ anyLetter.replace("\\-", "").replace("\\w","a-zA-Z")
+			+ anyLetter.replace("\\-", "") + "*",
 		
 		/*
 			Variables, and properties of variables:

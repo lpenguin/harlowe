@@ -1,4 +1,5 @@
-define(['jquery', 'utils', 'macros', 'datatypes/hookset', 'datatypes/changercommand'], function($, Utils, Macros, HookSet, ChangerCommand) {
+define(['jquery', 'utils', 'macros', 'datatypes/hookset', 'datatypes/changercommand'],
+function($, Utils, Macros, HookSet, ChangerCommand) {
 	"use strict";
 	/*
 		Built-in Revision, Interaction and Enchantment macros.
@@ -49,7 +50,7 @@ define(['jquery', 'utils', 'macros', 'datatypes/hookset', 'datatypes/changercomm
 		
 		In short, it allows various words to become links etc., and do something when
 		they are clicked, just by deploying a single macro instantiation! Just type
-		"click("house")[...]", and every instance of "house" in the section becomes
+		"(click:"house")[...]", and every instance of "house" in the section becomes
 		a link that does something.
 		
 		The enchantDesc object is a purely internal structure which describes the
@@ -82,28 +83,30 @@ define(['jquery', 'utils', 'macros', 'datatypes/hookset', 'datatypes/changercomm
 			is "attached" via a jQuery .data() key, and must be called
 			from this <html> handler.
 		*/
-		$(Utils.storyElement).on(
-			/*
-				Put this event in the "enchantment" jQuery event
-				namespace, solely for personal tidiness.
-			*/
-			enchantDesc.event + ".enchantment",
+		$(function() {
+			$(Utils.storyElement).on(
+				/*
+					Put this event in the "enchantment" jQuery event
+					namespace, solely for personal tidiness.
+				*/
+				enchantDesc.event + ".enchantment",
 			
-			// This converts a HTML class attribute into a CSS selector
-			"." + enchantDesc.classList.replace(/ /g, "."),
+				// This converts a HTML class attribute into a CSS selector
+				"." + enchantDesc.classList.replace(/ /g, "."),
 			
-			function generalEnchantmentEvent() {
-				var enchantment = $(this),
-					/*
-						Run the actual event handler.
-					*/
-					event = enchantment.data('enchantmentEvent');
+				function generalEnchantmentEvent() {
+					var enchantment = $(this),
+						/*
+							Run the actual event handler.
+						*/
+						event = enchantment.data('enchantmentEvent');
 				
-				if (event) {
-					event(enchantment);
+					if (event) {
+						event(enchantment);
+					}
 				}
-			}
-		);
+			)
+		});
 		
 		/*
 			Return the macro function AND the ChangerCommand function.
@@ -112,7 +115,7 @@ define(['jquery', 'utils', 'macros', 'datatypes/hookset', 'datatypes/changercomm
 			macro (in the case of "(macro: ?1)", selector will be "?1").
 		*/
 		return [
-			function enchantmentMacroFn(_, selector, target) {
+			function enchantmentMacroFn(_, selector) {
 				/*
 					If the selector is a HookRef (which it usually is), we must unwrap it
 					and extract its plain selector string, as this ChangerCommand
@@ -122,7 +125,7 @@ define(['jquery', 'utils', 'macros', 'datatypes/hookset', 'datatypes/changercomm
 				if (selector.selector) {
 					selector = selector.selector;
 				}
-				return ChangerCommand.create(name, [selector, target]);
+				return ChangerCommand.create(name, [selector]);
 			},
 			/*
 				This ChangerCommand registers a new enchantment on the Section that the
@@ -143,7 +146,7 @@ define(['jquery', 'utils', 'macros', 'datatypes/hookset', 'datatypes/changercomm
 				proper task of altering a ChangeDescriptor. Alas... it is something of
 				a #kludge that it piggybacks off the changer macro concept.
 			*/
-			function makeEnchanter(desc, selector, target) {
+			function makeEnchanter(desc, selector) {
 				var enchantData,
 					/*
 						The scope is shared with both enchantData methods:
@@ -178,14 +181,7 @@ define(['jquery', 'utils', 'macros', 'datatypes/hookset', 'datatypes/changercomm
 					(Yes, the name "rerender" is #awkward.)
 				*/
 				if (enchantDesc.rerender) {
-					/*
-						The target can either be a separate selector passed as an
-						additional argument to the macro (e.g. (click-replace: ?1, ?2) )
-						or, if absent, the enchantment selector.
-						
-						TODO: Need a way to target just the triggering enchantment.
-					*/
-					desc.target = target || selector;
+					desc.target = selector;
 					desc.append = enchantDesc.rerender;
 				}
 				
@@ -303,7 +299,8 @@ define(['jquery', 'utils', 'macros', 'datatypes/hookset', 'datatypes/changercomm
 				*/
 				enchantData.enchantScope();
 				return desc;
-			}
+			},
+			either(HookSet,String)
 		];
 	}
 	

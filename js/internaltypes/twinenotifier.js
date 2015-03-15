@@ -17,7 +17,11 @@ define(['jquery', 'utils'], function($, Utils) {
 		},
 		
 		render: function() {
-			return $("<tw-notifier>" + Utils.escape(this.message) + "</tw-notifier>");
+			/*
+				This is attached as an attr instead of body text, so that
+				its text isn't considered part of the element by jQuery#text().
+			*/
+			return $("<tw-notifier>").attr('message', this.message);
 		},
 	};
 	return TwineNotifier;

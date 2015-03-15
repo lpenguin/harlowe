@@ -31,6 +31,7 @@ Rough documentation is at http://twine2.neocities.org/
  * Fixed some bugs where "its" would sometimes incorrectly be parsed as "it" plus the text "s".
  * Improved the collapsing whitespace syntax (`{` and `}`)'s handling of whitespace considerably. Now, whitespace between multiple invisible elements, like `(set:)` macro calls, should be removed outright and not allowed to accumulate.
     * Furthermore, it can be safely nested inside itself, and will no longer collapse whitespace inside macros' strings, or HTML tags' attributes.
+ * Fixed a bug where enchantment event handlers (such as those for `(click:)`) could potentially fail to load.
 
 ####Alterations
 
@@ -43,6 +44,8 @@ Rough documentation is at http://twine2.neocities.org/
  * Reordered the precedence of `contains` - it should now be higher than `is`, so that e.g. `(print: "ABC" contains "A" is true)` should now work as expected.
  * A few variable names in TwineScript are now controlled by the game engine, and are read-only. These are `$Passages`, `$Design`, and `$Saves`. See below for explanations as to what purpose these now serve.
  * Now, giving a datamap to `(print:)` will cause that macro to print out the datamap in a rough HTML `<table>` structure, showing each key and value. This is a superior alternative to just printing "[object Object]".
+ * Now, variables and barename properties must have one non-numeral in their name. This means that, for instance, `$100` is no longer regarded as a valid variable name.
+ * Debug Mode: now, macros show their full call (e.g. `(if: $a > 1)` rather than just `if`), and the verbatim syntax/hooks show their brackets at their start and end.
 
 ####New Features
 

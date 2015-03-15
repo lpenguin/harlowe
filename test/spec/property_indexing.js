@@ -174,8 +174,8 @@ describe("property indexing", function() {
 		it("can be used with 'it' and 'its'", function (){
 			expectMarkupToPrint("(set: $a to (a:3,4))(set: $a to its (2))$a","4");
 		});
-		it("requires numbers to be bracketed", function (){
-			expectMarkupToError("(print: (a:6,12)'s 1)");
+		it("does not require numbers to be bracketed", function (){
+			expectMarkupToPrint("(print: (a:6,12)'s 1)","6");
 		});
 		it("has low precedence", function (){
 			expectMarkupToPrint("(print: (a:6,12)'s (1) + 1)","7");
@@ -209,7 +209,7 @@ describe("property indexing", function() {
 		});
 		describe("for strings", function() {
 			it("must have numbers on the right side, or 'length'", function (){
-				expectMarkupToPrint("(print: \"Red\"'s 1)","R");
+				expectMarkupToPrint("(print: \"Red\"'s (1))","R");
 				expectMarkupToPrint("(print: \"Red\"'s 'length')","3");
 				expectMarkupToError("(print: 'Red'\'s '1')");
 				expectMarkupToError("(print: 'Blue'\'s ('13'\'s 1st))");
@@ -231,8 +231,8 @@ describe("property indexing", function() {
 		it("has low precedence", function (){
 			expectMarkupToPrint("(print: 1 + (1) of (a:6,12))","7");
 		});
-		it("requires numbers to be bracketed", function (){
-			expectMarkupToError("(print: 1 of (a:6,12))");
+		it("does not require numbers to be bracketed", function (){
+			expectMarkupToPrint("(print: 1 of (a:6,12))","6");
 		});
 		it("has lower precedence than the possessive operator", function (){
 			expectMarkupToPrint("(print: (1) of (a:'Foo','Daa')'s 1st)","F");

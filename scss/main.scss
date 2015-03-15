@@ -173,6 +173,9 @@ tw-notifier {
 	.debug-mode & {
 		display: inline;
 	}
+	&::before {
+		content: attr(message);
+	}
 }
 
 /*
