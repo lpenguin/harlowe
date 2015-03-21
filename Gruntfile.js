@@ -35,10 +35,14 @@ module.exports = function (grunt) {
 			harlowe: jsFileList,
 			options: {
 				globals: {
-					require : true,
-					define  : true,
-					module  : true,
-					global  : true,
+					Map         : true,
+					Set         : true,
+					require     : true,
+					define      : true,
+					module      : true,
+					global      : true,
+					StoryFormat : true,
+					CodeMirror  : true,
 				},
 				// Enforcing options
 				eqeqeq   : true,
@@ -93,8 +97,12 @@ module.exports = function (grunt) {
 				options: {
 					baseUrl: 'js/markup',
 					name: 'markup',
+					include: ['codemirror/mode'],
 					useStrict: true,
-					out: destMarkupJS
+					out: function(src) {
+						src = src.replace(/,define\([^\;]+\;/g,';');
+						grunt.file.write(destMarkupJS, src);
+					},
 				}
 			},
 			compile: {
@@ -213,4 +221,5 @@ module.exports = function (grunt) {
 
 	grunt.registerTask('default', [ 'clean', 'jshint:harlowe', 'jshint:tests', 'sass', 'cssmin', 'requirejs', ]);
 	grunt.registerTask('runtime', [ 'clean', 'sass', 'cssmin', 'requirejs', 'replace:runtime', 'examplefile', ]);
+	grunt.registerTask('quick', [ 'requirejs', 'replace:runtime', ]);
 };

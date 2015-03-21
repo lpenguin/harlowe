@@ -78,7 +78,7 @@
 			/* Show the macro call */
 			&::before
 			{
-				content: attr(title);
+				content: "(" attr(name) ":)";
 				padding: 0 0.5rem;
 				font-size: 1rem;
 				vertical-align: middle;
@@ -125,6 +125,12 @@
 		&::after {
 			@include tiny-annotation();
 			content: "}"
+		}
+	}
+	tw-verbatim {
+		&::before, &::after {
+			@include tiny-annotation();
+			content: "`"
 		}
 	}
 	tw-align {

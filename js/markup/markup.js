@@ -182,7 +182,14 @@
 				an error to those who have mistakenly deployed Twine 1
 				macro syntax in Twine 2.
 			*/
-			twine1Macro: { fn: Object },
+			twine1Macro: {
+				fn: function() {
+					return {
+						type: "error",
+						message: "Twine 2 macros use a different syntax to Twine 1 macros.",
+					};
+				},
+			},
 			
 			/*
 				Like GitHub-Flavoured Markdown, Twine preserves line breaks
@@ -237,7 +244,13 @@
 			},
 			
 			hookAnonymousFront: {
-				fn: Object,
+				fn: function() {
+					return {
+						demote: function() {
+							this.error("This tagged hook doesn't have a matching ].");
+						}
+					};
+				},
 				canFollow: ["macro", "variable"],
 			},
 			
@@ -297,7 +310,7 @@
 				},
 			},
 			escapedLine: {
-				fn: Object
+				fn: Object,
 			},
 			legacyLink: {
 				fn: function(match) {
@@ -622,6 +635,13 @@
 			Patterns = P;
 			return exporter(Lexer);
 		});
+	}
+	// Evaluated by a TwineJS StoryFormat
+	else if (typeof StoryFormat === 'function' && this instanceof StoryFormat) {
+		Patterns = this.modules.Patterns;
+		this.modules.Markup = exporter(this.modules.Lexer);
+		// Install the lexer function in a more visible place.
+		this.lex = this.modules.Markup.lex;
 	}
 	else {
 		Patterns = this.Patterns;

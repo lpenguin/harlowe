@@ -232,7 +232,9 @@ function($, Macros, Utils, OperationUtils, State, Engine, AssignmentRequest, Twi
 			(datamap:), (dataset:)
 		*/
 		(["a", "array"], function() {
-			return Array.from(arguments).slice(1);
+			return Array.from(arguments)
+				// This eliminates the section argument, which comes first.
+				.slice(1);
 		}, zeroOrMore(Any))
 		
 		/*d:
@@ -289,6 +291,43 @@ function($, Macros, Utils, OperationUtils, State, Engine, AssignmentRequest, Twi
 			return OperationUtils.subset(array, a, b);
 		},
 		[Array, Number, Number])
+		
+		/*
+			(shuffled:)
+			Identical to the typical array constructor macro, but it
+			A: requires two or more items (as an error check), and
+			B: randomly rearranges the elements. Useful for creating
+			'decks' of random descriptions, elements, etc.
+		*/
+		("shuffled", function shuffled() {
+			return Array.from(arguments).slice(1).sort(function() {
+				return Math.random() - 0.5;
+			});
+		},
+		[Any, rest(Any)])
+		
+		/*
+			(datanames:)
+			This takes a datamap, and returns an array of its key names, sorted
+			alphabetically.
+		*/
+		("datanames", function datanames(_, map) {
+			return Array.from(map.keys()).sort();
+		},
+		[Map])
+		/*
+			(datavalues:)
+			This takes a datamap, and returns an array of its values, sorted
+			alphabetically by their keys.
+		*/
+		("datavalues", function datavalues(_, map) {
+			return Array.from(map.entries()).sort(function(a,b) {
+				return a[0] > b[0];
+			}).map(function(e) {
+				return e[1];
+			});
+		},
+		[Map])
 		
 		/*
 			(history:)

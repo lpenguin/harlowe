@@ -105,7 +105,7 @@ function($, Utils, Macros, HookSet, ChangerCommand) {
 						event(enchantment);
 					}
 				}
-			)
+			);
 		});
 		
 		/*

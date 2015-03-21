@@ -216,9 +216,15 @@ function($, Utils, Selectors, Renderer, Environ, State, HookUtils, HookSet, Pseu
 		/*
 			- If the node contains <br>, replace with a single space.
 		*/
-		elem.find('br').replaceWith(new Text(" "));
+		Utils.findAndFilter(elem, ':not(tw-verbatim) > br').replaceWith(new Text(" "));
 		
 		finalNode = elem.textNodes().reduce(function(prevNode, node) {
+			/*
+				- If the node is inside a <tw-verbatim>, ignore it.
+			*/
+			if (node.parentNode.tagName.toLowerCase() === "tw-verbatim") {
+				return prevNode;
+			}
 			/*
 				- If the node contains runs of whitespace, reduce all runs to single spaces.
 				(This reduces nodes containing only whitespace to just a single space.)
@@ -585,6 +591,15 @@ function($, Utils, Selectors, Renderer, Environ, State, HookUtils, HookSet, Pseu
 					As described above, we now apply the $Design changers.
 				*/
 				State.variables.Design.applyDesign(desc.target);
+			}
+			/*
+				Special case for hooks inside existing collapsing syntax:
+				their whitespace must collapse as well.
+				(This may or may not change in a future version).
+			*/
+			if (desc.target instanceof $ && desc.target.is(Selectors.hook)
+					&& desc.target.parents('tw-collapsed').length > 0) {
+				collapse(dom);
 			}
 			
 			/*

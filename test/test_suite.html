@@ -25,7 +25,7 @@ window.runPassage = function(text, name) {
 	createPassage(text, name);
 	Engine.goToPassage(name);
 	
-	return $('tw-passage > tw-transition-container');
+	return $('tw-passage > tw-transition-container, tw-passage > tw-hook');
 };
 window.expectMarkupToBecome = function(markup, html) {
 	expect(runPassage(markup).html() || '').toBe(html);
@@ -68,7 +68,9 @@ afterAll(function() {
 <script src="spec/html_in_markup.js"></script>
 <script src="spec/operators.js"></script>
 <script src="spec/identifiers.js"></script>
+<script src="spec/hooks.js"></script>
 <script src="spec/value_macros.js"></script>
+<script src="spec/data_structures.js"></script>
 <script src="spec/command_macros.js"></script>
 <script src="spec/link_markup.js"></script>
 <script src="spec/property_indexing.js"></script>

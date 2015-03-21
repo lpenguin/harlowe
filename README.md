@@ -29,12 +29,15 @@ Rough documentation is at http://twine2.neocities.org/
  * Now, the style changer commands do not wrap arbitrary HTML around the hooks' elements, but by altering the `<tw-hook>`'s style attribute. This produces flatter DOM trees (admittedly not that big a deal) and has made several macros' behaviour more flexible (for instance, (text-style:"shadow") now properly uses the colour of the text instead of defaulting to black).
  * Now, during every `(set:)` operation on a TwineScript collection such as a datamap or array, the entire collection is cloned and reassigned to that particular moment's variables. Thus, the collection can be rolled back when the undo button is pressed.
  * Fixed some bugs where "its" would sometimes incorrectly be parsed as "it" plus the text "s".
- * Improved the collapsing whitespace syntax (`{` and `}`)'s handling of whitespace considerably. Now, whitespace between multiple invisible elements, like `(set:)` macro calls, should be removed outright and not allowed to accumulate.
-    * Furthermore, it can be safely nested inside itself, and will no longer collapse whitespace inside macros' strings, or HTML tags' attributes.
  * Fixed a bug where enchantment event handlers (such as those for `(click:)`) could potentially fail to load.
+ * Fixed a bug where the verbatim syntax (backticks) didn't preserve spaces at the front and end of it.
 
 ####Alterations
 
+ * Altered the collapsing whitespace syntax (`{` and `}`)'s handling of whitespace considerably.
+    * Now, whitespace between multiple invisible elements, like `(set:)` macro calls, should be removed outright and not allowed to accumulate.
+    * It can be safely nested inside itself.
+    * It will also no longer collapse whitespace inside macros' strings, or HTML tags' attributes.
  * TwineScript strings are now Unicode-aware. Due to JavaScript's use of UCS-2 for string indexing, Unicode astral plane characters (used for most non-Latin scripts) are represented as 2 characters instead of a single character. This issue is now fixed in TwineScript: strings with Unicode astral characters will now have correct indexing, length, and `(substring:)` behaviour.
  * Positional property indices are now case-insensitive - `1ST` is the same as `1st`.
  * `(text:)` now only works on strings, numbers, booleans and arrays, because the other datatypes cannot meaningfully be transformed into text.
@@ -76,6 +79,12 @@ Rough documentation is at http://twine2.neocities.org/
  * Added `(css:)` as a 'last resort' solution for styling elements, which is essentially the same as a raw HTML `<span style='...'>` tag, but can be combined with other changer commands. I feel obliged to offer this to provide some CSS-familiar users some access to higher functionality, even though it's not intended for general use in place of `(text-style:)`, `(position-x:)` or whatever.
  * Added `(align:)`, a macro form of the aligner syntax. It accepts a string containing an ASCII arrow of the same type that makes up the syntax ('==>', '=><==', etc). 
  * Added special behaviour for passages tagged with `passage-setup` or `story-setup`: their code will be *automatically* `(display:)`ed at the start of passages, allowing you to set up code actions (like `(click: ?switch)` etc.) or give passages a textual header. `passage-setup` passages are prepended to every passage, whereas `story-setup` passages are only prepended to the first passage in the game.
+ * Reinstated the Twine 1 escaped line ending syntax: ending a line with `\` will cause it and the line break to be removed.
+    * Also, an extra variant has been added: *beginning* a line with `\` will cause it and the previous line break to be removed. The main purpose of this addition is to let you begin multi-line hooks with `[\` and end them with `\]`, letting them fully occupy their own lines.
+ * Added `(shuffled:)`, which is identical to `(array:)`, except that it places the provided items in a random order. (You can shuffle an existing array by using the spread syntax, `(shuffled: ...$arr)`, of course.  To avoid errors where the spread syntax is not given, `(shuffled:)` requires two or more arguments.)
+ * Added `(datanames:)`, which takes a single datamap, and returns an array containing all of the datamap's names, alphabetised.
+ * Added `(datavalues:)`, which takes a single datamap, and returns an array containing all of the datamap's values, alphabetised by their names were.
+ * It is now an error to begin a tagged hook (such as `(if:$a)[`) and not have a matching closing `]`.
 
 ###1.0.1 changes:
 

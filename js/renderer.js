@@ -100,8 +100,8 @@ define(['utils', 'markup', 'twinescript/compiler', 'internaltypes/twineerror'], 
 			for(; i < len; i += 1) {
 				token = tokens[i];
 				switch(token.type) {
-					case "twine1Macro": {
-						out += TwineError.create("macrocall","Twine 2 macros use a different syntax to Twine 1 macros.")
+					case "error": {
+						out += TwineError.create("syntax",token.message)
 							.render(escape(token.text))[0].outerHTML;
 						break;
 					}
@@ -182,6 +182,7 @@ define(['utils', 'markup', 'twinescript/compiler', 'internaltypes/twineerror'], 
 						out += '<' + token.type + '>';
 						break;
 					}
+					case "escapedLine":
 					case "comment": {
 						break;
 					}
@@ -231,13 +232,13 @@ define(['utils', 'markup', 'twinescript/compiler', 'internaltypes/twineerror'], 
 						break;
 					}
 					case "verbatim": {
-						out += escape(token.verbatim)
+						out += Utils.wrapHTMLTag(escape(token.verbatim)
 							/*
 								The only replacement that should be done is \n -> <br>. In
 								browsers, even if the CSS is set to preserve whitespace, copying text
 								still ignores line breaks that aren't explicitly set with <br>s.
 							*/
-							.replace(/\n/g,'<br>');
+							.replace(/\n/g,'<br>'), "tw-verbatim");
 						break;
 					}
 					case "collapsed": {

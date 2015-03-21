@@ -278,30 +278,56 @@ describe("basic twinemarkup syntax", function() {
 	describe("verbatim syntax", function() {
 		it("suppresses all other syntax between ` and `", function() {
 			expectMarkupToBecome(
-				"`A''B''//C//`",
-				"A''B''//C//"
+				"`A''B''   //C//`",
+				"<tw-verbatim>A''B''   //C//</tw-verbatim>"
+			);
+		});
+		it("preserves whitespace", function() {
+			expectMarkupToBecome(
+				"`        `",
+				"<tw-verbatim>        </tw-verbatim>"
 			);
 		});
 		it("spans multiple lines", function() {
 			expectMarkupToBecome(
 				"`A\n\n''B''`",
-				"A<br><br>''B''"
+				"<tw-verbatim>A<br><br>''B''</tw-verbatim>"
 			);
 		});
 		it("cannot be nested with just single `s", function() {
 			expectMarkupToBecome(
 				"`''A''`''B''`C",
-				"''A''<b>B</b>`C"
+				"<tw-verbatim>''A''</tw-verbatim><b>B</b>`C"
 			);
 		});
 		it("can enclose a single ` with additional ``s", function() {
 			expectMarkupToBecome(
 				"``''A''`''B''``C",
-				"''A''`''B''C"
+				"<tw-verbatim>''A''`''B''</tw-verbatim>C"
 			);
 		});
 	});
-
+	
+	describe("escaped line syntax", function() {
+		it("eliminates the following line break when a \\ ends a line", function() {
+			expectMarkupToPrint(
+				"A\\\nB",
+				"AB"
+			);
+		});
+		it("eliminates the preceding line break when a \\ starts a line", function() {
+			expectMarkupToPrint(
+				"A\n\\B",
+				"AB"
+			);
+		});
+		it("still works if both backslashes are used", function() {
+			expectMarkupToPrint(
+				"A\\\n\\B",
+				"AB"
+			);
+		});
+	});
 	describe("collapsing whitespace syntax", function() {
 		it("eliminates runs of whitespace between { and }", function() {
 			expectMarkupToPrint(
@@ -375,7 +401,20 @@ describe("basic twinemarkup syntax", function() {
 			expect(p.text()).toBe("");
 		});
 		it("as a result, it won't affect text inside macros", function() {
-			expectMarkupToPrint("{(print:'Red   Blue')}", "Red   Blue");
+			expectMarkupToPrint("{(print:'Red   Blue''s length)}", "10");
+		});
+		it("furthermore, it won't affect text outputted by expressions", function() {
+			expectMarkupToPrint("{(set: $a to 'Red   Blue')(print:$a)}", "Red   Blue");
+		});
+		it("won't affect text inside verbatim guards", function() {
+			var p = runPassage("{   `   `   }");
+			expect(p.text()).toBe("   ");
+			p = runPassage("{   `  A C  `   }");
+			expect(p.text()).toBe("  A C  ");
+		});
+		it("will affect text inside nested hooks (?)", function() {
+			var p = runPassage("{ A (if:true)[    ] B }");
+			expect(p.text()).toBe("A B");
 		});
 	});
 	

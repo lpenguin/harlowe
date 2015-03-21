@@ -35,8 +35,7 @@
 		c = c ? escape(c) : o;
 
 		return o + "(?:" + notChars( c + "\\" ) + "\\\\.)" + "*" + notChars( c + "\\" ) + c;
-	}
-	
+	}	
 	/*
 		A sugar REstring function for negative character sets.
 		This escapes its input.
@@ -310,9 +309,9 @@
 		
 		whitespace:  mws,
 		unquoted:    unquoted,
-		escapedLine: "\\\\\\n",
+		escapedLine: "\\\\\\n\\\\?|\\n\\\\",
 		
-		br: "\\n",
+		br: "\\n(?!\\\\)",
 		
 		/*
 			Twine currently just uses HTML comment syntax for comments.
@@ -359,7 +358,7 @@
 			The verbatim syntax does not "nest", but terminals can be
 			differentiated by adding more ` marks to each pair.
 		*/
-		verbatim:        "(`+)" + ws + "([^]*?[^`])" + ws + "\\1(?!`)",
+		verbatim:                            "(`+)([^]*?[^`])\\1(?!`)",
 		verbatimOpener:                                    opener("`"),
 		
 		collapsedFront:                                            "{",
@@ -526,13 +525,18 @@
 		augmentedAssign: either("\\+", "\\-", "\\*", "\\\/", "%") + "=",
 	};
 	
-	if(typeof module === 'object') {
+	if (typeof module === 'object') {
 		module.exports = Patterns;
 	}
-	else if(typeof define === 'function' && define.amd) {
+	else if (typeof define === 'function' && define.amd) {
 		define('patterns', [], function () {
 			return Patterns;
 		});
+	}
+	// Evaluated by a TwineJS StoryFormat
+	else if (typeof StoryFormat === 'function' && this instanceof StoryFormat) {
+		this.modules || (this.modules = {});
+		this.modules.Patterns = Patterns;
 	}
 	else {
 		this.Patterns = Patterns;

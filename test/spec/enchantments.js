@@ -110,8 +110,8 @@ describe("enchantment changers", function() {
 				expect(p.text()).toBe("wowgoshgeez");
 			});
 			it("enchants additional matching strings added to the passage", function() {
-				var p = runPassage("wow|(click:'wow')[](link:)[wow]");
-				p.find('tw-expression[name=link]').click();
+				var p = runPassage("wow(click:'wow')[](link:'A')[wow]");
+				p.find('tw-link').click();
 				expect(p.find('tw-enchantment').length).toBe(2);
 			});
 		});

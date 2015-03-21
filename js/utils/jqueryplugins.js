@@ -32,11 +32,18 @@ define(['jquery'], function($) {
 		*/
 		textNodes: function() {
 			/*
+				Base case: this collection contains a single text node.
+				TODO: Handle a collection containing a mix of text nodes and elements.
+			*/
+			if (this[0] instanceof Text) {
+				return [this[0]];
+			}
+			/*
 				First, create an array containing all descendent and contents nodes
 				which are text nodes.
 			*/
 			return Array.apply(0, $(this).find('*').addBack().contents().filter(function() {
-				return this.nodeType === Node.TEXT_NODE;
+				return this instanceof Text;
 			}))
 			/*
 				the addBack() call adds back the descendents in an unwanted order, so we must

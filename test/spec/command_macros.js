@@ -1,5 +1,6 @@
 describe("basic command macros", function() {
 	'use strict';
+	
 	describe("the (print:) macro", function() {
 		it("requires exactly 1 argument of any type", function() {
 			expectMarkupToError("(print:)");
@@ -74,47 +75,58 @@ describe("basic command macros", function() {
 		});
 	});
 	describe("the (go-to:) macro", function() {
+		
+		function waitForGoto(callback) {
+			setTimeout(function f() {
+				if($('tw-passage:last-of-type tw-expression[name=go-to]').length > 0) {
+					return setTimeout(f, 2);
+				}
+				callback();
+			}, 2);
+		}
+		
 		it("requires exactly 1 string argument", function() {
 			expectMarkupToError("(go-to:)");
 			expectMarkupToError("(go-to: 1)");
 			expectMarkupToError("(go-to:'A','B')");
 		});
 		it("when placed in a passage, navigates the player to another passage", function(done) {
-			createPassage("''Red''", "grault");
-			runPassage("(go-to: 'grault')");
-			setTimeout(function() {
+			createPassage("''Red''", "croak");
+			runPassage("(go-to: 'croak')");
+			waitForGoto(function() {
 				var expr = $('tw-passage:last-child').find('b');
 				expect(expr.text()).toBe("Red");
 				done();
-			}, 2);
+			});
 		});
 		it("will count as a new turn in the session history", function(done) {
 			createPassage("", "grault");
 			runPassage("(go-to: 'grault')","garply");
-			setTimeout(function() {
+			waitForGoto(function() {
 				expectMarkupToPrint('(print:(history:))','garply,grault');
 				done();
-			}, 2);
+			});
 		});
-		it("prevents macros after it from running", function() {
-			createPassage("", "grault");
-			runPassage("(set:$a to 1)(go-to:'grault')(set:$a to 2)");
+		it("prevents macros after it from running", function(done) {
+			createPassage("", "flunk");
+			runPassage("(set:$a to 1)(go-to:'flunk')(set:$a to 2)");
 			expectMarkupToPrint("$a","1");
+			waitForGoto(done);
 		});
 		it("evaluates to a command object that can't be +'d", function() {
-			expectMarkupToError("(print: (go-to:'grault') + (go-to:'grault'))");
+			expectMarkupToError("(print: (go-to:'crepax') + (go-to:'crepax'))");
 		});
 		it("can be (set:) into a variable", function(done) {
-			createPassage("''Red''", "grault");
-			runPassage("(set: $x to (go-to:'grault'))$x");
-			setTimeout(function() {
+			createPassage("''Red''", "waldo");
+			runPassage("(set: $x to (go-to:'waldo'))$x");
+			waitForGoto(function() {
 				var expr = $('tw-passage:last-child').find('b');
 				expect(expr.text()).toBe("Red");
 				done();
-			}, 2);
+			});
 		});
 		it("produces an error if the passage doesn't exist", function() {
-			expectMarkupToError("(go-to: 'grault')");
+			expectMarkupToError("(go-to: 'freek')");
 		});
 	});
 });

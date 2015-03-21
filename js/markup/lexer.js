@@ -116,7 +116,17 @@
 		*/
 		lastChildEnd: function lastChildEnd() {
 			var lastToken = this.lastChild();
-			return lastToken ? lastToken.end : this.start || 0;
+			return lastToken ? lastToken.end : this.start +
+				/*
+					Some macros' children do not exactly overlap their parents in terms of
+					their ranges - an example is (if:), which is a macro token whose start is 0,
+					but contains a macroName token whose start is 1.
+					In that case, the index of the first child should be 1.
+					
+					We determine the difference by comparing the text and innerText positions -
+					(if:)'s text is "(if:)" but innerText is "if:"
+				*/
+				Math.max(0, this.text.indexOf(this.innerText));
 		},
 		
 		/*
@@ -132,12 +142,40 @@
 				Ask each child, if any, what their deepest token
 				for this index is.
 			*/
-			if (this.children) {
+			if (this.children.length) {
 				return this.children.reduce(function(prevValue, child) {
 					return prevValue || child.tokenAt(index);
-				}, null);
+				}, null)
+				/*
+					As described in lastChildEnd(), some tokens can have a gap between their
+					start and their first child's start. The index may have fallen in that gap
+					if no children were matched in the previous call. In which case, return this.
+				*/
+				|| this;
 			}
 			return this;
+		},
+		
+		/*
+			Given an index in this token's text, return an array of tokens,
+			deepest-first, leading to and including that token.
+		*/
+		pathAt: function pathAt(index) {
+			var path = [];
+			// First, a basic range check.
+			if (index < this.start || index >= this.end) {
+				return [];
+			}
+			/*
+				Ask each child, if any, what their deepest token
+				for this index is.
+			*/
+			if (this.children.length) {
+				path = path.concat(this.children.reduce(function(prevValue, child) {
+					return prevValue.length ? prevValue : child.pathAt(index);
+				}, []));
+			}
+			return path.concat(this);
 		},
 		
 		/*
@@ -195,6 +233,18 @@
 			this.type = "text";
 		},
 		
+		/*
+			Convert this token into an early error token, which renders as a <tw-error>.
+		*/
+		error: function(message) {
+			this.type = "error";
+			this.message = message;
+		},
+		
+		/*
+			This is used primarily for browser console debugging purposes - output from
+			LEX() may be turned to string to provide an overview of its contents.
+		*/
 		toString: function() {
 			var ret = this.type;
 			if (this.children && this.children.length > 0) {
@@ -437,6 +487,11 @@
 		}
 		
 		/*
+			Give it the correct start index.
+		*/
+		backToken.start = frontToken.start;
+		
+		/*
 			The text includes the original enclosing tokens around the
 			innerText.
 			
@@ -503,6 +558,7 @@
 		*/
 		rules: rules
 	};
+	
 	if(typeof module === 'object') {
 		module.exports = Lexer;
 	}
@@ -510,6 +566,11 @@
 		define('lexer', [], function () {
 			return Lexer;
 		});
+	}
+	// Evaluated by a TwineJS StoryFormat
+	else if (typeof StoryFormat === 'function' && this instanceof StoryFormat) {
+		this.modules || (this.modules = {});
+		this.modules.Lexer = Lexer;
 	}
 	else {
 		this.TwineLexer = Lexer;

@@ -127,7 +127,6 @@ function ($, Utils, Selectors, State, Section) {
 			Actually do the work of rendering the passage now.
 			First, gather the prose of the passage in question.
 		*/
-		
 		prose = passageData.get('prose');
 		
 		/*

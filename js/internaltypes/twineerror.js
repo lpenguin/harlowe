@@ -10,6 +10,7 @@ define(['jquery', 'utils'], function($, Utils) {
 		This dictionary supplies extra explanations for the error types.
 	*/
 	var errorExplanations = {
+		syntax: "The markup seems to contain a mistake.",
 		saving: "I tried to save or load the game, but I couldn't do it.",
 		operation: "I tried to use an operation on some data, but the data's type was incorrect.",
 		macrocall: "I tried to use a macro, but its call wasn't written correctly.",
