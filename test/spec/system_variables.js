@@ -1,11 +1,11 @@
 describe("system variables", function () {
 	'use strict';
-	describe("the $Design identifier", function () {
+	describe("the $Saves identifier", function () {
 		it("can't be reassigned", function (){
-			expectMarkupToError("(set:$Design to 3)");
+			expectMarkupToError("(set:$Saves to 3)");
 		});
 		it("can't be expanded with new properties", function (){
-			expectMarkupToError("(set:$Design's foo to 3)");
+			expectMarkupToError("(set:$Saves's foo to 3)");
 		});
 	});
 	describe("the $Passages variable", function () {

@@ -1,10 +1,9 @@
 define([
 	'utils',
-	'systemvariables/design',
 	'systemvariables/passages',
 	'systemvariables/saves',
 	'internaltypes/twineerror',
-], function(Utils, Design, Passages, Saves, TwineError) {
+], function(Utils, Passages, Saves, TwineError) {
 	"use strict";
 	/**
 		State
@@ -22,7 +21,6 @@ define([
 			Note that it's not possible for userland TwineScript to directly access or
 			modify this base object.
 		*/
-		Design:     Design,
 		Passages:   Passages,
 		Saves:      Saves,
 		TwineScript_ObjectName: "this story's variables",
@@ -31,7 +29,7 @@ define([
 			user values via (set:). Of course, mutating their contents
 			will cause new versions of them to appear in the Moment's variables map.
 		*/
-		TwineScript_Writeproof: ["Design", "Passages"],
+		TwineScript_Writeproof: ["Passages", "Saves"],
 	};
 
 	/**

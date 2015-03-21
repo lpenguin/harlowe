@@ -573,13 +573,6 @@ function($, Utils, Selectors, Renderer, Environ, State, HookUtils, HookSet, Pseu
 						Then, render using that descriptor.
 					*/
 					dom = dom.add(desc.create({ target: e }).render());
-					/*
-						Now, apply the system $Design changer commands to the target.
-						It may seem counterintuitive that this is done after initial rendering,
-						but remember: inline changers are executed in separate Sections,
-						and as such will override these by themselves.
-					*/
-					State.variables.Design.applyDesign(e);
 				});
 			}
 			else {
@@ -587,10 +580,6 @@ function($, Utils, Selectors, Renderer, Environ, State, HookUtils, HookSet, Pseu
 					Now, run the changer.
 				*/
 				dom = desc.render();
-				/*
-					As described above, we now apply the $Design changers.
-				*/
-				State.variables.Design.applyDesign(desc.target);
 			}
 			/*
 				Special case for hooks inside existing collapsing syntax:
