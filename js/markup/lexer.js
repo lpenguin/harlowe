@@ -9,40 +9,27 @@
 (function(){
 	"use strict";
 	var Lexer,
-		Token,
-		tokenProto,
 		rules = {};
 	
 	/*
-		Polyfill for Object.assign()
-	*/
-	Object.assign = Object.assign || function polyfilledAssign(obj /* variadic */) {
-		var i = 1,
-			target, key;
-		for(; i < arguments.length; i++) {
-			target = arguments[i];
-			for(key in target) {
-				if(Object.hasOwnProperty.call(target, key)) {
-					obj[key] = target[key];
-				}
-			}
-		}
-		return obj;
-	};
-	
-	/*
 		The "prototype" object for lexer tokens.
-		(As an experiment in JS pseudo-classical syntax, instances are created
-		by directly calling tokenMethods.constructor, which is otherwise nameless.)
 		It just has some basic methods that iterate over tokens' children,
 		but which nonetheless lexer customers may find valuable.
 	*/
-	tokenProto = {
-		constructor: function() {
-			for (var i = 0; i < arguments.length; i++) {
-				Object.assign(this, arguments[i]);
+	function Token(/*variadic*/) {
+		var i, j, key, target;
+		/*
+			Due to speed paranoia, this uses longhand assignment.
+		*/
+		for (i = 0; i < arguments.length; i++) {
+			for(j in arguments[i]) {
+				this[j] = arguments[i][j];
 			}
-		},
+		}
+	}
+	Token.prototype = {
+		constructor: Token,
+		
 		/*
 			Create a token and put it in the children array.
 		*/
@@ -69,7 +56,7 @@
 					start:     index,
 					end:       matchText && index + matchText.length,
 					text:      matchText,
-					children:  []
+					children:  [],
 				},
 				tokenData);
 				
@@ -253,8 +240,6 @@
 			return ret;
 		}
 	};
-	Token = tokenProto.constructor;
-	Token.prototype = tokenProto;
 	
 	/*
 		The main lexing routine. Given a token with an innerText property and

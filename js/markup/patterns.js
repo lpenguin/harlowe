@@ -420,12 +420,14 @@
 		simpleLinkOpener: opener("[["),
 		
 		macroFront: macro.opener + before(macro.name),
+		macroFrontOpener: opener("("),
 		macroName: macro.name,
 		
 		/*
 			This must be differentiated from macroFront.
 		*/
 		groupingFront: "\\(" + notBefore(macro.name),
+		groupingFrontOpener: opener("("),
 		
 		groupingBack:  "\\)",
 		
@@ -441,6 +443,9 @@
 		
 		property:
 			property,
+		
+		propertyOpener:
+			opener("'s"),
 		
 		belongingProperty:
 			belongingProperty,
@@ -459,6 +464,9 @@
 		
 		variable:
 			variable,
+		
+		variableOpener:
+			opener("$"),
 		
 		hookRef: "\\?(" + anyLetter + "+)\\b",
 		
@@ -492,6 +500,7 @@
 		// Special identifiers
 		identifier: identifier,
 		itsProperty: itsProperty,
+		itsPropertyOpener: opener("its"),
 		belongingItProperty: belongingItProperty,
 		
 		string:
@@ -499,6 +508,9 @@
 				string.single,
 				string.double
 			),
+		
+		stringOpener:
+			opener('"',"'"),
 		
 		/*
 			Macro operators

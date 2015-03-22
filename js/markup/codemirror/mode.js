@@ -1,7 +1,9 @@
 (function() {
 	'use strict';
 	var lex, harloweStyles;
-	
+	/*
+		Import the TwineMarkup lexer function, and store it locally.
+	*/
 	if(typeof define === 'function' && define.amd) {
 		define('markup', [], function (markup) {
 			lex = markup.lex;
@@ -10,8 +12,15 @@
 	else if (typeof StoryFormat === 'function' && this instanceof StoryFormat) {
 		lex = this.modules.Markup.lex;
 	}
+	/*
+		The mode is defined herein.
+	*/
 	window.CodeMirror && CodeMirror.defineMode('harlowe', function() {
 		return {
+			/*
+				The startState is vacant because all of the computation is done
+				inside token().
+			*/
 			startState: function() {
 				return {
 					tree: null,
@@ -24,9 +33,12 @@
 				states is referred to.
 			*/
 			copyState: function(state) {
-				return Object.assign({}, state, {
-					tree: null,
-				});
+				var ret = {
+					tree: state.tree,
+					pos: state.pos,
+				};
+				state.tree = null;
+				return ret;
 			},
 			blankLine: function(state) {
 				state.pos++;
@@ -35,6 +47,13 @@
 				var currentBranch, currentToken;
 				
 				if (!state.tree) {
+					/*
+						CodeMirror doesn't allow modes to have full access to the text of
+						the document. This hack overcomes this respectable limitation:
+						TwineJS's PassageEditor stashes a reference to the doc in
+						the CodeMirror modes object - and here, we retrieve it,
+						and use it to compute a full parse tree.
+					*/
 					state.tree = lex(CodeMirror.modes.harlowe.doc.getValue());
 				}
 				/*
@@ -44,6 +63,7 @@
 				currentBranch = state.tree.pathAt(state.pos);
 				// The path is deepest-first - the bottom token is at 0.
 				currentToken = currentBranch[0];
+				
 				/*
 					If, say, the doc had no text in it, the currentToken would be null.
 					In which case, quit early.
@@ -84,7 +104,13 @@
 		};
 	});
 	/*
-		Let's use pure DOM calls in the absence of a jQuery require() call.
+		In order to provide styling to the Harlowe mode, CSS must be dynamically injected
+		when the mode is defined. This is done now, by creating a <style> element with ID
+		"cm-harlowe" and placing our CSS in it.
+	*/
+	/*
+		If the style element already exists, it is reused. Otherwise, it's created.
+		(Let's use pure DOM calls in the absence of a jQuery require() call.)
 	*/
 	harloweStyles = document.querySelector('style#cm-harlowe');
 	if (!harloweStyles) {
@@ -92,6 +118,11 @@
 		harloweStyles.setAttribute('id','cm-harlowe');
 		document.head.appendChild(harloweStyles);
 	}
+	/*
+		This large function dynamically constructs a CSS string containing all of
+		the styles used by the editor. Each property in the returned object indirectly maps to
+		a CSS selector, and the value maps directly to CSS attributes assigned by the selector.
+	*/
 	harloweStyles.innerHTML = (function() {
 		function nestedBG(h,s,l) {
 			return function(e) {
@@ -105,6 +136,10 @@
 			invalid      = "color: firebrick; background-color: lightsalmon;"
 			;
 		
+		/*
+			If a property includes commas, then it's a multiple-name selector.
+			It will be converted to "[selector], [selector]" etc.
+		*/
 		return {
 			hook:        hookBG(0.05),
 			"hook-2":    hookBG(0.1),
@@ -116,7 +151,7 @@
 			"hook-8":    hookBG(0.4),
 			
 			//TODO: whitespace within collapsed
-			twine1Macro: invalid,
+			error:       invalid,
 			macro:       macro,
 			macroName:   macroName,
 			
@@ -143,11 +178,10 @@
 						return a;
 					}
 					/*
-						If a name includes commas, then it's a multiple-name selector.
-						We must apply the forthcoming changes to each name within.
-						
-						Alternatively, if it does not, this will simply convert it to an
-						array of 1 element.
+						Comma-containing names are handled by splitting them here,
+						and then re-joining them. If the property lacks a comma,
+						then this merely creates an array of 1 element and runs .map()
+						on that.
 					*/
 					selector = e.split(", ")
 						/*
@@ -161,7 +195,7 @@
 							return ".cm-harlowe-" + e;
 						});
 					return a + selector.join(', ') + "{" + this[e] + "}";
-				}.bind(this),'');
+				}.bind(this), '');
 			},
 		}+"";
 	}());

@@ -100,7 +100,11 @@ module.exports = function (grunt) {
 					include: ['codemirror/mode'],
 					useStrict: true,
 					out: function(src) {
-						src = src.replace(/,define\([^\;]+\;/g,';');
+						/*
+							Crudely edit out the final define() call that's added
+							for codemirror/mode.
+						*/
+						src = src.replace(/(?:,|\n)define\([^\;]+\;/g,';');
 						grunt.file.write(destMarkupJS, src);
 					},
 				}
