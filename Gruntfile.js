@@ -179,7 +179,7 @@ module.exports = function (grunt) {
 					outdir: 'docs/'
 				}
 			}
-		}
+		},
 	});
 	
 	grunt.registerTask('examplefile', "Create an example TwineJS output file", function() {
@@ -223,7 +223,8 @@ module.exports = function (grunt) {
 	grunt.loadNpmTasks('grunt-contrib-cssmin');
 	grunt.loadNpmTasks('grunt-text-replace');
 
-	grunt.registerTask('default', [ 'clean', 'jshint:harlowe', 'jshint:tests', 'sass', 'cssmin', 'requirejs', ]);
-	grunt.registerTask('runtime', [ 'clean', 'sass', 'cssmin', 'requirejs', 'replace:runtime', 'examplefile', ]);
-	grunt.registerTask('quick', [ 'requirejs', 'replace:runtime', ]);
+	grunt.registerTask('default', [ 'jshint:harlowe', 'jshint:tests', 'compile', ]);
+	grunt.registerTask('compile', [ 'clean', 'sass', 'cssmin', 'requirejs' ]);
+	grunt.registerTask('runtime', [ 'compile', 'replace:runtime', 'examplefile', ]);
+	grunt.registerTask('quick',   [ 'requirejs', 'replace:runtime', ]);
 };

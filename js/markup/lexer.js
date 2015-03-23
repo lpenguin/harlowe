@@ -17,7 +17,7 @@
 		but which nonetheless lexer customers may find valuable.
 	*/
 	function Token(/*variadic*/) {
-		var i, j, key, target;
+		var i, j;
 		/*
 			Due to speed paranoia, this uses longhand assignment.
 		*/

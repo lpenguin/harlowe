@@ -1,5 +1,6 @@
 define([
 	'jquery',
+	'utils/naturalsort',
 	'macros',
 	'utils',
 	'utils/operationutils',
@@ -8,7 +9,7 @@ define([
 	'datatypes/assignmentrequest',
 	'internaltypes/twineerror',
 	'internaltypes/twinenotifier'],
-function($, Macros, Utils, OperationUtils, State, Engine, AssignmentRequest, TwineError, TwineNotifier) {
+function($, NaturalSort, Macros, Utils, OperationUtils, State, Engine, AssignmentRequest, TwineError, TwineNotifier) {
 	"use strict";
 	
 	var
@@ -312,7 +313,7 @@ function($, Macros, Utils, OperationUtils, State, Engine, AssignmentRequest, Twi
 			alphabetically.
 		*/
 		("datanames", function datanames(_, map) {
-			return Array.from(map.keys()).sort();
+			return Array.from(map.keys()).sort(NaturalSort);
 		},
 		[Map])
 		/*
@@ -322,7 +323,7 @@ function($, Macros, Utils, OperationUtils, State, Engine, AssignmentRequest, Twi
 		*/
 		("datavalues", function datavalues(_, map) {
 			return Array.from(map.entries()).sort(function(a,b) {
-				return a[0] > b[0];
+				return [a[0],b[0]].sort(NaturalSort)[0] === a[0] ? -1 : 1;
 			}).map(function(e) {
 				return e[1];
 			});

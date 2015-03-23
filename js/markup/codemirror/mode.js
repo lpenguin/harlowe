@@ -22,6 +22,7 @@
 				inside token().
 			*/
 			startState: function() {
+				
 				return {
 					tree: null,
 					pos: 0,
@@ -93,10 +94,10 @@
 					var name = "harlowe-" + e.type,
 						// If this name has been used earlier in the chain, suffix
 						// this name with an additional number.
-						count = ((a.match(name) || '').length);
+						count = ((a.split(name) || '').length);
 					
-					if (count > 0) {
-						name += "-" + (count + 1);
+					if (count > 1) {
+						name += "-" + (count);
 					}
 					return a + name + " ";
 				},'');
@@ -130,8 +131,8 @@
 			};
 		}
 		var hookBG       = nestedBG(220, 100, 50),
-			macro        = "color:#a84186;",
-			macroName    = macro + "font-weight:bold;",
+			macro        = "color: #a84186;",
+			macroName    = macro + "font-style:italic;",
 			twineLink    = "color: #3333cc;",
 			invalid      = "color: firebrick; background-color: lightsalmon;"
 			;
@@ -150,10 +151,17 @@
 			"hook-7":    hookBG(0.35),
 			"hook-8":    hookBG(0.4),
 			
+			// The bottommost element is a hook
+			"^=hook":    "font-weight:bold;",
+			
 			//TODO: whitespace within collapsed
 			error:       invalid,
+			
 			macro:       macro,
 			macroName:   macroName,
+			
+			// The bottommost element is a macro open/close bracket
+			"^=macro ":    "font-weight:bold;",
 			
 			"bold, strong":
 				"font-weight:bold;",
@@ -167,6 +175,7 @@
 			string:      "color: #008282;",
 			number:      "color: #A15000;",
 			variable:    "color: #005682;",
+			hookRef:     "color: #007f54;",
 			
 			"property, belongingProperty":
 				"color: #0076b2;",
@@ -192,6 +201,9 @@
 							and the values to a CSS body.
 						*/
 						.map(function(e) {
+							if (e.indexOf("^=") === 0) {
+								return "[class^='cm-harlowe-" + e.slice(2) + "']";
+							}
 							return ".cm-harlowe-" + e;
 						});
 					return a + selector.join(', ') + "{" + this[e] + "}";
