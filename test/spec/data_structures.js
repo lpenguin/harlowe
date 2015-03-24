@@ -71,6 +71,40 @@ describe("data structure macros", function () {
 			}
 		});
 	});
+	describe("the (rotated:) macro", function() {
+		it("accepts 1 number and 2 or more arguments of any type", function() {
+			expectMarkupToError("(rotated:)");
+			expectMarkupToError("(rotated:1)");
+			expectMarkupToError("(rotated:1,2)");
+			["1", "'X'", "true"].forEach(function(e) {
+				for(var i = 2; i < 10; i += 1) {
+					expectMarkupToNotError("(rotated: 1, " + (e + ",").repeat(i) + ")");
+				}
+			});
+		});
+		it("returns an array containing arguments 1+, rotated by the number", function() {
+			runPassage("(set: $a to (rotated:1,1,2,3,4))");
+			expectMarkupToPrint("(print: $a)","4,1,2,3");
+		});
+		it("produces an error if the number is greater than the quantity of items", function() {
+			expectMarkupToError("(rotated:5,1,2,3,4))");
+		});
+		it("produces an error if the number is 0", function() {
+			expectMarkupToError("(rotated:0,1,2,3,4))");
+		});
+	});
+	describe("the (sorted:) macro", function() {
+		it("accepts 2 or more string arguments", function() {
+			expectMarkupToError("(sorted:)");
+			expectMarkupToError("(sorted: 'A')");
+			for(var i = 2; i < 10; i += 1) {
+				expectMarkupToNotError("(sorted:" + ("'X',").repeat(i) + ")");
+			}
+		});
+		it("returns an array of the items, sorted in natural-sort order", function() {
+			expectMarkupToPrint("(sorted:'D1','E','É','D11','D2','F')","D1,D2,D11,E,É,F");
+		});
+	});
 	describe("the (datanames:) macro", function() {
 		it("accepts 1 datamap", function() {
 			expectMarkupToError("(datanames:)");
@@ -83,8 +117,8 @@ describe("data structure macros", function () {
 			expectMarkupToPrint("(print: (datanames:(datamap:)))","");
 		});
 		it("returns the names in natural-sort order", function() {
-			runPassage("(set: $a to (datamap:'D1',1,'F',2,'E',3,'D11',4,'D2',5))");
-			expectMarkupToPrint("(print: (datanames:$a))","D1,D2,D11,E,F");
+			runPassage("(set: $a to (datamap:'D1',1,'E',2,'É',3,'D11',4,'D2',5,'F',6))");
+			expectMarkupToPrint("(print: (datanames:$a))","D1,D2,D11,E,É,F");
 		});
 	});
 	describe("the (datavalues:) macro", function() {
@@ -99,8 +133,8 @@ describe("data structure macros", function () {
 			expectMarkupToPrint("(print: (datavalues:(datamap:)))","");
 		});
 		it("returns the values in their names's natural-sort order", function() {
-			runPassage("(set: $a to (datamap:'D1',1,'F',2,'E',3,'D11',4,'D2',5))");
-			expectMarkupToPrint("(print: (datavalues:$a))","1,5,4,3,2");
+			runPassage("(set: $a to (datamap:'D1',1,'E',2,'É',3,'D11',4,'D2',5,'F',6))");
+			expectMarkupToPrint("(print: (datavalues:$a))","1,5,4,2,3,6");
 		});
 	});
 });

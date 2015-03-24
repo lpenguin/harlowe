@@ -100,7 +100,7 @@ function($, NaturalSort, Macros, Utils, OperationUtils, State, Engine, Assignmen
 		[rest(AssignmentRequest)])
 		
 		/*d:
-			(put: [VariableToValue]) -> String
+			(put: VariableToValue, [...VariableToValue]) -> String
 			
 			A left-to-right version of (set:) that requires the word `into` rather than `to`.
 			
@@ -121,6 +121,8 @@ function($, NaturalSort, Macros, Utils, OperationUtils, State, Engine, Assignmen
 			
 			`it` can also be used with (put:), but, interestingly, it's used on the right-hand side of
 			the expression: `(put: $eggs + 2 into it)`.
+			
+			Once again, this evaluates to an empty string.
 		*/
 		("put", function put(_, assignmentRequests /*variadic*/) {
 			var i, ar, result;
@@ -149,10 +151,16 @@ function($, NaturalSort, Macros, Utils, OperationUtils, State, Engine, Assignmen
 		},
 		[rest(AssignmentRequest)])
 		
-		/*
-			(move:) A variant of (put:) that deletes the source's binding after
-			performing the operation. Ideally used as an equivalent
-			to Javascript's "x = arr.pop();"
+		/*d:
+			(move: [VariableToValue]) -> String
+			
+			A variant of (put:) that deletes the source value after copying it - in effect
+			moving the value from the source to the destination.
+			
+			Rationale:
+			You'll often use data structures such as arrays or datamaps as storage for values
+			that you'll only use once, such as a list of names to print out. When it comes time
+			to use them, you can remove it from the structure and retrieve it in one go
 		*/
 		("move", function move(_, ar) {
 			var get, error;
@@ -176,7 +184,6 @@ function($, NaturalSort, Macros, Utils, OperationUtils, State, Engine, Assignmen
 		},
 		[rest(AssignmentRequest)])
 
-		
 		/*
 			ARRAY MACROS
 		*/
@@ -239,7 +246,7 @@ function($, NaturalSort, Macros, Utils, OperationUtils, State, Engine, Assignmen
 		}, zeroOrMore(Any))
 		
 		/*d:
-			(range:)
+			(range: Number, Number) -> Array
 			
 			Produces an array containing an *inclusive* range of integers from a to b.
 			
@@ -293,12 +300,35 @@ function($, NaturalSort, Macros, Utils, OperationUtils, State, Engine, Assignmen
 		},
 		[Array, Number, Number])
 		
-		/*
-			(shuffled:)
-			Identical to the typical array constructor macro, but it
-			A: requires two or more items (as an error check), and
-			B: randomly rearranges the elements. Useful for creating
-			'decks' of random descriptions, elements, etc.
+		/*d:
+			(shuffled: Any, Any, [...Any])
+			
+			Identical to (array:), except that it randomly rearranges the elements
+			instead of placing them in the given order.
+			
+			Example usage:
+			```
+			(set: $a to (a: 1,2,3,4,5,6))
+			(print: (shuffled: ...$a))
+			```
+			
+			Rationale:
+			If you're making a particularly random story, you'll often want to create a 'deck'
+			of random descriptions, elements, etc. that are only used once. That is to say, you'll want
+			to put them in an array, then randomise the array's order, preserving that random order
+			for the duration of a game.
+			
+			The (either:) macro is useful for selecting an element from an array randomly
+			(if you use the spread `...` syntax), but isn't very helpful for this particular problem.
+			The (shuffled:) macro is the solution: it takes elements and returns a randomly-ordered array that
+			can be used as you please.
+			
+			Details:
+			To ensure that it's being used correctly, this macro requires two or more items -
+			providing just one (or none) will cause an error to be presented.
+			
+			See also:
+			(array:), (either:), (rotated:)
 		*/
 		("shuffled", function shuffled() {
 			return Array.from(arguments).slice(1).sort(function() {
@@ -307,13 +337,88 @@ function($, NaturalSort, Macros, Utils, OperationUtils, State, Engine, Assignmen
 		},
 		[Any, rest(Any)])
 		
+		/*d:
+			(sorted: String, String, [...String])
+			
+			Similar to (array:), except that it requires string elements, and orders the
+			strings in English alphanumeric sort order, rather than the order in which they were provided.
+			
+			Example usage:
+			```
+			(set: $a to (a: 'A','C','E','G'))
+			(print: (sorted: ...$a))
+			```
+			
+			Rationale:
+			Often, you'll be using arrays as 'decks' that will provide string values to other parts of
+			your story in a specific order. If you want, for instance, these strings to appear in
+			alphabetical order, this macro can be used to create a sorted array, or (by using the
+			spread `...` syntax) convert an existing array into a sorted one.
+			
+			Details:
+			Unlike other programming languages, this does not strictly use ASCII sort order, but alphanumeric sorting:
+			the string "A2" will be sorted after "A1" and before "A11". Moreover, if the player's web browser
+			supports internationalisation (that is, every current browser except Safari and IE 10), then
+			the strings will be sorted using English language rules (for instance, "é" comes after "e" and before
+			"f", and regardless of the player's computer's language settings. Otherwise, it will sort
+			using ASCII comparison (whereby "é" comes after "z").
+			
+			Currently there is no way to specify an alternative language locale to sort by, but this is likely to
+			be made available in a future version of Harlowe.
+			
+			To ensure that it's being used correctly, this macro requires two or more items -
+			providing just one (or none) will cause an error to be presented.
+			
+			See also:
+			(array:), (shuffled:), (rotated:)
+		*/
+		("sorted", function shuffled() {
+			return Array.from(arguments).slice(1).sort(NaturalSort("en"));
+		},
+		[String, rest(String)])
+		
+		/*
+			(rotated: Number, [...Any]) -> Array
+			
+			Identical to the typical array constructor macro, but it
+			A: takes a Number at the start, and
+			B: moves that number of items from the start of the array to the end.
+			
+			Details:
+			To ensure that it's being used correctly, this macro requires three or more items -
+			providing just two, one or none will cause an error to be presented.
+		*/
+		("rotated", function shuffled(_, number /*variadic*/) {
+			var array = Array.from(arguments).slice(2);
+			/*
+				The number is thought of as an offset that's added to every index.
+				So, to produce this behaviour, it must be negated.
+			*/
+			number *= -1;
+			console.log(number);
+			/*
+				These error checks are maybe a bit strict, but ensure that this behaviour
+				could (maybe) be freed up in later versions.
+			*/
+			if (number === 0) {
+				return TwineError.create("macrocall",
+					"I can't rotate these values by 0 positions.");
+			}
+			else if (Math.abs(number) >= array.length) {
+				return TwineError.create("macrocall",
+					"I can't rotate these " + array.length + " values by " + number + " positions.");
+			}
+			return array.slice(number).concat(array.slice(0, number));
+		},
+		[Any, Any, rest(Any)])
+		
 		/*
 			(datanames:)
 			This takes a datamap, and returns an array of its key names, sorted
 			alphabetically.
 		*/
 		("datanames", function datanames(_, map) {
-			return Array.from(map.keys()).sort(NaturalSort);
+			return Array.from(map.keys()).sort(NaturalSort("en"));
 		},
 		[Map])
 		/*
@@ -323,7 +428,7 @@ function($, NaturalSort, Macros, Utils, OperationUtils, State, Engine, Assignmen
 		*/
 		("datavalues", function datavalues(_, map) {
 			return Array.from(map.entries()).sort(function(a,b) {
-				return [a[0],b[0]].sort(NaturalSort)[0] === a[0] ? -1 : 1;
+				return [a[0],b[0]].sort(NaturalSort("en"))[0] === a[0] ? -1 : 1;
 			}).map(function(e) {
 				return e[1];
 			});

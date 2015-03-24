@@ -179,10 +179,10 @@ function($, Macros, Utils, Selectors, Colour, ChangerCommand, TwineError) {
 			[either(String,Colour)]
 		)
 		/*
-			(rotate:)
+			(text-rotate:)
 			A shortcut for applying a CSS rotation to a span of text.
 		*/
-		("rotate",
+		("text-rotate",
 			function transform(_, rotation) {
 				return ChangerCommand.create("rotate", [rotation]);
 			},
@@ -239,7 +239,41 @@ function($, Macros, Utils, Selectors, Colour, ChangerCommand, TwineError) {
 		/*d:
 			(text-style: String) -> Command
 			
+			This applies a selected built-in text style to the hook's text.
 			
+			Example usage:
+			`The shadow (text-style: "shadow")[flares] at you!` will style the word "flares" with a shadow.
+			
+			`(set: $s to (text-style: "shadow")) The shadow $s[flares] at you!` will also style it with a shadow.
+			
+			Rationale:
+			While Twine offers markup for common formatting styles like bold and italic, having these
+			styles available from a command macro provides some extra benefits: it's possible, as with all
+			such style macros, to (set:) them into a variable, combine them with other commands, and re-use them
+			succinctly throughout the story (by using the variable in place of the macro).
+			
+			Furthermore, this macro also offers many less common but equally desirable styles to the author,
+			which are otherwise unavailable or difficult to produce.
+			
+			Details:
+			At present, the following text strings will produce a particular style:
+			* "bold", "italic", "underline", "strike", "superscript", "subscript", "blink", "mark", "delete"
+			* "outline"
+			* "shadow"
+			* "emboss"
+			* "condense"
+			* "expand"
+			* "blur"
+			* "blurrier",
+			* "smear"
+			* "mirror"
+			* "upside-down"
+			* "fade-in-out"
+			* "rumble"
+			* "shudder"
+			
+			See also:
+			(css:)
 		*/
 		("text-style",
 			function textstyle(_, styleName) {
@@ -386,7 +420,7 @@ function($, Macros, Utils, Selectors, Colour, ChangerCommand, TwineError) {
 			(css: String) -> Command
 			
 			This takes a string of inline CSS, and applies it to the hook, as if it
-			were HTML "style" property.
+			were a HTML "style" property.
 			
 			Usage example:
 			```

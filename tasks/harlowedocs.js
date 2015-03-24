@@ -11,7 +11,7 @@ module.exports = function(grunt) {
 			This matches a mixed-case type name, optionally plural, but not whenever
 			it seems to be part of a macro name.
 		*/
-		typeName = /\b(variabletovalue|any|nothing|command|string|number|boolean|array|data(?:map|set))(s?)(?!\:\))\b/ig,
+		typeName = /\b(variabletovalue|any|command|string|number|boolean|array|data(?:map|set))(s?)(?!\:\))\b/ig,
 		typeDefinition = /([\w]+) data\n/,
 		
 		// Type definitions
@@ -31,9 +31,18 @@ module.exports = function(grunt) {
 	function parameterSignature(sig) {
 		return sig
 			// Highlight the optional syntax
-			.replace(/([\[\]])/g,  "<span class=parameter_optional>$1</span>")
+			.replace(/([\[\]])/g,  "<span class=parameter_optional>\\$1</span>")
 			// Highlight the rest syntax
 			.replace(/\.{3}/g, "<span class=parameter_rest>...</span>");
+	}
+	
+	/*
+		Write out a macro title, which is simply "The (name:) macro",
+		but with an id that allows the element to be used as an anchor target.
+	*/
+	function macroTitle(name) {
+		return "\n<h2 id=macro_" + name.toLowerCase() + ">" +
+			"The (" + name + ": ) macro</h2>\n";
 	}
 	
 	/*
@@ -44,12 +53,12 @@ module.exports = function(grunt) {
 		* Then, afterward, a return type signature.
 	*/
 	function macroSignature(name, sig, returnType) {
-		return "\n<h2 id=macro_" + name.toLowerCase() + ">" +
+		return "\n<h3>" +
 			"(" + name + ": <i>" +
 			parameterSignature(sig) +
 			"</i>) <span class=macro_returntype>&rarr;</span> <i>" +
 			returnType +
-			"</i></h2>\n";
+			"</i></h3>\n";
 	}
 	
 	/*
@@ -109,7 +118,7 @@ module.exports = function(grunt) {
 			/*
 				Convert the title signature into an anchor and an augmented parameter signature.
 			*/
-			.replace(title,macroSignature(match[1], match[2], match[3]));
+			.replace(title,macroTitle(match[1]) + macroSignature(match[1], match[2], match[3]));
 		
 		text = processTextTerms(text, match);
 		
