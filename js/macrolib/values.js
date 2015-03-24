@@ -17,7 +17,7 @@ define(['utils', 'macros', 'utils/operationutils', 'internaltypes/twineerror'], 
 			A string is just a line of text - a bunch of text characters strung together.
 			
 			When making a story, you'll mostly work with strings that you intend to insert into
-			the passage prose. If a string contains markup, then the markup will be processed when it's
+			the passage source. If a string contains markup, then the markup will be processed when it's
 			inserted. For instance, `"The ''biiiiig'' bellyblob"` will print as "The <b>biiiiig</b> bellyblob".
 			Even macro calls inside strings will be processed: printing `"The (print:2+3) bears"` will print "The 6 bears".
 			If you wish to avoid this, simply include the verbatim markup inside the string:``"`It's (exactly: as planned)`"`` will
@@ -52,7 +52,7 @@ define(['utils', 'macros', 'utils/operationutils', 'internaltypes/twineerror'], 
 			
 			Details:
 			This macro can also be used much like the (print:) macro - as it evaluates to a
-			string, and strings can be placed in the story prose freely,
+			string, and strings can be placed in the story source freely,
 			
 			If you give an array to (text:), it will attempt to convert every element
 			contained in the array to a String, and then join them up with commas. So,
@@ -283,7 +283,7 @@ define(['utils', 'macros', 'utils/operationutils', 'internaltypes/twineerror'], 
 			
 			Rationale:
 			If you use the (if:) macro, you may find you commonly use it in forked branches of
-			prose: places where only one of a set of hooks should be displayed. In order to
+			source: places where only one of a set of hooks should be displayed. In order to
 			make this so, you would have to phrase your (if:) expressions as "if A happened",
 			"if A didn't happen and B happened", "if A and B didn't happen and C happened", and so forth,
 			in that order.
@@ -339,7 +339,7 @@ define(['utils', 'macros', 'utils/operationutils', 'internaltypes/twineerror'], 
 			(else:​)[Before they can react, you unleash a typhoon of tickles!]
 			(else:​)[They sigh contentedly, filling your pious heart with joy.]
 			```
-			This usage can result in a somewhat puzzling passage prose structure, where each (else:) hook
+			This usage can result in a somewhat puzzling passage source structure, where each (else:) hook
 			alternates between visible and hidden depending on the first such hook. So, it is best avoided.
 		*/
 		("else", function _else(section) {

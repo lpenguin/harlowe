@@ -175,9 +175,9 @@ define([
 				Even if it exists, the passageMap could be an author-created-at-runtime
 				datamap, and as such should be carefully examined.
 			*/
-			if (!(passageMap instanceof Map) || !passageMap.has('prose')) {
+			if (!(passageMap instanceof Map) || !passageMap.has('source')) {
 				return TwineError.create("operation",
-					"The passage '" + name + "' isn't a datamap with a 'prose' data key."
+					"The passage '" + name + "' isn't a datamap with a 'source' data key."
 				);
 			}
 			return true;

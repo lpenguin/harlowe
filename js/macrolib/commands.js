@@ -47,7 +47,7 @@ function(Macros, Utils, State, Engine, TwineError, OperationUtils) {
 			`(display: "Cellar")` prints the contents of the passage named "Cellar".
 			
 			Rationale:
-			Suppose you have a section of code or prose that you need to include in several different
+			Suppose you have a section of code or source that you need to include in several different
 			passages. It could be a status display, or a few lines of descriptive text. Instead of
 			manually copy-pasting it into each passage, consider placing it all by itself in another passage,
 			and using (display:) to place it in every passage. This gives you a lot of flexibility: you can,
@@ -85,7 +85,7 @@ function(Macros, Utils, State, Engine, TwineError, OperationUtils) {
 					if ((error = TwineError.containsError(State.passageExists(name)))) {
 						return error;
 					}
-					return Utils.unescape(State.variables.Passages.get(name).get('prose'));
+					return Utils.unescape(State.variables.Passages.get(name).get('source'));
 				},
 			};
 		},
@@ -267,7 +267,7 @@ function(Macros, Utils, State, Engine, TwineError, OperationUtils) {
 		/*d:
 			(live: [Number]) -> Command
 			When you attach this macro to a hook, the hook becomes "live", which means that it's repeatedly re-run
-			every certain number of milliseconds, replacing the prose inside of the hook with a newly computed version.
+			every certain number of milliseconds, replacing the source inside of the hook with a newly computed version.
 			
 			Example usage:
 			```

@@ -395,7 +395,6 @@ function($, NaturalSort, Macros, Utils, OperationUtils, State, Engine, Assignmen
 				So, to produce this behaviour, it must be negated.
 			*/
 			number *= -1;
-			console.log(number);
 			/*
 				These error checks are maybe a bit strict, but ensure that this behaviour
 				could (maybe) be freed up in later versions.

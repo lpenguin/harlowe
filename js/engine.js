@@ -79,9 +79,9 @@ function ($, Utils, Selectors, State, Section) {
 			passageData = State.variables.Passages.get(name),
 			oldPassages,
 			section,
-			// The prose to render, which is drawn from both the passageData and the
+			// The source to render, which is drawn from both the passageData and the
 			// setup passages, if any.
-			prose,
+			source,
 			// The <tw-story> element
 			story = Utils.storyElement,
 			/*
@@ -93,7 +93,7 @@ function ($, Utils, Selectors, State, Section) {
 			Early exit: the wrong passage name was supplied.
 			Author error must never propagate to this method - it should have been caught earlier.
 		*/
-		if (!passageData || !(passageData instanceof Map) || !passageData.has('prose')) {
+		if (!passageData || !(passageData instanceof Map) || !passageData.has('source')) {
 			Utils.impossible("Engine.showPassage", "There's no passage with the name \""+name+"\"!");
 		}
 		
@@ -125,43 +125,43 @@ function ($, Utils, Selectors, State, Section) {
 		
 		/*
 			Actually do the work of rendering the passage now.
-			First, gather the prose of the passage in question.
+			First, gather the source of the passage in question.
 		*/
-		prose = passageData.get('prose');
+		source = passageData.get('source');
 		
 		/*
-			Now, we add to it the prose of the 'passage-setup' tagged passages.
+			Now, we add to it the source of the 'passage-setup' tagged passages.
 			We explicitly include these passages inside <tw-passage-setup> elements
 			so that they're visible to the author when they're in debug mode, and can clearly
 			see the effect they have on the passage.
 		*/
-		prose = State.variables.Passages.getTagged('passage-setup').map(function(setupPassage) {
+		source = State.variables.Passages.getTagged('passage-setup').map(function(setupPassage) {
 			return "<tw-passage-setup title='"
 				+ Utils.escape(setupPassage.get('name'))
 				+ "'>"
-				+ setupPassage.get('prose')
+				+ setupPassage.get('source')
 				+ "</tw-passage-setup>";
 		})
-		.join('') + prose;
+		.join('') + source;
 		/*
 			We only add the story-setup passages if this is the very first passage.
 		*/
 		if (State.pastLength <= 0) {
-			prose = State.variables.Passages.getTagged('story-setup').map(function(setupPassage) {
+			source = State.variables.Passages.getTagged('story-setup').map(function(setupPassage) {
 				return "<tw-story-setup title='"
 					+ Utils.escape(setupPassage.get('name'))
 					+ "'>"
-					+ setupPassage.get('prose')
+					+ setupPassage.get('source')
 					+ "</tw-story-setup>";
 			})
-			.join('') + prose;
+			.join('') + source;
 		}
 		
 		/*
 			Then, run the actual passage.
 		*/
 		section.renderInto(
-			prose,
+			source,
 			newPassage,
 			/*
 				Use the author's styles, assigned using TwineScript,

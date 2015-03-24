@@ -14,7 +14,7 @@ require(["markup/lexer","markup/patterns","markup/markup","harlowe"]);
 <script role="script" type="text/twine-javascript">
 window.createPassage = function(text, name, tags) {
 	State.variables.Passages.set(name, new Map([
-		["prose", text],
+		["source", text],
 		["name", name],
 		["tags", tags],
 	]));

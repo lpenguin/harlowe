@@ -17,17 +17,17 @@ define(['jquery', 'utils', 'renderer'], function($, Utils, Renderer) {
 		
 		// A ChangeDescriptor is a TwineScript internal object with the following values:
 		
-		// {String} prose             The hook's prose, which can be finagled before it is run.
-		prose:             "",
+		// {String} source            The hook's source, which can be finagled before it is run.
+		source:            "",
 		
 		// {Boolean} enabled          Whether or not this code is enabled.
 		//                            (Disabled code won't be used until something enables it).
 		enabled:          true,
 		
-		// {jQuery} target            Where to render the prose, if not the hookElement.
+		// {jQuery} target            Where to render the source, if not the hookElement.
 		target:           null,
 		
-		// {String} append            Which jQuery method name to append the prose to the dest with.
+		// {String} append            Which jQuery method name to append the source to the dest with.
 		append:           "append",
 		
 		// {String} [transition]      Which built-in transition to use.
@@ -111,7 +111,7 @@ define(['jquery', 'utils', 'renderer'], function($, Utils, Renderer) {
 		render: function() {
 			var
 				target      = this.target,
-				prose       = this.prose,
+				source      = this.source,
 				append      = this.append,
 				transition  = this.transition,
 				enabled     = this.enabled,
@@ -151,13 +151,13 @@ define(['jquery', 'utils', 'renderer'], function($, Utils, Renderer) {
 				}
 			}
 			/*
-				Render the TwineMarkup prose into a HTML DOM structure.
+				Render the TwineMarkup source into a HTML DOM structure.
 				
 				You may notice that the design of this and renderInto() means
 				that, when a HookSet has multiple targets, each target has
 				its own distinct rendering of the same TwineMarkup.
 				
-				(Note: prose may be '' if the descriptor's append method is "remove".
+				(Note: source may be '' if the descriptor's append method is "remove".
 				In which case, let it be an empty set.)
 				
 				Notice also that the entire expression is wrapped in $():
@@ -172,8 +172,8 @@ define(['jquery', 'utils', 'renderer'], function($, Utils, Renderer) {
 				early-exit from this method.
 			*/
 			
-			dom = $(prose &&
-				$.parseHTML(Renderer.exec(prose), document, true));
+			dom = $(source &&
+				$.parseHTML(Renderer.exec(source), document, true));
 			
 			/*
 				Now, insert the DOM structure into the target element.

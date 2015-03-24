@@ -75,13 +75,13 @@ function($, Macros, Utils, Selectors, State, Engine, ChangerCommand, TwineError)
 			return ChangerCommand.create("link", [expr]);
 		},
 		function(desc, text) {
-			var innerProse = desc.prose;
-			desc.prose = '<tw-link tabindex=0>' + text + '</tw-link>';
+			var innerSource = desc.source;
+			desc.source = '<tw-link tabindex=0>' + text + '</tw-link>';
 			desc.append = "replace";
 			desc.data = {
 				clickEvent: function() {
-					desc.prose = innerProse;
-					desc.section.renderInto(innerProse + "", null, desc);
+					desc.source = innerSource;
+					desc.section.renderInto(innerSource + "", null, desc);
 				},
 			};
 		},

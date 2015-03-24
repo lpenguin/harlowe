@@ -18,7 +18,7 @@ function($, Utils, Selectors, Renderer, Environ, State, HookUtils, HookSet, Pseu
 	var Section;
 
 	/**
-		Section objects represent a block of Twine prose rendered into the DOM.
+		Section objects represent a block of Twine source rendered into the DOM.
 		It contains its own DOM, a reference to any enclosing Section,
 		and methods and properties related to invoking TwineScript code within it.
 		
@@ -63,7 +63,7 @@ function($, Utils, Selectors, Renderer, Environ, State, HookUtils, HookSet, Pseu
 						The use of popAttr prevents the hook from executing normally
 						if it wasn't actually the eventual target of the changer function.
 					*/
-					nextHook.popAttr('prose'),
+					nextHook.popAttr('source'),
 					/*
 						Don't forget: nextHook may actually be empty.
 						This is acceptable - the result changer could alter the
@@ -88,7 +88,7 @@ function($, Utils, Selectors, Renderer, Environ, State, HookUtils, HookSet, Pseu
 		else if   (result === false
 				|| result === null
 				|| result === undefined) {
-			nextHook.removeAttr('prose');
+			nextHook.removeAttr('source');
 			expr.addClass("false");
 			
 			if (nextHook.length) {
@@ -287,7 +287,7 @@ function($, Utils, Selectors, Renderer, Environ, State, HookUtils, HookSet, Pseu
 			(We also remove (pop) the code from the hook
 			so that doExpressions() doesn't render it.)
 		*/
-		var prose = target.popAttr('prose') || "",
+		var source = target.popAttr('source') || "",
 			recursive;
 		
 		/*
@@ -303,7 +303,7 @@ function($, Utils, Selectors, Renderer, Environ, State, HookUtils, HookSet, Pseu
 			all that useful.
 		*/
 		recursive = (function() {
-			this.renderInto(prose, target, {append:'replace'});
+			this.renderInto(source, target, {append:'replace'});
 			/*
 				The (stop:) command causes the nearest (live:) command enclosing
 				it to be stopped. Inside an (if:), it allows one-off live events to be coded.
@@ -494,7 +494,7 @@ function($, Utils, Selectors, Renderer, Environ, State, HookUtils, HookSet, Pseu
 				*/
 				desc = ChangeDescriptor.create({
 					target: target,
-					prose: source,
+					source: source,
 				}),
 				/*
 					This stores the returned DOM created by rendering the changeDescriptor.
@@ -552,12 +552,12 @@ function($, Utils, Selectors, Renderer, Environ, State, HookUtils, HookSet, Pseu
 			*/
 			if (!desc.target) {
 				Utils.impossible("Section.renderInto",
-					"ChangeDescriptor has prose but not a target!");
+					"ChangeDescriptor has source but not a target!");
 				return;
 			}
 			
 			/*
-				Render the prose into the target.
+				Render the source into the target.
 				
 				When a non-jQuery is the target in the descriptor, it is bound to be
 				a HookSet or PseudoHookSet, and each word or hook within that set
@@ -608,9 +608,9 @@ function($, Utils, Selectors, Renderer, Environ, State, HookUtils, HookSet, Pseu
 				switch(expr.tag()) {
 					case Selectors.hook:
 					{
-						if (expr.attr('prose')) {
-							section.renderInto(expr.attr('prose'), expr);
-							expr.removeAttr('prose');
+						if (expr.attr('source')) {
+							section.renderInto(expr.attr('source'), expr);
+							expr.removeAttr('source');
 						}
 						break;
 					}

@@ -15,9 +15,9 @@ define(['jquery', 'utils', 'utils/selectors'], function($, Utils, Selectors) {
 		return Object.assign(new Map([
 			/*
 				Passage objects have the following properties:
-				prose: the raw TwineMarkup prose of the passage.
+				source: the raw TwineMarkup source of the passage.
 			*/
-			["prose", Utils.unescape(elem.html())],
+			["source", Utils.unescape(elem.html())],
 			/*
 				tags: an array of its tags, as strings.
 			*/

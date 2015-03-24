@@ -14,7 +14,7 @@ describe("system variables", function () {
 		});
 		it("contains all the story's passages as datamaps", function (){
 			createPassage("Red","The Kitchen");
-			expectMarkupToPrint("(print:$Passages's ('The Kitchen')'s prose)", "Red");
+			expectMarkupToPrint("(print:$Passages's ('The Kitchen')'s source)", "Red");
 		});
 		it("passage datamaps have tags", function (){
 			createPassage("Red","The Kitchen", ["area"]);
@@ -23,17 +23,17 @@ describe("system variables", function () {
 		it("passage datamaps can be edited", function (){
 			createPassage("Red","The Kitchen");
 			expectMarkupToPrint(
-				"(set:$Passages's ('The Kitchen')'s prose to 'Blue')(print: $Passages's ('The Kitchen')'s prose)",
+				"(set:$Passages's ('The Kitchen')'s source to 'Blue')(print: $Passages's ('The Kitchen')'s source)",
 				"Blue"
 			);
 			expectMarkupToPrint(
-				"(set:$Passages's ('The Kitchen')'s prose to 'White')(display:'The Kitchen')",
+				"(set:$Passages's ('The Kitchen')'s source to 'White')(display:'The Kitchen')",
 				"White"
 			);
 		});
 		it("passage datamaps can be added", function (){
 			expectMarkupToPrint(
-				"(set: $Passages's ('The Parlour') to (datamap:'prose','Blue'))(display:'The Parlour')",
+				"(set: $Passages's ('The Parlour') to (datamap:'source','Blue'))(display:'The Parlour')",
 				"Blue"
 			);
 		});
