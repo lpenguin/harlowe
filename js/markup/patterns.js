@@ -84,13 +84,13 @@
 	}
 	
 	/*
-		Opener lookaheads come in two forms: a simple string to match, when
+		Peek lookaheads come in two forms: a simple string to match, when
 		only one option for the syntax's opening exists, and a RegExp when
 		there are multiple options. This function returns the former when
 		only one option is passed as an argument, and the latter otherwise
 		(performing escaping on the input strings, etc.)
 	*/
-	function opener(a /*variadic*/) {
+	function peek(a /*variadic*/) {
 		var pattern, options, re;
 		
 		if (arguments.length > 1) {
@@ -317,16 +317,16 @@
 			Twine currently just uses HTML comment syntax for comments.
 		*/
 		comment:         "<!--[^]*?-->",
-		commentOpener:   opener("<!--"),
+		commentPeek:     peek("<!--"),
 		
 		tag:         "<\\/?" + tag.name + tag.attrs + ">",
-		tagOpener:                            opener("<"),
+		tagPeek:                                peek("<"),
 		
 		scriptStyleTag: "<(" + either("script","style")
 			+ ")" + tag.attrs + ">"
 			+ "[^]*?" + "<\\/\\1>",
 		
-		scriptStyleTagOpener: opener("<"),
+		scriptStyleTagOpener: peek("<"),
 		
 		url:         "(" + either("https?","mailto","javascript","ftp","data") + ":\\/\\/[^\\s<]+[^<.,:;\"')\\]\\s])",
 		
@@ -337,33 +337,33 @@
 		align:       align,
 		
 		strong:          stylerSyntax("**"),
-		strongOpener:          opener("**"),
+		strongPeek:              peek("**"),
 		
 		em:               stylerSyntax("*"),
-		emOpener:               opener("*"),
+		emPeek:                   peek("*"),
 		
 		del:                   stylerSyntax("~~"),
-		delOpener:                   opener("~~"),
+		delPeek:                       peek("~~"),
 		
 		italic:                stylerSyntax("//"),
-		italicOpener:                opener("//"),
+		italicPeek:                    peek("//"),
 		
 		bold:                  stylerSyntax("''"),
-		boldOpener:                  opener("''"),
+		boldPeek:                      peek("''"),
 		
 		sup:                   stylerSyntax("^^"),
-		supOpener:                   opener("^^"),
+		supPeek:                       peek("^^"),
 		
 		/*
 			The verbatim syntax does not "nest", but terminals can be
 			differentiated by adding more ` marks to each pair.
 		*/
 		verbatim:                            "(`+)([^]*?[^`])\\1(?!`)",
-		verbatimOpener:                                    opener("`"),
+		verbatimPeek:                                        peek("`"),
 		
 		collapsedFront:                                            "{",
 		collapsedBack:                                             "}",
-		collapsedOpener:                                   opener("{"),
+		collapsedPeek:                                       peek("{"),
 		
 		bulleted:    bulleted,
 		numbered:    numbered,
@@ -393,7 +393,7 @@
 			passageLink.main
 			+ passageLink.closer,
 			
-		passageLinkOpener: opener("[["),
+		passageLinkPeek:   peek("[["),
 			
 		legacyLink:
 			/*
@@ -408,7 +408,7 @@
 			+ passageLink.legacyText + passageLink.legacySeparator
 			+ passageLink.legacyText + passageLink.closer,
 		
-		legacyLinkOpener: opener("[["),
+		legacyLinkPeek:   peek("[["),
 		
 		simpleLink:
 			/*
@@ -417,25 +417,25 @@
 			*/
 			passageLink.opener + passageLink.legacyText + passageLink.closer,
 		
-		simpleLinkOpener: opener("[["),
+		simpleLinkPeek:   peek("[["),
 		
 		macroFront: macro.opener + before(macro.name),
-		macroFrontOpener: opener("("),
+		macroFrontPeek:   peek("("),
 		macroName: macro.name,
 		
 		/*
 			This must be differentiated from macroFront.
 		*/
 		groupingFront: "\\(" + notBefore(macro.name),
-		groupingFrontOpener: opener("("),
+		groupingFrontPeek:   peek("("),
 		
 		groupingBack:  "\\)",
 		
 		twine1Macro:
 			twine1Macro,
 			
-		twine1MacroOpener:
-			opener("<<"),
+		twine1MacroPeek:
+			peek("<<"),
 		
 		/*
 			Macro code
@@ -444,8 +444,8 @@
 		property:
 			property,
 		
-		propertyOpener:
-			opener("'s"),
+		propertyPeek:
+			peek("'s"),
 		
 		belongingProperty:
 			belongingProperty,
@@ -465,13 +465,13 @@
 		variable:
 			variable,
 		
-		variableOpener:
-			opener("$"),
+		variablePeek:
+			peek("$"),
 		
 		hookRef: "\\?(" + anyLetter + "+)\\b",
 		
-		hookRefOpener:
-			opener("?"),
+		hookRefPeek:
+			peek("?"),
 		
 		/*
 			Artificial types (non-JS primitives)
@@ -500,7 +500,7 @@
 		// Special identifiers
 		identifier: identifier,
 		itsProperty: itsProperty,
-		itsPropertyOpener: opener("its"),
+		itsPropertyPeek: peek("its"),
 		belongingItProperty: belongingItProperty,
 		
 		string:
@@ -509,8 +509,8 @@
 				string.double
 			),
 		
-		stringOpener:
-			opener('"',"'"),
+		stringPeek:
+			peek('"',"'"),
 		
 		/*
 			Macro operators
@@ -527,13 +527,13 @@
 		
 		isIn:       "is in" + wb,
 		contains:   "contains" + wb,
-
+		
 		arithmetic: either("\\+", "\\-", "\\*", "\\\/", "%") + notBefore("="),
 		comma:      ",",
 		spread:     "\\.\\.\\." + notBefore("\\."),
-
-		to:        either("to" + wb, "="),
-		into:      "into" + wb,
+		
+		to:         either("to" + wb, "="),
+		into:       "into" + wb,
 		augmentedAssign: either("\\+", "\\-", "\\*", "\\\/", "%") + "=",
 	};
 	

@@ -327,10 +327,10 @@
 							!(rule.cannotFollow.indexOf("text") > -1 && firstUnmatchedIndex < index)
 							)) &&
 						/*
-							If an opener is available, check that before running
+							If a peek is available, check that before running
 							the full match regexp.
 						*/
-						(!rule.opener || rule.opener.exec(slice.slice(0, rule.opener.length || Infinity))) &&
+						(!rule.peek || rule.peek.exec(slice.slice(0, rule.peek.length || Infinity))) &&
 						/*
 							Finally, run the pattern. Any earlier would cause the rules excluded
 							by the above checks to be run anyway, and waste time.

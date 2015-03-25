@@ -1,6 +1,7 @@
 (function() {
 	'use strict';
-	var lex, harloweStyles;
+	var lex, harloweStyles, beforeChange;
+	
 	/*
 		Import the TwineMarkup lexer function, and store it locally.
 	*/
@@ -12,6 +13,43 @@
 	else if (typeof StoryFormat === 'function' && this instanceof StoryFormat) {
 		lex = this.modules.Markup.lex;
 	}
+	
+	/*
+		This function, used as an event handler, applies a hack to CodeMirror to force it
+		to rerender the entire text area whenever a change is made, not just the change.
+		This allows 'backtrack' styling, such as unclosed brackets, to be possible
+		under CodeMirror.
+	*/
+	var beforeChange = _.throttle(function(_, changeObj) {
+		if (!changeObj.update) {
+			return;
+		}
+		console.log('beforeChange');
+		/*
+			First, obtain the text area's full text line array, truncated
+			to just the line featuring the change.
+		*/
+		var line = changeObj.from.line,
+			newText = CodeMirror.modes.harlowe.cm.doc.getValue()
+				.split('\n')
+				.slice(0, changeObj.from.line + 1);
+		/*
+			Join it with the change's text.
+		*/
+		newText[line] =
+			newText[line].slice(0, changeObj.from.ch)
+			+ changeObj.text[0];
+		
+		/*
+			If the change is multi-line, the additional lines should be added.
+		*/
+		newText = newText.concat(changeObj.text.slice(1));
+		/*
+			Now, register this change.
+		*/
+		changeObj.update({line:0,ch:0}, changeObj.to, newText);
+	}, 500, {leading:true});
+	
 	/*
 		The mode is defined herein.
 	*/
@@ -22,6 +60,12 @@
 				inside token().
 			*/
 			startState: function() {
+				/*
+					Attach the all-important beforeChanged event, but make sure it's only attached once.
+				*/
+				var doc = CodeMirror.modes.harlowe.cm.doc;
+				doc.off('beforeChange');
+				doc.on('beforeChange', beforeChange);
 				
 				return {
 					tree: null,
@@ -55,7 +99,7 @@
 						the CodeMirror modes object - and here, we retrieve it,
 						and use it to compute a full parse tree.
 					*/
-					state.tree = lex(CodeMirror.modes.harlowe.doc.getValue());
+					state.tree = lex(CodeMirror.modes.harlowe.cm.doc.getValue());
 				}
 				/*
 					We must render each token using the cumulative styles of all parent tokens

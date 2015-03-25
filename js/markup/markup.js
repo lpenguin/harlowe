@@ -9,6 +9,23 @@
 	
 	var Patterns;
 	
+	/*
+		Polyfill for Object.assign()
+	*/
+	Object.assign = Object.assign || function polyfilledAssign(obj /* variadic */) {
+		var i = 1,
+			target, key;
+		for(; i < arguments.length; i++) {
+			target = arguments[i];
+			for(key in target) {
+				if(Object.hasOwnProperty.call(target, key)) {
+					obj[key] = target[key];
+				}
+			}
+		}
+		return obj;
+	};
+	
 	/**
 		When passed a Lexer object, this function augments it with rules.
 	*/
@@ -578,12 +595,12 @@
 				);
 			}
 			/*
-				If an opener is available, include that as well.
-				Openers are used as lookaheads to save calling
+				If a peek is available, include that as well.
+				Peeks are used as lookaheads to save calling
 				the entire pattern regexp every time.
 			*/
-			if (Patterns[key + "Opener"]) {
-				allRules[key].opener = Patterns[key + "Opener"];
+			if (Patterns[key + "Peek"]) {
+				allRules[key].peek = Patterns[key + "Peek"];
 			}
 		});
 		Object.assign(Lexer.rules, allRules);

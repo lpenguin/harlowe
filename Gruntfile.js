@@ -43,6 +43,7 @@ module.exports = function (grunt) {
 					global      : true,
 					StoryFormat : true,
 					CodeMirror  : true,
+					_           : true,
 				},
 				// Enforcing options
 				eqeqeq   : true,
