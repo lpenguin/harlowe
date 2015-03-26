@@ -1,7 +1,29 @@
 (function() {
 	'use strict';
-	var lex, harloweStyles, beforeChange;
+	var lex, harloweStyles, cm, beforeChange;
 	
+	/*
+		First, a preamble of helpers.
+		
+		This is a copy of Utils.insensitiveName(), used to check macro names.
+	*/
+	function insensitiveName(e) {
+		return (e + "").toLowerCase().replace(/-|_/g, "");
+	}
+	/*
+		This is a manually generated list of existent macros in Harlowe.
+	*/
+	var validMacros = (
+		"text,string,substring,num,number,if,unless,elseif,else,nonzero,first-nonzero," +
+		"nonempty,first-nonempty,weekday,monthday,currenttime,currentdate,min,max,abs,sign,sin,cos,tan,floor," +
+		"round,ceil,pow,exp,sqrt,log,log10,log2,random,either,alert,prompt,confirm,openURL,reload,gotoURL," +
+		"pageURL,hook,transition,t8n,font,align,position-y,position-x,text-colour,text-color,color,colour," +
+		"text-rotate,background,text-style,css,replace,append,prepend,click,mouseover,mouseout,click-replace," +
+		"mouseover-replace,mouseout-replace,click-append,mouseover-append,mouseout-append,click-prepend," +
+		"mouseover-prepend,mouseout-prepend,set,put,move,a,array,range,subarray,shuffled,sorted,rotated," +
+		"datanames,datavalues,history,datamap,dataset,count,display,print,goto,live,stop,savegame,loadgame,link,link-goto"
+	).split(',').map(insensitiveName);
+
 	/*
 		Import the TwineMarkup lexer function, and store it locally.
 	*/
@@ -24,13 +46,12 @@
 		if (!changeObj.update) {
 			return;
 		}
-		console.log('beforeChange');
 		/*
 			First, obtain the text area's full text line array, truncated
 			to just the line featuring the change.
 		*/
 		var line = changeObj.from.line,
-			newText = CodeMirror.modes.harlowe.cm.doc.getValue()
+			newText = cm.doc.getValue()
 				.split('\n')
 				.slice(0, changeObj.from.line + 1);
 		/*
@@ -61,9 +82,26 @@
 			*/
 			startState: function() {
 				/*
-					Attach the all-important beforeChanged event, but make sure it's only attached once.
+					We can't reliably obtain the CodeMirror instance reference until now.
 				*/
-				var doc = CodeMirror.modes.harlowe.cm.doc;
+				if (!cm) {
+					cm = CodeMirror.modes.harlowe.cm;
+					cm.setOption('placeholder', [
+						"Enter the body text of your passage here.",
+						"''Bold'', //italics//, ^^superscript^^, ~~strikethrough~~, and <p>HTML tags</p> are available.",
+						"To display special symbols without them being transformed, put them between `backticks`.",
+						"To link to another passage, write the link text and the passage name like this: [[link text->passage name]]\nor this: [[passage name<-link text]]\nor this: [[link text]].",
+						"Macros like (set:) and (display:) are the programming of your passage. If you've (set:) a $variable, you can just enter its name to print it out.",
+						"To make a 'hook', put [single square brackets] around text - or leave it empty [] - then put a macro like (if:), a $variable, or a |nametag> outside the front, |like>[so].",
+						"Hooks can be used for many things: showing text (if:) something happened, applying a (text-style:), making a place to (append:) text later on, and much more!",
+						"Consult the Harlowe documentation for more information.",
+						].join('\n\n'));
+				}
+				/*
+					Attach the all-important beforeChanged event, but make sure it's only attached once.
+					Note that this event is removed by TwineJS when it uses swapDoc to dispose of old docs.
+				*/
+				var doc = cm.doc;
 				doc.off('beforeChange');
 				doc.on('beforeChange', beforeChange);
 				
@@ -142,6 +180,17 @@
 					
 					if (count > 1) {
 						name += "-" + (count);
+					}
+					switch(e.type) {
+						/*
+							Use the error style if the macro's name doesn't match the list of
+							existant Harlowe macros.
+						*/
+						case "macroName":
+							if (validMacros.indexOf(insensitiveName(e.text.slice(0,-1))) === -1) {
+								name += " harlowe-error";
+							}
+							break;
 					}
 					return a + name + " ";
 				},'');

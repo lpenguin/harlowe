@@ -152,8 +152,8 @@ module.exports = function (grunt) {
 					from: '"source":""',
 					to: '"source":' + JSON.stringify(grunt.file.read(sourceHTML)),
 				},{
-					from: '"lexer":""',
-					to: function() { return '"lexer":' + JSON.stringify(grunt.file.read(destMarkupJS)) },
+					from: '"setup":""',
+					to: function() { return '"setup": function(){' + grunt.file.read(destMarkupJS) + '}'; },
 				}].concat(scriptStyleReplacements.map(function(e) {
 					return {
 						from: e.from,
