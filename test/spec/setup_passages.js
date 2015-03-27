@@ -1,47 +1,111 @@
 describe("setup passages", function() {
 	'use strict';
-	describe("the 'passage-setup' tag", function() {
-		it("makes the passage's prose run before any other passage is run", function() {
-			createPassage("(set: $red to $red + 1)","setup",["passage-setup"]);
-			expectMarkupToPrint("$red","1");
-			expectMarkupToPrint("$red","2");
-			expectMarkupToPrint("$red","3");
+	
+	[false,true].forEach(function headerFooterTests(debug) {
+		var header = debug ? "debug-header" : "header";
+		var footer = debug ? "debug-footer" : "footer";
+		var startup = debug ? "debug-startup" : "startup";
+		
+		describe("the '" + header + "' tag", function() {
+			it("makes the passage's source run before any other passage is run", function() {
+				createPassage("(set: $red to $red + 1)","header",[header]);
+				expectMarkupToPrint("$red","1");
+				expectMarkupToPrint("$red","2");
+				expectMarkupToPrint("$red","3");
+			});
+			it("prepends the passage's source to every passage at runtime", function() {
+				createPassage("Gee","header",[header]);
+				expectMarkupToPrint("wow","Geewow");
+			});
+			it("tagged passages can be removed", function() {
+				createPassage("(set: $red to $red + 1)","header",[header]);
+				expectMarkupToPrint("$red","1");
+				expectMarkupToPrint("$red(set:$Passages's header's tags to (a:))","2");
+				expectMarkupToPrint("$red","2");
+			});
+			it("tagged passages run in alphabetical order", function() {
+				createPassage("(set: $red to 'A')","header1",[header]);
+				createPassage("(set: $red to $red + 'B')","header2",[header]);
+				expectMarkupToPrint("$red","AB");
+			});
+			it("affects hooks inside the passage", function() {
+				createPassage("(click: ?red)[]","header",[header]);
+				expect(runPassage("|red>[Hmm]","1").find('tw-enchantment').length).toBe(1);
+			});
+			it("won't lead to infinite regress if it is displayed itself", function() {
+				createPassage("Hey","header",[header]);
+				expect(goToPassage("header").text()).toBe("HeyHey");
+			});
+			if (debug) {
+				it("tagged passages run before ordinary header passages", function() {
+					createPassage("(set: $red to 'A')","setup2",[header]);
+					createPassage("(set: $red to $red + 'B')","setup1",["header"]);
+					expectMarkupToPrint("$red","AB");
+				});
+			}
 		});
-		it("tagged passages can be removed", function() {
-			createPassage("(set: $red to $red + 1)","setup",["passage-setup"]);
-			expectMarkupToPrint("$red","1");
-			expectMarkupToPrint("$red(set:$Passages's setup's tags to (a:))","2");
-			expectMarkupToPrint("$red","2");
+		describe("the '" + footer + "' tag", function() {
+			it("makes the passage's source run after any other passage is run", function() {
+				createPassage("(set: $red to $red + 1)","footer",[footer]);
+				expectMarkupToPrint("$red","0");
+				expectMarkupToPrint("$red","1");
+				expectMarkupToPrint("$red","2");
+			});
+			it("appends the passage's source to every passage at runtime", function() {
+				createPassage("gee","footer",[footer]);
+				expectMarkupToPrint("Wow","Wowgee");
+			});
+			it("tagged passages can be removed", function() {
+				createPassage("(set: $red to $red + 1)","footer",[footer]);
+				expectMarkupToPrint("$red","0");
+				expectMarkupToPrint("$red","1");
+				expectMarkupToPrint("$red(set:$Passages's footer's tags to (a:))","2");
+				expectMarkupToPrint("$red","3");
+				expectMarkupToPrint("$red","3");
+			});
+			it("tagged passages run in alphabetical order", function() {
+				createPassage("(set: $red to 'A')","footer1",[footer]);
+				createPassage("(set: $red to $red + 'B')","footer2",[footer]);
+				runPassage('');
+				expectMarkupToPrint("$red","AB");
+			});
+			it("affects hooks inside the passage", function() {
+				createPassage("(click: ?red)[]","footer",[footer]);
+				expect(runPassage("|red>[Hmm]","1").find('tw-enchantment').length).toBe(1);
+			});
+			it("won't lead to infinite regress if it is displayed itself", function() {
+				createPassage("Hey","footer",[footer]);
+				expect(goToPassage("footer").text()).toBe("HeyHey");
+			});
+			if (debug) {
+				it("tagged passages run after ordinary footer passages", function() {
+					createPassage("(set: $red to 'A')","setup2",["footer"]);
+					createPassage("(set: $red to $red + 'B')","setup1",[footer]);
+					runPassage('');
+					expectMarkupToPrint("$red","AB");
+				});
+			}
 		});
-		it("tagged passages run in alphabetical order", function() {
-			createPassage("(set: $red to 'A')","setup1",["passage-setup"]);
-			createPassage("(set: $red to $red + 'B')","setup2",["passage-setup"]);
-			expectMarkupToPrint("$red","AB");
-		});
-		it("affects hooks inside the passage", function() {
-			createPassage("(click: ?red)[]","setup",["passage-setup"]);
-			expect(runPassage("|red>[Hmm]","1").find('tw-enchantment').length).toBe(1);
-		});
-	});
-	describe("the 'story-setup' tag", function() {
-		it("makes the passage's prose run before the very first passage is run", function() {
-			createPassage("(set: $red to $red + 1)","setup",["story-setup"]);
-			expectMarkupToPrint("$red","1");
-			expectMarkupToPrint("$red","1");
-		});
-		it("tagged passages run in alphabetical order", function() {
-			createPassage("(set: $red to 'A')","setup1",["story-setup"]);
-			createPassage("(set: $red to $red + 'B')","setup2",["story-setup"]);
-			expectMarkupToPrint("$red","AB");
-		});
-		it("tagged passages run before passage-setup passages", function() {
-			createPassage("(set: $red to 'A')","setup2",["story-setup"]);
-			createPassage("(set: $red to $red + 'B')","setup1",["passage-setup"]);
-			expectMarkupToPrint("$red","AB");
-		});
-		it("affects hooks inside the passage", function() {
-			createPassage("(click: ?red)[]","setup",["story-setup"]);
-			expect(runPassage("|red>[Hmm]","1").find('tw-enchantment').length).toBe(1);
+		describe("the '" + startup + "' tag", function() {
+			it("makes the passage's source run before the very first passage is run", function() {
+				createPassage("(set: $red to $red + 1)","setup",[startup]);
+				expectMarkupToPrint("$red","1");
+				expectMarkupToPrint("$red","1");
+			});
+			it("tagged passages run in alphabetical order", function() {
+				createPassage("(set: $red to 'A')","setup1",[startup]);
+				createPassage("(set: $red to $red + 'B')","setup2",[startup]);
+				expectMarkupToPrint("$red","AB");
+			});
+			it("tagged passages run before header passages", function() {
+				createPassage("(set: $red to 'A')","setup2",[startup]);
+				createPassage("(set: $red to $red + 'B')","setup1",[header]);
+				expectMarkupToPrint("$red","AB");
+			});
+			it("affects hooks inside the passage", function() {
+				createPassage("(click: ?red)[]","setup",[startup]);
+				expect(runPassage("|red>[Hmm]","1").find('tw-enchantment').length).toBe(1);
+			});
 		});
 	});
 });

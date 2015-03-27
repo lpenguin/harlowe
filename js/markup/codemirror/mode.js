@@ -42,7 +42,7 @@
 		This allows 'backtrack' styling, such as unclosed brackets, to be possible
 		under CodeMirror.
 	*/
-	var beforeChange = _.throttle(function(_, changeObj) {
+	beforeChange = _.throttle(function(_, changeObj) {
 		if (!changeObj.update) {
 			return;
 		}
@@ -227,7 +227,7 @@
 			macro        = "color: #a84186;",
 			macroName    = macro + "font-style:italic;",
 			twineLink    = "color: #3333cc;",
-			invalid      = "color: firebrick; background-color: lightsalmon;"
+			invalid      = "color: firebrick; background-color: hsla(17, 100%, 74%, 0.74);"
 			;
 		
 		/*
@@ -270,7 +270,9 @@
 			variable:    "color: #005682;",
 			hookRef:     "color: #007f54;",
 			
-			"property, belongingProperty":
+			escapedLine: "font-weight:bold; color: hsl(51, 100%, 30%);",
+			
+			"identifier, property, belongingProperty, itsProperty, belongingItProperty, belongingItOperator":
 				"color: #0076b2;",
 			
 			toString: function() {

@@ -58,6 +58,18 @@ function ($, Utils, Selectors, State, Section) {
 		return container;
 	}
 	
+	/*
+		A small helper that generates a HTML tag containing injected
+		setup passage source. Used in showPassage.
+	*/
+	function setupPassageElement(tagType, setupPassage) {
+		return "<tw-include type=" + tagType + " title='"
+			+ Utils.escape(setupPassage.get('name'))
+			+ "'>"
+			+ setupPassage.get('source')
+			+ "</" + tagType + " " + ">";
+	}
+	
 	/**
 		Shows a passage by transitioning the old passage(s) out, and then adds the new passages.
 
@@ -76,7 +88,8 @@ function ($, Utils, Selectors, State, Section) {
 			// The passage
 			// This must use State.variables.Passages instead of SystemVariables/Passages
 			// in case the author (set:) a new datamap to it.
-			passageData = State.variables.Passages.get(name),
+			passagesVar = State.variables.Passages,
+			passageData = passagesVar.get(name),
 			oldPassages,
 			section,
 			// The source to render, which is drawn from both the passageData and the
@@ -130,31 +143,47 @@ function ($, Utils, Selectors, State, Section) {
 		source = passageData.get('source');
 		
 		/*
-			Now, we add to it the source of the 'passage-setup' tagged passages.
-			We explicitly include these passages inside <tw-passage-setup> elements
+			Now, we add to it the source of the 'header' and 'footer' tagged passages.
+			We explicitly include these passages inside <tw-header> elements
 			so that they're visible to the author when they're in debug mode, and can clearly
 			see the effect they have on the passage.
 		*/
-		source = State.variables.Passages.getTagged('passage-setup').map(function(setupPassage) {
-			return "<tw-passage-setup title='"
-				+ Utils.escape(setupPassage.get('name'))
-				+ "'>"
-				+ setupPassage.get('source')
-				+ "</tw-passage-setup>";
-		})
-		.join('') + source;
+		source =
+			(options.debug
+				? passagesVar.getTagged('debug-header')
+					.map(setupPassageElement.bind(0, "debug-header"))
+					.join('')
+				: '')
+			+ passagesVar.getTagged('header')
+			.map(setupPassageElement.bind(0, "header"))
+			.join('')
+			+ source
+			+ passagesVar.getTagged('footer')
+			.map(setupPassageElement.bind(0, "footer"))
+			.join('')
+			+ (options.debug
+				? passagesVar.getTagged('debug-footer')
+					.map(setupPassageElement.bind(0, "debug-footer"))
+					.join('')
+				: '')
+			;
+		
 		/*
-			We only add the story-setup passages if this is the very first passage.
+			We only add the startup and debug-startup passages if this is the very first passage.
+			Note that the way in which source is modified means that startup code
+			runs before header code.
 		*/
 		if (State.pastLength <= 0) {
-			source = State.variables.Passages.getTagged('story-setup').map(function(setupPassage) {
-				return "<tw-story-setup title='"
-					+ Utils.escape(setupPassage.get('name'))
-					+ "'>"
-					+ setupPassage.get('source')
-					+ "</tw-story-setup>";
-			})
-			.join('') + source;
+			if (options.debug) {
+				source = passagesVar.getTagged('debug-startup')
+					.map(setupPassageElement.bind(0, "debug-startup"))
+					.join('')
+					+ source;
+			}
+			source = passagesVar.getTagged('startup')
+				.map(setupPassageElement.bind(0, "startup"))
+				.join('')
+				+ source;
 		}
 		
 		/*

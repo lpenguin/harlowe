@@ -331,9 +331,19 @@ function($, NaturalSort, Macros, Utils, OperationUtils, State, Engine, Assignmen
 			(array:), (either:), (rotated:)
 		*/
 		("shuffled", function shuffled() {
-			return Array.from(arguments).slice(1).sort(function() {
-				return Math.random() - 0.5;
-			});
+			// The following is an in-place Fisher–Yates shuffle.
+			return Array.from(arguments).slice(1).reduce(function(a,e,ind){
+				// Obtain a random number from 0 to ind inclusive.
+				var j = (Math.random()*(ind+1)) | 0;
+				if (j === ind) {
+					a.push(e);
+				}
+				else {
+					a.push(a[j]);
+					a[j] = e;
+				}
+				return a;
+			},[]);
 		},
 		[Any, rest(Any)])
 		

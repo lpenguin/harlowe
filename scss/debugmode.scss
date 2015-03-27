@@ -3,6 +3,8 @@
 .debug-mode {
 	@mixin tiny-annotation() {
 		font-size: 0.8rem;
+		padding-left: 0.2rem;
+		padding-right: 0.2rem;
 		vertical-align: top;
 	}
 
@@ -161,18 +163,11 @@
 		content: attr(passage-name);
 	}
 	
-	tw-passage-setup {
+	tw-include {
 		background-color: hsla(30,60%,50%,0.1);
-		&::after {
+		&::before {
 			@include tiny-annotation();
-			content: 'passage-setup';
-		}
-	}
-	tw-story-setup {
-		background-color: hsla(180,50%,50%,0.1);
-		&::after {
-			@include tiny-annotation();
-			content: 'story-setup';
+			content: attr(type) " \"" attr(title) "\"";
 		}
 	}
 }

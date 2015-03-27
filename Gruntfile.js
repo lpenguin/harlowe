@@ -41,6 +41,7 @@ module.exports = function (grunt) {
 					define      : true,
 					module      : true,
 					global      : true,
+					// Used by CodeMirror.mode
 					StoryFormat : true,
 					CodeMirror  : true,
 					_           : true,
@@ -80,6 +81,7 @@ module.exports = function (grunt) {
 						// User-defined
 						createPassage : true,
 						runPassage : true,
+						goToPassage : true,
 						htmlOfPassage : true,
 						expectMarkupToBecome : true,
 						expectMarkupToPrint : true,

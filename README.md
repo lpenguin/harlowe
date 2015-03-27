@@ -43,19 +43,18 @@ Rough documentation is at http://twine2.neocities.org/
  * `(text:)` now only works on strings, numbers, booleans and arrays, because the other datatypes cannot meaningfully be transformed into text.
  * Now, you can't use the `and`, `or` and `not` operators on non-boolean values. So, one must explicitly convert said values to boolean using `is not 0` and such instead of assuming it's boolean.
  * Altered the CSS of `<tw-story>` to use vertical padding instead of vertical margins.
- * Now, division operators will produce an error if used to divide by zero.
+ * Now, division operators (`/` and `%`) will produce an error if used to divide by zero.
  * Reordered the precedence of `contains` - it should now be higher than `is`, so that e.g. `(print: "ABC" contains "A" is true)` should now work as expected.
- * A few variable names in TwineScript are now controlled by the game engine, and are read-only. These are `$Passages`, `$Design`, and `$Saves`. See below for explanations as to what purpose these now serve.
+ * A few variable names in TwineScript are now controlled by the game engine, and are read-only. These are `$Passages` and `$Saves`. See below for explanations as to what purpose these now serve.
  * Now, giving a datamap to `(print:)` will cause that macro to print out the datamap in a rough HTML `<table>` structure, showing each key and value. This is a superior alternative to just printing "[object Object]".
- * Now, variables and barename properties must have one non-numeral in their name. This means that, for instance, `$100` is no longer regarded as a valid variable name.
- * Debug Mode: now, macros show their full call (e.g. `(if: $a > 1)` rather than just `if`), and the verbatim syntax/hooks show their brackets at their start and end.
+ * Now, variables and barename properties (as in `$var's property`) must have one non-numeral in their name. This means that, for instance, `$100` is no longer regarded as a valid variable name.
 
 ####New Features
 
  * Added computed property indexing syntax to TwineScript. Properties on collections can now be accessed via a variant of the possessive syntax: `$a's (expression)`.
     * Using this syntax, you can supply numbers as 1-indexed indices to arrays and strings. So, `"Red"'s $i`, where `$i` is 1, would be the same as `"Red"'s 1st`. Note, however, that if `$i` was the string `"1st"`, it would also work too - but not if it was just the string `"1"`.
- * Links and buttons in compiled stories are now accessible via the keyboard's Tab and Enter keys. `<tw-link>`, `<tw-icon>` and other clickable elements now have a tabindex attribute, and Harlowe sets up an event handler that allows them to behave as if clicked when the Enter key is pressed.
- * Added 'error explanations', curt sentences which crudely explain the error message, which are visible as fold-downs on each error message.
+ * Links and buttons in compiled stories should now be accessible via the keyboard's Tab and Enter keys. `<tw-link>`, `<tw-icon>` and other clickable elements now have a tabindex attribute, and Harlowe sets up an event handler that allows them to behave as if clicked when the Enter key is pressed.
+ * Added 'error explanations', curt sentences which crudely explain the type of error it is, which are visible as fold-downs on each error message.
  * Added `(nonzero:)` and `(nonempty:)` macros.
     * `(nonzero:)`, aliased as `(first-nonzero:)` is designed to work like the short-circuiting JS `||` operator. It accepts any quantity of numbers and returns the first given argument which isn't zero.
     * `(nonempty:)` is an equivalent, accepting strings, arrays, sets and maps.
@@ -69,21 +68,22 @@ Rough documentation is at http://twine2.neocities.org/
     * `(savegame:)` evaluates to a boolean `true` if it succeeds and `false` if it fails (because the browser's local storage is disabled for some reason). You should write something like `(if: (savegame:"A","At the crossroads") is false)[The game could not be saved!]` to provide the reader with an apology if `(savegame:)` fails.
     * `(loadgame:)` takes one value - a slot name such as that provided to `(savegame:)` - and loads a game from that slot, replacing the current game session entirely. Think of it as a `(goto:)` - if it succeeds, the passage is immediately exited.
     * Harlowe automatically records the names of existing save files in the datamap `$Saves`. The expression `$Saves contains "Slot name"` will be `true` if that slot name is currently used.
-    * The filename of a file in a slot can be displayed thus: `(print: $Saves's ("Slot name"))`.
+    * The filename of a file in a slot can be displayed thus: `(print: $Saves's "Slot name")`.
  * `<script>` tags in passage text will now run. However, their behaviour is not well-defined yet - it's unclear even to me what sort of DOM they would have access to.
  * `<style>` tags in passage text can now be used without needing to escape their contents with the verbatim syntax (backticks).
- * `$Passages` is a special datamap variable that Harlowe creates - it's a "datamap of datamaps", where each data key is the name of a passage in the story, and each data value is a datamap containing information about that passage. For instance, you can obtain the prose for the "Cloister" passage with `$Passages's Cloister's prose`, or the tags with `$Passages's Cloister's tags`.
+ * `$Passages` is a special datamap variable that Harlowe controls - it's a "datamap of datamaps", where each data key is the name of a passage in the story, and each data value is a datamap containing information about that passage. For instance, you can obtain the prose for the "Cloister" passage with `$Passages's Cloister's prose`, or the tags with `$Passages's Cloister's tags`.
     * You can also edit these datamaps, and rewrite the story while it's being played - or, add a new passage datamap to `$Passages`, by running `(set: $Passages's ("My New Passage") to (datamap: "code", "My passage's text", "tags", (a:"my-tag", "my-tag-2"))` etc.
  * Added `(position-x:)` and `(position-y:)`: shorthands for giving a hook the CSS property `position:absolute` and a percentage `left` or `top`. The percentage argument is a number, ostensibly from 0 to 1, but potentially any number. One problem: while it should position the hook relative to the passage, it doesn't work correctly when nested - because, of course, `position:absolute` uses the nearest positioned element.
  * Added `(css:)` as a 'last resort' solution for styling elements, which is essentially the same as a raw HTML `<span style='...'>` tag, but can be combined with other changer commands. I feel obliged to offer this to provide some CSS-familiar users some access to higher functionality, even though it's not intended for general use in place of `(text-style:)`, `(position-x:)` or whatever.
  * Added `(align:)`, a macro form of the aligner syntax. It accepts a string containing an ASCII arrow of the same type that makes up the syntax ('==>', '=><==', etc). 
- * Added special behaviour for passages tagged with `passage-setup` or `story-setup`: their code will be *automatically* `(display:)`ed at the start of passages, allowing you to set up code actions (like `(click: ?switch)` etc.) or give passages a textual header. `passage-setup` passages are prepended to every passage, whereas `story-setup` passages are only prepended to the first passage in the game.
+ * Added special behaviour for passages tagged with `footer`, `header` or `startup`: their code will be *automatically* `(display:)`ed at the start or end of passages, allowing you to set up code actions (like `(click: ?switch)` etc.) or give passages a textual header. `header` passages are prepended to every passage, `footer` passages are appended; `startup` passages are only prepended to the first passage in the game.
+    * Also added debug mode versions of these tags: `debug-header`, `debug-footer` and `debug-startup` are only active during debug mode.
  * Reinstated the Twine 1 escaped line ending syntax: ending a line with `\` will cause it and the line break to be removed.
     * Also, an extra variant has been added: *beginning* a line with `\` will cause it and the previous line break to be removed. The main purpose of this addition is to let you begin multi-line hooks with `[\` and end them with `\]`, letting them fully occupy their own lines.
  * Added `(shuffled:)`, which is identical to `(array:)`, except that it places the provided items in a random order. (You can shuffle an existing array by using the spread syntax, `(shuffled: ...$arr)`, of course.  To avoid errors where the spread syntax is not given, `(shuffled:)` requires two or more arguments.)
  * Added `(sorted:)`, which is similar to `(array:)`, except that it requires string elements, and orders the strings in alphanumeric sort order, rather than the order in which they were provided.
     * Note that this is not strict ASCII order: "A2" is sorted before "A11", and "é" is sorted before "f". However, it still uses English locale comparisons (for instance, in Swedish "ä" is sorted after "z", whereas in English and German it comes before "b").
- * Added `(rotated:)`, which takes a number, followed by several values, and rotates the values' positions by the number. For instance, `(rotated: 1, 'Bug','Egg','Bog')` produces the array `(a:'Bog','Bug','Egg')`. Its main purpose is to transform arrays, which can be provided using the spread `...` syntax.
+ * Added `(rotated:)`, which takes a number, followed by several values, and rotates the values' positions by the number. For instance, `(rotated: 1, 'Bug','Egg','Bog')` produces the array `(a:'Bog','Bug','Egg')`. Think of it as moving each item to its current position plus the number (so, say, the item in 1st goes to 1 + 1 = 2nd). Its main purpose is to transform arrays, which can be provided using the spread `...` syntax.
  * Added `(datanames:)`, which takes a single datamap, and returns an array containing all of the datamap's names, alphabetised.
  * Added `(datavalues:)`, which takes a single datamap, and returns an array containing all of the datamap's values, alphabetised by their names were.
  * It is now an error to begin a tagged hook (such as `(if:$a)[`) and not have a matching closing `]`.
