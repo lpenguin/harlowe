@@ -42,7 +42,7 @@
 		This allows 'backtrack' styling, such as unclosed brackets, to be possible
 		under CodeMirror.
 	*/
-	beforeChange = _.throttle(function(_, changeObj) {
+	beforeChange = function(_, changeObj) {
 		if (!changeObj.update) {
 			return;
 		}
@@ -69,7 +69,7 @@
 			Now, register this change.
 		*/
 		changeObj.update({line:0,ch:0}, changeObj.to, newText);
-	}, 500, {leading:true});
+	});
 	
 	/*
 		The mode is defined herein.
@@ -176,7 +176,7 @@
 					var name = "harlowe-" + e.type,
 						// If this name has been used earlier in the chain, suffix
 						// this name with an additional number.
-						count = ((a.split(name) || '').length);
+						count = ((a.match(new RegExp(name + '(?:-\\d| )', 'g')) || '').length);
 					
 					if (count > 1) {
 						name += "-" + (count);
@@ -245,7 +245,7 @@
 			"hook-8":    hookBG(0.4),
 			
 			// The bottommost element is a hook
-			"^=hook":    "font-weight:bold;",
+			"^=hook , ^=hook-":    "font-weight:bold;",
 			
 			//TODO: whitespace within collapsed
 			error:       invalid,

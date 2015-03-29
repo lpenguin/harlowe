@@ -1,4 +1,4 @@
-describe("enchantment changers", function() {
+describe("interaction macros", function() {
 	'use strict';
 	describe("(click:)", function() {
 		it("accepts either 1 hookset or 1 string", function() {

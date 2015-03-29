@@ -24,7 +24,7 @@ Rough documentation is at http://twine2.neocities.org/
  * Fixed a bug where datamaps would not be considered equal by `is`, `is in` or `contains` if they had the same key/value pairs but in a different order. From now on, datamaps should be considered unordered.
  * Fixed the scroll-to-top functionality not working on some versions of Chrome.
  * Now, if the `<tw-storydata>` element has an incorrect startnode attribute, the `<tw-passagedata>` with the lowest pid will be used. This fixes a rare bug with compiled stories.
- * Fixed a `(goto:)` crash caused by having a `(goto:)` in plain passage prose instead of inside a hook.
+ * Fixed a `(goto:)` crash caused by having a `(goto:)` in plain passage source instead of inside a hook.
  * Optimised the TwineMarkup lexer a bit, improving passage render times.
  * Now, the style changer commands do not wrap arbitrary HTML around the hooks' elements, but by altering the `<tw-hook>`'s style attribute. This produces flatter DOM trees (admittedly not that big a deal) and has made several macros' behaviour more flexible (for instance, (text-style:"shadow") now properly uses the colour of the text instead of defaulting to black).
  * Now, during every `(set:)` operation on a TwineScript collection such as a datamap or array, the entire collection is cloned and reassigned to that particular moment's variables. Thus, the collection can be rolled back when the undo button is pressed.
@@ -51,13 +51,10 @@ Rough documentation is at http://twine2.neocities.org/
 
 ####New Features
 
- * Added computed property indexing syntax to TwineScript. Properties on collections can now be accessed via a variant of the possessive syntax: `$a's (expression)`.
+ * Added computed property indexing syntax. Properties on collections can now be accessed via a variant of the possessive syntax: `$a's (expression)`.
     * Using this syntax, you can supply numbers as 1-indexed indices to arrays and strings. So, `"Red"'s $i`, where `$i` is 1, would be the same as `"Red"'s 1st`. Note, however, that if `$i` was the string `"1st"`, it would also work too - but not if it was just the string `"1"`.
  * Links and buttons in compiled stories should now be accessible via the keyboard's Tab and Enter keys. `<tw-link>`, `<tw-icon>` and other clickable elements now have a tabindex attribute, and Harlowe sets up an event handler that allows them to behave as if clicked when the Enter key is pressed.
  * Added 'error explanations', curt sentences which crudely explain the type of error it is, which are visible as fold-downs on each error message.
- * Added `(nonzero:)` and `(nonempty:)` macros.
-    * `(nonzero:)`, aliased as `(first-nonzero:)` is designed to work like the short-circuiting JS `||` operator. It accepts any quantity of numbers and returns the first given argument which isn't zero.
-    * `(nonempty:)` is an equivalent, accepting strings, arrays, sets and maps.
  * TwineScript now supports single trailing commas in macro calls. `(a: 1, 2,)` is treated the same as `(a: 1,2)`. This is in keeping with JS, which allows trailing commas in array and object literals (but not calls, currently).
  * Added `of` property indexing as a counterpart to possessive(`x's y`) indexing.
     * Now, you can alternatively write `last of $a` instead of `$a's last`, or `passages of $style` instead of `$style's passages`. This is intended to provide a little more flexibility in phrasing/naming collection variables - although whether it succeeds is in question.
@@ -71,7 +68,7 @@ Rough documentation is at http://twine2.neocities.org/
     * The filename of a file in a slot can be displayed thus: `(print: $Saves's "Slot name")`.
  * `<script>` tags in passage text will now run. However, their behaviour is not well-defined yet - it's unclear even to me what sort of DOM they would have access to.
  * `<style>` tags in passage text can now be used without needing to escape their contents with the verbatim syntax (backticks).
- * `$Passages` is a special datamap variable that Harlowe controls - it's a "datamap of datamaps", where each data key is the name of a passage in the story, and each data value is a datamap containing information about that passage. For instance, you can obtain the prose for the "Cloister" passage with `$Passages's Cloister's prose`, or the tags with `$Passages's Cloister's tags`.
+ * `$Passages` is a special datamap variable that Harlowe controls - it's a "datamap of datamaps", where each data key is the name of a passage in the story, and each data value is a datamap containing information about that passage. For instance, you can obtain the source for the "Cloister" passage with `$Passages's Cloister's source`, or the tags with `$Passages's Cloister's tags`.
     * You can also edit these datamaps, and rewrite the story while it's being played - or, add a new passage datamap to `$Passages`, by running `(set: $Passages's ("My New Passage") to (datamap: "code", "My passage's text", "tags", (a:"my-tag", "my-tag-2"))` etc.
  * Added `(position-x:)` and `(position-y:)`: shorthands for giving a hook the CSS property `position:absolute` and a percentage `left` or `top`. The percentage argument is a number, ostensibly from 0 to 1, but potentially any number. One problem: while it should position the hook relative to the passage, it doesn't work correctly when nested - because, of course, `position:absolute` uses the nearest positioned element.
  * Added `(css:)` as a 'last resort' solution for styling elements, which is essentially the same as a raw HTML `<span style='...'>` tag, but can be combined with other changer commands. I feel obliged to offer this to provide some CSS-familiar users some access to higher functionality, even though it's not intended for general use in place of `(text-style:)`, `(position-x:)` or whatever.
