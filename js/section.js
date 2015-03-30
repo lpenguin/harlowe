@@ -265,7 +265,7 @@ function($, Utils, Selectors, Renderer, Environ, State, HookUtils, HookSet, Pseu
 		/*
 			Now that we're done, normalise the nodes.
 		*/
-		elem[0].normalize();
+		elem[0] && elem[0].normalize();
 	}
 	
 	/**
@@ -586,7 +586,7 @@ function($, Utils, Selectors, Renderer, Environ, State, HookUtils, HookSet, Pseu
 				their whitespace must collapse as well.
 				(This may or may not change in a future version).
 			*/
-			if (desc.target instanceof $ && desc.target.is(Selectors.hook)
+			if (dom.length && desc.target instanceof $ && desc.target.is(Selectors.hook)
 					&& desc.target.parents('tw-collapsed').length > 0) {
 				collapse(dom);
 			}

@@ -42,14 +42,12 @@ describe("basic twinemarkup syntax", function() {
 		describe(e.name, function() {
 			it("wraps text enclosed in " + e.markup.join(" and ") +
 				" with " + e.html.join(" and ") + " elements.", function() {
-			
 				expectMarkupToBecome(
 					"A " + e.markup.join(" B ") + " C",
 					"A " + e.html  .join(" B ") + " C"
 				);
 			});
 			it("spans multiple lines", function() {
-		
 				expectMarkupToBecome(
 					"A " + e.markup.join(" B\n ")   + " C",
 					"A " + e.html  .join(" B<br> ") + " C"
@@ -74,6 +72,12 @@ describe("basic twinemarkup syntax", function() {
 				expectMarkupToBecome(
 					"A " + e.markup[0]   + " B",
 					"A " + e.markup[0]   + " B"
+				);
+			});
+			it("works even when empty", function() {
+				expectMarkupToBecome(
+					"A" + e.markup.join("") + "B",
+					"AB"
 				);
 			});
 		});
@@ -416,6 +420,9 @@ describe("basic twinemarkup syntax", function() {
 			var p = runPassage("{ A (if:true)[    ] B }");
 			expect(p.text()).toBe("A B");
 		});
+		it("works even when empty", function() {
+			expectMarkupToNotError("{}");
+		});
 	});
 	
 	describe("aligner syntax", function() {
@@ -463,6 +470,7 @@ describe("basic twinemarkup syntax", function() {
 			expect(align.length).toBe(2);
 		});
 	});
+	
 	describe("Twine 1 macro syntax", function() {
 		it("will simply print an error", function() {
 			expectMarkupToError("<<set $red to 1>>");

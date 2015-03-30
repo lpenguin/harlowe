@@ -44,6 +44,9 @@ describe("interaction macros", function() {
 				expect(p.length).toBe(1);
 				expect(p.hasClass('link') && p.hasClass('enchantment-link')).toBe(true);
 			});
+			it("will work inside the collapsing syntax", function() {
+				expectMarkupToNotError("[]<a|Hey{(click: ?a)[]}");
+			});
 		});
 		describe("given multiple hooks", function() {
 			it("enchants each selected hook as a link", function() {
