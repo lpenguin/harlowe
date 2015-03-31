@@ -24,6 +24,33 @@ describe("data structure macros", function () {
 			});
 		});
 	});
+	describe("the (range:) macro", function() {
+		it("accepts 2 numbers", function() {
+			expectMarkupToError("(range:)");
+			expectMarkupToError("(range:1)");
+			expectMarkupToNotError("(range:1,3)");
+			expectMarkupToError("(range:1,3,4)");
+		});
+		it("returns an array containing the integers between both numbers, inclusive", function() {
+			expectMarkupToPrint("(print: (range:1,2))","1,2");
+			expectMarkupToPrint("(print: (range:3,6))","3,4,5,6");
+			expectMarkupToPrint("(print: (range:1,2)'s length)","2");
+			expectMarkupToPrint("(print: (range:3,6)'s length)","4");
+		});
+		it("works even when the first number exceeds the second", function() {
+			expectMarkupToPrint("(print: (range:2,1))","1,2");
+			expectMarkupToPrint("(print: (range:6,3))","3,4,5,6");
+		});
+		it("works even when the numbers are both negative", function() {
+			expectMarkupToPrint("(print: (range:-4,-2))","-4,-3,-2");
+			expectMarkupToPrint("(print: (range:-2,-4))","-4,-3,-2");
+			expectMarkupToPrint("(print: (range:2,-4))","-4,-3,-2,-1,0,1,2");
+		});
+		it("works even when the numbers are equal", function() {
+			expectMarkupToPrint("(print: (range:-4,-4))","-4");
+			expectMarkupToPrint("(print: (range:-4,-4)'s length)","1");
+		});
+	});
 	describe("the (subarray:) macro", function() {
 		it("accepts 1 array argument, then two number arguments", function() {
 			expectMarkupToError("(subarray:)");

@@ -71,6 +71,32 @@ require(['jquery', 'renderer', 'state', 'engine', 'utils', 'utils/selectors', 'm
 	};
 
 	/*
+		When an uncaught error occurs, then display an alert box once, notifying the author.
+		This installs a window.onerror method, but we must be careful not to clobber any existing
+		onerror method.
+	*/
+	(function(oldOnError) {
+		window.onerror = function (message, _, __, ___, error) {
+			/*
+				This convoluted line retrieves the error stack, if it exists, and pretty-prints it with
+				URL references (in brackets) removed. If it doesn't exist, the message is used instead.
+			*/
+			console.log.apply(console,arguments);
+			var stack = (error && error.stack && ("\n" + error.stack.replace(/\([^\)]+\)/g,'') + "\n")) || ("(" + message + ")\n");
+			alert("Sorry to interrupt, but this page's code has got itself in a mess. "
+				+ stack
+				+ "(This is probably due to a bug in the Twine game engine.)");
+			/*
+				Having produced that once-off message, we now restore the page's previous onerror, and invoke it.
+			*/
+			window.onerror = oldOnError;
+			if (typeof oldOnError === "function") {
+				oldOnError.apply(window, arguments);
+			}
+		};
+	}(window.onerror));
+	
+	/*
 		This is the main function which starts up the entire program.
 	*/
 	$(document).ready(function main() {

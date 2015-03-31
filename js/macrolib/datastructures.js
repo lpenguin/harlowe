@@ -105,6 +105,7 @@ function($, NaturalSort, Macros, Utils, OperationUtils, State, Engine, Assignmen
 			A left-to-right version of (set:) that requires the word `into` rather than `to`.
 			
 			Rationale:
+			
 			This macro has an identical purpose to (set:) - it creates and changes variables.
 			For a basic explanation, see the rationale for (set:).
 			
@@ -248,10 +249,12 @@ function($, NaturalSort, Macros, Utils, OperationUtils, State, Engine, Assignmen
 		/*d:
 			(range: Number, Number) -> Array
 			
-			Produces an array containing an *inclusive* range of integers from a to b.
+			Produces an array containing an inclusive range of whole numbers from a to b,
+			in ascending order.
 			
 			Example usage:
 			`(range:1,14)` is equivalent to `(a:1,2,3,4,5,6,7,8,9,10,11,12,13,14)`
+			`(range:2,-2)` is equivalent to `(a:-2,-1,0,1,2)`
 			
 			Rationale:
 			This macro is a shorthand for defining an array that contains a sequence of
@@ -273,7 +276,7 @@ function($, NaturalSort, Macros, Utils, OperationUtils, State, Engine, Assignmen
 				and support them.
 			*/
 			if (a > b) {
-				return range(_, b, a).reverse();
+				return range(_, b, a);
 			}
 			/*
 				This differs from Python: the base case returns just [a],
@@ -289,11 +292,33 @@ function($, NaturalSort, Macros, Utils, OperationUtils, State, Engine, Assignmen
 		},
 		[Number, Number])
 		
-		/*
-			(subarray:)
-			Produces a slice of the given array, cut from
-			the *inclusive* indices a and b.
-			A match of (substring:).
+		/*d:
+			(subarray: Array, Number, Number) -> Array
+			
+			When given an array, this returns a new array containing only the elements
+			whose positions are between the two numbers, inclusively.
+			
+			Example usage:
+			```
+			(set: $a to (a: "Red","Gold","Blue","White"))
+			(print: (subarray: $a, 3, 4))
+			```
+			
+			Rationale:
+			
+			One of the most basic things you can do with an array is split it into smaller
+			arrays. For instance, you may have a 'deck' of random string values that you wish
+			to divide into two decks and use independently of each other. This macro provides
+			a means of doing this - just specify the two positions in which to take values from.
+			
+			Details:
+			
+			You can, of course, obtain an array with just one value in it by supplying the same
+			position to (subarray:) - `(subarray: $a, 3,3)` produces an array containing just
+			the third value.
+			
+			See also:
+			(substring:), (rotated:)
 		*/
 		("subarray", function subarray(_, array, a, b) {
 			return OperationUtils.subset(array, a, b);
@@ -387,16 +412,39 @@ function($, NaturalSort, Macros, Utils, OperationUtils, State, Engine, Assignmen
 		},
 		[String, rest(String)])
 		
-		/*
+		/*d:
 			(rotated: Number, [...Any]) -> Array
 			
-			Identical to the typical array constructor macro, but it
-			A: takes a Number at the start, and
-			B: moves that number of items from the start of the array to the end.
+			Identical to the typical array constructor macro, but it also takes a number at
+			the start, and moves each item forward by that number, wrapping back to the start
+			if they pass the end of the array.
+			
+			Example usage:
+			`(rotated: 1, 'A','B','C','D')` is equal to `(a: 'D','A','B','C')`.
+			`(rotated: -2, 'A','B','C','D')` is equal to `(a: 'C','D','A','B')`.
+			
+			Rationale:
+			Sometimes, you may want to cycle through a number of values, without
+			repeating any until you reach the end. For instance, you may have a rotating set
+			of flavour-text descriptions for a thing in your story, which you'd like displayed
+			in their entirety without the whim of a random picker. The (rotated:) macro
+			allows you to apply this "rotation" to a sequence of data, changing their positions
+			by a certain number without discarding any values.
+			
+			Remember that, as with all macros, you can insert all the values in an existing
+			array using the `...` syntax: `(set: $a to (rotated: 1, ...$a))` is a common means of
+			replacing an array with a rotation of itself.
+			
+			Think of the number as being an addition to each position in the original sequence -
+			if it's 1, then the value in position 1 moves to 2, the value in position 2 moves to 3,
+			and so forth.
 			
 			Details:
 			To ensure that it's being used correctly, this macro requires three or more items -
 			providing just two, one or none will cause an error to be presented.
+			
+			See also:
+			(subarray:), (sorted:)
 		*/
 		("rotated", function shuffled(_, number /*variadic*/) {
 			var array = Array.from(arguments).slice(2);

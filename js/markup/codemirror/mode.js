@@ -69,7 +69,7 @@
 			Now, register this change.
 		*/
 		changeObj.update({line:0,ch:0}, changeObj.to, newText);
-	});
+	};
 	
 	/*
 		The mode is defined herein.

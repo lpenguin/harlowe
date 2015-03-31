@@ -348,7 +348,7 @@ define(['utils', 'macros', 'utils/operationutils', 'internaltypes/twineerror'], 
 			}
 			return section.stack[0].lastHookShown === false;
 		},
-		null)
+		null);
 
 	/*
 		JS library wrapper macros
