@@ -212,15 +212,20 @@ function($, Utils, Selectors, Renderer, Environ, State, HookUtils, HookSet, Pseu
 		@param {jQuery} elem The element whose whitespace must collapse.
 	*/
 	function collapse(elem) {
-		var finalNode, lastVisibleNode, verbatimNode;
+		var finalNode, lastVisibleNode;
 		
 		/*
 			A .filter() callback which removes nodes inside a <tw-verbatim> or
 			<tw-expression> element.
 		*/
-		function noVerbatim (e) {
-			return $(e).parents('tw-verbatim, tw-expression').length === 0;
+		function noVerbatim(e) {
+			/*
+				The (this || e) dealie is a kludge to support its use in a jQuery
+				.filter() callback as well as a bare function.
+			*/
+			return $(this || e).parents('tw-verbatim, tw-expression').length === 0;
 		}
+		
 		/*
 			- If the node contains <br>, replace with a single space.
 		*/
@@ -237,7 +242,7 @@ function($, Utils, Selectors, Renderer, Environ, State, HookUtils, HookSet, Pseu
 					We can skip the entire remainder of this function with just
 					this line here.
 				*/
-				return (lastVisibleNode =  new Text("A"));
+				return (lastVisibleNode = new Text("A"));
 			}
 			/*
 				- If the node contains runs of whitespace, reduce all runs to single spaces.

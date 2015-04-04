@@ -260,15 +260,31 @@
 				"font-weight:bold;",
 			"italic, em":
 				"font-style:italic;",
+			verbatim:
+				"background-color: hsla(0,0%,50%,0.1)",
 			
-			twineLink:   twineLink,
-			tag:         "color: #4d4d9d;",
+			twineLink:
+				twineLink,
+			tag:
+				"color: #4d4d9d;",
 			
-			boolean:     "color: #626262;",
-			string:      "color: #008282;",
-			number:      "color: #A15000;",
-			variable:    "color: #005682;",
-			hookRef:     "color: #007f54;",
+			boolean:
+				"color: #626262;",
+			string:
+				"color: #008282;",
+			number:
+				"color: #A15000;",
+			variable:
+				"color: #005682;",
+			hookRef:
+				"color: #007f54;",
+			
+			heading:
+				"font-weight:bold;",
+			hr:
+				"display:block; background-image: linear-gradient(0deg, transparent,transparent 45%, silver 45%, transparent 55%, transparent);",
+			align:
+				"display:block; color: hsl(14, 99%, 27%); background-color: hsla(14, 99%, 87%, 0.2);",
 			
 			escapedLine: "font-weight:bold; color: hsl(51, 100%, 30%);",
 			

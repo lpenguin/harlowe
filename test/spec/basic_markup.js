@@ -404,11 +404,15 @@ describe("basic twinemarkup syntax", function() {
 			expect(p.find('span').attr('title')).toBe("   ");
 			expect(p.text()).toBe("");
 		});
-		it("as a result, it won't affect text inside macros", function() {
+		it("won't affect text inside macros", function() {
 			expectMarkupToPrint("{(print:'Red   Blue''s length)}", "10");
 		});
-		it("furthermore, it won't affect text outputted by expressions", function() {
+		it("won't affect text outputted by expressions", function() {
 			expectMarkupToPrint("{(set: $a to 'Red   Blue')(print:$a)}", "Red   Blue");
+		});
+		it("won't affect text outputted by (display:)", function() {
+			createPassage("B\nC", "grault");
+			expectMarkupToPrint("A\n{(display:'grault')}", "A\nB\nC");
 		});
 		it("won't affect text inside verbatim guards", function() {
 			var p = runPassage("{   `   `   }");
@@ -426,7 +430,7 @@ describe("basic twinemarkup syntax", function() {
 			expect(p.text()).toBe("AB");
 			p = runPassage("{ A (if:true)[    ] B }");
 			expect(p.text()).toBe("A B");
-			var p = runPassage("{ A (if:true)[  B  ] C }");
+			p = runPassage("{ A (if:true)[  B  ] C }");
 			expect(p.text()).toBe("A B C");
 			p = runPassage("{ A (if:true)[  B  C ] D }");
 			expect(p.text()).toBe("A B C D");

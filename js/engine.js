@@ -67,7 +67,7 @@ function ($, Utils, Selectors, State, Section) {
 			+ Utils.escape(setupPassage.get('name'))
 			+ "'>"
 			+ setupPassage.get('source')
-			+ "</" + tagType + " " + ">";
+			+ "</tw-include>";
 	}
 	
 	/**
