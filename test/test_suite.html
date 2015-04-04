@@ -8,9 +8,9 @@
 require.config({baseUrl: "../js/"});
 require(["markup/lexer","markup/patterns","markup/markup","harlowe"]);
 </script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jasmine/2.2.1/jasmine.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jasmine/2.2.1/jasmine-html.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jasmine/2.2.1/boot.js"></script>
+<script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/jasmine/2.2.1/jasmine.js"></script>
+<script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/jasmine/2.2.1/jasmine-html.js"></script>
+<script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/jasmine/2.2.1/boot.js"></script>
 <script role="script" type="text/twine-javascript">
 window.createPassage = function(text, name, tags) {
 	State.variables.Passages.set(name, new Map([
@@ -34,7 +34,7 @@ window.expectMarkupToBecome = function(markup, html) {
 	expect(runPassage(markup).html() || '').toBe(html);
 };
 window.expectMarkupToPrint = function(markup, text) {
-	expect(runPassage(markup).text() || '').toBe(text);
+	expect(runPassage(markup).find('br').replaceWith(new Text('\n')).end().text() || '').toBe(text);
 };
 window.expectMarkupToError = function(markup) {
 	expect(runPassage(markup).find('tw-error:not(.javascript)').length).toBe(1);

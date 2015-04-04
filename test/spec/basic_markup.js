@@ -415,10 +415,27 @@ describe("basic twinemarkup syntax", function() {
 			expect(p.text()).toBe("   ");
 			p = runPassage("{   `  A C  `   }");
 			expect(p.text()).toBe("  A C  ");
+			p = runPassage("{A`   `B}");
+			expect(p.text()).toBe("A   B");
+			p = runPassage("{A `   ` B}");
+			expect(p.text()).toBe("A     B");
 		});
 		it("will affect text inside nested hooks (?)", function() {
-			var p = runPassage("{ A (if:true)[    ] B }");
+			var p;
+			p = runPassage("{ A(if:true)[      ]B }");
+			expect(p.text()).toBe("AB");
+			p = runPassage("{ A (if:true)[    ] B }");
 			expect(p.text()).toBe("A B");
+			var p = runPassage("{ A (if:true)[  B  ] C }");
+			expect(p.text()).toBe("A B C");
+			p = runPassage("{ A (if:true)[  B  C ] D }");
+			expect(p.text()).toBe("A B C D");
+		});
+		it("will not affect text inside verbatim guards inside nested hooks", function() {
+			var p = runPassage("{ A (if:true)[`    `] B }");
+			expect(p.text()).toBe("A      B");
+			p = runPassage("{ A (if:true)[ ` `B` ` ] C }");
+			expect(p.text()).toBe("A  B  C");
 		});
 		it("works even when empty", function() {
 			expectMarkupToNotError("{}");

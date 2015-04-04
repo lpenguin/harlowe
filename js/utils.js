@@ -414,7 +414,7 @@ function($, TwineMarkup, Selectors) {
 				Ideally I'd use this:
 				.one("animationend webkitAnimationEnd MSAnimationEnd", function(){ oldElem.remove(); });
 				but in the event of CSS being off, these events won't trigger
-				- whereas the below method will simply occur immedately.
+				- whereas the below method will simply occur immediately.
 			*/
 			delay = Utils.transitionTime(transIndex, "transition-out");
 

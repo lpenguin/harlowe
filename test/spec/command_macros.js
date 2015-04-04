@@ -128,5 +128,13 @@ describe("basic command macros", function() {
 		it("produces an error if the passage doesn't exist", function() {
 			expectMarkupToError("(go-to: 'freek')");
 		});
+		it("transitions out the preceding <tw-passage> when stretchtext is off", function(done) {
+			createPassage("''Red''", "waldo");
+			runPassage("(set: $x to (go-to:'waldo'))$x");
+			waitForGoto(function() {
+				expect($('tw-passage').length).toBe(1);
+				done();
+			});
+		});
 	});
 });

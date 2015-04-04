@@ -249,7 +249,7 @@ function(Macros, Utils, State, Engine, TwineError, OperationUtils) {
 						So, the change of passage must be deferred until just after
 						the passage has ceased rendering.
 					*/
-					requestAnimationFrame(Engine.goToPassage.bind(Engine,name));
+					requestAnimationFrame(Engine.goToPassage.bind(Engine,name, false /* stretchtext value */));
 					/*
 						But how do you immediately cease rendering the passage?
 						
@@ -493,7 +493,7 @@ function(Macros, Utils, State, Engine, TwineError, OperationUtils) {
 							because (save-game:) can only be run inside a passage. If this fails,
 							the save itself is drastically incorrect.
 						*/
-						requestAnimationFrame(Engine.showPassage.bind(Engine,State.passage));
+						requestAnimationFrame(Engine.showPassage.bind(Engine, State.passage, false /* stretchtext value */));
 						return { earlyExit: 1 };
 					},
 				};

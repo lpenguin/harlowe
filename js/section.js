@@ -212,18 +212,32 @@ function($, Utils, Selectors, Renderer, Environ, State, HookUtils, HookSet, Pseu
 		@param {jQuery} elem The element whose whitespace must collapse.
 	*/
 	function collapse(elem) {
-		var finalNode, lastVisibleNode;
+		var finalNode, lastVisibleNode, verbatimNode;
+		
+		/*
+			A .filter() callback which removes nodes inside a <tw-verbatim> or
+			<tw-expression> element.
+		*/
+		function noVerbatim (e) {
+			return $(e).parents('tw-verbatim, tw-expression').length === 0;
+		}
 		/*
 			- If the node contains <br>, replace with a single space.
 		*/
-		Utils.findAndFilter(elem, ':not(tw-verbatim) > br').replaceWith(new Text(" "));
+		Utils.findAndFilter(elem, 'br')
+			.filter(noVerbatim)
+			.replaceWith(new Text(" "));
 		
 		finalNode = elem.textNodes().reduce(function(prevNode, node) {
 			/*
-				- If the node is inside a <tw-verbatim>, ignore it.
+				- If the node is inside a <tw-verbatim> or <tw-expression>, regard it as an ordinary Text node.
 			*/
-			if (node.parentNode.tagName.toLowerCase() === "tw-verbatim") {
-				return prevNode;
+			if (!noVerbatim(node)) {
+				/*
+					We can skip the entire remainder of this function with just
+					this line here.
+				*/
+				return (lastVisibleNode =  new Text("A"));
 			}
 			/*
 				- If the node contains runs of whitespace, reduce all runs to single spaces.
@@ -601,8 +615,8 @@ function($, Utils, Selectors, Renderer, Environ, State, HookUtils, HookSet, Pseu
 				Execute the expressions immediately.
 			*/
 			
-			Utils.findAndFilter(dom, [Selectors.hook, Selectors.expression, Selectors.collapsed]+'')
-					.each(function doExpressions () {
+			Utils.findAndFilter(dom, Selectors.hook + ',' + Selectors.expression)
+					.each(function doExpressions() {
 				var expr = $(this);
 				
 				switch(expr.tag()) {
@@ -622,12 +636,10 @@ function($, Utils, Selectors, Renderer, Environ, State, HookUtils, HookSet, Pseu
 						*/
 						return runExpression.call(section, expr);
 					}
-					case Selectors.collapsed:
-					{
-						collapse(expr);
-						break;
-					}
 				}
+			});
+			Utils.findAndFilter(dom, Selectors.collapsed).each(function() {
+				collapse($(this));
 			});
 			
 			/*

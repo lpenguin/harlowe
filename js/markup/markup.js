@@ -179,9 +179,9 @@
 						}
 					} else if (arrow[0] === "<" && arrow.slice(-1) === ">") {
 						align = "justify";
-					} else if (arrow.includes(">")) {
+					} else if (arrow.indexOf(">") >-1) {
 						align = "right";
-					} else if (arrow.includes("<")) {
+					} else if (arrow.indexOf("<") >-1) {
 						align = "left";
 					}
 					return { align: align };
