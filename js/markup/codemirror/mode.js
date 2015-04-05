@@ -23,7 +23,7 @@
 		"mouseover-prepend,mouseout-prepend,set,put,move,a,array,range,subarray,shuffled,sorted,rotated," +
 		"datanames,datavalues,history,datamap,dataset,count,display,print,goto,live,stop,savegame,loadgame,link,link-goto"
 	).split(',').map(insensitiveName);
-
+	
 	/*
 		Import the TwineMarkup lexer function, and store it locally.
 	*/
@@ -282,7 +282,7 @@
 			heading:
 				"font-weight:bold;",
 			hr:
-				"display:block; background-image: linear-gradient(0deg, transparent,transparent 45%, silver 45%, transparent 55%, transparent);",
+				"display:block; background-image: linear-gradient(0deg, transparent, transparent 45%, silver 45%, transparent 55%, transparent);",
 			align:
 				"display:block; color: hsl(14, 99%, 27%); background-color: hsla(14, 99%, 87%, 0.2);",
 			

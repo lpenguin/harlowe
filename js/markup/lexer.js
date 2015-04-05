@@ -440,7 +440,7 @@
 		var backTokenIndex   = parentToken.children.indexOf(backToken),
 			frontTokenIndex  = parentToken.children.indexOf(frontToken),
 			// Hoisted loop vars
-			i, l, key;
+			i, l;
 
 		/*
 			First, find the tokens enclosed by the pair, and make them the
@@ -491,13 +491,15 @@
 			
 			Assumption: that the Back token and Front token will never
 			have colliding props. If so, then they are left as they are.
+			
+			This uses Object.keys() because Chrome deopts for-in over
+			the frontToken object.
 		*/
-		for (key in frontToken) {
-			if(Object.hasOwnProperty.call(frontToken, key)
-				&& !Object.hasOwnProperty.call(backToken, key)) {
+		Object.keys(frontToken).forEach(function(key) {
+			if(!Object.hasOwnProperty.call(backToken, key)) {
 				backToken[key] = frontToken[key];
 			}
-		}
+		});
 		
 		/*
 			Remove the Front token.

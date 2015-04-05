@@ -8,13 +8,31 @@ function($, TwineMarkup, Selectors) {
 			configurable: 0,
 			writable: 0
 		},
+		
 		// Used to cache t8n animation times
 		t8nAnimationTimes = {
 			"transition-in": Object.create(null),
 			"transition-out": Object.create(null)
 		},
+		
 		//A binding for the cached <tw-story> reference (see below).
-		storyElement;
+		storyElement,
+		
+		// These two are used by childrenProbablyInline (see below).
+		usuallyBlockElements = (
+			// The most common block HTML tags that would be used in passage source
+			"audio,blockquote,canvas,div,h1,h2,h3,h4,h5,hr,ol,p,pre,table,ul,video,"
+			// And the one(s) that Harlowe itself creates through its syntax
+			+ "tw-align"
+		).split(','),
+		
+		usuallyInlineElements = (
+			// The most common inline HTML tags that would be created from passage source
+			"a,b,i,em,strong,sup,sub,abbr,acronym,s,strike,del,big,small,script,img,button,input,"
+			// And the ones that Harlowe itself creates through its syntax.
+			// Note that <tw-hook> and <tw-expression> aren't included.
+			+ "tw-link,tw-broken-link,tw-verbatim,tw-collapsed,tw-error"
+		).split(',');
 	
 	/**
 		A static class with helper methods used throughout Harlowe.
@@ -22,7 +40,61 @@ function($, TwineMarkup, Selectors) {
 		@class Utils
 		@static
 	*/
-
+	
+	/*
+		childrenProbablyInline: returns true if the matched elements probably only contain elements that
+		are of the 'inline' or 'none' CSS display type.
+		
+		This takes some shortcuts to avoid use of the costly $css() function as much as possible,
+		hence, it can only "probably" say so.
+		
+		This is used to crudely determine whether to make a <tw-transition-container> inline or block,
+		given that block children cannot inherit opacity from inline parents in Chrome (as of April 2015).
+	*/
+	function childrenProbablyInline(jq) {
+		/*
+			This is used to store elements which daunted all of the easy tests,
+			so that $css() can be run on them after the first loop has returned all-true.
+		*/
+		var unknown = [];
+		return Array.prototype.every.call(jq.find('*'), function(elem) {
+			/*
+				If it actually has "style=display:inline", "hidden", or "style=display:none"
+				as an inline attribute, well, that makes life easy for us.
+			*/
+			if (elem.hidden || "none,inline".indexOf(elem.style.display) > -1) {
+				return true;
+			}
+			/*
+				If the children contain an element which is usually block,
+				then *assume* it is and return false early.
+			*/
+			if (usuallyBlockElements.indexOf(elem.tagName.toLowerCase()) >-1
+					/*
+						If it has an inline style which is NOT none or inline,
+						then go ahead and return false.
+					*/
+					|| (elem.style.display && "none,inline".indexOf(elem.style.display) === -1)) {
+				return false;
+			}
+			/*
+				If the child's tag name is that of an element which is
+				usually inline, then *assume* it is and return true early.
+			*/
+			if (usuallyInlineElements.indexOf(elem.tagName.toLowerCase()) >-1) {
+				return true;
+			}
+			/*
+				For all else, we fall back to the slow case.
+			*/
+			unknown.push(elem);
+			return true;
+		})
+		&& unknown.every(function(elem) {
+			return "none,inline".indexOf($(elem).css('display')) > -1;
+		});
+	}
+	
 	var Utils = {
 		/**
 			Make object properties immutable and impossible to delete,
@@ -246,51 +318,7 @@ function($, TwineMarkup, Selectors) {
 		wrapHTMLTag: function(text, tagName) {
 			return '<' + tagName + '>' + text + '</' + tagName + '>';
 		},
-
-		/**
-			Takes a string containing a character or HTML entity, and wraps it into a
-			<tw-char> tag, converting the entity if it is one.
-			Currently (Dec. 2014) unused.
-
-			@method charToSpan
-			@param {String} character
-			@return {String} Resultant HTML
-		*/
-		charToSpan: function(c) {
-			// Use single-quotes if the char is a double-quote.
-			var quot = (c === "&#39;" ? '"' : "'"),
-				value = Utils.unescape(c);
-			switch(value) {
-				case ' ': {
-					value = "space";
-					break;
-				}
-				case '\t': {
-					value = "tab";
-					break;
-				}
-			}
-			return "<tw-char value=" +
-				quot + value + quot + ">" +
-				c + "</tw-char>";
-		},
-
-		/**
-			Converts an entire string into individual characters, each enclosed
-			by a <tw-char>.
-			Currently (Dec. 2014) unused.
-			
-			@method charSpanify
-			@param {String} text Source string
-			@return {String} Resultant HTML
-		*/
-		charSpanify: function(text) {
-			if (typeof text !== "string") {
-				throw new Error("charSpanify received a non-string:" + text);
-			}
-			return text.replace(/&[#\w]+;|./g, Utils.charToSpan);
-		},
-
+		
 		/*
 			Element utilities
 		*/
@@ -384,13 +412,14 @@ function($, TwineMarkup, Selectors) {
 
 		transitionOut: function (el, transIndex) {
 			var delay,
+				childrenInline = childrenProbablyInline(el),
 				/*
 					If the element is not a tw-hook or tw-passage, we must
 					wrap it in a temporary element first, which can thus be
 					animated using CSS.
 				*/
 				mustWrap =
-					el.length > 1 ||
+					el.length > 1 || !childrenInline ||
 					['tw-hook','tw-passage'].indexOf(el.tag()) === -1;
 			
 			/*
@@ -409,7 +438,10 @@ function($, TwineMarkup, Selectors) {
 				Now, apply the transition.
 			*/
 			el.attr("data-t8n", transIndex).addClass("transition-out");
-
+			if (childrenProbablyInline(el)) {
+				el.css('display','inline-block');
+			}
+			
 			/*
 				Ideally I'd use this:
 				.one("animationend webkitAnimationEnd MSAnimationEnd", function(){ oldElem.remove(); });
@@ -431,13 +463,14 @@ function($, TwineMarkup, Selectors) {
 
 		transitionIn: function (el, transIndex) {
 			var delay,
+				childrenInline = childrenProbablyInline(el),
 				/*
 					If the element is not a tw-hook or tw-passage, we must
 					wrap it in a temporary element first, which can thus be
 					animated using CSS.
 				*/
 				mustWrap =
-					el.length > 1 ||
+					el.length > 1 || !childrenInline ||
 					['tw-hook','tw-passage'].indexOf(el.tag()) === -1;
 			
 			/*
@@ -469,6 +502,9 @@ function($, TwineMarkup, Selectors) {
 				and letting the built-in CSS take over.
 			*/
 			el.attr("data-t8n", transIndex).addClass("transition-in");
+			if (childrenProbablyInline(el)) {
+				el.css('display','inline-block');
+			}
 			delay = Utils.transitionTime(transIndex, "transition-in");
 
 			!delay ? onComplete() : window.setTimeout(onComplete, delay);

@@ -1,5 +1,6 @@
 define(['jquery'], function($) {
 	"use strict";
+	
 	$.prototype.extend({
 		/*
 			popAttr: returns an attribute while removing it. Accepts only 1 argument.
@@ -53,6 +54,5 @@ define(['jquery'], function($) {
 				return (left.compareDocumentPosition(right)) === 2 ? 1 : -1;
 			});
 		},
-		
 	});
 });
