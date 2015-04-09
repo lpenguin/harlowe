@@ -167,7 +167,7 @@ define([
 			if (!passageMap) {
 				return TwineError.create("macrocall",
 					"I can't display the passage '"
-					+ name
+					+ passageName
 					+ "' because it doesn't exist."
 				);
 			}

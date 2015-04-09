@@ -14,8 +14,23 @@ function($, Macros, Utils, Selectors, Colour, ChangerCommand, TwineError) {
 	
 	Macros.addChanger
 	
-		// (hook:)
-		// Allows the author to give a hook a computed tag name.
+		/*d:
+			(hook: String) -> Command
+			Allows the author to give a hook a computed tag name.
+			
+			Example usage:
+			`(hook:$hookName)[]`
+			
+			Rationale:
+			You may notice that it isn't possible to attach a nametag to hooks with commands
+			already attached - in the case of `(font:"Museo Slab")[The Vault]<title|`, the nametag results
+			in an error. This command can be added with other commands to allow the hook to be named:
+			`(font:"Museo Slab")+(hook: "title")[The Vault]`.
+			
+			Furthermore, unlike the nametag syntax, (hook:) can be given any string expression:
+			`(hook: "eyes" + (string:$eyeCount))` is valid, and will, as you'd expect, give the hook
+			the name of `eyes1` if `$eyeCount` is 1.
+		*/
 		(["hook"],
 			function hook(_, name) {
 				return ChangerCommand.create("hook", [name]);

@@ -164,5 +164,24 @@ describe("data structure macros", function () {
 			expectMarkupToPrint("(print: (datavalues:$a))","1,5,4,2,3,6");
 		});
 	});
+	describe("the (datamap:) macro", function() {
+		it("accepts any even number and type of arguments, but requires strings or numbers in the odd positions", function() {
+			for(var i = 1; i < 5; i += 1) {
+				expectMarkupToNotError("(datamap:" + ("'X',(a:),").repeat(i) + ")");
+				expectMarkupToNotError("(datamap:" + ("2,(a:),").repeat(i) + ")");
+				expectMarkupToError("(datamap:" + ("(a:),1,").repeat(i) + ")");
+				expectMarkupToError("(datamap:" + ("1,").repeat((i*2)-1) + ")");
+			}
+		});
+	});
+	describe("the (dataset:) macro", function() {
+		it("accepts 0 or more arguments of any primitive type", function() {
+			["1", "'X'", "true", "(a:)", "(font:'Skia')"].forEach(function(e) {
+				for(var i = 0; i < 10; i += 1) {
+					expectMarkupToNotError("(dataset:" + (e + ",").repeat(i) + ")");
+				}
+			});
+		});
+	});
 });
 

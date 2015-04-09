@@ -193,8 +193,8 @@ describe("property indexing", function() {
 			it("can be used in assignments", function (){
 				expectMarkupToPrint("(set: $d to (datamap:'A',2))(set: $d\'s ('A') to 4)(print:$d's A)","4");
 			});
-			it("prints an error if the key is numeric", function() {
-				expectMarkupToError('(print: (datamap:1,1)\'s (1))');
+			it("allows numeric keys", function() {
+				expectMarkupToPrint('(print: (datamap:1,7)\'s (1))', '7');
 			});
 		});
 		describe("for arrays", function() {
@@ -253,8 +253,8 @@ describe("property indexing", function() {
 			it("can be used in assignments", function (){
 				expectMarkupToPrint("(set: $d to (datamap:'A',2))(set: 'A' of $d\ to 4)(print:$d's A)","4");
 			});
-			it("prints an error if the key is numeric", function() {
-				expectMarkupToError('(print: 1 of (datamap:1,2))');
+			it("allows numeric keys", function() {
+				expectMarkupToPrint('(print: 1 of (datamap:1,2))', '2');
 			});
 		});
 		describe("for arrays", function() {

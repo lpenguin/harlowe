@@ -529,25 +529,46 @@ function($, NaturalSort, Macros, Utils, OperationUtils, State, Engine, Assignmen
 				Note that, as is with most macro functions in this file,
 				the slice(1) eliminates the implicit first Section argument.
 			*/
-			ret = new Map(Array.from(arguments).slice(1).reduce(function(array, element) {
+			ret = Array.from(arguments).slice(1).reduce(function(array, element) {
+				/*
+					Propagate earlier iterations' errors.
+				*/
+				if (TwineError.containsError(array)) {
+					return array;
+				}
 				if (key === undefined) {
 					key = element;
+				}
+				/*
+					Key type-checking must be done here, as the type signature format isn't flexible
+					enough for (datamap:).
+				*/
+				else if (typeof key !== "string" && typeof key !== "number") {
+					return TwineError.create(
+						"macrocall",
+						"Only strings and numbers can be used as datamap data names."
+					);
 				}
 				else {
 					array.push([key, element]);
 					key = undefined;
 				}
 				return array;
-			}, []));
-			
+			}, []);
+			/*
+				Return an error if one was raised during iteration.
+			*/
+			if (TwineError.containsError(ret)) {
+				return ret;
+			}
 			/*
 				One error can result: if there's an odd number of arguments, that
 				means a key has not been given a value.
 			*/
 			if (key !== undefined) {
-				return new TypeError("This datamap has a key without a value.");
+				return TwineError.create("macrocall","This datamap has a data name without a value.");
 			}
-			return ret;
+			return new Map(ret);
 		},
 		zeroOrMore(Any))
 		

@@ -36,9 +36,7 @@ function(Utils, State, TwineError, OperationUtils) {
 		var
 			// Hoisted variables.
 			match,
-			error,
-			// Cache this value for easy lookup.
-			sequential = isSequential(obj);
+			error;
 		
 		/*
 			First, check for and propagate earlier errors.
@@ -52,18 +50,18 @@ function(Utils, State, TwineError, OperationUtils) {
 			and numbers to be used.
 			(This kind of defeats the point of using ES6 Maps, though...)
 		*/
-		if(typeof prop !== "string" && (!sequential || typeof prop !== "number")) {
+		if(typeof prop !== "string" && typeof prop !== "number") {
 			return TwineError.create(
 				"property",
-				"Only strings " + (sequential ? "and numbers " : "") +
-				"can be used as property names for " + objectName(obj) + ", not " + objectName(prop) + "."
+				"Only strings and numbers can be used as data names for "
+				+ objectName(obj) + ", not " + objectName(prop) + "."
 				);
 		}
 		/*
 			This is to ensure that TwineScript properties are not exposed to userland code.
 		*/
 		if(typeof prop === "string" && prop.startsWith("TwineScript") && prop !== "TwineScript_Assignee") {
-			return TwineError.create("property", "Only I can use data keys beginning with 'TwineScript'.");
+			return TwineError.create("property", "Only I can use data names beginning with 'TwineScript'.");
 		}
 		/*
 			Sequentials have special sugar property indices:
@@ -330,7 +328,7 @@ function(Utils, State, TwineError, OperationUtils) {
 				return TwineError.create("property", "I can't find a "
 					// Use the original non-compiled property key in the error message.
 					+ propertyDebugName(this.propertyChain.slice(-1)[0])
-					+ " data key in "
+					+ " data name in "
 					+ objectName(obj));
 			}
 			return objectOrMapGet(obj, prop);

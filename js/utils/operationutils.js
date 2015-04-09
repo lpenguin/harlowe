@@ -126,6 +126,7 @@ define(['utils', 'internaltypes/twineerror'], function(Utils, TwineError) {
 			: typeof obj === "boolean" ? "the logic value '" + obj + "'"
 			: (typeof obj === "string" || typeof obj === "number")
 				? 'the ' + typeof obj + " " + Utils.toJSLiteral(obj)
+			: obj === undefined ? "an empty variable"
 			: "...whatever this is";
 	}
 	/*

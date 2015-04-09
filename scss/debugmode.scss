@@ -29,7 +29,6 @@
 			}
 		}
 		&[type=macro] {
-			display:inline-block;
 			
 			/* Colours for generic macros */
 			&:nth-of-type(4n+0)     { background-color: hsla(80, 20%,50%,0.15); }
