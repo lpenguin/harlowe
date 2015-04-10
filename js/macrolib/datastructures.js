@@ -503,10 +503,10 @@ function($, NaturalSort, Macros, Utils, OperationUtils, State, Engine, Assignmen
 		[])
 		
 		/*
-			(saves:)
+			(savedgames:)
 			Returns a datamap of currently saved games.
 		*/
-		("saves", function saves() {
+		("savedgames", function savedgames() {
 			/*
 				This reads all of the localStorage keys with save slot-related names.
 			*/

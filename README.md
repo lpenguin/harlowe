@@ -45,7 +45,7 @@ Rough documentation is at http://twine2.neocities.org/
  * Altered the CSS of `<tw-story>` to use vertical padding instead of vertical margins.
  * Now, division operators (`/` and `%`) will produce an error if used to divide by zero.
  * Reordered the precedence of `contains` - it should now be higher than `is`, so that e.g. `(print: "ABC" contains "A" is true)` should now work as expected.
- * A few variable names in TwineScript are now controlled by the game engine, and are read-only. These are `$Passages` and `$Saves`. See below for explanations as to what purpose these now serve.
+ * Specific variable names in TwineScript are now controlled by the game engine. Currently, it's just `$Passages`. See below for explanations as to what purpose it now serves.
  * Now, giving a datamap to `(print:)` will cause that macro to print out the datamap in a rough HTML `<table>` structure, showing each key and value. This is a superior alternative to just printing "[object Object]".
  * Now, variables and barename properties (as in `$var's property`) must have one non-numeral in their name. This means that, for instance, `$100` is no longer regarded as a valid variable name.
 
@@ -64,8 +64,7 @@ Rough documentation is at http://twine2.neocities.org/
     * `(savegame:)` currently has a significant **limitation**: it will fail if the story's variables are ever `(set:)` to values which aren't strings, numbers, booleans, arrays, datamaps or datasets. If, for instance, you put a changer command in a variable, like `(set: $fancytext to (font:"Arnold Bocklin"))`, `(savegame:)` would no longer work. I must apologise for this, and hope to eliminate this problem in future versions.
     * `(savegame:)` evaluates to a boolean `true` if it succeeds and `false` if it fails (because the browser's local storage is disabled for some reason). You should write something like `(if: (savegame:"A","At the crossroads") is false)[The game could not be saved!]` to provide the reader with an apology if `(savegame:)` fails.
     * `(loadgame:)` takes one value - a slot name such as that provided to `(savegame:)` - and loads a game from that slot, replacing the current game session entirely. Think of it as a `(goto:)` - if it succeeds, the passage is immediately exited.
-    * Harlowe automatically records the names of existing save files in the datamap `$Saves`. The expression `$Saves contains "Slot name"` will be `true` if that slot name is currently used.
-    * The filename of a file in a slot can be displayed thus: `(print: $Saves's "Slot name")`.
+    * `(savedgames:)` provides a datamap mapping the names of full save slots to the names of save files contained within. The expression `(savedgames:) contains "Slot name"` will be `true` if that slot name is currently used. The filename of a file in a slot can be displayed thus: `(print: (savedgames:)'s "Slot name")`.
  * `<script>` tags in passage text will now run. However, their behaviour is not well-defined yet - it's unclear even to me what sort of DOM they would have access to.
  * `<style>` tags in passage text can now be used without needing to escape their contents with the verbatim syntax (backticks).
  * `$Passages` is a special datamap variable that Harlowe controls - it's a "datamap of datamaps", where each data key is the name of a passage in the story, and each data value is a datamap containing information about that passage. For instance, you can obtain the source for the "Cloister" passage with `$Passages's Cloister's source`, or the tags with `$Passages's Cloister's tags`.

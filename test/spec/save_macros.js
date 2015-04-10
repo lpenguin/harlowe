@@ -55,11 +55,10 @@ describe("save macros", function() {
 			var storedItem = localStorage.getItem("(Saved Game Filename) 1");
 			expect(storedItem).toBe("Quux");
 		});
-		it("alters the (saves:) datamap", function() {
-			expectMarkupToPrint("(print: (saves:) contains 'A')",'false');
+		it("alters the (savedgames:) datamap", function() {
+			expectMarkupToPrint("(print: (savedgames:) contains 'A')",'false');
 			expectMarkupToNotError("(savegame:'A','Filename')");
-			expectMarkupToPrint("(print: (saves:)'s A)",'Filename');
-			runPassage("(print: (saves:))");
+			expectMarkupToPrint("(print: (savedgames:)'s A)",'Filename');
 		});
 	});
 	describe("the (loadgame:) macro", function() {

@@ -21,7 +21,7 @@
 		"text-rotate,background,text-style,css,replace,append,prepend,click,mouseover,mouseout,click-replace," +
 		"mouseover-replace,mouseout-replace,click-append,mouseover-append,mouseout-append,click-prepend," +
 		"mouseover-prepend,mouseout-prepend,set,put,move,a,array,range,subarray,shuffled,sorted,rotated," +
-		"datanames,datavalues,history,datamap,dataset,count,display,print,goto,live,stop,savegame,loadgame,link,link-goto"
+		"datanames,datavalues,history,datamap,dataset,count,display,print,goto,live,stop,savegame,savedgames,loadgame,link,link-goto"
 	).split(',').map(insensitiveName);
 	
 	/*
@@ -223,7 +223,8 @@
 				return "background-color: hsla(" + h + "," + s + "%," + l + "%," + e +");";
 			};
 		}
-		var hookBG       = nestedBG(220, 100, 50),
+		var warmHookBG   = nestedBG(40, 100, 50),
+			coolHookBG   = nestedBG(220, 100, 50),
 			macro        = "color: #a84186;",
 			macroName    = macro + "font-style:italic;",
 			twineLink    = "color: #3333cc;",
@@ -235,26 +236,30 @@
 			It will be converted to "[selector], [selector]" etc.
 		*/
 		return {
-			hook:        hookBG(0.05),
-			"hook-2":    hookBG(0.1),
-			"hook-3":    hookBG(0.15),
-			"hook-4":    hookBG(0.2),
-			"hook-5":    hookBG(0.25),
-			"hook-6":    hookBG(0.3),
-			"hook-7":    hookBG(0.35),
-			"hook-8":    hookBG(0.4),
+			// "Warm" hooks
+			hook:        warmHookBG(0.05),
+			"hook-2":    warmHookBG(0.1),
+			"hook-3":    warmHookBG(0.15),
+			"hook-4":    warmHookBG(0.2),
+			"hook-5":    warmHookBG(0.25),
+			"hook-6":    warmHookBG(0.3),
+			"hook-7":    warmHookBG(0.35),
+			"hook-8":    warmHookBG(0.4),
 			
 			// The bottommost element is a hook
-			"^=hook , ^=hook-":    "font-weight:bold;",
+			"^=hook, ^=hook-":    "font-weight:bold;",
 			
 			//TODO: whitespace within collapsed
-			error:       invalid,
+			error:
+				invalid,
 			
-			macro:       macro,
-			macroName:   macroName,
+			macro:
+				macro,
+			macroName:
+				macroName,
 			
 			// The bottommost element is a macro open/close bracket
-			"^=macro ":    "font-weight:bold;",
+			"^=macro ":  "font-weight:bold;",
 			
 			"bold, strong":
 				"font-weight:bold;",
@@ -262,8 +267,20 @@
 				"font-style:italic;",
 			verbatim:
 				"background-color: hsla(0,0%,50%,0.1)",
-			collapsed:
+			"^=collapsed":
 				"font-weight:bold; color: hsl(201, 100%, 30%);",
+			
+			// "Cool" hooks
+			// These are a combination of hooks and collapsed
+			"collapsed":           coolHookBG(0.025),
+			"collapsed.hook":      coolHookBG(0.05),
+			"collapsed.hook-2":    coolHookBG(0.1),
+			"collapsed.hook-3":    coolHookBG(0.15),
+			"collapsed.hook-4":    coolHookBG(0.2),
+			"collapsed.hook-5":    coolHookBG(0.25),
+			"collapsed.hook-6":    coolHookBG(0.3),
+			"collapsed.hook-7":    coolHookBG(0.35),
+			"collapsed.hook-8":    coolHookBG(0.4),
 			
 			twineLink:
 				twineLink,
@@ -288,7 +305,8 @@
 			align:
 				"display:block; color: hsl(14, 99%, 27%); background-color: hsla(14, 99%, 87%, 0.2);",
 			
-			escapedLine: "font-weight:bold; color: hsl(51, 100%, 30%);",
+			escapedLine:
+				"font-weight:bold; color: hsl(51, 100%, 30%);",
 			
 			"identifier, property, belongingProperty, itsProperty, belongingItProperty, belongingItOperator":
 				"color: #0076b2;",
@@ -308,12 +326,16 @@
 					selector = e.split(", ")
 						/*
 							This does a few things:
+							- It converts sequential selectors (separated by a dot).
 							- It adds the cm- CodeMirror prefix to the CSS classes.
 							- It adds the harlowe- storyformat prefix as well.
 							- It converts the keys to a selector (by consequence of the above)
 							and the values to a CSS body.
 						*/
-						.map(function(e) {
+						.map(function map(e) {
+							if (e.indexOf('.') > -1) {
+								return e.split(/\./g).map(map).join('');
+							}
 							if (e.indexOf("^=") === 0) {
 								return "[class^='cm-harlowe-" + e.slice(2) + "']";
 							}
