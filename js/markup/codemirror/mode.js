@@ -262,6 +262,8 @@
 				"font-style:italic;",
 			verbatim:
 				"background-color: hsla(0,0%,50%,0.1)",
+			collapsed:
+				"font-weight:bold; color: hsl(201, 100%, 30%);",
 			
 			twineLink:
 				twineLink,
@@ -320,6 +322,6 @@
 					return a + selector.join(', ') + "{" + this[e] + "}";
 				}.bind(this), '');
 			},
-		}+"";
+		} + "";
 	}());
 }.call(this));

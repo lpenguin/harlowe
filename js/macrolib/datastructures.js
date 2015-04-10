@@ -503,6 +503,35 @@ function($, NaturalSort, Macros, Utils, OperationUtils, State, Engine, Assignmen
 		[])
 		
 		/*
+			(saves:)
+			Returns a datamap of currently saved games.
+		*/
+		("saves", function saves() {
+			/*
+				This reads all of the localStorage keys with save slot-related names.
+			*/
+			var i = 0,
+				savesMap = new Map(),
+				key;
+			/*
+				Iterate over all the localStorage keys using this somewhat clunky do-loop.
+			*/
+			do {
+				key = localStorage.key(i);
+				i += 1;
+				if (key && key.startsWith("(Saved Game) ")) {
+					// Trim off the prefix
+					key = key.slice(13);
+					// Populate the saves map with the save slot name.
+					savesMap.set(key, localStorage.getItem("(Saved Game Filename) " + key));
+				}
+			}
+			while(key);
+			return savesMap;
+		},
+		[])
+		
+		/*
 			DATAMAP MACROS
 		*/
 		/*

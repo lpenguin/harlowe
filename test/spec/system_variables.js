@@ -1,13 +1,5 @@
 describe("system variables", function () {
 	'use strict';
-	describe("the $Saves identifier", function () {
-		it("can't be reassigned", function (){
-			expectMarkupToError("(set:$Saves to 3)");
-		});
-		it("can't be expanded with new properties", function (){
-			expectMarkupToError("(set:$Saves's foo to 3)");
-		});
-	});
 	describe("the $Passages variable", function () {
 		it("can't be reassigned", function (){
 			expectMarkupToError("(set:$Passages to 3)");
