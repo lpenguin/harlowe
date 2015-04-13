@@ -1,8 +1,4 @@
-define([
-	'utils',
-	'systemvariables/passages',
-	'internaltypes/twineerror',
-], function(Utils, Passages, TwineError) {
+define(['utils', 'passages'], function(Utils, Passages) {
 	"use strict";
 	/**
 		State
@@ -20,14 +16,13 @@ define([
 			Note that it's not possible for userland TwineScript to directly access or
 			modify this base object.
 		*/
-		Passages:   Passages,
 		TwineScript_ObjectName: "this story's variables",
 		/*
 			This property means that these property names cannot be set to new
 			user values via (set:). Of course, mutating their contents
 			will cause new versions of them to appear in the Moment's variables map.
 		*/
-		TwineScript_Writeproof: ["Passages"],
+		TwineScript_Writeproof: [],
 	};
 
 	/**
@@ -149,36 +144,6 @@ define([
 		*/
 		get futureLength() {
 			return (timeline.length - 1) - recent;
-		},
-		
-		/**
-			Returns a TwineError if the named passage does not exist in the
-			current state of the Passages store, or is in an invalid datamap format.
-			This should be used for most Passage existence checks.
-			
-			@method passageExists
-			@param {String} passageName Name of the passage to query.
-			@return {TwineError|Boolean} true if it exists, or a TwineError if not.
-		*/
-		passageExists: function(passageName) {
-			var passageMap = this.variables.Passages.get(passageName);
-			if (!passageMap) {
-				return TwineError.create("macrocall",
-					"I can't display the passage '"
-					+ passageName
-					+ "' because it doesn't exist."
-				);
-			}
-			/*
-				Even if it exists, the passageMap could be an author-created-at-runtime
-				datamap, and as such should be carefully examined.
-			*/
-			if (!(passageMap instanceof Map) || !passageMap.has('source')) {
-				return TwineError.create("operation",
-					"The passage '" + name + "' isn't a datamap with a 'source' data key."
-				);
-			}
-			return true;
 		},
 
 		/**

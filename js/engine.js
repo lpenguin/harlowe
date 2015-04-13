@@ -1,5 +1,5 @@
-define(['jquery', 'utils', 'utils/selectors', 'state', 'section'],
-function ($, Utils, Selectors, State, Section) {
+define(['jquery', 'utils', 'utils/selectors', 'state', 'section', 'passages'],
+function ($, Utils, Selectors, State, Section, Passages) {
 	"use strict";
 	
 	/**
@@ -86,10 +86,7 @@ function ($, Utils, Selectors, State, Section) {
 			// Temporary measure: must change when customisable links are implemented.
 			t8n = "instant",
 			// The passage
-			// This must use State.variables.Passages instead of SystemVariables/Passages
-			// in case the author (set:) a new datamap to it.
-			passagesVar = State.variables.Passages,
-			passageData = passagesVar.get(name),
+			passageData = Passages.get(name),
 			oldPassages,
 			section,
 			// The source to render, which is drawn from both the passageData and the
@@ -150,19 +147,19 @@ function ($, Utils, Selectors, State, Section) {
 		*/
 		source =
 			(options.debug
-				? passagesVar.getTagged('debug-header')
+				? Passages.getTagged('debug-header')
 					.map(setupPassageElement.bind(0, "debug-header"))
 					.join('')
 				: '')
-			+ passagesVar.getTagged('header')
+			+ Passages.getTagged('header')
 			.map(setupPassageElement.bind(0, "header"))
 			.join('')
 			+ source
-			+ passagesVar.getTagged('footer')
+			+ Passages.getTagged('footer')
 			.map(setupPassageElement.bind(0, "footer"))
 			.join('')
 			+ (options.debug
-				? passagesVar.getTagged('debug-footer')
+				? Passages.getTagged('debug-footer')
 					.map(setupPassageElement.bind(0, "debug-footer"))
 					.join('')
 				: '')
@@ -175,12 +172,12 @@ function ($, Utils, Selectors, State, Section) {
 		*/
 		if (State.pastLength <= 0) {
 			if (options.debug) {
-				source = passagesVar.getTagged('debug-startup')
+				source = Passages.getTagged('debug-startup')
 					.map(setupPassageElement.bind(0, "debug-startup"))
 					.join('')
 					+ source;
 			}
-			source = passagesVar.getTagged('startup')
+			source = Passages.getTagged('startup')
 				.map(setupPassageElement.bind(0, "startup"))
 				.join('')
 				+ source;

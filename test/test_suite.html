@@ -13,7 +13,7 @@ require(["markup/lexer","markup/patterns","markup/markup","harlowe"]);
 <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/jasmine/2.2.1/boot.js"></script>
 <script role="script" type="text/twine-javascript">
 window.createPassage = function(text, name, tags) {
-	State.variables.Passages.set(name, new Map([
+	Passages.set(name, new Map([
 		["source", text],
 		["name", name],
 		["tags", tags],
@@ -44,7 +44,7 @@ window.expectMarkupNotToError = window.expectMarkupToNotError = function(markup)
 };
 window.clearState = function() {
 	State.reset();
-	State.variables.Passages.clear();
+	Passages.clear();
 };
 </script>
 <script>
@@ -85,8 +85,6 @@ afterAll(function() {
 <script src="spec/interaction_macros.js"></script>
 
 <script src="spec/save_macros.js"></script>
-
-<script src="spec/system_variables.js"></script>
 
 <script src="spec/setup_passages.js"></script>
 

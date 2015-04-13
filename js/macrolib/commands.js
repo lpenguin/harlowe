@@ -1,5 +1,5 @@
-define(['macros', 'utils', 'state', 'engine', 'internaltypes/twineerror', 'utils/operationutils'],
-function(Macros, Utils, State, Engine, TwineError, OperationUtils) {
+define(['macros', 'utils', 'state', 'passages', 'engine', 'internaltypes/twineerror', 'utils/operationutils'],
+function(Macros, Utils, State, Passages, Engine, TwineError, OperationUtils) {
 	"use strict";
 	
 	/*d:
@@ -81,11 +81,14 @@ function(Macros, Utils, State, Engine, TwineError, OperationUtils) {
 						This and the next check must be made now, because the Passages
 						datamap could've been tinkered with since this was created.
 					*/
-					var error;
-					if ((error = TwineError.containsError(State.passageExists(name)))) {
-						return error;
+					if (!Passages.has(name)) {
+						return TwineError.create("macrocall",
+							"I can't (display:) the passage '"
+							+ name
+							+ "' because it doesn't exist."
+						);
 					}
-					return Utils.unescape(State.variables.Passages.get(name).get('source'));
+					return Utils.unescape(Passages.get(name).get('source'));
 				},
 			};
 		},
@@ -238,9 +241,12 @@ function(Macros, Utils, State, Engine, TwineError, OperationUtils) {
 					/*
 						First, of course, check for the passage's existence.
 					*/
-					var error = TwineError.containsError(State.passageExists(name));
-					if (error) {
-						return error;
+					if (!Passages.has(name)) {
+						return TwineError.create("macrocall",
+							"I can't (go-to:) the passage '"
+							+ name
+							+ "' because it doesn't exist."
+						);
 					}
 					/*
 						When a passage is being rendered, <tw-story> is detached from the main DOM.
@@ -435,11 +441,6 @@ function(Macros, Utils, State, Engine, TwineError, OperationUtils) {
 							Saved games are prefixed with (Saved Game Filename) to avoid collisions.
 						*/
 						"(Saved Game Filename) " + slotName, fileName);
-					/*
-						Update the $Saves datamap with this change, replacing an existing
-						filename if it was there.
-					*/
-					State.variables.Saves.set(slotName, fileName);
 					return true;
 				} catch(e) {
 					/*

@@ -2,7 +2,9 @@
 
 Rough documentation is at http://twine2.neocities.org/
 
-###1.1.0 changes (unreleased):
+###2.0.0 changes (unreleased):
+
+This version is numbered 2.0.0 because the alterations, while relatively minor, nonetheless constitute a break with backwards-compatibility.
 
 ####Bugfixes
 
@@ -45,9 +47,9 @@ Rough documentation is at http://twine2.neocities.org/
  * Altered the CSS of `<tw-story>` to use vertical padding instead of vertical margins.
  * Now, division operators (`/` and `%`) will produce an error if used to divide by zero.
  * Reordered the precedence of `contains` - it should now be higher than `is`, so that e.g. `(print: "ABC" contains "A" is true)` should now work as expected.
- * Specific variable names in TwineScript are now controlled by the game engine. Currently, it's just `$Passages`. See below for explanations as to what purpose it now serves.
- * Now, giving a datamap to `(print:)` will cause that macro to print out the datamap in a rough HTML `<table>` structure, showing each key and value. This is a superior alternative to just printing "[object Object]".
+ * Now, giving a datamap to `(print:)` will cause that macro to print out the datamap in a rough HTML `<table>` structure, showing each name and value. This is a superior alternative to just printing "[object Object]".
  * Now, variables and barename properties (as in `$var's property`) must have one non-numeral in their name. This means that, for instance, `$100` is no longer regarded as a valid variable name.
+ * Now, datamaps may have numbers as data names: `(datamap: 1, "A")` is now accepted. However, due to their differing types, the number `1` and the string `"1"` are treated as separate names.
 
 ####New Features
 
@@ -67,8 +69,8 @@ Rough documentation is at http://twine2.neocities.org/
     * `(savedgames:)` provides a datamap mapping the names of full save slots to the names of save files contained within. The expression `(savedgames:) contains "Slot name"` will be `true` if that slot name is currently used. The filename of a file in a slot can be displayed thus: `(print: (savedgames:)'s "Slot name")`.
  * `<script>` tags in passage text will now run. However, their behaviour is not well-defined yet - it's unclear even to me what sort of DOM they would have access to.
  * `<style>` tags in passage text can now be used without needing to escape their contents with the verbatim syntax (backticks).
- * `$Passages` is a special datamap variable that Harlowe controls - it's a "datamap of datamaps", where each data key is the name of a passage in the story, and each data value is a datamap containing information about that passage. For instance, you can obtain the source for the "Cloister" passage with `$Passages's Cloister's source`, or the tags with `$Passages's Cloister's tags`.
-    * You can also edit these datamaps, and rewrite the story while it's being played - or, add a new passage datamap to `$Passages`, by running `(set: $Passages's ("My New Passage") to (datamap: "code", "My passage's text", "tags", (a:"my-tag", "my-tag-2"))` etc.
+ * Added `(passage:)` - similar to the Twine 1 function, it gives information about the current passage. A datamap, to be precise, containing a `name` string, a `source` string, and a `tags` array of strings. `(print: (passage:)'s name)` prints the name, and so forth.
+    * But, providing a string to `(passage:)` will provide information about the passage with that name - `(passage: "Estuary")` provides a datamap of information about the Estuary passage, or an error if it doesn't exist.
  * Added `(position-x:)` and `(position-y:)`: shorthands for giving a hook the CSS property `position:absolute` and a percentage `left` or `top`. The percentage argument is a number, ostensibly from 0 to 1, but potentially any number. One problem: while it should position the hook relative to the passage, it doesn't work correctly when nested - because, of course, `position:absolute` uses the nearest positioned element.
  * Added `(css:)` as a 'last resort' solution for styling elements, which is essentially the same as a raw HTML `<span style='...'>` tag, but can be combined with other changer commands. I feel obliged to offer this to provide some CSS-familiar users some access to higher functionality, even though it's not intended for general use in place of `(text-style:)`, `(position-x:)` or whatever.
  * Added `(align:)`, a macro form of the aligner syntax. It accepts a string containing an ASCII arrow of the same type that makes up the syntax ('==>', '=><==', etc). 
@@ -78,7 +80,7 @@ Rough documentation is at http://twine2.neocities.org/
     * Also, an extra variant has been added: *beginning* a line with `\` will cause it and the previous line break to be removed. The main purpose of this addition is to let you begin multi-line hooks with `[\` and end them with `\]`, letting them fully occupy their own lines.
  * Added `(shuffled:)`, which is identical to `(array:)`, except that it places the provided items in a random order. (You can shuffle an existing array by using the spread syntax, `(shuffled: ...$arr)`, of course.  To avoid errors where the spread syntax is not given, `(shuffled:)` requires two or more arguments.)
  * Added `(sorted:)`, which is similar to `(array:)`, except that it requires string elements, and orders the strings in alphanumeric sort order, rather than the order in which they were provided.
-    * Note that this is not strict ASCII order: "A2" is sorted before "A11", and "é" is sorted before "f". However, it still uses English locale comparisons (for instance, in Swedish "ä" is sorted after "z", whereas in English and German it comes before "b").
+    * Note that this is not strict ASCII order: "A2" is sorted before "A11", and "é" is sorted before "f". However, it still uses English locale comparisons (for instance, in Swedish "ä" is sorted after "z", whereas in English and German it comes before "b"). A means of changing the locale should be provided in the future.
  * Added `(rotated:)`, which takes a number, followed by several values, and rotates the values' positions by the number. For instance, `(rotated: 1, 'Bug','Egg','Bog')` produces the array `(a:'Bog','Bug','Egg')`. Think of it as moving each item to its current position plus the number (so, say, the item in 1st goes to 1 + 1 = 2nd). Its main purpose is to transform arrays, which can be provided using the spread `...` syntax.
  * Added `(datanames:)`, which takes a single datamap, and returns an array containing all of the datamap's names, alphabetised.
  * Added `(datavalues:)`, which takes a single datamap, and returns an array containing all of the datamap's values, alphabetised by their names were.

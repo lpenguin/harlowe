@@ -192,7 +192,9 @@ define(['utils', 'markup', 'twinescript/compiler', 'internaltypes/twineerror'], 
 					}
 					case "scriptStyleTag":
 					case "tag": {
-						out += token.text;
+						out += token.text.startsWith('</')
+							? token.text
+							: token.text.replace(/>$/, " data-raw>");
 						break;
 					}
 					case "sub": // Note: there's no sub syntax yet.

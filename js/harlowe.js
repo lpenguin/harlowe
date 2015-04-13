@@ -21,8 +21,8 @@ require.config({
 		'jqueryplugins',
 	],
 });
-require(['jquery', 'renderer', 'state', 'engine', 'utils', 'utils/selectors', 'macrolib', 'repl'],
-		function ($, Renderer, State, Engine, Utils, Selectors) {
+require(['jquery', 'renderer', 'state', 'engine', 'passages', 'utils', 'utils/selectors', 'macrolib', 'repl'],
+		function ($, Renderer, State, Engine, Passages, Utils, Selectors) {
 	"use strict";
 	/**
 		Harlowe, the default story format for Twine 2.

@@ -278,7 +278,7 @@ describe("basic twinemarkup syntax", function() {
 			);
 		});
 	});
-
+	
 	describe("verbatim syntax", function() {
 		it("suppresses all other syntax between ` and `", function() {
 			expectMarkupToBecome(
@@ -359,6 +359,10 @@ describe("basic twinemarkup syntax", function() {
 				"B C"
 			);
 		});
+		it("leaves raw HTML <br> tags as is", function() {
+			var p = runPassage("{\nA<br>\n<br>B\n}");
+			expect(p.find('br').length).toBe(2);
+		});
 		it("collapses runs of whitespace between non-whitespace down to a single space", function() {
 			expectMarkupToPrint(
 				"{   A   B   }",
@@ -400,7 +404,7 @@ describe("basic twinemarkup syntax", function() {
 			);
 		});
 		it("won't affect text inside HTML tags", function() {
-			var p = runPassage("{<span title='   '> <br> </span>}");
+			var p = runPassage("{<span title='   '> </span>}");
 			expect(p.find('span').attr('title')).toBe("   ");
 			expect(p.text()).toBe("");
 		});

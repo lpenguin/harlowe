@@ -6,16 +6,18 @@ define([
 	'utils/operationutils',
 	'state',
 	'engine',
+	'passages',
 	'datatypes/assignmentrequest',
 	'internaltypes/twineerror',
 	'internaltypes/twinenotifier'],
-function($, NaturalSort, Macros, Utils, OperationUtils, State, Engine, AssignmentRequest, TwineError, TwineNotifier) {
+function($, NaturalSort, Macros, Utils, OperationUtils, State, Engine, Passages, AssignmentRequest, TwineError, TwineNotifier) {
 	"use strict";
 	
 	var
-		rest = Macros.TypeSignature.rest,
+		optional   = Macros.TypeSignature.optional,
+		rest       = Macros.TypeSignature.rest,
 		zeroOrMore = Macros.TypeSignature.zeroOrMore,
-		Any = Macros.TypeSignature.Any;
+		Any        = Macros.TypeSignature.Any;
 	
 	Macros.add
 		/*d:
@@ -495,12 +497,24 @@ function($, NaturalSort, Macros, Utils, OperationUtils, State, Engine, Assignmen
 		/*
 			(history:)
 			Returns the array of past passage names, directly from State.
+			(It should be changed to return Passage datamaps, but, it is what it is.)
 			This is used to implement the visited() function from Twine 1.
 		*/
 		("history", function history() {
 			return State.pastPassageNames();
 		},
 		[])
+		
+		/*
+			(passage:)
+			Returns the array of past passage names, directly from State.
+			This is used to implement the visited() function from Twine 1.
+		*/
+		("passage", function passage(_, passageName) {
+			return Passages.get(passageName || State.passage)
+				|| TwineError.create('macrocall', "There's no passage named '" + passageName + "' in this story.");
+		},
+		[optional(String)])
 		
 		/*
 			(savedgames:)

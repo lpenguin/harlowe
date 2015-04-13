@@ -14,7 +14,7 @@
 		This is a manually generated list of existent macros in Harlowe.
 	*/
 	var validMacros = (
-		"text,string,substring,num,number,if,unless,elseif,else,nonzero,first-nonzero," +
+		"text,string,substring,num,number,if,unless,elseif,else,nonzero,first-nonzero,passage," +
 		"nonempty,first-nonempty,weekday,monthday,currenttime,currentdate,min,max,abs,sign,sin,cos,tan,floor," +
 		"round,ceil,pow,exp,sqrt,log,log10,log2,random,either,alert,prompt,confirm,openURL,reload,gotoURL," +
 		"pageURL,hook,transition,t8n,font,align,position-y,position-x,text-colour,text-color,color,colour," +

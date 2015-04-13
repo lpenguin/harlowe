@@ -1,5 +1,5 @@
-define(['jquery', 'macros', 'utils', 'utils/selectors', 'state', 'engine', 'datatypes/changercommand', 'internaltypes/twineerror'],
-function($, Macros, Utils, Selectors, State, Engine, ChangerCommand, TwineError) {
+define(['jquery', 'macros', 'utils', 'utils/selectors', 'state', 'passages', 'engine', 'datatypes/changercommand'],
+function($, Macros, Utils, Selectors, State, Passages, Engine, ChangerCommand) {
 	"use strict";
 	/*
 		This module defines the behaviour of links in Harlowe - both
@@ -104,7 +104,7 @@ function($, Macros, Utils, Selectors, State, Engine, ChangerCommand, TwineError)
 				TwineScript_ObjectName: "a (link-goto:) command",
 				
 				TwineScript_Print: function() {
-					var visited = -1, error, passageName;
+					var visited = -1, passageName;
 					/*
 						The string representing the passage name is evaluated as TwineMarkup here -
 						the link syntax accepts TwineMarkup in both link and passage position
@@ -132,7 +132,7 @@ function($, Macros, Utils, Selectors, State, Engine, ChangerCommand, TwineError)
 					/*
 						Check that the passage is indeed available.
 					*/
-					if ((error = TwineError.containsError(State.passageExists(passageName)))) {
+					if (!Passages.has(passageName)) {
 						/*
 							Since the passage isn't available, create a broken link.
 							TODO: Maybe this should be an error as well??

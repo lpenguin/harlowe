@@ -229,7 +229,7 @@ function($, Utils, Selectors, Renderer, Environ, State, HookUtils, HookSet, Pseu
 		/*
 			- If the node contains <br>, replace with a single space.
 		*/
-		Utils.findAndFilter(elem, 'br')
+		Utils.findAndFilter(elem, 'br:not([data-raw])')
 			.filter(noVerbatim)
 			.replaceWith(new Text(" "));
 		

@@ -23,12 +23,6 @@ describe("setup passages", function() {
 				expect(p.find('tw-include').text()).toBe("Gee");
 				expect(p.text()).toBe("Geewow");
 			});
-			it("tagged passages can be removed", function() {
-				createPassage("(set: $red to $red + 1)","header",[header]);
-				expectMarkupToPrint("$red","1");
-				expectMarkupToPrint("$red(set:$Passages's header's tags to (a:))","2");
-				expectMarkupToPrint("$red","2");
-			});
 			it("tagged passages run in alphabetical order", function() {
 				createPassage("(set: $red to 'A')","header1",[header]);
 				createPassage("(set: $red to $red + 'B')","header2",[header]);
@@ -66,14 +60,6 @@ describe("setup passages", function() {
 				var p = runPassage("Gee");
 				expect(p.find('tw-include').text()).toBe("wow");
 				expect(p.text()).toBe("Geewow");
-			});
-			it("tagged passages can be removed", function() {
-				createPassage("(set: $red to $red + 1)","footer",[footer]);
-				expectMarkupToPrint("$red","0");
-				expectMarkupToPrint("$red","1");
-				expectMarkupToPrint("$red(set:$Passages's footer's tags to (a:))","2");
-				expectMarkupToPrint("$red","3");
-				expectMarkupToPrint("$red","3");
 			});
 			it("tagged passages run in alphabetical order", function() {
 				createPassage("(set: $red to 'A')","footer1",[footer]);

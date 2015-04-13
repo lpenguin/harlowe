@@ -1,15 +1,23 @@
 describe("HTML in twinemarkup", function() {
 	'use strict';
-
+	function expectHTMLToBecome(text, expected) {
+		var r = runPassage(text);
+		r.find('[data-raw]').removeAttr('data-raw');
+		expect(r.html()).toBe(expected);
+	}
+	
 	describe("span-level tags", function() {
+		it("are rendered as HTML, with an added data-raw attribute", function() {
+			expect(runPassage("<b>Bee</b>").find('b[data-raw]').length).toBe(1);
+		});
 		it("turn into their respective elements", function() {
-			expectMarkupToBecome(
+			expectHTMLToBecome(
 				"<i>What</i> <b>is</b> <u>this</u>?",
 				"<i>What</i> <b>is</b> <u>this</u>?"
 			);
 		});
 		it("persist across line breaks", function() {
-			expectMarkupToBecome(
+			expectHTMLToBecome(
 				"<i>What\n</i> <b>is\n</b> <u>this\n</u>?",
 				"<i>What<br></i> <b>is<br></b> <u>this<br></u>?"
 			);
@@ -17,7 +25,7 @@ describe("HTML in twinemarkup", function() {
 	});
 	describe("block-level tags", function() {
 		it("turn into their respective elements", function() {
-			expectMarkupToBecome(
+			expectHTMLToBecome(
 				"<div>Hey</div>?",
 				"<div>Hey</div>?"
 			);
