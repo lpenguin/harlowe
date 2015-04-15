@@ -238,7 +238,7 @@ define(['utils', 'macros', 'utils/operationutils', 'internaltypes/twineerror'], 
 			TODO: Should this actually be a Changer?? For instance:
 			(set: $robotAdvice to (font:Consolas) + (if: $choseTheRobot))
 		*/
-		("if", function _if(section, expr) {
+		("if", function _if(_, expr) {
 			return !!expr;
 		},
 		[Boolean])
@@ -253,7 +253,7 @@ define(['utils', 'macros', 'utils/operationutils', 'internaltypes/twineerror'], 
 			
 			For more information, see the documentation of (if:).
 		*/
-		("unless", function unless(section, expr) {
+		("unless", function unless(_, expr) {
 			return !expr;
 		},
 		[Boolean])

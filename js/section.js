@@ -24,9 +24,8 @@ function($, Utils, Selectors, Renderer, Environ, State, HookUtils, HookSet, Pseu
 		
 		The big deal of having multiple Section objects (and the name Section itself
 		as compared to "passage" or "screen") is that multiple simultaneous passages'
-		(such as (display:)ed passages, or stretchtext mode) code should be
-		hygenically scoped. Hook references in one passage cannot affect another,
-		and so forth.
+		(such as stretchtext mode) code can be hygenically scoped. Hook references
+		in one passage cannot affect another, and so forth.
 		
 		@class Section
 		@static
@@ -53,8 +52,8 @@ function($, Utils, Selectors, Renderer, Environ, State, HookUtils, HookSet, Pseu
 		*/
 		if (result && result.changer) {
 			if (!nextHook.length) {
-				expr.replaceWith(TwineError.create("macrocall",
-					"The (" + result.macroName + ":) macro should be assigned to a variable or attached to a hook."
+				expr.replaceWith(TwineError.create("changer",
+					"The (" + result.macroName + ":) command should be assigned to a variable or attached to a hook."
 				), expr.attr('title'));
 			}
 			else {
@@ -526,7 +525,7 @@ function($, Utils, Selectors, Renderer, Environ, State, HookUtils, HookSet, Pseu
 				section = this;
 				
 			/*
-				Also define a property linking it back to this section.
+				Define an additional desc property linking it back to this section.
 				This is used by enchantment macros to determine where to register
 				their enchantments to.
 			*/
@@ -575,15 +574,25 @@ function($, Utils, Selectors, Renderer, Environ, State, HookUtils, HookSet, Pseu
 				return;
 			}
 			
+			
 			/*
-				Render the source into the target.
+				Infinite regress can occur from a couple of causes: (display:) loops, or evaluation loops
+				caused by something as simple as (set: $x to "$x")$x.
+				So here's a rudimentary check: bail if the stack length has now proceeded over 50 levels deep.
+			*/
+			if (this.stack.length >= 50) {
+				dom = TwineError.create("infinite", "Printing this expression may have trapped me in an infinite loop.")
+					.render(target.attr('title')).replaceAll(target);
+			}
+			/*
+				Otherwise, render the source into the target.
 				
 				When a non-jQuery is the target in the descriptor, it is bound to be
 				a HookSet or PseudoHookSet, and each word or hook within that set
 				must be rendered separately. This simplifies the implementation
 				of render() considerably.
 			*/
-			if (!(desc.target instanceof $)) {
+			else if (!(desc.target instanceof $)) {
 				desc.target.forEach(function(e) {
 					/*
 						Generate a new descriptor which has the same properties
@@ -600,6 +609,7 @@ function($, Utils, Selectors, Renderer, Environ, State, HookUtils, HookSet, Pseu
 				*/
 				dom = desc.render();
 			}
+			
 			/*
 				Special case for hooks inside existing collapsing syntax:
 				their whitespace must collapse as well.

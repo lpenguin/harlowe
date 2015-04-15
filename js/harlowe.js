@@ -81,7 +81,6 @@ require(['jquery', 'renderer', 'state', 'engine', 'passages', 'utils', 'utils/se
 				This convoluted line retrieves the error stack, if it exists, and pretty-prints it with
 				URL references (in brackets) removed. If it doesn't exist, the message is used instead.
 			*/
-			console.log.apply(console,arguments);
 			var stack = (error && error.stack && ("\n" + error.stack.replace(/\([^\)]+\)/g,'') + "\n")) || ("(" + message + ")\n");
 			alert("Sorry to interrupt, but this page's code has got itself in a mess. "
 				+ stack

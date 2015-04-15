@@ -40,6 +40,9 @@ describe("basic command macros", function() {
 				+ '$p',
 				"Count Dracula");
 		});
+		it("will error if an infinite regress is created", function() {
+			expectMarkupToError("(set: $x to '$x')(print: $x)");
+		});
 	});
 	describe("the (display:) macro", function() {
 		it("requires exactly 1 string argument", function() {
@@ -71,6 +74,10 @@ describe("basic command macros", function() {
 			expect(expr.children().is('b')).toBe(true);
 		});
 		it("produces an error if the passage doesn't exist", function() {
+			expectMarkupToError("(display: 'grault')");
+		});
+		it("will error if an infinite regress is created", function() {
+			createPassage("(display: 'grault')", "grault");
 			expectMarkupToError("(display: 'grault')");
 		});
 	});

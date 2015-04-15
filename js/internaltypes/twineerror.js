@@ -10,15 +10,17 @@ define(['jquery', 'utils'], function($, Utils) {
 		This dictionary supplies extra explanations for the error types.
 	*/
 	var errorExplanations = {
-		syntax: "The markup seems to contain a mistake.",
-		saving: "I tried to save or load the game, but I couldn't do it.",
-		operation: "I tried to use an operation on some data, but the data's type was incorrect.",
-		macrocall: "I tried to use a macro, but its call wasn't written correctly.",
-		datatype: "I tried to use a macro, but was given the wrong type of data to it.",
-		keyword: "I was given a keyword in a way that I didn't understand.",
-		property: "I tried to access a value in a string/array/datamap, but I couldn't find it.",
+		syntax:        "The markup seems to contain a mistake.",
+		saving:        "I tried to save or load the game, but I couldn't do it.",
+		operation:     "I tried to use an operation on some data, but the data's type was incorrect.",
+		macrocall:     "I tried to use a macro, but its call wasn't written correctly.",
+		datatype:      "I tried to use a macro, but was given the wrong type of data to it.",
+		keyword:       "I was given a keyword in a way that I didn't understand.",
+		changer:       "This is a command to change a hook, but it isn't being used correctly.",
+		infinite:      "I almost ended up doing the same thing over and over, forever.",
+		property:      "I tried to access a value in a string/array/datamap, but I couldn't find it.",
 		unimplemented: "I currently don't have this particular feature. I'm sorry.",
-		javascript: "This error message was reported by your browser's Javascript engine. "
+		javascript:    "This error message was reported by your browser's Javascript engine. "
 			+ "I don't understand it either, but it usually means that an expression was badly written.",
 	},
 	
