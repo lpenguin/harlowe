@@ -40,8 +40,10 @@ define(['jquery', 'utils', 'renderer'], function($, Utils, Renderer) {
 		//                            Used by (position-x:), etc.
 		styles:           null,
 		
-		// {Object} [attr]            Attributes to apply to the <tw-expression> using $.fn.attr().
-		//                            Used only by (hook:).
+		// {Array} [attr]             Array of objects of attributes to apply to the <tw-expression> using $.fn.attr().
+		//                            Some attributes' values can be functions that reference existing values. Therefore,
+		//                            rather than a single object, this must be an array of objects.
+		//                            Used by (hook:) and (css:).
 		attr:             null,
 		
 		// {Object} [data]            Data to attach to the <tw-expression> using $.fn.attr().

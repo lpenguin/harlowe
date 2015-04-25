@@ -14,16 +14,32 @@ describe("hooks", function () {
 			runPassage("[foo]<hook|");
 			expect($('tw-passage').find('tw-hook').text()).toBe('foo');
 		});
+		it("<tw-hook> elements have name attributes", function (){
+			runPassage("[foo]<grault|");
+			expect($('tw-passage').find('tw-hook').attr('name')).toBe('grault');
+		});
 	});
 	describe("macro attached hooks", function () {
 		it("consist of a macro, then a hook", function (){
-			expectMarkupToPrint("|hook>[foo]","foo");
+			expectMarkupToPrint("(if:true)[foo]","foo");
 		});
 		it("may not have a mirrored nametag on the other side", function (){
 			expectMarkupToError("(if:true)[foo]<hook|","foo");
 		});
 		it("will error if the hook has no closing bracket", function (){
 			expectMarkupToError("(if:true)[(if:true)[Good golly]");
+		});
+	});
+	describe("the (hook:) macro", function () {
+		it("requires exactly 1 string argument", function() {
+			expectMarkupToError("(hook:)");
+			expectMarkupToError("(hook:1)");
+			expectMarkupToError("(hook:'A','B')");
+			expectMarkupToNotError("(hook:'A')");
+		});
+		it("gives a name to the hook", function (){
+			runPassage("(hook:'grault')[foo]");
+			expect($('tw-passage').find('tw-hook').attr('name')).toBe('grault');
 		});
 	});
 });

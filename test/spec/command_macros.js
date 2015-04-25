@@ -86,10 +86,10 @@ describe("basic command macros", function() {
 		function waitForGoto(callback) {
 			setTimeout(function f() {
 				if($('tw-passage:last-of-type tw-expression[name=go-to]').length > 0) {
-					return setTimeout(f, 2);
+					return setTimeout(f, 20);
 				}
 				callback();
-			}, 2);
+			}, 20);
 		}
 		
 		it("requires exactly 1 string argument", function() {

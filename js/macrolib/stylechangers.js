@@ -36,9 +36,7 @@ function($, Macros, Utils, Selectors, Colour, ChangerCommand, TwineError) {
 				return ChangerCommand.create("hook", [name]);
 			},
 			function(d, name) {
-				d.attr = Object.assign(d.attr || {}, {
-					name: name
-				});
+				d.attr.push({name: name});
 			},
 			[String]
 		)
