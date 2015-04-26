@@ -106,30 +106,18 @@
 				doc.on('beforeChange', beforeChange);
 				
 				return {
-					tree: null,
 					pos: 0,
 				};
-			},
-			/*
-				Since we can't cheaply serialise the entire tree for each state,
-				we just resort to forcing a re-creation every time one of these copied
-				states is referred to.
-			*/
-			copyState: function(state) {
-				var ret = {
-					tree: state.tree,
-					pos: state.pos,
-				};
-				state.tree = null;
-				return ret;
 			},
 			blankLine: function(state) {
 				state.pos++;
 			},
 			token: function token(stream, state) {
-				var currentBranch, currentToken;
+				var currentBranch, currentToken,
+					newText = CodeMirror.modes.harlowe.cm.doc.getValue();
 				
-				if (!state.tree) {
+				if (state.text !== newText) {
+					state.text = newText;
 					/*
 						CodeMirror doesn't allow modes to have full access to the text of
 						the document. This hack overcomes this respectable limitation:
@@ -137,7 +125,7 @@
 						the CodeMirror modes object - and here, we retrieve it,
 						and use it to compute a full parse tree.
 					*/
-					state.tree = lex(CodeMirror.modes.harlowe.cm.doc.getValue());
+					state.tree = lex(state.text);
 				}
 				/*
 					We must render each token using the cumulative styles of all parent tokens

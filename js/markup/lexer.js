@@ -27,6 +27,21 @@
 			}
 		}
 	}
+	/*
+		A "private" utility function called by addChild and foldTokens,
+		which sets up the token's private childAt object, mapping
+		its children to character positions. This is used to make pathAt()
+		and tokenAt() lookups fast, which is important given that the syntax
+		highlighter relies on them heavily.
+	*/
+	function cacheChildPos(token, childToken) {
+		var i;
+		token.childAt = token.childAt || {};
+		for(i = childToken.start; i < childToken.end; i += 1) {
+			token.childAt[i] = childToken;
+		}
+	}
+	
 	Token.prototype = {
 		constructor: Token,
 		
@@ -71,6 +86,7 @@
 				Having finished, push the child token to the children array.
 			*/
 			this.children.push(childToken);
+			cacheChildPos(this, childToken);
 			/*
 				Let other things probe and manipulate the childToken; return it.
 			*/
@@ -126,6 +142,12 @@
 				return null;
 			}
 			/*
+				If the childAt cache exists, use that to obtain the answer.
+			*/
+			if (this.childAt) {
+				return (this.childAt[index] && this.childAt[index].tokenAt(index)) || this;
+			}
+			/*
 				Ask each child, if any, what their deepest token
 				for this index is.
 			*/
@@ -152,6 +174,12 @@
 			// First, a basic range check.
 			if (index < this.start || index >= this.end) {
 				return [];
+			}
+			/*
+				If the childAt cache exists, use that to obtain the answer.
+			*/
+			if (this.childAt) {
+				return ((this.childAt[index] && this.childAt[index].pathAt(index)) || []).concat(this);
 			}
 			/*
 				Ask each child, if any, what their deepest token
@@ -454,6 +482,9 @@
 			*/
 			(backTokenIndex) - (frontTokenIndex + 1)
 		);
+		backToken.children.forEach(function(token) {
+			cacheChildPos(backToken, token);
+		});
 		
 		/*
 			Change its type to the actual type, without the "Back" suffix.
@@ -505,7 +536,12 @@
 			Remove the Front token.
 		*/
 		parentToken.children.splice(frontTokenIndex, 1);
-
+		/*
+			Having now reconfigured the backToken as the sole token,
+			the positions cache must be altered.
+		*/
+		cacheChildPos(parentToken, backToken);
+		
 		/*
 			Oh, before I forget: if the new token is a macro, we'll have to lex()
 			its children all again. Sorry ;_;
@@ -514,6 +550,7 @@
 		*/
 		if (backToken.type === "macro") {
 			backToken.children = [];
+			backToken.childAt = {};
 			lex(backToken);
 		}
 	}
@@ -535,6 +572,7 @@
 				text:                    src,
 				innerText:               src,
 				children:                 [],
+				childAt:                  {},
 				innerMode:   Lexer.startMode,
 			}));
 			return ret;
