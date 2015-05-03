@@ -50,6 +50,7 @@ This version is numbered 2.0.0 because the alterations, while relatively minor, 
  * Now, giving a datamap to `(print:)` will cause that macro to print out the datamap in a rough HTML `<table>` structure, showing each name and value. This is a superior alternative to just printing "[object Object]".
  * Now, variables and barename properties (as in `$var's property`) must have one non-numeral in their name. This means that, for instance, `$100` is no longer regarded as a valid variable name.
  * Now, datamaps may have numbers as data names: `(datamap: 1, "A")` is now accepted. However, due to their differing types, the number `1` and the string `"1"` are treated as separate names.
+ * HTML-style comments `<!--` and `-->` can now be nested, unlike in actual HTML.
 
 ####New Features
 

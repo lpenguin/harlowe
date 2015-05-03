@@ -1,6 +1,6 @@
 (function() {
 	'use strict';
-	var lex, harloweStyles, cm, beforeChange;
+	var lex, harloweStyles, cm;
 	
 	/*
 		First, a preamble of helpers.
@@ -42,7 +42,7 @@
 		This allows 'backtrack' styling, such as unclosed brackets, to be possible
 		under CodeMirror.
 	*/
-	beforeChange = function(_, changeObj) {
+	function forceFullChange(changeObj, oldText) {
 		if (!changeObj.update) {
 			return;
 		}
@@ -50,10 +50,12 @@
 			First, obtain the text area's full text line array, truncated
 			to just the line featuring the change.
 		*/
-		var line = changeObj.from.line,
-			newText = cm.doc.getValue()
-				.split('\n')
-				.slice(0, changeObj.from.line + 1);
+		var line = changeObj.from.line;
+		
+		var newText = oldText
+			.split('\n')
+			.slice(0, changeObj.from.line + 1);
+		
 		/*
 			Join it with the change's text.
 		*/
@@ -65,16 +67,50 @@
 			If the change is multi-line, the additional lines should be added.
 		*/
 		newText = newText.concat(changeObj.text.slice(1));
+		
 		/*
 			Now, register this change.
 		*/
 		changeObj.update({line:0,ch:0}, changeObj.to, newText);
-	};
+		
+		return newText.join('\n');
+	}
 	
 	/*
 		The mode is defined herein.
 	*/
 	window.CodeMirror && CodeMirror.defineMode('harlowe', function() {
+		var tree;
+		
+		var init = function() {
+			var
+				doc = cm.doc;
+			/*
+				CodeMirror doesn't allow modes to have full access to the text of
+				the document. This hack overcomes this respectable limitation:
+				TwineJS's PassageEditor stashes a reference to the doc in
+				the CodeMirror modes object - and here, we retrieve it,
+				and use it to compute a full parse tree.
+			*/
+			tree = lex(doc.getValue());
+			
+			/*
+				Attach the all-important beforeChanged event, but make sure it's only attached once.
+				Note that this event is removed by TwineJS when it uses swapDoc to dispose of old docs.
+			*/
+			doc.on('beforeChange', function(_, change) {
+				var oldText = doc.getValue();
+				forceFullChange(change, oldText);
+			});
+			doc.off('change');
+			doc.on('change', function() {
+				var text = doc.getValue();
+				tree = lex(text);
+			});
+			doc.on('swapDoc', init);
+			init = null;
+		};
+		
 		return {
 			/*
 				The startState is vacant because all of the computation is done
@@ -97,13 +133,6 @@
 						"Consult the Harlowe documentation for more information.",
 						].join('\n\n'));
 				}
-				/*
-					Attach the all-important beforeChanged event, but make sure it's only attached once.
-					Note that this event is removed by TwineJS when it uses swapDoc to dispose of old docs.
-				*/
-				var doc = cm.doc;
-				doc.off('beforeChange');
-				doc.on('beforeChange', beforeChange);
 				
 				return {
 					pos: 0,
@@ -114,24 +143,18 @@
 			},
 			token: function token(stream, state) {
 				var currentBranch, currentToken,
-					newText = CodeMirror.modes.harlowe.cm.doc.getValue();
+					// Some hoisted vars from the for-loop.
+					name, type, counts = {}, i,
+					ret = '';
 				
-				if (state.text !== newText) {
-					state.text = newText;
-					/*
-						CodeMirror doesn't allow modes to have full access to the text of
-						the document. This hack overcomes this respectable limitation:
-						TwineJS's PassageEditor stashes a reference to the doc in
-						the CodeMirror modes object - and here, we retrieve it,
-						and use it to compute a full parse tree.
-					*/
-					state.tree = lex(state.text);
+				if (init) {
+					init();
 				}
 				/*
 					We must render each token using the cumulative styles of all parent tokens
 					above it. So, we obtain the full path.
 				*/
-				currentBranch = state.tree.pathAt(state.pos);
+				currentBranch = tree.pathAt(state.pos);
 				// The path is deepest-first - the bottom token is at 0.
 				currentToken = currentBranch[0];
 				
@@ -160,28 +183,32 @@
 				if (stream.eol()) {
 					state.pos++;
 				}
-				return currentBranch.reduce(function(a, e){
-					var name = "harlowe-" + e.type,
-						// If this name has been used earlier in the chain, suffix
-						// this name with an additional number.
-						count = ((a.match(new RegExp(name + '(?:-\\d| )', 'g')) || '').length);
-					
-					if (count > 1) {
-						name += "-" + (count);
+				/*
+					For performance paranoia, this is a plain for-loop.
+				*/
+				for (i = 0; i < currentBranch.length; i+=1) {
+					type = currentBranch[i].type;
+					name = "harlowe-" + type;
+					// If this name has been used earlier in the chain, suffix
+					// this name with an additional number.
+					if (counts[name] > 1) {
+						name += "-" + (counts[name]);
 					}
-					switch(e.type) {
+					counts[name] = (counts[name] || 0) + 1;
+					switch(type) {
 						/*
 							Use the error style if the macro's name doesn't match the list of
 							existant Harlowe macros.
 						*/
 						case "macroName":
-							if (validMacros.indexOf(insensitiveName(e.text.slice(0,-1))) === -1) {
+							if (validMacros.indexOf(insensitiveName(currentBranch[i].text.slice(0,-1))) === -1) {
 								name += " harlowe-error";
 							}
 							break;
 					}
-					return a + name + " ";
-				},'');
+					ret += name + " ";
+				}
+				return ret;
 			},
 		};
 	});

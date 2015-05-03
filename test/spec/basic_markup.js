@@ -53,15 +53,6 @@ describe("basic twinemarkup syntax", function() {
 					"A " + e.html  .join(" B<br> ") + " C"
 				);
 			});
-			/*
-				I'll admit it: this test is a little silly.
-			*/
-			it("can be used to enclose one " + e.markup[0][0], function() {
-				expectMarkupToBecome(
-					"A " + e.markup.join(e.markup[0][0])   + " C",
-					"A " + e.html  .join(e.markup[0][0])   + " C"
-				);
-			});
 			it("can't be nested", function() {
 				expectMarkupToBecome(
 					"A " + e.markup.join(e.markup.join(" B "))   + " C",
@@ -271,10 +262,16 @@ describe("basic twinemarkup syntax", function() {
 				);
 			});
 		});
-		it("cannot be nested", function() {
+		it("can handle partial syntax inside", function() {
 			expectMarkupToBecome(
-				"A<!--<!-- -->-->B",
-				"A--&gt;B"
+				"A<!--''-->B",
+				"AB"
+			);
+		});
+		it("can be nested", function() {
+			expectMarkupToBecome(
+				"A<!--Cool<!-- -->Cool-->B",
+				"AB"
 			);
 		});
 	});

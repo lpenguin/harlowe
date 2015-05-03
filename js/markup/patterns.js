@@ -25,18 +25,6 @@
 	}
 	
 	/*
-		Matches a string of non-nesting characters enclosed by open character and another character,
-		but potentially containing the close-character escaped with \
-		
-		For instance, <This is \> an example>.
-	*/
-	function enclosed(o, c) {
-		o = escape(o);
-		c = c ? escape(c) : o;
-
-		return o + "(?:" + notChars( c + "\\" ) + "\\\\.)" + "*" + notChars( c + "\\" ) + c;
-	}	
-	/*
 		A sugar REstring function for negative character sets.
 		This escapes its input.
 	*/
@@ -58,30 +46,6 @@
 	var either = makeWrapper("?:"),
 		notBefore = makeWrapper("?!"),
 		before = makeWrapper("?=");
-	
-	/*
-		This builds REstrings for basic formatting syntax like ''bold'' or //italic//,
-		in which the opening token is the same as the closing token.
-		
-		When given 1+ strings, it produces a REstring that matches each.
-	*/
-	function stylerSyntax(pair, rest /*variadic*/) {
-		var left = Array.isArray(pair) ? pair[0] : pair,
-			right = (Array.isArray(pair) && pair[1]) || left;
-		
-		return escape(left) + "([^]*?)" + escape(right) +
-			/*
-				This function checks if the right-terminator is a sole repeating symbol,
-				then returns the symbol wrapped in '(?!' ')', or "" if not.
-			*/
-			(function fn(str) {
-				var s = str.split("").reduce(function(a, b){ return a === b && a; });
-				
-				return s && notBefore(escape(s));
-			}(right))
-			// Join with any additional pairs
-			+ (rest ? "|" + stylerSyntax.apply(0, Array.apply(0,arguments).slice(1)) : "");
-	}
 	
 	/*
 		Peek lookaheads come in two forms: a simple string to match, when
@@ -139,12 +103,6 @@
 		anyLetter       = "[\\w\\-\u00c0-\u00de\u00df-\u00ff\u0150\u0170\u0151\u0171]",
 		// Identical to the above, but excludes hyphens.
 		anyLetterStrict =    "[\\w\u00c0-\u00de\u00df-\u00ff\u0150\u0170\u0151\u0171]",
-		
-		/*
-			This is a regex suffix that, when applied, causes the preceding match to only apply when not inside a quoted
-			string. This accounts for both single- and double-quotes, and escaped quote characters.
-		*/
-		unquoted = before(either( notChars("'\"\\") + either( "\\.", enclosed("'"), enclosed('"'))) + "*" + notChars("'\\") + "$"),
 		
 		/*
 			Markdown lists changes:
@@ -252,15 +210,6 @@
 		hookTagFront =  "\\|(" + anyLetter.replace("]", "_]") + "*)>",
 		hookTagBack  =  "<("   + anyLetter.replace("]", "_]") + "*)\\|",
 		
-		string = {
-			/*
-				Notice that no empty string is permitted - this can only be produced
-				using (text:) with no arguments.
-			*/
-			single:   enclosed("'"),
-			double:   enclosed('"'),
-		},
-		
 		/*
 			This includes NaN, but I wonder if it should.
 			This doesn't include the - sign because arithmetic's pattern will trump it.
@@ -308,7 +257,6 @@
 		anyLetterStrict: anyLetterStrict,
 		
 		whitespace:  mws,
-		unquoted:    unquoted,
 		escapedLine: "\\\\\\n\\\\?|\\n\\\\",
 		
 		br: "\\n(?!\\\\)",
@@ -316,8 +264,8 @@
 		/*
 			Twine currently just uses HTML comment syntax for comments.
 		*/
-		comment:         "<!--[^]*?-->",
-		commentPeek:     peek("<!--"),
+		commentFront:         "<!--",
+		commentBack:          "-->",
 		
 		tag:         "<\\/?" + tag.name + tag.attrs + ">",
 		tagPeek:                                peek("<"),
@@ -336,34 +284,21 @@
 		heading:     heading,
 		align:       align,
 		
-		strong:          stylerSyntax("**"),
-		strongPeek:              peek("**"),
-		
-		em:               stylerSyntax("*"),
-		emPeek:                   peek("*"),
-		
-		del:                   stylerSyntax("~~"),
-		delPeek:                       peek("~~"),
-		
-		italic:                stylerSyntax("//"),
-		italicPeek:                    peek("//"),
-		
-		bold:                  stylerSyntax("''"),
-		boldPeek:                      peek("''"),
-		
-		sup:                   stylerSyntax("^^"),
-		supPeek:                       peek("^^"),
+		strongOpener:     escape("**"),
+		emOpener:         escape("*"),
+		delOpener:        escape("~~"),
+		italicOpener:     escape("//"),
+		boldOpener:       escape("''"),
+		supOpener:        escape("^^"),
 		
 		/*
 			The verbatim syntax does not "nest", but terminals can be
 			differentiated by adding more ` marks to each pair.
 		*/
-		verbatim:                            "(`+)([^]*?[^`])\\1(?!`)",
-		verbatimPeek:                                        peek("`"),
+		verbatimOpener:    "`+",
 		
-		collapsedFront:                                            "{",
-		collapsedBack:                                             "}",
-		collapsedPeek:                                       peek("{"),
+		collapsedFront:    "{",
+		collapsedBack:     "}",
 		
 		bulleted:    bulleted,
 		numbered:    numbered,
@@ -394,7 +329,7 @@
 			+ passageLink.closer,
 			
 		passageLinkPeek:   peek("[["),
-			
+		
 		legacyLink:
 			/*
 				[[A|B]] has a link text of
@@ -503,14 +438,8 @@
 		itsPropertyPeek: peek("its"),
 		belongingItProperty: belongingItProperty,
 		
-		string:
-			either(
-				string.single,
-				string.double
-			),
-		
-		stringPeek:
-			peek('"',"'"),
+		singleStringOpener:    "'",
+		doubleStringOpener:    '"',
 		
 		/*
 			Macro operators

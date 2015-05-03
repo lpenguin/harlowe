@@ -94,16 +94,6 @@
 		},
 		
 		/*
-			Run a function on this token and all its children.
-		*/
-		forEach: function forEach(fn) {
-			// This token
-			fn(this);
-			// All of its children
-			this.children.forEach(function(e) { e.forEach(fn); });
-		},
-		
-		/*
 			A shortcut to the last element in the children array.
 		*/
 		lastChild: function lastChild() {
@@ -137,6 +127,7 @@
 			if any, that corresponds to it.
 		*/
 		tokenAt: function tokenAt(index) {
+			var i, childToken;
 			// First, a basic range check.
 			if (index < this.start || index >= this.end) {
 				return null;
@@ -152,15 +143,18 @@
 				for this index is.
 			*/
 			if (this.children.length) {
-				return this.children.reduce(function(prevValue, child) {
-					return prevValue || child.tokenAt(index);
-				}, null)
+				for(i = 0; i < this.children.length; i+=1) {
+					childToken = this.children[i].tokenAt(index);
+					if (childToken) {
+						return childToken;
+					}
+				}
 				/*
 					As described in lastChildEnd(), some tokens can have a gap between their
 					start and their first child's start. The index may have fallen in that gap
-					if no children were matched in the previous call. In which case, return this.
+					if no children were matched in the previous call.
+					In which case, fall through and return this.
 				*/
-				|| this;
 			}
 			return this;
 		},
@@ -170,7 +164,8 @@
 			deepest-first, leading to and including that token.
 		*/
 		pathAt: function pathAt(index) {
-			var path = [];
+			var path = [],
+				i, childPath;
 			// First, a basic range check.
 			if (index < this.start || index >= this.end) {
 				return [];
@@ -182,13 +177,16 @@
 				return ((this.childAt[index] && this.childAt[index].pathAt(index)) || []).concat(this);
 			}
 			/*
-				Ask each child, if any, what their deepest token
-				for this index is.
+				Ask each child, if any, what their path for this index is.
 			*/
 			if (this.children.length) {
-				path = path.concat(this.children.reduce(function(prevValue, child) {
-					return prevValue.length ? prevValue : child.pathAt(index);
-				}, []));
+				for(i = 0; i < this.children.length; i+=1) {
+					childPath = this.children[i].pathAt(index);
+					if (childPath.length) {
+						path.concat(childPath);
+						break;
+					}
+				}
 			}
 			return path.concat(this);
 		},
@@ -240,7 +238,21 @@
 		},
 		
 		/*
-			Convert this token into a text token, in the simplest manner possible.
+			Check if this token is a Front token or not. A semantic shorthand for a simple test.
+		*/
+		isFrontToken: function isFrontToken() {
+			return this.isFront;
+		},
+		
+		/*
+			In the same vein, this checks if this token is a Back token or not.
+		*/
+		isBackToken: function isBackToken() {
+			return 'matches' in this;
+		},
+		
+		/*
+			Convert this token in-place into a text token, in the simplest manner possible.
 			
 			TODO: Really, this should combine this with all adjacent text tokens.
 		*/
@@ -249,7 +261,7 @@
 		},
 		
 		/*
-			Convert this token into an early error token, which renders as a <tw-error>.
+			Convert this token in-place into an early error token, which renders as a <tw-error>.
 		*/
 		error: function(message) {
 			this.type = "error";
@@ -261,7 +273,7 @@
 			LEX() may be turned to string to provide an overview of its contents.
 		*/
 		toString: function() {
-			var ret = this.type;
+			var ret = this.type + "(" + this.start + "→" + this.end + ")";
 			if (this.children && this.children.length > 0) {
 				ret += "[" + this.children + "]";
 			}
@@ -278,26 +290,31 @@
 		var
 			// Some shortcuts
 			src = parentToken.innerText,
+			// Some hoisted temporary vars used in each loop iteration.
+			i, l, rule, match, slice, ft,
 			/*
-				This somewhat simple stack determines what "mode"
-				the lexer is in.
+				This is used to store what "mode" the lexer is in, which is
+				either parentToken.innerMode, or the innerMode of the recentmost
+				unmatched frontToken.
 			*/
-			modeStack = [parentToken.innerMode],
+			mode,
 			/*
 				The frontTokenStack's items are "front" tokens, those
 				that pair up with a "back" token to make a token representing
 				an arbitrarily nestable rule.
 			*/
 			frontTokenStack = [],
-			// Some hoisted temporary vars used in each loop iteration.
-			i, l, rule, match, slice,
 			/*
 				index ticks upward as we advance through the src.
 				firstUnmatchedIndex is bumped up whenever a match is made,
 				and is used to create "text" tokens between true tokens.
 			*/
 			index = 0,
-			firstUnmatchedIndex = 0,
+			firstUnmatchedIndex = index,
+			/*
+				The endIndex is the terminating position in which to stop lexing.
+			*/
+			endIndex = src.length,
 			/*
 				This caches the most recently created token between iterations.
 				This must be 'null' and not 'undefined' because some canFollow
@@ -309,16 +326,17 @@
 			Run through the src, character by character, matching all the
 			rules on every slice, creating tokens as we go, until exhausted.
 		*/
-		while(index < src.length) {
+		while(index < endIndex) {
 			slice = src.slice(index);
 			
+			mode = (frontTokenStack.length ? frontTokenStack[0] : parentToken).innerMode;
 			/*
 				Run through all the rules in the current mode in turn.
 				Note that modeStack[0] means "the current mode in the modeStack".
 				Speed paranoia precludes the deployment of [].forEach() here.
 			*/
-			for (i = 0, l = modeStack[0].length; i < l; i+=1) {
-				rule = rules[modeStack[0][i]];
+			for (i = 0, l = mode.length; i < l; i+=1) {
+				rule = rules[mode[i]];
 				if (
 						/*
 							Check whether this rule is restricted to only being matched
@@ -373,7 +391,7 @@
 						parentToken.addChild({
 							type: "text",
 							match: src.slice(firstUnmatchedIndex, index),
-							innerMode: modeStack[0]
+							innerMode: mode
 						});
 					}
 					// Create a token using the matched rule's fn.
@@ -382,41 +400,45 @@
 					// Increment the index in the src
 					index += lastToken.text.length;
 					firstUnmatchedIndex = index;
-					
 					/*
-						Front tokens are saved, in case a Back token arrives
-						later that can match it.
-					*/
-					if (lastToken.type.endsWith("Front")) {
-						frontTokenStack.unshift(lastToken);
-						
-						// Ugh, modes
-						modeStack.unshift(lastToken.innerMode);
-					}
-					/*
-						If a Back token arrives, it must match with the most recent Front token.
+						If a Back token arrives, it must match with a Front token.
 						If so, both tokens, and those intervening, are merged ("folded") into one.
 					*/
-					else if (lastToken.type.endsWith("Back")) {
-						if (frontTokenStack.length &&
-							lastToken.matches && frontTokenStack[0].type in lastToken.matches) {
+					if (lastToken.isBackToken()) {
+						/*
+							Speed paranoia necessitates a for-loop here, which sets
+							ft to either the index of the rightmost frontToken matching
+							lastToken's matches, or -1.
+						*/
+						for(ft = 0; lastToken.matches && ft < frontTokenStack.length; ft += 1) {
+							if (frontTokenStack[ft].type in lastToken.matches) {
+								break;
+							}
+						}
+						if (ft < frontTokenStack.length) {
 							/*
 								Having found a matching pair of tokens, we fold them together.
 								Note: this function splices the children array in-place!!
 								Fortunately, nothing needs to be adjusted to account for this.
 							*/
-							foldTokens(parentToken, lastToken, frontTokenStack.shift());
-							
-							// I'll explain later.
-							modeStack.shift();
+							foldTokens(parentToken, lastToken, frontTokenStack[ft]);
+							frontTokenStack = frontTokenStack.slice(ft + 1);
 						}
-						else {
+						else if (!lastToken.isFrontToken()) {
 							/*
 								It doesn't match anything...! It's just prose text, then.
 								Demote the token to a text token.
 							*/
 							lastToken.demote();
 						}
+					}
+					/*
+						Front tokens are saved, in case a Back token arrives
+						later that can match it. This MUST come after the Back token check
+						so that the tokens which are both Front and Back will work properly.
+					*/
+					if (lastToken.isFrontToken()) {
+						frontTokenStack.unshift(lastToken);
 					}
 					// Break from the for-loop
 					break;
@@ -441,12 +463,11 @@
 			parentToken.addChild({
 				type: "text",
 				match: src.slice(firstUnmatchedIndex, index),
-				innerMode: modeStack[0]
+				innerMode: (frontTokenStack.length ? frontTokenStack[0] : parentToken).innerMode,
 			});
 		}
 		/*
 			We're done, except that we may still have unmatched frontTokens.
-			Go through them and demote them.
 		*/
 		while(frontTokenStack.length > 0) {
 			frontTokenStack.shift().demote();
@@ -531,6 +552,12 @@
 				backToken[key] = frontToken[key];
 			}
 		});
+		/*
+			Do not inherit the isFront property from the frontToken.
+		*/
+		if (backToken.isFront) {
+			backToken.isFront = false;
+		}
 		
 		/*
 			Remove the Front token.
@@ -541,18 +568,6 @@
 			the positions cache must be altered.
 		*/
 		cacheChildPos(parentToken, backToken);
-		
-		/*
-			Oh, before I forget: if the new token is a macro, we'll have to lex()
-			its children all again. Sorry ;_;
-			
-			TODO: change to "has a different mode than the currently prevailing mode"
-		*/
-		if (backToken.type === "macro") {
-			backToken.children = [];
-			backToken.childAt = {};
-			lex(backToken);
-		}
 	}
 	
 	/*

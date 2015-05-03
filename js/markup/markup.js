@@ -78,13 +78,28 @@
 				return data;
 			};
 		}
+		
+		/*
+			Creates a function that pushes a token which is its own front and back:
+			a token for symmetrical enclosing syntax, such as //italic//.
+			The foldedName is the type of the final token, once a pair of these is folded.
+		*/
+		function openerFn(name, foldedName) {
+			var matches = {};
+			matches[name] = foldedName;
+			return function() {
+				return {
+					isFront: true,
+					matches: matches,
+				};
+			};
+		}
 
 		/*
 			Alters the rules object's fn methods, so that their returned objects
 			have 'type', 'match' and 'innerMode' properties assigned to them.
 		*/
 		function setupRules(mode, target) {
-			// This uses a for-in loop for some reason.
 			Object.keys(target).forEach(function(ruleName) {
 				target[ruleName].fn = function(innerFn, match) {
 					var ret = innerFn(match);
@@ -214,14 +229,29 @@
 			*/
 			br:      { fn:        Object },
 			
-			strong:  { fn: textTokenFn() },
-			em:      { fn: textTokenFn() },
-			bold:    { fn: textTokenFn() },
-			italic:  { fn: textTokenFn() },
-			del:     { fn: textTokenFn() },
-			sup:     { fn: textTokenFn() },
+			strongOpener:  { fn: openerFn("strongOpener", "strong") },
+			emOpener:      { fn: openerFn("emOpener",     "em") },
+			boldOpener:    { fn: openerFn("boldOpener",   "bold") },
+			italicOpener:  { fn: openerFn("italicOpener", "italic") },
+			delOpener:     { fn: openerFn("delOpener",    "del") },
+			supOpener:     { fn: openerFn("supOpener",    "sup") },
 			
-			comment: { fn:        Object },
+			commentFront: {
+				fn: function() {
+					return {
+						isFront: true,
+					};
+				},
+			},
+			commentBack: {
+				fn: function() {
+					return {
+						matches: {
+							commentFront: "comment",
+						},
+					};
+				},
+			},
 			// This must come before the generic tag rule
 			scriptStyleTag: { fn:        Object },
 			tag:     { fn:        Object },
@@ -255,6 +285,7 @@
 				fn: function(match) {
 					return {
 						name: match[1],
+						isFront: true,
 						tagPosition: "prepended"
 					};
 				},
@@ -263,6 +294,7 @@
 			hookAnonymousFront: {
 				fn: function() {
 					return {
+						isFront: true,
 						demote: function() {
 							this.error("This tagged hook doesn't have a matching ].");
 						}
@@ -272,7 +304,11 @@
 			},
 			
 			hookAppendedFront: {
-				fn: Object,
+				fn: function() {
+					return {
+						isFront: true,
+					};
+				},
 				/*
 					Because hookAnonymousFront's and hookAppendedFront's
 					rules are identical, the canFollow of one must match
@@ -306,20 +342,30 @@
 				},
 			},
 			
-			verbatim: {
+			verbatimOpener: {
 				fn: function(match) {
+					var number = match[0].length,
+						matches = {};
+					
+					matches["verbatim" + number] = "verbatim";
+					
 					return {
-						verbatim: match[2]
+						type: "verbatim" + number,
+						isFront: true,
+						matches: matches,
 					};
 				},
 			},
 			collapsedFront: {
-				fn: Object,
+				fn: function() {
+					return {
+						isFront: true,
+					};
+				},
 			},
 			collapsedBack: {
 				fn: function() {
 					return {
-						type: "collapsedBack",
 						matches: {
 							collapsedFront: "collapsed",
 						},
@@ -347,6 +393,7 @@
 			macroFront: {
 				fn: function(match) {
 					return {
+						isFront: true,
 						name: match[1],
 					};
 				},
@@ -368,7 +415,15 @@
 			
 			variable:   { fn: textTokenFn("name") },
 			
-			whitespace: { fn: Object },
+			whitespace: {
+				fn: Object,
+				/*
+					To save creating tokens for every textual space,
+					this restriction is in place. It should have no effect
+					on syntactic whitespace.
+				*/
+				cannotFollow: "text",
+			},
 		});
 		
 		/*
@@ -382,7 +437,7 @@
 				*/
 				macroName: {
 					// This must be the first token inside a macro.
-					canFollow: [null],
+					canFollow: ['macroFront'],
 					fn: function(match) {
 						/*
 							If match[2] is present, then it matched a variable.
@@ -398,7 +453,13 @@
 					},
 				},
 				
-				groupingFront: { fn: Object },
+				groupingFront: {
+					fn: function() {
+						return {
+							isFront: true,
+						};
+					},
+				},
 				
 				/*
 					Warning: the property pattern "'s" conflicts with the string literal
@@ -441,7 +502,28 @@
 					fn: Object
 				},
 				
-				string: { fn: Object, },
+				singleStringOpener: {
+					fn: function() {
+						return {
+							isFront: true,
+							matches: {
+								singleStringOpener:
+									"string",
+							},
+						};
+					},
+				},
+				doubleStringOpener: {
+					fn: function() {
+						return {
+							isFront: true,
+							matches: {
+								doubleStringOpener:
+									"string",
+							},
+						};
+					},
+				},
 				
 				cssTime: {
 					fn: function(match) {

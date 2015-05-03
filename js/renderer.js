@@ -234,7 +234,7 @@ define(['utils', 'markup', 'twinescript/compiler', 'internaltypes/twineerror'], 
 						break;
 					}
 					case "verbatim": {
-						out += Utils.wrapHTMLTag(escape(token.verbatim)
+						out += Utils.wrapHTMLTag(escape(token.innerText)
 							/*
 								The only replacement that should be done is \n -> <br>. In
 								browsers, even if the CSS is set to preserve whitespace, copying text
