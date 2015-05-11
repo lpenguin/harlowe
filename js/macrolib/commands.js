@@ -60,9 +60,9 @@ function(Macros, Utils, State, Passages, Engine, TwineError, OperationUtils) {
 			if passage A contains `(replace:Prince)[Frog]`, then another passage
 			containing `Princes(display:'A')` will result in the text `Frogs`.
 			
-			When set to a variable, it evaluates to a DisplayCommand, an object
-			which is by-and-large unusable as a stored value, but activates
-			when it's placed in the passage.
+			Like all commands, this can be set into a variable. It's not particularly
+			useful in that state, but you can use that variable in place of that command,
+			such as writing `$var` in place of `(display: "Yggdrasil")`.
 		*/
 		("display", function display(_, name) {
 			/*
@@ -104,10 +104,11 @@ function(Macros, Utils, State, Passages, Engine, TwineError, OperationUtils) {
 			Details:
 			It is capable of printing things which (text:) cannot convert to a string,
 			such as changer commands - but these will usually become bare descriptive
-			text like `[A (font: ) command]`. But, for debugging purposes this can be helpful.
+			text like `[A (font: ) command]`. You may find this useful for debugging purposes.
 			
-			When set to a variable, it evaluates to a PrintCommand. Notably, the
-			expression to print is stored in the PrintCommand. So, a passage
+			This command can be stored in a variable instead of being performed immediately.
+			Notably, the expression to print is stored inside the command, instead of being
+			re-evaluated when it is finally performed. So, a passage
 			that contains:
 			```
 			(set: $name to "Dracula")
@@ -208,7 +209,7 @@ function(Macros, Utils, State, Passages, Engine, TwineError, OperationUtils) {
 			There are plenty of occasions where you may want to instantly advance to a new
 			passage without the player's volition. (go-to:) provides access to this ability.
 			
-			(go-to:), as with all macros, can accept any expression which evaluates to
+			(go-to:) can accept any expression which evaluates to
 			a string. You can, for instance, go to a randomly selected passage by combining it with
 			(either:) - `(go-to: (either: "Win", "Lose", "Draw"))`.
 			
@@ -218,8 +219,8 @@ function(Macros, Utils, State, Passages, Engine, TwineError, OperationUtils) {
 			(put:) or (save-game:).
 			
 			Details:
-			(go-to:) prevents any macros and text after it from running.
-			So, a passage that contains:
+			If it is performed, (go-to:) will "halt" the passage and prevent any macros and text
+			after it from running. So, a passage that contains:
 			```
 			(set: $listen to "I love")
 			(go-to: "Train")
@@ -372,8 +373,8 @@ function(Macros, Utils, State, Passages, Engine, TwineError, OperationUtils) {
 			
 			Details:
 			
-			(save-game:)'s first String is a slot name in which to store the game. You can have as many slots
-			as you like. If you only need one slot, you can just call it `"A"` and use `(save-game:"A")`.
+			(save-game:)'s first string is a slot name in which to store the game. You can have as many slots
+			as you like. If you only need one slot, you can just call it, say, `"A"`, and use `(save-game:"A")`.
 			You can tie them to a name the player gives, such as `(save-game: $playerName)`, if multiple players
 			are likely to play this game - at an exhibition, for instance.
 			

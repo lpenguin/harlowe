@@ -40,8 +40,9 @@ function($, NaturalSort, Macros, Utils, OperationUtils, State, Engine, Passages,
 			
 			Rationale:
 			
-			Variables are data storage for your game. You can store values under names and refer to
-			them later. They persist between passages, and can be used throughout the entire game.
+			Variables are data storage for your game. You can store data values under special names
+			of your choosing, and refer to them later. They persist between passages, and can be
+			used throughout the entire game in other macros, such as (if:).
 			
 			Variables have many purposes: keeping track of what the player has accomplished,
 			managing some other state of the story, storing hook styles and changers, and
@@ -163,7 +164,7 @@ function($, NaturalSort, Macros, Utils, OperationUtils, State, Engine, Passages,
 			Rationale:
 			You'll often use data structures such as arrays or datamaps as storage for values
 			that you'll only use once, such as a list of names to print out. When it comes time
-			to use them, you can remove it from the structure and retrieve it in one go
+			to use them, you can remove it from the structure and retrieve it in one go.
 		*/
 		("move", function move(_, ar) {
 			var get, error;

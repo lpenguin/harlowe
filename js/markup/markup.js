@@ -94,6 +94,12 @@
 				};
 			};
 		}
+		
+		/*
+			Used as a token fn to provide an empty object with no properties,
+			regardless of the function's input.
+		*/
+		var emptyFn = Object.bind(0, null);
 
 		/*
 			Alters the rules object's fn methods, so that their returned objects
@@ -135,7 +141,7 @@
 				First, the block rules.
 			*/
 			hr: {
-				fn: Object,
+				fn: emptyFn,
 				canFollow: [null, "br"],
 			},
 			bulleted: {
@@ -227,7 +233,7 @@
 				Like GitHub-Flavoured Markdown, Twine preserves line breaks
 				within paragraphs.
 			*/
-			br:      { fn:        Object },
+			br:      { fn:        emptyFn },
 			
 			strongOpener:  { fn: openerFn("strongOpener", "strong") },
 			emOpener:      { fn: openerFn("emOpener",     "em") },
@@ -253,9 +259,9 @@
 				},
 			},
 			// This must come before the generic tag rule
-			scriptStyleTag: { fn:        Object },
-			tag:     { fn:        Object },
-			url:     { fn:        Object },
+			scriptStyleTag: { fn:        emptyFn },
+			tag:     { fn:        emptyFn },
+			url:     { fn:        emptyFn },
 			
 			passageLink: {
 				fn: function(match) {
@@ -373,7 +379,7 @@
 				},
 			},
 			escapedLine: {
-				fn: Object,
+				fn: emptyFn,
 			},
 			legacyLink: {
 				fn: function(match) {
@@ -416,7 +422,7 @@
 			variable:   { fn: textTokenFn("name") },
 			
 			whitespace: {
-				fn: Object,
+				fn: emptyFn,
 				/*
 					To save creating tokens for every textual space,
 					this restriction is in place. It should have no effect
@@ -472,11 +478,11 @@
 						"itsProperty", "belongingItProperty", "macro", "grouping", "string"],
 				},
 				
-				possessiveOperator: { fn: Object },
+				possessiveOperator: { fn: emptyFn },
 				
 				itsProperty:         { fn: textTokenFn("name") },
 				
-				itsOperator: { fn: Object },
+				itsOperator: { fn: emptyFn },
 				
 				/*
 					Since this is a superset of the belongingProperty rule,
@@ -489,7 +495,7 @@
 				
 				belongingItOperator: {
 					cannotFollow: ["text"],
-					fn: Object
+					fn: emptyFn
 				},
 				
 				belongingProperty: {
@@ -499,7 +505,7 @@
 				
 				belongingOperator: {
 					cannotFollow: ["text"],
-					fn: Object
+					fn: emptyFn
 				},
 				
 				singleStringOpener: {
@@ -617,13 +623,13 @@
 			["boolean", "is", "to", "into", "and", "or", "not",
 			"isNot", "contains", "isIn"].reduce(function(a, e) {
 				a[e] = {
-					fn: Object,
+					fn: emptyFn,
 					cannotFollow: ["text"],
 				};
 				return a;
 			},{}),
 			["comma", "spread"].reduce(function(a, e) {
-				a[e] = { fn: Object };
+				a[e] = { fn: emptyFn };
 				return a;
 			},{})
 		));

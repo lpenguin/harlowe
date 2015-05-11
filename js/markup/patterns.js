@@ -47,45 +47,6 @@
 		notBefore = makeWrapper("?!"),
 		before = makeWrapper("?=");
 	
-	/*
-		Peek lookaheads come in two forms: a simple string to match, when
-		only one option for the syntax's opening exists, and a RegExp when
-		there are multiple options. This function returns the former when
-		only one option is passed as an argument, and the latter otherwise
-		(performing escaping on the input strings, etc.)
-	*/
-	function peek(a /*variadic*/) {
-		var pattern, options, re;
-		
-		if (arguments.length > 1) {
-			a = Array.apply(0, arguments);
-			options = a.map(escape);
-			pattern = either.apply(0, options) + notBefore.apply(0, options);
-			re = new RegExp(pattern);
-			/*
-				We stash a "length" expando property on the RegExp denoting
-				the length of the longest option. This enables only the smallest
-				slice of the input string to be run against it.
-			*/
-			re.length = a.reduce(function(a,e) { return Math.max(a,e.length); }, 0);
-			return re;
-		}
-		return {
-			/*
-				This function strives to be as fast as possible.
-			*/
-			exec: function(input) {
-				var i = a.length;
-				while(--i >= 0) {
-					if (input[i] !== a[i]) {
-						return false;
-					}
-				}
-				return true;
-			}
-		};
-	}
-	
 	var
 		// This includes all forms of whitespace except \n and \r
 		ws = "[ \\f\\t\\v\u00a0\u1680\u180e\u2000-\u200a\u2028\u2029\u202f\u205f\u3000]*",
@@ -257,6 +218,7 @@
 		anyLetterStrict: anyLetterStrict,
 		
 		whitespace:  mws,
+		
 		escapedLine: "\\\\\\n\\\\?|\\n\\\\",
 		
 		br: "\\n(?!\\\\)",
@@ -268,13 +230,12 @@
 		commentBack:          "-->",
 		
 		tag:         "<\\/?" + tag.name + tag.attrs + ">",
-		tagPeek:                                peek("<"),
+		tagPeek:                                      "<",
 		
 		scriptStyleTag: "<(" + either("script","style")
 			+ ")" + tag.attrs + ">"
 			+ "[^]*?" + "<\\/\\1>",
-		
-		scriptStyleTagOpener: peek("<"),
+		scriptStyleTagOpener:  "<",
 		
 		url:         "(" + either("https?","mailto","javascript","ftp","data") + ":\\/\\/[^\\s<]+[^<.,:;\"')\\]\\s])",
 		
@@ -327,8 +288,7 @@
 		passageLink:
 			passageLink.main
 			+ passageLink.closer,
-			
-		passageLinkPeek:   peek("[["),
+		passageLinkPeek:    "[[",
 		
 		legacyLink:
 			/*
@@ -342,8 +302,7 @@
 			passageLink.opener
 			+ passageLink.legacyText + passageLink.legacySeparator
 			+ passageLink.legacyText + passageLink.closer,
-		
-		legacyLinkPeek:   peek("[["),
+		legacyLinkPeek:    "[[",
 		
 		simpleLink:
 			/*
@@ -351,26 +310,23 @@
 				use legacyText here to disambiguate.
 			*/
 			passageLink.opener + passageLink.legacyText + passageLink.closer,
-		
-		simpleLinkPeek:   peek("[["),
+		simpleLinkPeek:    "[[",
 		
 		macroFront: macro.opener + before(macro.name),
-		macroFrontPeek:   peek("("),
+		macroFrontPeek: "(",
 		macroName: macro.name,
 		
 		/*
 			This must be differentiated from macroFront.
 		*/
 		groupingFront: "\\(" + notBefore(macro.name),
-		groupingFrontPeek:   peek("("),
+		groupingFrontPeek: "(",
 		
 		groupingBack:  "\\)",
 		
 		twine1Macro:
 			twine1Macro,
-			
-		twine1MacroPeek:
-			peek("<<"),
+		twine1MacroPeek: "<<",
 		
 		/*
 			Macro code
@@ -378,9 +334,7 @@
 		
 		property:
 			property,
-		
-		propertyPeek:
-			peek("'s"),
+		propertyPeek: "'s",
 		
 		belongingProperty:
 			belongingProperty,
@@ -390,23 +344,24 @@
 		
 		belongingOperator:
 			belongingOperator,
+		belongingOperatorPeek:
+			"of",
 		
 		itsOperator:
 			itsOperator,
+		itsOperatorPeek: "its",
 		
 		belongingItOperator:
 			belongingItOperator,
+		belongingItOperatorPeek: "of",
 		
 		variable:
 			variable,
+		variablePeek: "$",
 		
-		variablePeek:
-			peek("$"),
-		
-		hookRef: "\\?(" + anyLetter + "+)\\b",
-		
-		hookRefPeek:
-			peek("?"),
+		hookRef:
+			"\\?(" + anyLetter + "+)\\b",
+		hookRefPeek: "?",
 		
 		/*
 			Artificial types (non-JS primitives)
@@ -435,7 +390,7 @@
 		// Special identifiers
 		identifier: identifier,
 		itsProperty: itsProperty,
-		itsPropertyPeek: peek("its"),
+		itsPropertyPeek: "its",
 		belongingItProperty: belongingItProperty,
 		
 		singleStringOpener:    "'",

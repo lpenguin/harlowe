@@ -18,11 +18,12 @@
 	*/
 	function Token(/*variadic*/) {
 		var i, j;
+		
 		/*
 			Due to speed paranoia, this uses longhand assignment.
 		*/
 		for (i = 0; i < arguments.length; i++) {
-			for(j in arguments[i]) {
+			for (j in arguments[i]) {
 				this[j] = arguments[i][j];
 			}
 		}
@@ -66,7 +67,7 @@
 				Now, create the token, then assign to it the idiosyncratic data
 				properties and the tokenMethods.
 			*/
-			childToken = new this.constructor(
+			childToken = new Token(
 				{
 					start:     index,
 					end:       matchText && index + matchText.length,
@@ -74,7 +75,7 @@
 					children:  [],
 				},
 				tokenData);
-				
+			
 			/*
 				If the token has non-empty innerText, lex the innerText
 				and append to its children array.
@@ -376,12 +377,13 @@
 							If a peek is available, check that before running
 							the full match regexp.
 						*/
-						(!rule.peek || rule.peek.exec(slice.slice(0, rule.peek.length || Infinity))) &&
+						(!rule.peek || rule.peek === slice.slice(0, rule.peek.length)) &&
 						/*
 							Finally, run the pattern. Any earlier would cause the rules excluded
 							by the above checks to be run anyway, and waste time.
 						*/
 						(match = rule.pattern.exec(slice))) {
+						
 					/*
 						Now that it's matched, let's forge this token.
 						First, create a token out of the interstitial unmatched

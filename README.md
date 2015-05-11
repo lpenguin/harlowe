@@ -42,13 +42,14 @@ This version is numbered 2.0.0 because the alterations, while relatively minor, 
     * It will also no longer collapse whitespace inside macros' strings, or HTML tags' attributes.
  * TwineScript strings are now Unicode-aware. Due to JavaScript's use of UCS-2 for string indexing, Unicode astral plane characters (used for most non-Latin scripts) are represented as 2 characters instead of a single character. This issue is now fixed in TwineScript: strings with Unicode astral characters will now have correct indexing, length, and `(substring:)` behaviour.
  * Positional property indices are now case-insensitive - `1ST` is the same as `1st`.
+ * `(if:)` now only works when given a boolean - if you had written `(if: $var)` and `$var` is a number or string, you must write `$var is not 0` or `$var's length > 0` instead.
  * `(text:)` now only works on strings, numbers, booleans and arrays, because the other datatypes cannot meaningfully be transformed into text.
  * Now, you can't use the `and`, `or` and `not` operators on non-boolean values. So, one must explicitly convert said values to boolean using `is not 0` and such instead of assuming it's boolean.
  * Altered the CSS of `<tw-story>` to use vertical padding instead of vertical margins.
  * Now, division operators (`/` and `%`) will produce an error if used to divide by zero.
  * Reordered the precedence of `contains` - it should now be higher than `is`, so that e.g. `(print: "ABC" contains "A" is true)` should now work as expected.
  * Now, giving a datamap to `(print:)` will cause that macro to print out the datamap in a rough HTML `<table>` structure, showing each name and value. This is a superior alternative to just printing "[object Object]".
- * Now, variables and barename properties (as in `$var's property`) must have one non-numeral in their name. This means that, for instance, `$100` is no longer regarded as a valid variable name.
+ * Now, variables and barename properties (as in `$var's property`) must have one non-numeral in their name. This means that, for instance, `$100` is no longer regarded as a valid variable name, but `$100m` still is.
  * Now, datamaps may have numbers as data names: `(datamap: 1, "A")` is now accepted. However, due to their differing types, the number `1` and the string `"1"` are treated as separate names.
  * HTML-style comments `<!--` and `-->` can now be nested, unlike in actual HTML.
 
