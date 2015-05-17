@@ -5,15 +5,15 @@
 require.config({
 	paths: {
 		// External libraries
-		jquery:          '../node_modules/jquery/dist/jquery',
-		"lz-string":     '../node_modules/lz-string/libs/lz-string-1.3.3',
-		almond:          '../node_modules/almond/almond',
-		"es6-shim":      '../node_modules/es6-shim/es6-shim',
-		jqueryplugins:   'utils/jqueryplugins',
+		jquery:                       '../node_modules/jquery/dist/jquery',
+		almond:                       '../node_modules/almond/almond',
+		"es6-shim":                   '../node_modules/es6-shim/es6-shim',
+		"requestAnimationFrame":      '../node_modules/requestanimationframe/app/requestAnimationFrame',
+		jqueryplugins:                'utils/jqueryplugins',
 		
-		markup:          './markup/markup',
-		lexer:           './markup/lexer',
-		patterns:        './markup/patterns',
+		markup:                       './markup/markup',
+		lexer:                        './markup/lexer',
+		patterns:                     './markup/patterns',
 	},
 	deps: [
 		'jquery',

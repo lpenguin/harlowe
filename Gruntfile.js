@@ -102,6 +102,7 @@ module.exports = function (grunt) {
 					name: 'markup',
 					include: ['codemirror/mode'],
 					useStrict: true,
+					//optimize: "none",
 					out: function(src) {
 						/*
 							Crudely edit out the final define() call that's added

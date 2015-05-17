@@ -557,6 +557,9 @@ function($, TwineMarkup, Selectors) {
 		*/
 
 		log: function (data) {
+			if (!window.console) {
+				return;
+			}
 			console.log(data);
 		},
 
@@ -570,6 +573,9 @@ function($, TwineMarkup, Selectors) {
 		*/
 
 		impossible: function (where, data) {
+			if (!window.console) {
+				return;
+			}
 			console.error(where + "(): " + data);
 		},
 
@@ -580,6 +586,9 @@ function($, TwineMarkup, Selectors) {
 			@param {Boolean} assertion
 		*/
 		assert: function(assertion) {
+			if (!window.console) {
+				return;
+			}
 			if (!assertion) {
 				console.error("Assertion failed!");
 			}
@@ -595,6 +604,9 @@ function($, TwineMarkup, Selectors) {
 			@param {Array} props
 		*/
 		assertMustHave: function(object, props) {
+			if (!window.console) {
+				return;
+			}
 			for(var i = 0; i < props.length; i += 1) {
 				if(!(props[i] in object)) {
 					console.error("Assertion failed: " + object
@@ -611,6 +623,9 @@ function($, TwineMarkup, Selectors) {
 			@param {Array} props
 		*/
 		assertOnlyHas: function(object, props) {
+			if (!window.console) {
+				return;
+			}
 			for(var i in object) {
 				if (props.indexOf(i) === -1) {
 					console.error("Assertion failed: " + object

@@ -1,5 +1,5 @@
-define(['macros', 'utils', 'state', 'passages', 'engine', 'internaltypes/twineerror', 'utils/operationutils'],
-function(Macros, Utils, State, Passages, Engine, TwineError, OperationUtils) {
+define(['requestAnimationFrame', 'macros', 'utils', 'state', 'passages', 'engine', 'internaltypes/twineerror', 'utils/operationutils'],
+function(requestAnimationFrame, Macros, Utils, State, Passages, Engine, TwineError, OperationUtils) {
 	"use strict";
 	
 	/*d:

@@ -81,7 +81,7 @@
 		
 		numberPoint = "(?:0\\.)",
 		
-		numbered = "(?:\n|^)" + ws + "(" + numberPoint + "+)" + ws + "([^\\n]*)" + eol,
+		numbered = ws + "(" + numberPoint + "+)" + ws + "([^\\n]*)" + eol,
 		
 		hr = "(?:\n|^)" + ws + "\-{3,}" + ws + eol,
 		

@@ -33,6 +33,7 @@
 		"grunt-sass": "0.15.0",
 		
 		"es6-shim": "*",
+		"requestanimationframe": "*",
 		"jquery": "2.1.1",
 		"almond": "*"
 	}

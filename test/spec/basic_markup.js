@@ -189,6 +189,10 @@ describe("basic twinemarkup syntax", function() {
 				"A B 0.C",
 				"A B 0.C"
 			);
+			expectMarkupToBecome(
+				"00. \n",
+				"00. <br>"
+			);
 		});
 		it("(unlike Markdown) allows nested lists by the addition of more consecutive *'s", function() {
 			expectMarkupToBecome(
