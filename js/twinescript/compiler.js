@@ -309,24 +309,24 @@ define(['utils'], function(Utils) {
 			implicitLeftIt = true;
 			operation = tokens[i].operator;
 		}
-		else if ((i = indexOfType(tokens, "arithmetic")) >-1) {
-			operation = tokens[i].operator;
-
+		else if ((i = indexOfType(tokens, "addition", "subtraction")) >-1) {
+			operation = tokens[i].text;
 			/*
-				Since arithmetic can also be the unary - and + tokens,
+				Since +- arithmetic operators can also be unary,
 				we must, in those cases, change the left token to 0 if
 				it doesn't exist.
 				This would ideally be an "implicitLeftZero", but, well...
 			*/
-			if ("+-".includes(tokens[i].text)) {
-				left  = compile(tokens.slice(0,  i));
-				/*
-					If only whitespace is to the left of this operator...
-				*/
-				if (!left.trim()) {
-					left = "0";
-				}
+			left  = compile(tokens.slice(0,  i));
+			/*
+				If only whitespace is to the left of this operator, then...
+			*/
+			if (!left.trim()) {
+				left = "0";
 			}
+		}
+		else if ((i = indexOfType(tokens, "multiplication", "division")) >-1) {
+			operation = tokens[i].text;
 		}
 		else if ((i = indexOfType(tokens, "not")) >-1) {
 			midString = "Operations.not(";

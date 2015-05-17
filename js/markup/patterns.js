@@ -412,7 +412,11 @@
 		isIn:       "is in" + wb,
 		contains:   "contains" + wb,
 		
-		arithmetic: either("\\+", "\\-", "\\*", "\\\/", "%") + notBefore("="),
+		addition:          escape("+")      + notBefore("="),
+		subtraction:       escape("-")      + notBefore("="),
+		multiplication:    escape("*")      + notBefore("="),
+		division:          either("/", "%") + notBefore("="),
+		
 		comma:      ",",
 		spread:     "\\.\\.\\." + notBefore("\\."),
 		

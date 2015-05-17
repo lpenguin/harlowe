@@ -4,6 +4,13 @@ describe("twinescript operators", function () {
 		it("adds numbers", function (){
 			expectMarkupToPrint("(print: 3 + 5)","8");
 		});
+		it("can be unary", function (){
+			expectMarkupToPrint("(print: + 5)","5");
+		});
+		it("has correct precedence", function () {
+			expectMarkupToPrint("(print: 3 + 5 * 2)", "13");
+			expectMarkupToPrint("(print: 5 * 2 + 3)", "13");
+		});
 		it("can be used to concatenate strings", function () {
 			expectMarkupToPrint("(print: '15' + '2')", "152");
 		});
@@ -15,6 +22,13 @@ describe("twinescript operators", function () {
 	describe("the - operator", function () {
 		it("subtracts numbers", function (){
 			expectMarkupToPrint("(print: 3 - 5)","-2");
+		});
+		it("can be unary", function (){
+			expectMarkupToPrint("(print: - 5)","-5");
+		});
+		it("has correct precedence", function () {
+			expectMarkupToPrint("(print: 3 - 5 * 2)", "-7");
+			expectMarkupToPrint("(print: 5 * 2 - 3)", "7");
 		});
 		it("can be used on strings", function () {
 			expectMarkupToPrint("(print: '51' - '5')", "1");

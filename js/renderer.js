@@ -116,7 +116,7 @@ define(['utils', 'markup', 'twinescript/compiler', 'internaltypes/twineerror'], 
 								For differences in depth, raise and lower the <ul> depth
 								in accordance with it.
 							*/
-							out += ("<" + tagName + ">").repeat(Math.max(0, tokens[i].depth - depth));
+							out += ("<"  + tagName + ">").repeat(Math.max(0, tokens[i].depth - depth));
 							out += ("</" + tagName + ">").repeat(Math.max(0, depth - tokens[i].depth));
 							depth = tokens[i].depth;
 							

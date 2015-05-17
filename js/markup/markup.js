@@ -100,25 +100,39 @@
 			regardless of the function's input.
 		*/
 		var emptyFn = Object.bind(0, null);
-
+		
 		/*
 			Alters the rules object's fn methods, so that their returned objects
 			have 'type', 'match' and 'innerMode' properties assigned to them.
 		*/
 		function setupRules(mode, target) {
+			/*
+				Iterate over every rule in the object (the "target").
+			*/
 			Object.keys(target).forEach(function(ruleName) {
-				target[ruleName].fn = function(innerFn, match) {
+				/*
+					First, take the function to wrap. Originally this used Function#bind(),
+					but speed paranoia suggests a simpler solution.
+				*/
+				var innerFn = target[ruleName].fn;
+				/*
+					Then, wrap it as follows:
+				*/
+				target[ruleName].fn = function(match) {
+					/*
+						Call the wrapped function and obtain its result.
+					*/
 					var ret = innerFn(match);
 					/*
-						Attach the match object, if it isn't already.
+						Attach the matched text, if it isn't already.
 					*/
-					if (!ret.match) {
-						ret.match = match;
+					if (!ret.text) {
+						ret.text = match[0];
 					}
 					/*
 						Give the returned data a type if it didn't
-						already have one. Only a few rules have a type which
-						varies from the name of the rule (passageLink, for one.)
+						already have one. Currently no rules have a type which
+						varies from the name of the rule.
 					*/
 					if (!ret.type) {
 						ret.type = ruleName;
@@ -131,7 +145,7 @@
 						ret.innerMode = mode;
 					}
 					return ret;
-				}.bind(target[ruleName], target[ruleName].fn);
+				};
 			});
 			return target;
 		}
@@ -233,14 +247,14 @@
 				Like GitHub-Flavoured Markdown, Twine preserves line breaks
 				within paragraphs.
 			*/
-			br:      { fn:        emptyFn },
+			br:            { fn: emptyFn },
 			
 			strongOpener:  { fn: openerFn("strongOpener", "strong") },
-			emOpener:      { fn: openerFn("emOpener",     "em") },
-			boldOpener:    { fn: openerFn("boldOpener",   "bold") },
+			emOpener:      { fn: openerFn("emOpener",     "em")     },
+			boldOpener:    { fn: openerFn("boldOpener",   "bold")   },
 			italicOpener:  { fn: openerFn("italicOpener", "italic") },
-			delOpener:     { fn: openerFn("delOpener",    "del") },
-			supOpener:     { fn: openerFn("supOpener",    "sup") },
+			delOpener:     { fn: openerFn("delOpener",    "del")    },
+			supOpener:     { fn: openerFn("supOpener",    "sup")    },
 			
 			commentFront: {
 				fn: function() {
@@ -260,15 +274,14 @@
 			},
 			// This must come before the generic tag rule
 			scriptStyleTag: { fn:        emptyFn },
-			tag:     { fn:        emptyFn },
-			url:     { fn:        emptyFn },
+			tag:            { fn:        emptyFn },
+			url:            { fn:        emptyFn },
 			
 			passageLink: {
 				fn: function(match) {
 					var p1 = match[1],
 						p2 = match[2],
 						p3 = match[3];
-					
 					return {
 						type: "twineLink",
 						innerText: p2 ? p3 : p1,
@@ -596,12 +609,17 @@
 						};
 					},
 				},
-				arithmetic: {
-					fn: function(match) {
-						return {
-							operator: match[0],
-						};
-					},
+				addition: {
+					fn: emptyFn,
+				},
+				subtraction: {
+					fn: emptyFn,
+				},
+				multiplication: {
+					fn: emptyFn,
+				},
+				division: {
+					fn: emptyFn,
 				},
 				inequality: {
 					fn: function(match) {
@@ -628,7 +646,8 @@
 				};
 				return a;
 			},{}),
-			["comma", "spread"].reduce(function(a, e) {
+			["comma", "spread", "addition", "subtraction",
+			"multiplication", "division"].reduce(function(a, e) {
 				a[e] = { fn: emptyFn };
 				return a;
 			},{})
@@ -643,6 +662,7 @@
 		[].push.apply(markupMode,       Object.keys(blockRules)
 								.concat(Object.keys(inlineRules))
 								.concat(Object.keys(expressionRules)));
+		
 		/*
 			Warning: the property pattern "'s" conflicts with the string literal
 			pattern - "$a's b's" resembles a string literal. To ensure that

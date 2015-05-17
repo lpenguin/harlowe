@@ -8,6 +8,7 @@ This version is numbered 2.0.0 because the alterations, while relatively minor, 
 
 ####Bugfixes
 
+ * Fixed a bug where the arithmetic operators had the wrong precedence (all using left-to-right).
  * Fixed a somewhat long-standing bug where certain passage elements were improperly given transition attributes during rendering.
  * Fixed a bug in the heading syntax which caused it to be present in the middle of lines rather than just the beginning.
  * Now, if text markup potentially creates empty HTML elements, these elements are not created.

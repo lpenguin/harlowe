@@ -51,17 +51,7 @@
 		*/
 		addChild: function addChild(tokenData) {
 			var index = this.lastChildEnd(),
-				childToken,
-				matchText = tokenData.match;
-			
-			/*
-				This accepts both regexp match arrays, and strings.
-				For simplicity, extract the full match string from the array,
-				if it indeed is one.
-			*/
-			if (Array.isArray(matchText)) {
-				matchText = matchText[0];
-			}
+				childToken;
 			
 			/*
 				Now, create the token, then assign to it the idiosyncratic data
@@ -70,8 +60,7 @@
 			childToken = new Token(
 				{
 					start:     index,
-					end:       matchText && index + matchText.length,
-					text:      matchText,
+					end:       tokenData.text && index + tokenData.text.length,
 					children:  [],
 				},
 				tokenData);
@@ -240,6 +229,7 @@
 		
 		/*
 			Check if this token is a Front token or not. A semantic shorthand for a simple test.
+			Currently unused inside Lexer itself.
 		*/
 		isFrontToken: function isFrontToken() {
 			return this.isFront;
@@ -247,6 +237,7 @@
 		
 		/*
 			In the same vein, this checks if this token is a Back token or not.
+			Currently unused inside Lexer itself.
 		*/
 		isBackToken: function isBackToken() {
 			return 'matches' in this;
@@ -281,6 +272,53 @@
 			return ret;
 		}
 	};
+	
+	/*
+		A helper function for lex(), which determines whether a given rule should be tested
+		against the given text, based on a number of factors.
+	*/
+	function shouldTest(rule, text, lastToken, unmatchedLength) {
+		return (
+			/*
+				Check whether this rule is restricted to only being matched
+				directly after another rule has. An example is the "block"
+				rules, which may only match after a "br" or "paragraph"
+				rule.
+			*/
+			!rule.canFollow ||
+				rule.canFollow.indexOf(
+					/*
+						Interesting note: this allows null lastTokens
+						to be passed as-is, and object lastTokens to have
+						their type checked - the short-circuit's falsy
+						value's type matters here.
+					*/
+					lastToken && lastToken.type
+				) >-1) &&
+			/*
+				Conversely, check whether this rule cannot follow after
+				the previous rule.
+			*/
+			(!rule.cannotFollow || (
+				/*
+					For most cannotFollow items, this will suffice:
+				*/
+				rule.cannotFollow.indexOf(
+					lastToken && lastToken.type
+				) === -1 &&
+				/*
+					However, if cannotFollow contains "text", the check is more
+					tricky: the last text token hasn't been forged yet. So,
+					this line must be used:
+				*/
+				!(rule.cannotFollow.indexOf("text") > -1 && unmatchedLength)
+				)) &&
+			/*
+				If a peek is available, check that before running
+				the full match regexp.
+			*/
+			(!rule.peek || rule.peek === text.slice(0, rule.peek.length));
+	}
 	
 	/*
 		The main lexing routine. Given a token with an innerText property and
@@ -321,7 +359,18 @@
 				This must be 'null' and not 'undefined' because some canFollow
 				arrays may contain null, to mean the start of input.
 			*/
-			lastToken = null;
+			lastToken = null,
+			/*
+				This stores the tokenData object produced by each rule's fn method,
+				which is called after deciding that a rule matches.
+				This needs to be examined before the final token can be created from it.
+			*/
+			tokenData,
+			/*
+				This boolean stores whether or not the currently examined token is a matching
+				Back token.
+			*/
+			isMatchingBack;
 		
 		/*
 			Run through the src, character by character, matching all the
@@ -338,113 +387,92 @@
 			*/
 			for (i = 0, l = mode.length; i < l; i+=1) {
 				rule = rules[mode[i]];
-				if (
+				
+				/*
+					Before running the pattern, check to see if this rule is valid right now.
+					If so, then do it.
+				*/
+				if (!(shouldTest(rule, slice, lastToken, firstUnmatchedIndex < index) &&
 						/*
-							Check whether this rule is restricted to only being matched
-							directly after another rule has. An example is the "block"
-							rules, which may only match after a "br" or "paragraph"
-							rule.
+							If the pattern doesn't match, this of course evaluates to null.
 						*/
-						(!rule.canFollow ||
-							rule.canFollow.indexOf(
-								/*
-									Interesting note: this allows null lastTokens
-									to be passed as-is, and object lastTokens to have
-									their type checked - the short-circuit's falsy
-									value's type matters here.
-								*/
-								lastToken && lastToken.type
-							) >-1) &&
-						/*
-							Conversely, check whether this rule cannot follow after
-							the previous rule.
-						*/
-						(!rule.cannotFollow || (
-							/*
-								For most cannotFollow items, this will suffice:
-							*/
-							rule.cannotFollow.indexOf(
-								lastToken && lastToken.type
-							) === -1 &&
-							/*
-								However, if cannotFollow contains "text", the check is more
-								tricky: the last text token hasn't been forged yet. So,
-								this line must be used:
-							*/
-							!(rule.cannotFollow.indexOf("text") > -1 && firstUnmatchedIndex < index)
-							)) &&
-						/*
-							If a peek is available, check that before running
-							the full match regexp.
-						*/
-						(!rule.peek || rule.peek === slice.slice(0, rule.peek.length)) &&
-						/*
-							Finally, run the pattern. Any earlier would cause the rules excluded
-							by the above checks to be run anyway, and waste time.
-						*/
-						(match = rule.pattern.exec(slice))) {
-						
-					/*
-						Now that it's matched, let's forge this token.
-						First, create a token out of the interstitial unmatched
-						text between this and the last "proper" token.
-					*/
-					if (firstUnmatchedIndex < index) {
-						parentToken.addChild({
-							type: "text",
-							match: src.slice(firstUnmatchedIndex, index),
-							innerMode: mode
-						});
-					}
-					// Create a token using the matched rule's fn.
-					lastToken = parentToken.addChild(rule.fn(match));
-					
-					// Increment the index in the src
-					index += lastToken.text.length;
-					firstUnmatchedIndex = index;
-					/*
-						If a Back token arrives, it must match with a Front token.
-						If so, both tokens, and those intervening, are merged ("folded") into one.
-					*/
-					if (lastToken.isBackToken()) {
-						/*
-							Speed paranoia necessitates a for-loop here, which sets
-							ft to either the index of the rightmost frontToken matching
-							lastToken's matches, or -1.
-						*/
-						for(ft = 0; lastToken.matches && ft < frontTokenStack.length; ft += 1) {
-							if (frontTokenStack[ft].type in lastToken.matches) {
-								break;
-							}
-						}
-						if (ft < frontTokenStack.length) {
-							/*
-								Having found a matching pair of tokens, we fold them together.
-								Note: this function splices the children array in-place!!
-								Fortunately, nothing needs to be adjusted to account for this.
-							*/
-							foldTokens(parentToken, lastToken, frontTokenStack[ft]);
-							frontTokenStack = frontTokenStack.slice(ft + 1);
-						}
-						else if (!lastToken.isFrontToken()) {
-							/*
-								It doesn't match anything...! It's just prose text, then.
-								Demote the token to a text token.
-							*/
-							lastToken.demote();
-						}
-					}
-					/*
-						Front tokens are saved, in case a Back token arrives
-						later that can match it. This MUST come after the Back token check
-						so that the tokens which are both Front and Back will work properly.
-					*/
-					if (lastToken.isFrontToken()) {
-						frontTokenStack.unshift(lastToken);
-					}
-					// Break from the for-loop
-					break;
+						(match = rule.pattern.exec(slice)))) {
+					continue;
 				}
+				/*
+					Having run the pattern, we now create tokenData from the match. We use this
+					to create the token, but we shouldn't do so if certain invalidation criteria
+					are met...
+				*/
+				tokenData = rule.fn(match);
+				/*
+					...such as this: if it would be a Back token, it must match with a Front token.
+				*/
+				isMatchingBack = false;
+				if (tokenData.matches) {
+					/*
+						Speed paranoia necessitates a for-loop here, which sets
+						ft to either the index of the rightmost frontToken matching
+						tokenData's matches, or -1.
+					*/
+					for(ft = 0; ft < frontTokenStack.length; ft += 1) {
+						if (frontTokenStack[ft].type in tokenData.matches) {
+							isMatchingBack = true;
+							break;
+						}
+					}
+					/*
+						If it doesn't match, then abandon this rule and try the next one.
+					*/
+					if (ft >= frontTokenStack.length && !tokenData.isFront) {
+						continue;
+					}
+				}
+				
+				/*
+					Now that it's fully confirmed, let's build this token.
+					First, create a token out of the interstitial unmatched
+					text between this and the last "proper" token.
+				*/
+				if (firstUnmatchedIndex < index) {
+					parentToken.addChild({
+						type: "text",
+						text: src.slice(firstUnmatchedIndex, index),
+						innerMode: mode
+					});
+				}
+				// Create a token using the matched rule's fn.
+				lastToken = parentToken.addChild(tokenData);
+				
+				// Increment the index in the src
+				index += lastToken.text.length;
+				firstUnmatchedIndex = index;
+				
+				/*
+					The preceding test confirmed whether this is a matching Back token or not.
+					If so, we fold them together.
+				*/
+				if (isMatchingBack) {
+					/*
+						Note: this function splices the children array in-place!!
+						Fortunately, nothing needs to be adjusted to account for this.
+					*/
+					foldTokens(parentToken, lastToken, frontTokenStack[ft]);
+					frontTokenStack = frontTokenStack.slice(ft + 1);
+				}
+				
+				/*
+					Front tokens are saved, in case a Back token arrives
+					later that can match it. This MUST come after the isMatchingBack check
+					so that the tokens which are both Front and Back will work properly.
+				*/
+				if (lastToken.isFrontToken()) {
+					frontTokenStack.unshift(lastToken);
+				}
+				/*
+					Break from the for-loop.
+				*/
+				break;
 			}
 			
 			/*
@@ -464,7 +492,7 @@
 		if (firstUnmatchedIndex < index) {
 			parentToken.addChild({
 				type: "text",
-				match: src.slice(firstUnmatchedIndex, index),
+				text: src.slice(firstUnmatchedIndex, index),
 				innerMode: (frontTokenStack.length ? frontTokenStack[0] : parentToken).innerMode,
 			});
 		}
@@ -492,7 +520,7 @@
 			frontTokenIndex  = parentToken.children.indexOf(frontToken),
 			// Hoisted loop vars
 			i, l;
-
+		
 		/*
 			First, find the tokens enclosed by the pair, and make them the
 			Back token's children.

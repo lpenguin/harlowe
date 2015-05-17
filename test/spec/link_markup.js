@@ -80,6 +80,12 @@ describe("links", function() {
 				expect(link.html()).toBe("<br>mire<br>");
 				expect(link.attr("passage-name")).toBe("mire");
 			});
+			it("won't be confused with nested hooks", function() {
+				expect(runPassage("|a>[|b>[c]]").find('tw-expression, tw-error').length).toBe(0);
+				expect(runPassage("[[b]<c|]<a|").find('tw-expression, tw-error').length).toBe(0);
+				expect(runPassage("|a>[[b]]").find('tw-expression, tw-error').length).toBe(0);
+				expect(runPassage("[[b]]<a|").find('tw-expression').length).toBe(1);
+			});
 		});
 		describe("proper link syntax", function() {
 			it("consists of a simple link with <- or ->", function() {
