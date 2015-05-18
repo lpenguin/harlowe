@@ -332,6 +332,36 @@ describe("basic twinemarkup syntax", function() {
 				"AB"
 			);
 		});
+		it("works to extend the heading syntax", function() {
+			expectMarkupToBecome(
+				"#A\n\\B",
+				"<h1>AB</h1>"
+			);
+			expectMarkupToBecome(
+				"#A\\\nB",
+				"<h1>AB</h1>"
+			);
+		});
+		it("works to extend the bulleted list syntax", function() {
+			expectMarkupToBecome(
+				"* A\n\\B",
+				"<ul><li>AB</li></ul>"
+			);
+			expectMarkupToBecome(
+				"* A\\\nB",
+				"<ul><li>AB</li></ul>"
+			);
+		});
+		it("works to extend the numbered list syntax", function() {
+			expectMarkupToBecome(
+				"0. A\n\\B",
+				"<ol><li>AB</li></ol>"
+			);
+			expectMarkupToBecome(
+				"0. A\\\nB",
+				"<ol><li>AB</li></ol>"
+			);
+		});
 	});
 	describe("collapsing whitespace syntax", function() {
 		it("eliminates runs of whitespace between { and }", function() {

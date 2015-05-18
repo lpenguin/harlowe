@@ -60,6 +60,9 @@
 		// Checks if text appears before line-breaks or end-of-input.
 		eol = "(?=\\n+|$)",
 		
+		//Escaped line
+		escapedLine =  "\\\\\\n\\\\?|\\n\\\\",
+		
 		// Handles Unicode ranges not covered by \w. Copied from TiddlyWiki5 source - may need updating.
 		anyLetter       = "[\\w\\-\u00c0-\u00de\u00df-\u00ff\u0150\u0170\u0151\u0171]",
 		// Identical to the above, but excludes hyphens.
@@ -75,20 +78,22 @@
 			In the field, lists are structurally not that useful in Twine, except for pure
 			presentational purposes: putting a bullet-point before a line.
 		*/
+		noUnescapedLineBreak = "(" + either(escapedLine,"[^\\n]") + "+)",
+		
 		bullet = "\\*",
 		
-		bulleted = "(?:\n|^)" + ws + "(" + bullet + "+)" + mws + "([^\\n]*)" + eol,
+		bulleted = "(?:\n|^)" + ws + "(" + bullet + "+)" + mws + noUnescapedLineBreak + eol,
 		
 		numberPoint = "(?:0\\.)",
 		
-		numbered = ws + "(" + numberPoint + "+)" + ws + "([^\\n]*)" + eol,
+		numbered = ws + "(" + numberPoint + "+)" + ws + noUnescapedLineBreak + eol,
 		
 		hr = "(?:\n|^)" + ws + "\-{3,}" + ws + eol,
 		
 		/*
 			Markdown setext headers conflict with the hr syntax, and are thus gone.
 		*/
-		heading = "\n?" + ws + "(#{1,6})" + ws + "([^\\n]+?)" + ws + "#*" + ws + eol,
+		heading = "\n?" + ws + "(#{1,6})" + ws + noUnescapedLineBreak + eol,
 		
 		/*
 			New text alignment syntax.
@@ -219,7 +224,7 @@
 		
 		whitespace:  mws,
 		
-		escapedLine: "\\\\\\n\\\\?|\\n\\\\",
+		escapedLine: escapedLine,
 		
 		br: "\\n(?!\\\\)",
 		
