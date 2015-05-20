@@ -112,6 +112,12 @@ describe("basic twinemarkup syntax", function() {
 				);
 			});
 		});
+		it("does not create a <br> afterward", function() {
+			expectMarkupToBecome(
+				"#A\nB",
+				"<h1>A</h1>B"
+			);
+		});
 		it("(unlike Markdown) permits whitespace between the start of the line and #", function() {
 			expectMarkupToBecome(
 				" \f\v\t#A",
@@ -145,6 +151,12 @@ describe("basic twinemarkup syntax", function() {
 			expectMarkupToBecome(
 				" *Red",
 				" *Red"
+			);
+		});
+		it("won't create <br> elements afterward", function() {
+			expectMarkupToBecome(
+				"* A\nB",
+				"<ul><li>A</li></ul>B"
 			);
 		});
 		it("(unlike Markdown) allows nested lists by the addition of more consecutive *'s", function() {
@@ -194,6 +206,12 @@ describe("basic twinemarkup syntax", function() {
 				"00. <br>"
 			);
 		});
+		it("won't create <br> elements afterward", function() {
+			expectMarkupToBecome(
+				"0. A\nB",
+				"<ol><li>A</li></ol>B"
+			);
+		});
 		it("(unlike Markdown) allows nested lists by the addition of more consecutive *'s", function() {
 			expectMarkupToBecome(
 				"0. A\n0.0. B\n0.0. C\n0. D",
@@ -229,10 +247,16 @@ describe("basic twinemarkup syntax", function() {
 				);
 			});
 		});
+		it("won't create <br> elements afterward", function() {
+			expectMarkupToBecome(
+				"---\ngarply",
+				"<hr>garply"
+			);
+		});
 		it("works consecutively", function() {
 			expectMarkupToBecome(
 				"---\n".repeat(3),
-				"<hr><br><hr><br><hr><br>"
+				"<hr><hr><hr>"
 			);
 		});
 		it("won't work unless it's at the start of a line", function() {
@@ -487,6 +511,10 @@ describe("basic twinemarkup syntax", function() {
 			expect(align.css('text-align')).toBe('right');
 			expect(align.text()).toBe('garply');
 			expect(align.css('margin-left')).toMatch(/^(?:0px)?$/);
+		});
+		it("must be on a single line", function() {
+			var align = runPassage("==>garply\ngrault\n<==corge").find('tw-align');
+			expect(align.length).toBe(0);
 		});
 		it("ignores the number of, and imbalance of, = signs used", function() {
 			[2,3,4,5,6,7,8,9,10].forEach(function(number) {

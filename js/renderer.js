@@ -107,6 +107,7 @@ define(['utils', 'markup', 'twinescript/compiler', 'internaltypes/twineerror'], 
 					}
 					case "numbered":
 					case "bulleted": {
+					
 						// Run through the tokens, consuming all consecutive list items
 						tagName = (token.type === "numbered" ? "ol" : "ul");
 						out += "<" + tagName + ">";
@@ -122,11 +123,12 @@ define(['utils', 'markup', 'twinescript/compiler', 'internaltypes/twineerror'], 
 							
 							out += renderTag(tokens[i], "li");
 							i += 1;
-							// If a <br> follows a listitem, ignore it.
-							if (tokens[i] && tokens[i].type === "br") {
-								i+=1;
-							}
 						}
+						/*
+							Since the while loop broke at a point where tokens[i] wasn't a list item,
+							we must reset i to just prior to that position (so that the for-loop head can increment it).
+						*/
+						i -= 1;
 						out += ("</" + tagName + ">").repeat(depth + 1);
 						break;
 					}

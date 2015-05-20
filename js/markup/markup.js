@@ -156,7 +156,6 @@
 			*/
 			hr: {
 				fn: emptyFn,
-				canFollow: [null, "br"],
 			},
 			bulleted: {
 				fn: function(match) {
@@ -165,7 +164,6 @@
 						innerText: match[2]
 					};
 				},
-				canFollow: [null, "br"],
 			},
 			numbered: {
 				fn: function(match) {
@@ -174,7 +172,6 @@
 						innerText: match[2]
 					};
 				},
-				canFollow: [null, "br"],
 			},
 			heading: {
 				fn: function(match) {
@@ -183,7 +180,6 @@
 						innerText: match[2]
 					};
 				},
-				canFollow: [null, "br"],
 			},
 			/*
 				Text align syntax
@@ -223,6 +219,12 @@
 				},
 			},
 		});
+		/*
+			All block rules have a single specific canFollow.
+		*/
+		Object.keys(blockRules).forEach(function(key) {
+			blockRules[key].canFollow = [null, "br", "hr", "bulleted", "numbered", "heading", "align"];
+		});
 		
 		/*
 			Now, the inline rules.
@@ -247,7 +249,7 @@
 				Like GitHub-Flavoured Markdown, Twine preserves line breaks
 				within paragraphs.
 			*/
-			br:            { fn: emptyFn },
+			br:            { fn: emptyFn, },
 			
 			strongOpener:  { fn: openerFn("strongOpener", "strong") },
 			emOpener:      { fn: openerFn("emOpener",     "em")     },

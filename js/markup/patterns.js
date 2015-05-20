@@ -57,9 +57,6 @@
 		// Word break
 		wb = "\\b",
 		
-		// Checks if text appears before line-breaks or end-of-input.
-		eol = "(?=\\n+|$)",
-		
 		//Escaped line
 		escapedLine =  "\\\\\\n\\\\?|\\n\\\\",
 		
@@ -78,27 +75,29 @@
 			In the field, lists are structurally not that useful in Twine, except for pure
 			presentational purposes: putting a bullet-point before a line.
 		*/
+		eol = "(?:\\n|$)",
+		sol = "\\n?",
 		noUnescapedLineBreak = "(" + either(escapedLine,"[^\\n]") + "+)",
 		
 		bullet = "\\*",
 		
-		bulleted = "(?:\n|^)" + ws + "(" + bullet + "+)" + mws + noUnescapedLineBreak + eol,
+		bulleted = sol + ws + "(" + bullet + "+)" + mws + noUnescapedLineBreak + eol,
 		
 		numberPoint = "(?:0\\.)",
 		
-		numbered = ws + "(" + numberPoint + "+)" + ws + noUnescapedLineBreak + eol,
+		numbered = sol + ws + "(" + numberPoint + "+)" + ws + noUnescapedLineBreak + eol,
 		
-		hr = "(?:\n|^)" + ws + "\-{3,}" + ws + eol,
+		hr = sol + ws + "\-{3,}" + ws + eol,
 		
 		/*
 			Markdown setext headers conflict with the hr syntax, and are thus gone.
 		*/
-		heading = "\n?" + ws + "(#{1,6})" + ws + noUnescapedLineBreak + eol,
+		heading = sol + ws + "(#{1,6})" + ws + noUnescapedLineBreak + eol,
 		
 		/*
 			New text alignment syntax.
 		*/
-		align = ws + "(==+>|<=+|=+><=+|<==+>)" + ws + eol,
+		align = sol + ws + "(==+>|<=+|=+><=+|<==+>)" + ws + eol,
 		
 		passageLink = {
 			opener:            "\\[\\[(?!\\[)",
