@@ -230,5 +230,5 @@ module.exports = function (grunt) {
 	grunt.registerTask('default', [ 'jshint:harlowe', 'jshint:tests', 'compile', ]);
 	grunt.registerTask('compile', [ 'clean', 'sass', 'cssmin', 'requirejs' ]);
 	grunt.registerTask('runtime', [ 'compile', 'replace:runtime', 'examplefile', ]);
-	grunt.registerTask('quick',   [ 'requirejs', 'replace:runtime', ]);
+	grunt.registerTask('quick',   [ 'sass', 'cssmin', 'requirejs', 'replace:runtime', ]);
 };

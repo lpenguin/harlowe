@@ -197,7 +197,8 @@ function ($, Utils, Selectors, State, Section, Passages) {
 			[{ transition: "dissolve" }]
 		);
 		
-		parent.append(story);
+		// TODO: Change `$('html')` to `parent` for 2.0.0
+		$('html').append(story);
 		/*
 			In stretchtext, scroll the window to the top of the inserted element,
 			minus an offset of 5% of the viewport's height.
@@ -205,7 +206,8 @@ function ($, Utils, Selectors, State, Section, Passages) {
 		*/
 		scroll(
 			0,
-			stretch ? newPassage.offset().top - ($(window).height() * 0.05) : story.offset().top
+			// TODO: Change `parent` to `story` for 2.0.0
+			stretch ? newPassage.offset().top - ($(window).height() * 0.05) : parent.offset().top
 		);
 	}
 	

@@ -2,9 +2,7 @@
 
 Rough documentation is at http://twine2.neocities.org/
 
-###2.0.0 changes (unreleased):
-
-This version is numbered 2.0.0 because the alterations, while relatively minor, nonetheless constitute a break with backwards-compatibility.
+###1.1.0 changes (unreleased):
 
 ####Bugfixes
 
@@ -22,7 +20,6 @@ This version is numbered 2.0.0 because the alterations, while relatively minor, 
  * Now, if `(number:)` fails to convert, it prints an error instead of returning NaN.
  * Now, the error message for incorrect array properties is a bit clearer.
  * Fixed a bug where objects such as `(print:)` commands could be `+`'d (e.g. `(set: $x to (print: "A") + (print: "B"))`), with unfavourable results.
- * Fixed a bug where the "Story stylesheet" element was attached between `<head>` and `<body>`. This should have had no obvious effects in any browser, but was untidy anyway.
  * `(substring:)` and `(subarray:)` now properly treat negative indices: you can use them in both positions, and in any order. Also, they now display an error if 0 or NaN is given as an index.
  * Fixed a bug where the `2ndlast`, `3rdlast` etc. sequence properties didn't work at all.
  * Fixed a bug where datamaps would not be considered equal by `is`, `is in` or `contains` if they had the same key/value pairs but in a different order. From now on, datamaps should be considered unordered.
@@ -32,7 +29,7 @@ This version is numbered 2.0.0 because the alterations, while relatively minor, 
  * Optimised the TwineMarkup lexer a bit, improving passage render times.
  * Now, the style changer commands do not wrap arbitrary HTML around the hooks' elements, but by altering the `<tw-hook>`'s style attribute. This produces flatter DOM trees (admittedly not that big a deal) and has made several macros' behaviour more flexible (for instance, (text-style:"shadow") now properly uses the colour of the text instead of defaulting to black).
  * Now, during every `(set:)` operation on a TwineScript collection such as a datamap or array, the entire collection is cloned and reassigned to that particular moment's variables. Thus, the collection can be rolled back when the undo button is pressed.
- * Fixed some bugs where "its" would sometimes incorrectly be parsed as "it" plus the text "s".
+ * Fixed some bugs where "its" would sometimes be incorrectly parsed as "it" plus the text "s".
  * Fixed a bug where enchantment event handlers (such as those for `(click:)`) could potentially fail to load.
  * Fixed a bug where the verbatim syntax (backticks) didn't preserve spaces at the front and end of it.
 
@@ -47,7 +44,6 @@ This version is numbered 2.0.0 because the alterations, while relatively minor, 
  * `(if:)` now only works when given a boolean - if you had written `(if: $var)` and `$var` is a number or string, you must write `$var is not 0` or `$var's length > 0` instead.
  * `(text:)` now only works on strings, numbers, booleans and arrays, because the other datatypes cannot meaningfully be transformed into text.
  * Now, you can't use the `and`, `or` and `not` operators on non-boolean values. So, one must explicitly convert said values to boolean using `is not 0` and such instead of assuming it's boolean.
- * Altered the CSS of `<tw-story>` to use vertical padding instead of vertical margins.
  * Now, division operators (`/` and `%`) will produce an error if used to divide by zero.
  * Reordered the precedence of `contains` - it should now be higher than `is`, so that e.g. `(print: "ABC" contains "A" is true)` should now work as expected.
  * Now, giving a datamap to `(print:)` will cause that macro to print out the datamap in a rough HTML `<table>` structure, showing each name and value. This is a superior alternative to just printing "[object Object]".
@@ -89,6 +85,13 @@ This version is numbered 2.0.0 because the alterations, while relatively minor, 
  * Added `(datanames:)`, which takes a single datamap, and returns an array containing all of the datamap's names, alphabetised.
  * Added `(datavalues:)`, which takes a single datamap, and returns an array containing all of the datamap's values, alphabetised by their names were.
  * It is now an error to begin a tagged hook (such as `(if:$a)[`) and not have a matching closing `]`.
+
+####Deferred until 2.0.0
+
+The following fixes are not present in 1.1.0 due to compatibility concerns, but will appear in the next major version.
+
+ * Fixed a bug where the "Story stylesheet" element was attached between `<head>` and `<body>`. This should have had no obvious effects in any browser, but was untidy anyway.
+ * Altered the CSS of `<tw-story>` to use vertical padding instead of vertical margins.
 
 ###1.0.1 changes:
 
