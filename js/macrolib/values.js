@@ -440,6 +440,13 @@ define(['utils', 'macros', 'utils/operationutils', 'internaltypes/twineerror'], 
 		*/
 		random: [function random(a, b) {
 			var from, to;
+			/*
+				First, throw an error if either of the numbers is not a whole number.
+			*/
+			if (a !== (a|0) || b !== (b|0)) {
+				return TwineError.create("macrocall",
+					"(random:) only accepts whole numbers, not " + OperationUtils.objectName(a !== (a|0) ? a : b));
+			}
 			if (!b) {
 				from = 0;
 				to = a;
@@ -449,7 +456,7 @@ define(['utils', 'macros', 'utils/operationutils', 'internaltypes/twineerror'], 
 			}
 			to += 1;
 			return ~~((Math.random() * (to - from))) + from;
-		}, [Number, Number]],
+		}, [Number, Macros.TypeSignature.optional(Number)]],
 		
 		either: [either, rest(Any)],
 

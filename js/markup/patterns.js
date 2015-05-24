@@ -60,10 +60,18 @@
 		//Escaped line
 		escapedLine =  "\\\\\\n\\\\?|\\n\\\\",
 		
+		// Line break without postfix escape
+		br = "\\n(?!\\\\)",
+		
 		// Handles Unicode ranges not covered by \w. Copied from TiddlyWiki5 source - may need updating.
 		anyLetter       = "[\\w\\-\u00c0-\u00de\u00df-\u00ff\u0150\u0170\u0151\u0171]",
 		// Identical to the above, but excludes hyphens.
 		anyLetterStrict =    "[\\w\u00c0-\u00de\u00df-\u00ff\u0150\u0170\u0151\u0171]",
+		
+		eol = either("\\n", "$"),
+		sol = "\\n",
+		
+		noUnescapedLineBreak = "(" + either(escapedLine,"[^\\n]") + "+)",
 		
 		/*
 			Markdown lists changes:
@@ -75,9 +83,6 @@
 			In the field, lists are structurally not that useful in Twine, except for pure
 			presentational purposes: putting a bullet-point before a line.
 		*/
-		eol = "(?:\\n|$)",
-		sol = "\\n?",
-		noUnescapedLineBreak = "(" + either(escapedLine,"[^\\n]") + "+)",
 		
 		bullet = "\\*",
 		
@@ -225,7 +230,7 @@
 		
 		escapedLine: escapedLine,
 		
-		br: "\\n(?!\\\\)",
+		br: br,
 		
 		/*
 			Twine currently just uses HTML comment syntax for comments.
@@ -248,7 +253,22 @@
 		hr:          hr,
 		heading:     heading,
 		align:       align,
+		bulleted:    bulleted,
+		numbered:    numbered,
 		
+		/*
+			These variants don't require a leading \n, and are only used at the
+			start of passage text, or immediately after another block element.
+		*/
+		hrFirst:          hr.replace('\\n',''),
+		headingFirst:     heading.replace('\\n',''),
+		alignFirst:       align.replace('\\n',''),
+		bulletedFirst:    bulleted.replace('\\n',''),
+		numberedFirst:    numbered.replace('\\n',''),
+		
+		/*
+			The text style syntaxes.
+		*/
 		strongOpener:     escape("**"),
 		emOpener:         escape("*"),
 		delOpener:        escape("~~"),
@@ -264,9 +284,6 @@
 		
 		collapsedFront:    "{",
 		collapsedBack:     "}",
-		
-		bulleted:    bulleted,
-		numbered:    numbered,
 		
 		/*
 			Hook tags can be either prepended, pointing to the right,

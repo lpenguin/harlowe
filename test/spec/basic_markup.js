@@ -96,6 +96,10 @@ describe("basic twinemarkup syntax", function() {
 					"#".repeat(i) + "A",
 					"<h" + i + ">A</h" + i + ">"
 				);
+				expectMarkupToBecome(
+					"#".repeat(i) + "A\n",
+					"<h" + i + ">A</h" + i + ">"
+				);
 			});
 		});
 		it("won't work unless it's at the start of a line", function() {
@@ -107,8 +111,8 @@ describe("basic twinemarkup syntax", function() {
 		it("consumes one (1) preceding line break ", function() {
 			[1,2,3,4].forEach(function(i) {
 				expectMarkupToBecome(
-					"\n".repeat(i) + "#A",
-					"<br>".repeat(i-1) + "<h1>A</h1>"
+					"A" + "\n".repeat(i) + "#A",
+					"A" + "<br>".repeat(i-1) + "<h1>A</h1>"
 				);
 			});
 		});
@@ -182,6 +186,10 @@ describe("basic twinemarkup syntax", function() {
 				" \t* A",
 				"<ul><li>A</li></ul>"
 			);
+			expectMarkupToBecome(
+				"   * A   \n   * B   ",
+				"<ul><li>A   </li><li>B   </li></ul>"
+			);
 		});
 	});
 
@@ -204,6 +212,10 @@ describe("basic twinemarkup syntax", function() {
 			expectMarkupToBecome(
 				"00. \n",
 				"00. <br>"
+			);
+			expectMarkupToBecome(
+				"\nA B 0.C",
+				"<br>A B 0.C"
 			);
 		});
 		it("won't create <br> elements afterward", function() {
@@ -235,6 +247,10 @@ describe("basic twinemarkup syntax", function() {
 				" \t0. A",
 				"<ol><li>A</li></ol>"
 			);
+			expectMarkupToBecome(
+				"   0. A   \n   0. B   ",
+				"<ol><li>A   </li><li>B   </li></ol>"
+			);
 		});
 	});
 
@@ -265,11 +281,17 @@ describe("basic twinemarkup syntax", function() {
 				"A ---"
 			);
 		});
+		it("ignores preceding and trailing whitespace", function() {
+			expectMarkupToBecome(
+				"   ---   \ngarply",
+				"<hr>garply"
+			);
+		});
 		it("consumes one (1) preceding line break ", function() {
 			[1,2,3,4].forEach(function(i) {
 				expectMarkupToBecome(
-					"\n".repeat(i) + "---",
-					"<br>".repeat(i-1) + "<hr>"
+					"A" + "\n".repeat(i) + "---",
+					"A" + "<br>".repeat(i-1) + "<hr>"
 				);
 			});
 		});
@@ -511,6 +533,10 @@ describe("basic twinemarkup syntax", function() {
 			expect(align.css('text-align')).toBe('right');
 			expect(align.text()).toBe('garply');
 			expect(align.css('margin-left')).toMatch(/^(?:0px)?$/);
+		});
+		it("ignores preceding and trailing whitespace", function() {
+			var align = runPassage("   ==>   \ngarply\n   <==   ").find('tw-align');
+			expect(align.length).toBe(1);
 		});
 		it("must be on a single line", function() {
 			var align = runPassage("==>garply\ngrault\n<==corge").find('tw-align');

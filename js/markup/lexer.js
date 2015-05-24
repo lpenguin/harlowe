@@ -481,7 +481,7 @@
 			if (i === l) {
 				index += 1;
 				if (lastToken === null) {
-					lastToken = "text";
+					lastToken = { type: "text" };
 				}
 			}
 		}

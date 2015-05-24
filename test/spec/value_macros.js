@@ -125,4 +125,25 @@ describe("basic value macros", function() {
 			expectMarkupToPrint("(either:true)[(either:true)[](print:(else:))](print:(else:))", 'falsefalse');
 		});
 	});
+	describe("the (random:) macro", function() {
+		it("accepts 1 or 2 whole numbers", function() {
+			expectMarkupToError("(random:)");
+			["0.1", "'X'", "true"].forEach(function(e) {
+				expectMarkupToError("(random:" + e + ")");
+				expectMarkupToError("(random:" + e + ",1)");
+				expectMarkupToError("(random:1," + e + ")");
+			});
+			expectMarkupToError("(random:1,1,1)");
+			expectMarkupToNotError("(random:1,1)");
+		});
+		it("returns a random number between each value, inclusive", function() {
+			for(var j = 0; j < 5; j += 1) {
+				for(var k = 1; k < 6; k += 1) {
+					var val = +runPassage("(random:" + j + "," + k + ")").text();
+					expect(val).not.toBeLessThan(Math.min(j,k));
+					expect(val).not.toBeGreaterThan(Math.max(j,k));
+				}
+			}
+		});
+	});
 });
