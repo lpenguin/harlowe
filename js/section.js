@@ -201,6 +201,31 @@ function($, Utils, Selectors, Renderer, Environ, State, HookUtils, HookSet, Pseu
 		}
 	}
 	
+	/*
+		This quick memoized feature test checks if the current platform supports Node#normalize().
+	*/
+	var supportsNormalize = (function() {
+		var result;
+		return function() {
+			if (result !== undefined) {
+				return result;
+			}
+			var p = $('<p>');
+			/*
+				If the method is absent, then...
+			*/
+			if (!p[0].normalize) {
+				return (result = false);
+			}
+			/*
+				There are two known normalize bugs: not normalising text ranges containing a hyphen,
+				and not normalising blank text nodes. This attempts to discern both bugs.
+			*/
+			p.append(new Text("0-")).append(new Text("2")).append(new Text("")).get(0).normalize();
+			return (result = (p.contents().length === 1));
+		};
+	}());
+	
 	/**
 		<tw-collapsed> elements should collapse whitespace inside them in a specific manner - only
 		single spaces between non-whitespace should remain.
@@ -282,8 +307,10 @@ function($, Utils, Selectors, Renderer, Environ, State, HookUtils, HookSet, Pseu
 		}
 		/*
 			Now that we're done, normalise the nodes.
+			(But, certain browsers' Node#normalize may not work,
+			in which case, don't bother at all.)
 		*/
-		elem[0] && elem[0].normalize();
+		elem[0] && supportsNormalize() && elem[0].normalize();
 	}
 	
 	/**
