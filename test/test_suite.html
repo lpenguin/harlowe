@@ -3,6 +3,7 @@
 <title>Jasmine Spec Runner v2.2.1</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jasmine/2.2.1/jasmine.css">
 <link rel="stylesheet" href="../build/harlowe-css.css"/>
+<script src="../node_modules/es6-shim/es6-shim.min.js"></script>
 <script src="../node_modules/grunt-contrib-requirejs/node_modules/requirejs/require.js"></script>
 <script>
 require.config({baseUrl: "../js/"});
@@ -34,7 +35,7 @@ window.expectMarkupToBecome = function(markup, html) {
 	expect(runPassage(markup).html() || '').toBe(html);
 };
 window.expectMarkupToPrint = function(markup, text) {
-	expect(runPassage(markup).find('br').replaceWith(new Text('\n')).end().text() || '').toBe(text);
+	expect(runPassage(markup).find('br').replaceWith(document.createTextNode('\n')).end().text() || '').toBe(text);
 };
 window.expectMarkupToError = function(markup) {
 	expect(runPassage(markup).find('tw-error:not(.javascript)').length).toBe(1);

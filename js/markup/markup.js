@@ -220,29 +220,11 @@
 			},
 		});
 		/*
-			The block rules, sadly, require an extra variant of each to be created
-			in order to match situations where preceding line breaks are absent
-			(such as immediately after other block elements).
+			All block rules have a single specific canFollow and cannotFollow.
 		*/
 		Object.keys(blockRules).forEach(function(key) {
-			var rule = blockRules[key];
-			/*
-				This creates a "first rule", a similar version of this block rule
-				which doesn't require a leading line break, but only matches at the start of the passage,
-				or at the start of preceding block elements.
-				(via its canFollow restriction).
-			*/
-			var ruleObj = setupRules(markupMode, {
-				firstRule: {
-					fn: function() {
-						var ret = rule.fn.apply(0, arguments);
-						ret.type = key;
-						return ret;
-					},
-					canFollow: [null, "hr", "bulleted", "numbered", "heading", "align"],
-				}
-			});
-			blockRules[key + "First"] = ruleObj.firstRule;
+			blockRules[key].canFollow = [null, "br", "hr", "bulleted", "numbered", "heading", "align"];
+			blockRules[key].cannotFollow = ["text"];
 		});
 		
 		/*

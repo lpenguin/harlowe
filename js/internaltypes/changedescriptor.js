@@ -213,11 +213,11 @@ define(['jquery', 'utils', 'renderer'], function($, Utils, Renderer) {
 						There's a slight problem: when we want to replace the
 						target, we don't need to apply a transition to every
 						element, so we just transition the target itself.
-					
+						
 						But, when we're *appending* to the target, we don't want
 						the existing material in it to be transitioned, so
 						then we must resort to transitioning every element.
-					
+						
 						This is #awkward, I know...
 					*/
 					append === "replace" ? target : dom,

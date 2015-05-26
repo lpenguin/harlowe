@@ -394,11 +394,15 @@
 				*/
 				if (!(shouldTest(rule, slice, lastToken, firstUnmatchedIndex < index) &&
 						/*
-							If the pattern doesn't match, this of course evaluates to null.
+							.test() is several times faster than .exec(), so only run the latter
+							once the former passes. This means there's a perf hit when a match IS
+							found (as .exec() must be run separately to .test()) but it should be balanced
+							by the number of rules which will not match.
 						*/
-						(match = rule.pattern.exec(slice)))) {
+						rule.pattern.test(slice))) {
 					continue;
 				}
+				match = rule.pattern.exec(slice);
 				/*
 					Having run the pattern, we now create tokenData from the match. We use this
 					to create the token, but we shouldn't do so if certain invalidation criteria

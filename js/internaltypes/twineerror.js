@@ -44,7 +44,7 @@ define(['jquery', 'utils'], function($, Utils) {
 				message: message
 			});
 		},
-	
+		
 		/*
 			This utility function converts a Javascript Error into a TwineError.
 			This allows them to be render()ed by Section.
@@ -64,10 +64,10 @@ define(['jquery', 'utils'], function($, Utils) {
 			If the arguments contain a native Error, this will return that error.
 			Or, if it contains a TwineError, return that as well.
 			This also recursively examines arrays' contents.
-
+			
 			Maybe in the future, there could be a way to concatenate multiple
 			errors into a single "report"...
-
+			
 			@method containsError
 			@return {Error|TwineError|Boolean} The first error encountered, or false.
 		*/

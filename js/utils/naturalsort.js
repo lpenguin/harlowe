@@ -26,8 +26,8 @@ define([], function() {
 				yD = parseInt(y.match(hre)) || xD && y.match(dre) && Date.parse(y) || null,
 				oFxNcL, oFyNcL, collator, colCmp;
 			// Use Intl.Collator if available
-			if (locale && Intl && Intl.Collator)
-				collator = Intl.Collator(locale);
+			if (locale && window.Intl && window.Intl.Collator)
+				collator = window.Intl.Collator(locale);
 			// first try and sort Hex codes or Dates
 			if (yD)
 				if (xD < yD) return -1;

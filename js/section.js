@@ -221,7 +221,8 @@ function($, Utils, Selectors, Renderer, Environ, State, HookUtils, HookSet, Pseu
 				There are two known normalize bugs: not normalising text ranges containing a hyphen,
 				and not normalising blank text nodes. This attempts to discern both bugs.
 			*/
-			p.append(new Text("0-")).append(new Text("2")).append(new Text("")).get(0).normalize();
+			p.append(document.createTextNode("0-"),document.createTextNode("2"),document.createTextNode(""))
+				.get(0).normalize();
 			return (result = (p.contents().length === 1));
 		};
 	}());
@@ -255,7 +256,7 @@ function($, Utils, Selectors, Renderer, Environ, State, HookUtils, HookSet, Pseu
 		*/
 		Utils.findAndFilter(elem, 'br:not([data-raw])')
 			.filter(noVerbatim)
-			.replaceWith(new Text(" "));
+			.replaceWith(document.createTextNode(" "));
 		
 		finalNode = elem.textNodes().reduce(function(prevNode, node) {
 			/*
@@ -266,7 +267,7 @@ function($, Utils, Selectors, Renderer, Environ, State, HookUtils, HookSet, Pseu
 					We can skip the entire remainder of this function with just
 					this line here.
 				*/
-				return (lastVisibleNode = new Text("A"));
+				return (lastVisibleNode = document.createTextNode("A"));
 			}
 			/*
 				- If the node contains runs of whitespace, reduce all runs to single spaces.

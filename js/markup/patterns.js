@@ -69,7 +69,6 @@
 		anyLetterStrict =    "[\\w\u00c0-\u00de\u00df-\u00ff\u0150\u0170\u0151\u0171]",
 		
 		eol = either("\\n", "$"),
-		sol = "\\n",
 		
 		noUnescapedLineBreak = "(" + either(escapedLine,"[^\\n]") + "+)",
 		
@@ -86,23 +85,23 @@
 		
 		bullet = "\\*",
 		
-		bulleted = sol + ws + "(" + bullet + "+)" + mws + noUnescapedLineBreak + eol,
+		bulleted = ws + "(" + bullet + "+)" + mws + noUnescapedLineBreak + eol,
 		
 		numberPoint = "(?:0\\.)",
 		
-		numbered = sol + ws + "(" + numberPoint + "+)" + ws + noUnescapedLineBreak + eol,
+		numbered = ws + "(" + numberPoint + "+)" + ws + noUnescapedLineBreak + eol,
 		
-		hr = sol + ws + "\-{3,}" + ws + eol,
+		hr = ws + "\-{3,}" + ws + eol,
 		
 		/*
 			Markdown setext headers conflict with the hr syntax, and are thus gone.
 		*/
-		heading = sol + ws + "(#{1,6})" + ws + noUnescapedLineBreak + eol,
+		heading = ws + "(#{1,6})" + ws + noUnescapedLineBreak + eol,
 		
 		/*
 			New text alignment syntax.
 		*/
-		align = sol + ws + "(==+>|<=+|=+><=+|<==+>)" + ws + eol,
+		align = ws + "(==+>|<=+|=+><=+|<==+>)" + ws + eol,
 		
 		passageLink = {
 			opener:            "\\[\\[(?!\\[)",
@@ -255,16 +254,6 @@
 		align:       align,
 		bulleted:    bulleted,
 		numbered:    numbered,
-		
-		/*
-			These variants don't require a leading \n, and are only used at the
-			start of passage text, or immediately after another block element.
-		*/
-		hrFirst:          hr.replace('\\n',''),
-		headingFirst:     heading.replace('\\n',''),
-		alignFirst:       align.replace('\\n',''),
-		bulletedFirst:    bulleted.replace('\\n',''),
-		numberedFirst:    numbered.replace('\\n',''),
 		
 		/*
 			The text style syntaxes.

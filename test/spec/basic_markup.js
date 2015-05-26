@@ -102,17 +102,21 @@ describe("basic twinemarkup syntax", function() {
 				);
 			});
 		});
-		it("won't work unless it's at the start of a line", function() {
+		it("won't work if it's preceded by text", function() {
 			expectMarkupToBecome(
 				"A B #C",
 				"A B #C"
 			);
+			expectMarkupToBecome(
+				"\nA B #C",
+				"<br>A B #C"
+			);
 		});
-		it("consumes one (1) preceding line break ", function() {
+		it("does not consume preceding line breaks", function() {
 			[1,2,3,4].forEach(function(i) {
 				expectMarkupToBecome(
 					"A" + "\n".repeat(i) + "#A",
-					"A" + "<br>".repeat(i-1) + "<h1>A</h1>"
+					"A" + "<br>".repeat(i) + "<h1>A</h1>"
 				);
 			});
 		});
@@ -143,8 +147,12 @@ describe("basic twinemarkup syntax", function() {
 		});
 		it("won't work unless it's at the start of a line", function() {
 			expectMarkupToBecome(
-				"A B *C",
-				"A B *C"
+				"A B * C",
+				"A B * C"
+			);
+			expectMarkupToBecome(
+				"\nA B * C",
+				"<br>A B * C"
 			);
 		});
 		it("won't work unless whitespace follows the *", function() {
@@ -156,6 +164,14 @@ describe("basic twinemarkup syntax", function() {
 				" *Red",
 				" *Red"
 			);
+		});
+		it("does not consume preceding line breaks", function() {
+			[1,2,3,4].forEach(function(i) {
+				expectMarkupToBecome(
+					"A" + "\n".repeat(i) + "* A",
+					"A" + "<br>".repeat(i) + "<ul><li>A</li></ul>"
+				);
+			});
 		});
 		it("won't create <br> elements afterward", function() {
 			expectMarkupToBecome(
@@ -218,6 +234,14 @@ describe("basic twinemarkup syntax", function() {
 				"<br>A B 0.C"
 			);
 		});
+		it("does not consume preceding line breaks", function() {
+			[1,2,3,4].forEach(function(i) {
+				expectMarkupToBecome(
+					"A" + "\n".repeat(i) + "0. A",
+					"A" + "<br>".repeat(i) + "<ol><li>A</li></ol>"
+				);
+			});
+		});
 		it("won't create <br> elements afterward", function() {
 			expectMarkupToBecome(
 				"0. A\nB",
@@ -263,22 +287,20 @@ describe("basic twinemarkup syntax", function() {
 				);
 			});
 		});
-		it("won't create <br> elements afterward", function() {
-			expectMarkupToBecome(
-				"---\ngarply",
-				"<hr>garply"
-			);
-		});
 		it("works consecutively", function() {
 			expectMarkupToBecome(
 				"---\n".repeat(3),
 				"<hr><hr><hr>"
 			);
 		});
-		it("won't work unless it's at the start of a line", function() {
+		it("won't work if it's preceded by text", function() {
 			expectMarkupToBecome(
 				"A ---",
 				"A ---"
+			);
+			expectMarkupToBecome(
+				"\nA B ---",
+				"<br>A B ---"
 			);
 		});
 		it("ignores preceding and trailing whitespace", function() {
@@ -287,15 +309,21 @@ describe("basic twinemarkup syntax", function() {
 				"<hr>garply"
 			);
 		});
-		it("consumes one (1) preceding line break ", function() {
+		it("does not consume preceding line breaks", function() {
 			[1,2,3,4].forEach(function(i) {
 				expectMarkupToBecome(
 					"A" + "\n".repeat(i) + "---",
-					"A" + "<br>".repeat(i-1) + "<hr>"
+					"A" + "<br>".repeat(i) + "<hr>"
 				);
 			});
 		});
-		it("(unlike Markdown) permits whitespace between the start of the line and #", function() {
+		it("won't create <br> elements afterward", function() {
+			expectMarkupToBecome(
+				"---\ngarply",
+				"<hr>garply"
+			);
+		});
+		it("(unlike Markdown) permits whitespace between the start of the line and ---", function() {
 			expectMarkupToBecome(
 				" \t---",
 				"<hr>"
@@ -578,6 +606,16 @@ describe("basic twinemarkup syntax", function() {
 			expect(align.first().text()).toBe('garply');
 			expect(align.last().text()).toBe('grault');
 			expect(align.length).toBe(2);
+		});
+		it("does not consume preceding line breaks", function() {
+			[1,2,3,4].forEach(function(i) {
+				expect(runPassage(
+					"A" + "\n".repeat(i) + "==>\ngarply\n<==\n"
+				).children('br').length).toBe(i);
+			});
+		});
+		it("won't create <br> elements afterward", function() {
+			expect(runPassage("<==>\ngarply\n<==\n").find('tw-align + br').length).toBe(0);
 		});
 	});
 	

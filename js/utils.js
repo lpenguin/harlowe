@@ -62,7 +62,7 @@ function($, TwineMarkup, Selectors) {
 				If it actually has "style=display:inline", "hidden", or "style=display:none"
 				as an inline attribute, well, that makes life easy for us.
 			*/
-			if (elem.hidden || "none,inline".indexOf(elem.style.display) > -1) {
+			if (elem.hidden || /none|inline/.test(elem.style.display)) {
 				return true;
 			}
 			/*
@@ -74,7 +74,7 @@ function($, TwineMarkup, Selectors) {
 						If it has an inline style which is NOT none or inline,
 						then go ahead and return false.
 					*/
-					|| (elem.style.display && "none,inline".indexOf(elem.style.display) === -1)) {
+					|| /none|inline/.test(elem.style.display)) {
 				return false;
 			}
 			/*
@@ -91,7 +91,7 @@ function($, TwineMarkup, Selectors) {
 			return true;
 		})
 		&& unknown.every(function(elem) {
-			return "none,inline".indexOf($(elem).css('display')) > -1;
+			return /none|inline/.test(elem.style.display);
 		});
 	}
 	
@@ -502,6 +502,7 @@ function($, TwineMarkup, Selectors) {
 				and letting the built-in CSS take over.
 			*/
 			el.attr("data-t8n", transIndex).addClass("transition-in");
+			
 			if (childrenProbablyInline(el)) {
 				el.css('display','inline-block');
 			}
