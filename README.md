@@ -9,6 +9,7 @@ Rough documentation is at http://twine2.neocities.org/
  * Fixed a bug where the arithmetic operators had the wrong precedence (all using left-to-right).
  * Fixed a somewhat long-standing bug where certain passage elements were improperly given transition attributes during rendering.
  * Fixed a bug where lines of text immediately after bulleted and numbered lists would be mysteriously erased.
+ * Now, the `0. ` marker for the numbered list syntax must have at least one space after the `.`. Formerly zero spaces were permitted, causing `0.15` etc. to become a numbered list.
  * Fixed a bug in the heading syntax which caused it to be present in the middle of lines rather than just the beginning.
  * Now, if text markup potentially creates empty HTML elements, these elements are not created.
  * Fixed nested list items in both kinds of list markup. Formerly, writing nested lists (with either bullets or numbers) wouldn't work at all.

@@ -210,7 +210,7 @@ describe("basic twinemarkup syntax", function() {
 	});
 
 	describe("numbered lists", function() {
-		it("wraps 1 or more adjacent lines starting with 0. (plus optional whitespace) in <ul><li>", function() {
+		it("wraps 1 or more adjacent lines starting with 0., plus whitespace, in <ul><li>", function() {
 			expectMarkupToBecome(
 				"0. A",
 				"<ol><li>A</li></ol>"
@@ -218,6 +218,10 @@ describe("basic twinemarkup syntax", function() {
 			expectMarkupToBecome(
 				"0. A\n0. B",
 				"<ol><li>A</li><li>B</li></ol>"
+			);
+			expectMarkupToBecome(
+				"0.A",
+				"0.A"
 			);
 		});
 		it("won't work unless it's at the start of a line", function() {
@@ -521,7 +525,11 @@ describe("basic twinemarkup syntax", function() {
 		});
 		it("won't affect text outputted by (display:)", function() {
 			createPassage("B\nC", "grault");
-			expectMarkupToPrint("A\n{(display:'grault')}", "A\nB\nC");
+			expect(runPassage("A\n{(display:'grault')}").find('tw-expression > br').length).toBe(1);
+		});
+		it("...unless the (display:)ed text itself contains the syntax", function() {
+			createPassage("{B\nC}", "grault");
+			expect(runPassage("A\n{(display:'grault')}").find('tw-expression > br').length).toBe(0);
 		});
 		it("won't affect text inside verbatim guards", function() {
 			var p = runPassage("{   `   `   }");

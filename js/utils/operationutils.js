@@ -165,10 +165,10 @@ define(['utils', 'internaltypes/twineerror'], function(Utils, TwineError) {
 			*/
 			(   obj === String ||
 				obj === Number ||
-				obj === Boolean)  ? "a "  + obj.name.toLowerCase()
-			:  (obj === Map ||
-				obj === Set)      ? "a data" + obj.name.toLowerCase()
-			:   obj === Array     ? "an " + obj.name.toLowerCase()
+				obj === Boolean)  ? "a " + typeof obj()
+			:   obj === Map       ? "a datamap"
+			:   obj === Set       ? "a dataset"
+			:   obj === Array     ? "an array"
 			/*
 				Otherwise, defer to the TwineScript_TypeName, or TwineScript_ObjectName
 			*/

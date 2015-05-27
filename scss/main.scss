@@ -95,11 +95,6 @@ tw-story {
 */
 tw-passage {
 	display: block;
-	/*
-		This fix provides more intuitive whitespace for passage text,
-		and allows <tw-char> space characters to be drawn correctly.
-	*/
-	white-space: pre-wrap;
 }
 
 /*

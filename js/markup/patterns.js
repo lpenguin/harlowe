@@ -89,7 +89,7 @@
 		
 		numberPoint = "(?:0\\.)",
 		
-		numbered = ws + "(" + numberPoint + "+)" + ws + noUnescapedLineBreak + eol,
+		numbered = ws + "(" + numberPoint + "+)" + mws + noUnescapedLineBreak + eol,
 		
 		hr = ws + "\-{3,}" + ws + eol,
 		
