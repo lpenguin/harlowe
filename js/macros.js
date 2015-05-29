@@ -49,7 +49,7 @@ function($, Utils, OperationUtils, TwineError) {
 							TwineError.create("operation",
 								"I can't spread out "
 								+ OperationUtils.objectName(el.value)
-								+ ", which is not a string or array."
+								+ ", which is not a string, dataset or array."
 							)
 						);
 					}
@@ -154,6 +154,8 @@ function($, Utils, OperationUtils, TwineError) {
 		@param {Array|Object|null} typeSignature   An array of Twine macro parameter type data.
 	*/
 	function typeSignatureCheck(name, fn, typeSignature) {
+		var signatureInfo;
+		
 		/*
 			Return early if no signature was present for this macro.
 		*/
@@ -174,6 +176,21 @@ function($, Utils, OperationUtils, TwineError) {
 			It's an uncomfortable state of affairs, I know.
 		*/
 		name = "(" + (Array.isArray(name) && name.length > 1 ? name[0] : name) + ":)";
+		/*
+			This is also used for error message generation: it provides the author with
+			a readable sentence about the type signature of the macro.
+		*/
+		signatureInfo = "The " + name + " macro must only be given "
+			// Join [A,B,C] into "A, B, and C".
+			+ typeSignature.map(OperationUtils.typeName).reduce(function(a,e,i,arr) {
+				/*
+					This somewhat convoluted line only prints:
+					* a separating comma if there are multiple items,
+					* "and" if this is the final item.
+				*/
+				return a + (i === 0 ? "" : i < arr.length-1 ? ", " : ", and ") + e;
+			},'')
+			+ (typeSignature.length > 1 ? ", in that order" : ".");
 		
 		// That being done, we now have the wrapping function.
 		return function typeCheckedMacro() {
@@ -192,8 +209,12 @@ function($, Utils, OperationUtils, TwineError) {
 					and Rest is not in effect, then too many params were supplied.
 				*/
 				if (ind >= typeSignature.length && !rest) {
-					return TwineError.create("macrocall", (args.length - typeSignature.length) +
-						" too many values were given to this " + name + " macro.");
+					return TwineError.create(
+						"typesignature",
+						(args.length - typeSignature.length) +
+							" too many values were given to this " + name + " macro.",
+						signatureInfo
+					);
 				}
 				
 				/*
@@ -227,17 +248,25 @@ function($, Utils, OperationUtils, TwineError) {
 						"not enough values" error.
 					*/
 					if (arg === undefined) {
-						return TwineError.create("macrocall", "The " + name + " macro needs "
-							+ Utils.plural((typeSignature.length - ind), "more value") + ".");
+						return TwineError.create(
+							"typesignature",
+							"The " + name + " macro needs "
+								+ Utils.plural((typeSignature.length - ind), "more value") + ".",
+							signatureInfo
+						);
 					}
 					
 					/*
 						Otherwise, it was the most common case: an invalid data type.
 					*/
-					return TwineError.create("datatype", name + "'s " +
-						Utils.nth(ind + 1) + " value is " + OperationUtils.objectName(arg) +
-						", but should be " +
-						OperationUtils.typeName(type) + ".");
+					return TwineError.create(
+						"typesignature",
+						name + "'s " +
+							Utils.nth(ind + 1) + " value is " + OperationUtils.objectName(arg) +
+							", but should be " +
+							OperationUtils.typeName(type) + ".",
+						signatureInfo
+					);
 				}
 			}
 			/*

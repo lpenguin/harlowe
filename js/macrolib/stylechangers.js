@@ -9,8 +9,7 @@ function($, Macros, Utils, Selectors, Colour, ChangerCommand, TwineError) {
 		This module modifies the Macros module only, and exports nothing.
 	*/
 	var
-		either = Macros.TypeSignature.either,
-		optional = Macros.TypeSignature.optional;
+		either = Macros.TypeSignature.either;
 	
 	Macros.addChanger
 	
@@ -19,7 +18,7 @@ function($, Macros, Utils, Selectors, Colour, ChangerCommand, TwineError) {
 			Allows the author to give a hook a computed tag name.
 			
 			Example usage:
-			`(hook:$hookName)[]`
+			`(hook: $hookName)[]`
 			
 			Rationale:
 			You may notice that it isn't possible to attach a nametag to hooks with commands
@@ -41,19 +40,37 @@ function($, Macros, Utils, Selectors, Colour, ChangerCommand, TwineError) {
 			[String]
 		)
 
-		// (transition:)
-		// Apply a CSS transition to a hook as it is inserted.
-		// Accepts a string name, and an OPTIONAL delay time.
+		/*d:
+			(transition: String) -> Command
+			Also known as: (t8n:)
+			
+			Apply a built-in CSS transition to a hook as it appears.
+			
+			Example usage:
+			`(transition: "pulse")[Gleep!]` makes the hook `[Gleep!]` use the "pulse" transition
+			when it appears.
+			
+			Details:
+			At present, the following text strings will produce a particular transition:
+			* "dissolve" (causes the hook to gently fade in)
+			* "shudder" (causes the hook to instantly appear while shaking back and forth)
+			* "pulse" (causes the hook to instantly appear while pulsating rapidly)
+			
+			All transitions are 0.8 seconds long. A means of altering transition times may be available
+			in a distant future update.
+			
+			See also:
+			(textstyle:)
+		*/
 		(["transition", "t8n"],
-			function transition(_, name, time) {
-				return ChangerCommand.create("transition", [name, time]);
+			function transition(_, name) {
+				return ChangerCommand.create("transition", [name]);
 			},
-			function(d, name, time) {
+			function(d, name) {
 				d.transition     = name;
-				d.transitionTime = time;
 				return d;
 			},
-			[String, optional(Number)]
+			[String]
 		)
 		
 		// (font:)

@@ -230,4 +230,28 @@ describe("twinescript operators", function () {
 			expectMarkupToPrint("(print: typeof xxis in Object)","false");
 		});
 	});
+	describe("the '...' operator", function () {
+		it("spreads strings into positional macro arguments, as characters", function (){
+			expectMarkupToPrint("(a: ...'ABC')","A,B,C");
+		});
+		it("spreads arrays into positional macro arguments, as elements", function (){
+			expectMarkupToPrint("(a: ...(a:1,2,'ABC'))","1,2,ABC");
+		});
+		it("spreads datasets into positional macro arguments, as elements", function (){
+			expectMarkupToPrint("(a: ...(dataset:1,2,2,'ABC'))","1,2,ABC");
+		});
+		it("fails for non-sequential data types", function (){
+			expectMarkupToError("(a: ...1)");
+			expectMarkupToError("(a: ...true)");
+			expectMarkupToError("(a: ...(datamap:1,'A'))");
+		});
+		it("works with variables", function (){
+			expectMarkupToPrint("(set:$a to (a:1,2,3))(a: ...$a)","1,2,3");
+		});
+		it("works with other positional arguments", function (){
+			expectMarkupToPrint("(a: 1, ...(a:2,3))","1,2,3");
+			expectMarkupToPrint("(a: ...(a:1, 2),3)","1,2,3");
+			expectMarkupToPrint("(a: 1, ...(a:2),3)","1,2,3");
+		});
+	});
 });

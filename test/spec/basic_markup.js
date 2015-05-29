@@ -512,6 +512,10 @@ describe("basic twinemarkup syntax", function() {
 				"AB"
 			);
 		});
+		it("works inside (display:)", function() {
+			createPassage("{B\nC}", "grault");
+			expect(runPassage("A\n(display:'grault')").find('tw-expression br').length).toBe(0);
+		});
 		it("won't affect text inside HTML tags", function() {
 			var p = runPassage("{<span title='   '> </span>}");
 			expect(p.find('span').attr('title')).toBe("   ");
@@ -525,11 +529,11 @@ describe("basic twinemarkup syntax", function() {
 		});
 		it("won't affect text outputted by (display:)", function() {
 			createPassage("B\nC", "grault");
-			expect(runPassage("A\n{(display:'grault')}").find('tw-expression > br').length).toBe(1);
+			expect(runPassage("A\n{(display:'grault')}").find('tw-expression br').length).toBe(1);
 		});
 		it("...unless the (display:)ed text itself contains the syntax", function() {
 			createPassage("{B\nC}", "grault");
-			expect(runPassage("A\n{(display:'grault')}").find('tw-expression > br').length).toBe(0);
+			expect(runPassage("A\n{(display:'grault')}").find('tw-expression br').length).toBe(0);
 		});
 		it("won't affect text inside verbatim guards", function() {
 			var p = runPassage("{   `   `   }");

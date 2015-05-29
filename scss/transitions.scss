@@ -47,7 +47,7 @@
 /* Box-flash */
 [data-t8n^=boxflash] {
 	&.transition-in {
-		@include animation(shudder-out 0.8s);
+		@include animation(box-flash 0.8s);
 	}
 }
 

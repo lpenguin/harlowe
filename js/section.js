@@ -241,14 +241,15 @@ function($, Utils, Selectors, Renderer, Environ, State, HookUtils, HookSet, Pseu
 		
 		/*
 			A .filter() callback which removes nodes inside a <tw-verbatim> or
-			<tw-expression> element.
+			<tw-expression> element, unless it is also inside a
+			<tw-collapsed> inside the <tw-expression>.
 		*/
 		function noVerbatim(e) {
 			/*
 				The (this || e) dealie is a kludge to support its use in a jQuery
 				.filter() callback as well as a bare function.
 			*/
-			return $(this || e).parents('tw-verbatim, tw-expression').length === 0;
+			return $(this || e).parentsUntil('tw-collapsed').filter('tw-verbatim, tw-expression').length === 0;
 		}
 		
 		/*
@@ -681,6 +682,7 @@ function($, Utils, Selectors, Renderer, Environ, State, HookUtils, HookSet, Pseu
 					}
 				}
 			});
+			
 			Utils.findAndFilter(dom, Selectors.collapsed).each(function() {
 				collapse($(this));
 			});

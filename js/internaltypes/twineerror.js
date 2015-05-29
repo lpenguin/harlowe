@@ -7,7 +7,7 @@ define(['jquery', 'utils'], function($, Utils) {
 	*/
 	
 	/*
-		This dictionary supplies extra explanations for the error types.
+		This dictionary supplies explanations for the most typical error types.
 	*/
 	var errorExplanations = {
 		syntax:        "The markup seems to contain a mistake.",
@@ -25,23 +25,26 @@ define(['jquery', 'utils'], function($, Utils) {
 	},
 	
 	TwineError = {
-		
-		create: function(type, message) {
+		/*
+			Normally, the type by itself suggests a rudimentary explanation from the above dict.
+			But, a different explanation can be provided by the caller, if they choose.
+		*/
+		create: function(type, message, explanation) {
 			if (!message) {
 				Utils.impossible("TwineError.create", "called with only 1 string.");
 			}
+			/*
+				Whatever happens, there absolutely must be a valid explanation from either source.
+			*/
+			Utils.assert(explanation || type in errorExplanations);
+			
 			return Object.assign(Object.create(this), {
 				/*
-					The type of the TwineError consists of one of the following strings:
-					"property" - used for accessing an incorrect property.
-					"operation" - used for applying incorrect operations to certain data.
-					"macrocall" - used for macro call errors, such as parameter length.
-					"datatype" - used for macro parameter type errors
-					"unimplemented" - when a feature isn't available
-					"javascript" - should only 
+					The type of the TwineError consists of one of the errorExplanations keys.
 				*/
-				type: type,
-				message: message
+				type:        type,
+				message:     message,
+				explanation: explanation,
 			});
 		},
 		
@@ -104,7 +107,7 @@ define(['jquery', 'utils'], function($, Utils) {
 					The explanation text element.
 				*/
 				explanationElement = $("<tw-error-explanation>")
-					.text(errorExplanations[this.type])
+					.text(this.explanation || errorExplanations[this.type])
 					.hide(),
 				/*
 					The button to reveal the explanation consists of a rightward arrowhead
