@@ -52,6 +52,7 @@ Rough documentation is at http://twine2.neocities.org/
  * Now, datamaps may have numbers as data names: `(datamap: 1, "A")` is now accepted. However, due to their differing types, the number `1` and the string `"1"` are treated as separate names.
  * HTML-style comments `<!--` and `-->` can now be nested, unlike in actual HTML.
  * The heading syntax no longer removes trailing `#` characters, or trims terminating whitespace. This brings it more into line with the bulleted and numbered list syntax.
+ * Changed `(textstyle:)` and `(transition:)` to produce errors when given incorrect style or transition names.
 
 ####New Features
 

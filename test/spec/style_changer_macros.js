@@ -24,7 +24,38 @@ describe("style changer macros", function() {
 			expect(hook.css('clear')).toBe('both');
 		});
 	});
-	
+	describe("the (textstyle:) macro", function() {
+		it("requires exactly 1 string argument", function() {
+			expectMarkupToError("(textstyle:)");
+			expectMarkupToError("(textstyle:1)");
+			expectMarkupToError("(textstyle:'A','B')");
+		});
+		it("errors unless given a valid textstyle name", function() {
+			expectMarkupToError("(textstyle:'')");
+			expectMarkupToError("(textstyle:'garply corge')");
+			['bold', 'italic', 'underline', 'strike', 'superscript', 'subscript', 'blink', 'shudder',
+			'mark', 'condense', 'expand', 'outline', 'shadow', 'emboss', 'smear', 'blur', 'blurrier',
+			'mirror', 'upsidedown', 'fadeinout', 'rumble'].forEach(function(e) {
+				expectMarkupToNotError("(textstyle:'" + e + "')");
+			});
+		});
+		// TODO: Add .css() tests of output.
+	});
+	describe("the (transition:) macro", function() {
+		it("requires exactly 1 string argument", function() {
+			expectMarkupToError("(transition:)");
+			expectMarkupToError("(transition:1)");
+			expectMarkupToError("(transition:'A','B')");
+		});
+		it("errors unless given a valid transition name", function() {
+			expectMarkupToError("(transition:'')");
+			expectMarkupToError("(transition:'garply corge')");
+			["dissolve", "shudder", "pulse"].forEach(function(e) {
+				expectMarkupToNotError("(transition:'" + e + "')");
+			});
+		});
+		// TODO: Add .css() tests of output.
+	});
 	describe("the (align:) macro", function() {
 		it("requires exactly 1 string argument", function() {
 			expectMarkupToError("(align:)");

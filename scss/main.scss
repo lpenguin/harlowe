@@ -139,9 +139,11 @@ tw-error {
 	cursor: help;
 	&.error {
 		background-color: hsla(312, 72%, 55%, 0.4); // A demure pink
+		color:black;
 	}
 	&.warning {
 		background-color: hsla(30, 72%, 55%, 0.4); // A stained orange
+		color:black;
 		display: none; // Only available in debug mode.
 		.debug-mode & {
 			display: inline;

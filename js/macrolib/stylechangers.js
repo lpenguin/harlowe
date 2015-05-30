@@ -64,6 +64,15 @@ function($, Macros, Utils, Selectors, Colour, ChangerCommand, TwineError) {
 		*/
 		(["transition", "t8n"],
 			function transition(_, name) {
+				var validT8ns = ["dissolve", "shudder", "pulse"];
+				name = Utils.insensitiveName(name);
+				if (validT8ns.indexOf(name) === -1) {
+					return TwineError.create(
+						"macrocall",
+						"'" + name + '" is not a valid (transition:)',
+						"Only the following names are recognised (capitalisation and hyphens ignored): "
+							+ validT8ns.join(", "));
+				}
 				return ChangerCommand.create("transition", [name]);
 			},
 			function(d, name) {
@@ -100,7 +109,7 @@ function($, Macros, Utils, Selectors, Colour, ChangerCommand, TwineError) {
 				
 				if (!/^(==+>|<=+|=+><=+|<==+>)$/.test(arrow)) {
 					return TwineError.create('macrocall', 'The (align:) macro requires an alignment arrow '
-						+ '("==>", "<==","==><=" etc.) be provided.');
+						+ '("==>", "<==", "==><=" etc.) be provided, not "' + arrow + '"');
 				}
 				
 				if (~centerIndex) {
@@ -266,11 +275,35 @@ function($, Macros, Utils, Selectors, Colour, ChangerCommand, TwineError) {
 			See also:
 			(css:)
 		*/
-		("text-style",
-			function textstyle(_, styleName) {
-				return ChangerCommand.create("text-style", [styleName]);
-			},
-			(function() {
+		/*
+			For encapsulation, the helpers that these two methods use are stored inside
+			this closure, and used in the addChanger call via .apply().
+		*/
+		.apply(Macros, (function() {
+				/*
+					We need the element's visual "color" or "background-color", but there
+					isn't a reliable way to retrieve it in all browsers
+					without traversing up through the element tree.
+					So, alas, it must be done.
+					
+					($(this).css('color') works in Firefox for detached elements
+					but not in Chrome, so this desperate fallback must be used.)
+				*/
+				function retrieveAttr(elem, attr, fallback) {
+					var colour;
+					while (elem[0] !== document
+						&& ((colour = elem.css(attr)) === "transparent" || colour === "")) {
+						elem = elem.parent();
+						/*
+							If <tw-story> element is detached, we use the <body>,
+							colour as an emergency fallback.
+						*/
+						if (elem.length === 0) {
+							elem = $('body');
+						}
+					}
+					return colour || fallback;
+				}
 				/*
 					This is a closure in which to cache the style-tagname mappings.
 				*/
@@ -294,7 +327,7 @@ function($, Macros, Utils, Selectors, Colour, ChangerCommand, TwineError) {
 							animation: "fade-in-out 1s steps(1,end) infinite alternate",
 							// .css() handles browser prefixes by itself.
 						},
-						"shudder": {
+						shudder: {
 							animation: "shudder linear 0.1s 0s infinite",
 							display: "inline-block",
 						},
@@ -309,7 +342,7 @@ function($, Macros, Utils, Selectors, Colour, ChangerCommand, TwineError) {
 						},
 						outline: [{
 								"text-shadow": function() {
-									var colour = $(this).css('color');
+									var colour = retrieveAttr($(this), 'color', "#000");
 									return "-1px -1px 0 " + colour
 										+ ", 1px -1px 0 " + colour
 										+ ",-1px  1px 0 " + colour
@@ -318,38 +351,19 @@ function($, Macros, Utils, Selectors, Colour, ChangerCommand, TwineError) {
 							},
 							{
 								color: function() {
-									var elem = $(this),
-										colour;
-									/*
-										We need the visible background colour, but there
-										isn't a reliable way to retrieve it
-										without traversing up through the element tree.
-										So, alas, it must be done.
-									*/
-									while (elem[0] !== document
-										&& (colour = elem.css('background-color')) === "transparent") {
-										elem = elem.parent();
-										/*
-											If <tw-story> element is detached, we use the <body>,
-											colour as an emergency fallback.
-										*/
-										if (elem.length === 0) {
-											elem = $('body');
-										}
-									}
-									return colour;
+									return retrieveAttr($(this), 'background-color', "#FFF");
 								},
 							}
 						],
 						shadow: {
-							"text-shadow": function() { return "0.08em 0.08em 0.08em " + $(this).css('color'); },
+							"text-shadow": function() { return "0.08em 0.08em 0.08em " + retrieveAttr($(this), 'color', "#000"); },
 						},
 						emboss: {
-							"text-shadow": function() { return "0.08em 0.08em 0em " + $(this).css('color'); },
+							"text-shadow": function() { return "0.08em 0.08em 0em " + retrieveAttr($(this), 'color', "#000"); },
 						},
 						smear: [{
 								"text-shadow": function() {
-									var colour = $(this).css('color');
+									var colour = retrieveAttr($(this), 'color', "#000");
 									return "0em   0em 0.02em " + colour + ","
 										+ "-0.2em 0em  0.5em " + colour + ","
 										+ " 0.2em 0em  0.5em " + colour;
@@ -360,12 +374,12 @@ function($, Macros, Utils, Selectors, Colour, ChangerCommand, TwineError) {
 							colourTransparent
 						],
 						blur: [{
-								"text-shadow": function() { return "0em 0em 0.08em " + $(this).css('color'); },
+								"text-shadow": function() { return "0em 0em 0.08em " + retrieveAttr($(this), 'color', "#000"); },
 							},
 							colourTransparent
 						],
 						blurrier: [{
-								"text-shadow": function() { return "0em 0em 0.2em " + $(this).css('color'); },
+								"text-shadow": function() { return "0em 0em 0.2em " + retrieveAttr($(this), 'color', "#000"); },
 								"user-select": "none",
 							},
 							colourTransparent
@@ -374,35 +388,43 @@ function($, Macros, Utils, Selectors, Colour, ChangerCommand, TwineError) {
 							display: "inline-block",
 							transform: "scaleX(-1)",
 						},
-						"upsidedown": {
+						upsidedown: {
 							display: "inline-block",
 							transform: "scaleY(-1)",
 						},
-						"fadeinout": {
+						fadeinout: {
 							animation: "fade-in-out 2s ease-in-out infinite alternate",
 						},
-						"rumble": {
+						rumble: {
 							animation: "rumble linear 0.1s 0s infinite",
 							display: "inline-block",
 						},
 					});
 				
-				return function text_style(d, styleName) {
-					/*
-						The name should be insensitive to normalise both capitalisation,
-						and hyphenation of names like "upside-down".
-					*/
-					styleName = Utils.insensitiveName(styleName);
-					
-					if (styleName in styleTagNames) {
+				return [
+					"text-style",
+					function textstyle(_, styleName) {
 						/*
-							This uses [].concat's behaviour of behaving like [].push() when
-							given non-arrays.
+							The name should be insensitive to normalise both capitalisation,
+							and hyphenation of names like "upside-down".
 						*/
+						styleName = Utils.insensitiveName(styleName);
+						
+						if (!(styleName in styleTagNames)) {
+							return TwineError.create(
+								"macrocall",
+								"'" + styleName + '" is not a valid (textstyle:)',
+								"Only the following names are recognised (capitalisation and hyphens ignored): "
+									+ Object.keys(styleTagNames).join(", "));
+						}
+						return ChangerCommand.create("text-style", [styleName]);
+					},
+					function (d, styleName) {
+						Utils.assert(styleName in styleTagNames);
 						d.styles = d.styles.concat(styleTagNames[styleName]);
+						return d;
 					}
-					return d;
-				};
+				];
 			}()),
 			[String]
 		)
