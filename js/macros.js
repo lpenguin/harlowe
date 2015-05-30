@@ -180,17 +180,21 @@ function($, Utils, OperationUtils, TwineError) {
 			This is also used for error message generation: it provides the author with
 			a readable sentence about the type signature of the macro.
 		*/
-		signatureInfo = "The " + name + " macro must only be given "
-			// Join [A,B,C] into "A, B, and C".
-			+ typeSignature.map(OperationUtils.typeName).reduce(function(a,e,i,arr) {
-				/*
-					This somewhat convoluted line only prints:
-					* a separating comma if there are multiple items,
-					* "and" if this is the final item.
-				*/
-				return a + (i === 0 ? "" : i < arr.length-1 ? ", " : ", and ") + e;
-			},'')
-			+ (typeSignature.length > 1 ? ", in that order" : ".");
+		if (typeSignature.length > 0) {
+			signatureInfo = "The " + name + " macro must only be given "
+				// Join [A,B,C] into "A, B, and C".
+				+ typeSignature.map(OperationUtils.typeName).reduce(function(a,e,i,arr) {
+					/*
+						This somewhat convoluted line only prints:
+						* a separating comma if there are multiple items,
+						* "and" if this is the final item.
+					*/
+					return a + (i === 0 ? "" : i < arr.length-1 ? ", " : ", and ") + e;
+				},'')
+				+ (typeSignature.length > 1 ? ", in that order" : ".");
+		} else {
+			signatureInfo = "The macro must not be given any data - just write " + name + ".";
+		}
 		
 		// That being done, we now have the wrapping function.
 		return function typeCheckedMacro() {

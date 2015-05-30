@@ -258,12 +258,19 @@
 		/*
 			The text style syntaxes.
 		*/
-		strongOpener:     escape("**"),
-		emOpener:         escape("*"),
 		delOpener:        escape("~~"),
 		italicOpener:     escape("//"),
 		boldOpener:       escape("''"),
 		supOpener:        escape("^^"),
+		/*
+			To avoid ambiguities between adjacent strong and em openers,
+			these must be specified as separate front and back tokens
+			with different precedence.
+		*/
+		strongFront:      escape("**"),
+		strongBack:       escape("**"),
+		emFront:          escape("*"),
+		emBack:           escape("*"),
 		
 		/*
 			The verbatim syntax does not "nest", but terminals can be

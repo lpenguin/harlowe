@@ -252,8 +252,46 @@
 			*/
 			br:            { fn: emptyFn, },
 			
-			strongOpener:  { fn: openerFn("strongOpener", "strong") },
-			emOpener:      { fn: openerFn("emOpener",     "em")     },
+			/*
+				The order of these four is strictly important. As the back and front versions
+				use identical tokens, back tokens should appear first. And, the order of em and strong
+				should be swapped for the front tokens.
+				This allows the following syntax to be parsed correctly:
+				***A*** -> <em><strong>A</strong></em>
+			*/
+			emBack: {
+				fn: function() {
+					return {
+						matches: {
+							emFront: "em",
+						},
+					};
+				},
+			},
+			strongBack: {
+				fn: function() {
+					return {
+						matches: {
+							strongFront: "strong",
+						},
+					};
+				},
+			},
+			strongFront: {
+				fn: function() {
+					return {
+						isFront: true,
+					};
+				},
+			},
+			emFront: {
+				fn: function() {
+					return {
+						isFront: true,
+					};
+				},
+			},
+			
 			boldOpener:    { fn: openerFn("boldOpener",   "bold")   },
 			italicOpener:  { fn: openerFn("italicOpener", "italic") },
 			delOpener:     { fn: openerFn("delOpener",    "del")    },
