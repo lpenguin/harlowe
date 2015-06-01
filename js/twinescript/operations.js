@@ -44,9 +44,10 @@ function(Utils, State, Colour, AssignmentRequest, OperationUtils, TwineError) {
 		@param {String} type Either "number" or "boolean"
 		@param {Function} fn The function to wrap.
 		@param {String} [operationVerb] A verb describing the function's action.
+		@param {String} [message] An optional extra error message hint.
 		@return {Function}
 	*/
-	function onlyPrimitives(type, fn, operationVerb) {
+	function onlyPrimitives(type, fn, operationVerb, message) {
 		operationVerb = operationVerb || "do this to";
 		return function(left, right) {
 			var error;
@@ -64,10 +65,14 @@ function(Utils, State, Colour, AssignmentRequest, OperationUtils, TwineError) {
 				return error;
 			}
 			if (typeof left !== type || typeof right !== type) {
-				return TwineError.create("operation", "I can only "
-				+ operationVerb + " " + type + "s, not "
-				+ objectName(typeof left !== type ? left : right)
-				+ ".");
+				return TwineError.create(
+					"operation",
+					"I can only "
+						+ operationVerb + " " + type + "s, not "
+						+ objectName(typeof left !== type ? left : right)
+						+ ".",
+					message
+				);
 			}
 			return fn(left, right);
 		};
@@ -128,6 +133,10 @@ function(Utils, State, Colour, AssignmentRequest, OperationUtils, TwineError) {
 		};
 	}
 
+	var andOrNotMessage =
+		"If one of these values is a number, you may want to write a check that it 'is not 0'. "
+		+ "Also, if one is a string, you may want to write a check that it 'is not \"\" '.";
+	
 	/*
 		Now, let's define the operations themselves.
 	*/
@@ -178,15 +187,15 @@ function(Utils, State, Colour, AssignmentRequest, OperationUtils, TwineError) {
 		
 		"and": onlyPrimitives("boolean", doNotCoerce(function(l, r) {
 			return l && r;
-		}), "use 'and' to join"),
+		}), "use 'and' to join", andOrNotMessage),
 		
 		"or": onlyPrimitives("boolean", doNotCoerce(function(l, r) {
 			return l || r;
-		}), "use 'or' to join"),
+		}), "use 'or' to join", andOrNotMessage),
 		
 		"not": onlyPrimitives("boolean", function(e) {
 			return !e;
-		}, "use 'not' to invert"),
+		}, "use 'not' to invert", andOrNotMessage),
 		
 		"+":  doNotCoerce(function(l, r) {
 			var ret;

@@ -42,16 +42,18 @@ describe("twinescript operators", function () {
 		it("multiplies numbers", function (){
 			expectMarkupToPrint("(print: 3 * 5)","15");
 		});
-		it("can't be used on strings", function () {
+		it("can't be used on strings or arrays", function () {
 			expectMarkupToError("(print: '15' * '2')");
+			expectMarkupToError("(print: 2 * (a:2))");
 		});
 	});
 	describe("the / operator", function () {
 		it("divides numbers", function (){
 			expectMarkupToPrint("(print: 15 / 5)","3");
 		});
-		it("can't be used on strings", function () {
+		it("can't be used on strings or arrays", function () {
 			expectMarkupToError("(print: '15' / '2')");
+			expectMarkupToError("(print: 2 / (a:2))");
 		});
 		it("can't divide by zero", function () {
 			expectMarkupToError("(print: 15 / 0)");
@@ -66,6 +68,55 @@ describe("twinescript operators", function () {
 		});
 		it("can't divide by zero", function (){
 			expectMarkupToError("(print: 15 % 0)");
+		});
+	});
+	describe("the 'and' operator", function () {
+		it("ANDs booleans", function (){
+			expectMarkupToPrint("(print: true and true)","true");
+			expectMarkupToPrint("(print: true and false)","false");
+			expectMarkupToPrint("(print: false and true)","false");
+			expectMarkupToPrint("(print: false and false)","false");
+			expectMarkupToPrint("(print: true and true and true and true)","true");
+		});
+		it("has correct precedence", function () {
+			expectMarkupToPrint("(print: 2 is 2 and true)","true");
+		});
+		it("can't be used on non-booleans", function () {
+			expectMarkupToError("(print: true and 2)");
+			expectMarkupToError("(print: true and '2')");
+			expectMarkupToError("(print: true and (a:))");
+		});
+	});
+	describe("the 'or' operator", function () {
+		it("ORs booleans", function (){
+			expectMarkupToPrint("(print: true or true)","true");
+			expectMarkupToPrint("(print: true or false)","true");
+			expectMarkupToPrint("(print: false or true)","true");
+			expectMarkupToPrint("(print: false or false)","false");
+			expectMarkupToPrint("(print: false or false or true or false)","true");
+		});
+		it("has correct precedence", function () {
+			expectMarkupToPrint("(print: 2 is 2 or false)","true");
+		});
+		it("can't be used on non-booleans", function () {
+			expectMarkupToError("(print: true or 2)");
+			expectMarkupToError("(print: true or '2')");
+			expectMarkupToError("(print: true or (a:))");
+		});
+	});
+	describe("the 'not' operator", function () {
+		it("performs unary NOT on booleans", function (){
+			expectMarkupToPrint("(print: not true)","false");
+			expectMarkupToPrint("(print: not false)","true");
+			expectMarkupToPrint("(print: not not not false)","true");
+		});
+		it("has correct precedence", function () {
+			expectMarkupToPrint("(print: not true is false)","true");
+		});
+		it("can't be used on non-booleans", function () {
+			expectMarkupToError("(print: not 2)");
+			expectMarkupToError("(print: not '2')");
+			expectMarkupToError("(print: not (a:))");
 		});
 	});
 	describe("the 'is' operator", function () {

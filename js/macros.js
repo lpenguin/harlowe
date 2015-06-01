@@ -86,7 +86,7 @@ function($, Utils, OperationUtils, TwineError) {
 			return arg === undefined;
 		}
 		/*
-			Now, check if the signature is an Optional or Either.
+			Now, check if the signature is an Optional, Either, or Wrapped.
 		*/
 		if (type.innerType) {
 			/*
@@ -109,12 +109,17 @@ function($, Utils, OperationUtils, TwineError) {
 					return singleTypeCheck(arg, type);
 				});
 			}
+			/*
+				Otherwise, this is jut a Wrapped signature. Ignore the included
+				message and continue.
+			*/
+			return singleTypeCheck(arg, type.innerType);
 		}
-		// If Type but no Arg, then return an error.	
+		// If Type but no Arg, then return an error.
 		if(type !== undefined && arg === undefined) {
 			return false;
 		}
-				
+		
 		// The Any type permits any argument, as long as it's present.
 		if (type === Macros.TypeSignature.Any && arg !== undefined) {
 			return true;
@@ -269,7 +274,10 @@ function($, Utils, OperationUtils, TwineError) {
 							Utils.nth(ind + 1) + " value is " + OperationUtils.objectName(arg) +
 							", but should be " +
 							OperationUtils.typeName(type) + ".",
-						signatureInfo
+						/*
+							If this type signature has a custom error message, use that here.
+						*/
+						type.message || signatureInfo
 					);
 				}
 			}
@@ -415,6 +423,15 @@ function($, Utils, OperationUtils, TwineError) {
 				return {pattern: "rest",             innerType: type };
 			},
 			
+			/*
+				This is used exclusively to provide custom error messages for particular
+				type constraints.
+			*/
+			
+			wrapped: function(type, message) {
+				return {pattern: "wrapped", innerType: type, message: message };
+			},
+			
 			/*d:
 				Any data
 				
@@ -423,7 +440,7 @@ function($, Utils, OperationUtils, TwineError) {
 			*/
 			Any: {
 				TwineScript_TypeName: "anything",
-			}, // In ES6, this would be a Symbol.
+			}, // In ES6, this would probably be a Symbol.
 			
 		},
 		

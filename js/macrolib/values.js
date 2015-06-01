@@ -8,6 +8,8 @@ define(['utils', 'macros', 'utils/operationutils', 'internaltypes/twineerror'], 
 	var
 		rest = Macros.TypeSignature.rest,
 		zeroOrMore = Macros.TypeSignature.zeroOrMore,
+		wrapped = Macros.TypeSignature.wrapped,
+		// Any is a value, not a method.
 		Any = Macros.TypeSignature.Any;
 	
 	Macros.add
@@ -166,7 +168,7 @@ define(['utils', 'macros', 'utils/operationutils', 'internaltypes/twineerror'], 
 			return +expr;
 		},
 		[String])
-		
+		;
 		/*d:
 			Boolean data
 			
@@ -238,10 +240,14 @@ define(['utils', 'macros', 'utils/operationutils', 'internaltypes/twineerror'], 
 			TODO: Should this actually be a Changer?? For instance:
 			(set: $robotAdvice to (font:Consolas) + (if: $choseTheRobot))
 		*/
-		("if", function _if(_, expr) {
+	
+	var IfTypeSignature = [wrapped(Boolean, "If you gave a number, you may instead want to check that the number is not 0. "
+			+ "If you gave a string, you may instead want to check that the string is not \"\".")];
+	
+	Macros.add("if", function _if(_, expr) {
 			return !!expr;
 		},
-		[Boolean])
+		IfTypeSignature)
 		
 		/*d:
 			(unless: Boolean) -> Boolean
@@ -256,7 +262,7 @@ define(['utils', 'macros', 'utils/operationutils', 'internaltypes/twineerror'], 
 		("unless", function unless(_, expr) {
 			return !expr;
 		},
-		[Boolean])
+		IfTypeSignature)
 		
 		/*d:
 			(else-if: Boolean) -> Boolean
@@ -314,7 +320,7 @@ define(['utils', 'macros', 'utils/operationutils', 'internaltypes/twineerror'], 
 			}
 			return (section.stack[0].lastHookShown === false && !!expr);
 		},
-		[Any])
+		IfTypeSignature)
 		
 		/*d:
 			(else:) -> Boolean
