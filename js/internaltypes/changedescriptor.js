@@ -76,7 +76,7 @@ define(['jquery', 'utils', 'renderer'], function($, Utils, Renderer) {
 		
 		/**
 			This method applies the style/attribute/data entries of this descriptor
-			to the target HTML element. It's called whenever $Design is changed.
+			to the target HTML element.
 		*/
 		update: function() {
 			var target = this.target;
@@ -84,7 +84,18 @@ define(['jquery', 'utils', 'renderer'], function($, Utils, Renderer) {
 				Apply the style attributes to the target element.
 			*/
 			if (Array.isArray(this.styles)) {
-				target.css(Object.assign.apply(0, [{}].concat(this.styles)));
+				/*
+					Some styles depend on the pre-existing CSS to calculate their values
+					(for instance, "blurrier" converts the dominant text colour into a
+					text shadow colour, changing the text itself to transparent.)
+					If the user has complicated story CSS, it's not possible
+					to determine what colour should be used for such a hook
+					until it's connected to the DOM. So, now this .css call is deferred
+					for 1 frame, which should (._.) be enough time for it to become attached.
+				*/
+				setTimeout(function() {
+					target.css(Object.assign.apply(0, [{}].concat(this.styles)));
+				}.bind(this));
 			}
 			/*
 				If HTML attributes were included in the changerDescriptor, apply them now.
@@ -203,7 +214,7 @@ define(['jquery', 'utils', 'renderer'], function($, Utils, Renderer) {
 				Apply the style/data/attr attributes to the target element.
 			*/
 			this.update();
-
+			
 			/*
 				Transition it using this descriptor's given transition.
 			*/

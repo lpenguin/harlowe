@@ -68,42 +68,59 @@ describe("style changer macros", function() {
 			expectMarkupToError("(align:'<<==')");
 			expectMarkupToError("(align:'===><==>')");
 		});
-		it("right-aligns text when given '==>'", function() {
+		it("right-aligns text when given '==>'", function(done) {
 			var align = runPassage("(align:'==>')[garply]").find('tw-hook');
-			expect(align.css('text-align')).toBe('right');
-			expect(align.text()).toBe('garply');
-			expect(align.css('margin-left')).toMatch(/^(?:0px)?$/);
-		});
-		it("ignores the number of, and imbalance of, = signs used", function() {
-			[2,3,4,5,6,7,8,9,10].forEach(function(number) {
-				var align = runPassage("(align:'" + "=".repeat(number) + ">')[garply]").find('tw-hook');
+			setTimeout(function() {
 				expect(align.css('text-align')).toBe('right');
 				expect(align.text()).toBe('garply');
 				expect(align.css('margin-left')).toMatch(/^(?:0px)?$/);
+				done();
 			});
 		});
-		it("centres text with a balanced '=><='", function() {
+		it("ignores the number of, and imbalance of, = signs used", function(done) {
+			[2,3,4,5,6,7,8,9,10].forEach(function(number) {
+				var align = runPassage("(align:'" + "=".repeat(number) + ">')[garply]").find('tw-hook');
+				setTimeout(function() {
+					expect(align.css('text-align')).toBe('right');
+					expect(align.text()).toBe('garply');
+					expect(align.css('margin-left')).toMatch(/^(?:0px)?$/);
+					done();
+				});
+			});
+		});
+		it("centres text with a balanced '=><='", function(done) {
 			var align = runPassage("(align:'=><=')[garply]").find('tw-hook');
-			expect(align.css('text-align')).toBe('center');
-			expect(align.text()).toBe('garply');
-			expect(align.attr('style')).toMatch(/max-width:\s*50%/);
-			expect(align.attr('style')).toMatch(/margin-left:\s*auto/);
-			expect(align.attr('style')).toMatch(/margin-right:\s*auto/);
+			setTimeout(function() {
+				expect(align.css('text-align')).toBe('center');
+				expect(align.text()).toBe('garply');
+				expect(align.attr('style')).toMatch(/max-width:\s*50%/);
+				expect(align.attr('style')).toMatch(/margin-left:\s*auto/);
+				expect(align.attr('style')).toMatch(/margin-right:\s*auto/);
+				done();
+			});
 		});
-		it("justifies text with '<==>'", function() {
+		it("justifies text with '<==>'", function(done) {
 			var align = runPassage("(align:'<==>')[garply]").find('tw-hook');
-			expect(align.css('text-align')).toBe('justify');
-			expect(align.text()).toBe('garply');
-			expect(align.css('margin-left')).toMatch(/^(?:0px)?$/);
+			setTimeout(function() {
+				expect(align.css('text-align')).toBe('justify');
+				expect(align.text()).toBe('garply');
+				expect(align.css('margin-left')).toMatch(/^(?:0px)?$/);
+				done();
+			});
 		});
-		it("aligns text with unbalanced '==><='", function() {
+		it("aligns text with unbalanced '==><='", function(done) {
 			var align = runPassage("(align:'==><====')[garply]").find('tw-hook');
-			expect(align.css('text-align')).toBe('center');
-			expect(align.attr('style')).toMatch(/margin-left:\s*17%/);
+			setTimeout(function() {
+				expect(align.css('text-align')).toBe('center');
+				expect(align.attr('style')).toMatch(/margin-left:\s*17%/);
 			
-			align = runPassage("(align:'=====><=')[garply]").find('tw-hook');
-			expect(align.css('text-align')).toBe('center');
-			expect(align.attr('style')).toMatch(/margin-left:\s*42%/);
+				align = runPassage("(align:'=====><=')[garply]").find('tw-hook');
+				setTimeout(function() {
+					expect(align.css('text-align')).toBe('center');
+					expect(align.attr('style')).toMatch(/margin-left:\s*42%/);
+					done();
+				});
+			});
 		});
 	});
 });

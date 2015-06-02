@@ -96,7 +96,7 @@ function($, Utils, OperationUtils, TwineError) {
 				if (arg === undefined) {
 					return true;
 				}
-				type = type.innerType;
+				return singleTypeCheck(arg, type.innerType);
 			}
 			/*
 				Either signatures must check every available type.
@@ -110,10 +110,12 @@ function($, Utils, OperationUtils, TwineError) {
 				});
 			}
 			/*
-				Otherwise, this is jut a Wrapped signature. Ignore the included
+				Otherwise, if this is a Wrapped signature, ignore the included
 				message and continue.
 			*/
-			return singleTypeCheck(arg, type.innerType);
+			if (type.pattern === "wrapped") {
+				return singleTypeCheck(arg, type.innerType);
+			}
 		}
 		// If Type but no Arg, then return an error.
 		if(type !== undefined && arg === undefined) {

@@ -280,33 +280,6 @@ function($, Macros, Utils, Selectors, Colour, ChangerCommand, TwineError) {
 			this closure, and used in the addChanger call via .apply().
 		*/
 		.apply(Macros, (function() {
-				/*
-					We need the element's visual "color" or "background-color", but there
-					isn't a reliable way to retrieve it in all browsers
-					without traversing up through the element tree.
-					So, alas, it must be done.
-					
-					($(this).css('color') works in Firefox for detached elements
-					but not in Chrome, so this desperate fallback must be used.)
-				*/
-				function retrieveAttr(elem, attr, fallback) {
-					var colour;
-					while (elem[0] !== document
-						&& ((colour = elem.css(attr)) === "transparent" || colour === "")) {
-						elem = elem.parent();
-						/*
-							If <tw-story> element is detached, we use the <body>,
-							colour as an emergency fallback.
-						*/
-						if (elem.length === 0) {
-							elem = $('body');
-						}
-					}
-					return colour || fallback;
-				}
-				/*
-					This is a closure in which to cache the style-tagname mappings.
-				*/
 				var
 					/*
 						This is a shorthand used for the definitions below.
@@ -342,7 +315,7 @@ function($, Macros, Utils, Selectors, Colour, ChangerCommand, TwineError) {
 						},
 						outline: [{
 								"text-shadow": function() {
-									var colour = retrieveAttr($(this), 'color', "#000");
+									var colour = $(this).css('color');
 									return "-1px -1px 0 " + colour
 										+ ", 1px -1px 0 " + colour
 										+ ",-1px  1px 0 " + colour
@@ -351,19 +324,19 @@ function($, Macros, Utils, Selectors, Colour, ChangerCommand, TwineError) {
 							},
 							{
 								color: function() {
-									return retrieveAttr($(this), 'background-color', "#FFF");
+									return $(this).css('background-color');
 								},
 							}
 						],
 						shadow: {
-							"text-shadow": function() { return "0.08em 0.08em 0.08em " + retrieveAttr($(this), 'color', "#000"); },
+							"text-shadow": function() { return "0.08em 0.08em 0.08em " + $(this).css('color'); },
 						},
 						emboss: {
-							"text-shadow": function() { return "0.08em 0.08em 0em " + retrieveAttr($(this), 'color', "#000"); },
+							"text-shadow": function() { return "0.08em 0.08em 0em " + $(this).css('color'); },
 						},
 						smear: [{
 								"text-shadow": function() {
-									var colour = retrieveAttr($(this), 'color', "#000");
+									var colour = $(this).css('color');
 									return "0em   0em 0.02em " + colour + ","
 										+ "-0.2em 0em  0.5em " + colour + ","
 										+ " 0.2em 0em  0.5em " + colour;
@@ -374,12 +347,12 @@ function($, Macros, Utils, Selectors, Colour, ChangerCommand, TwineError) {
 							colourTransparent
 						],
 						blur: [{
-								"text-shadow": function() { return "0em 0em 0.08em " + retrieveAttr($(this), 'color', "#000"); },
+								"text-shadow": function() { return "0em 0em 0.08em " + $(this).css('color'); },
 							},
 							colourTransparent
 						],
 						blurrier: [{
-								"text-shadow": function() { return "0em 0em 0.2em " + retrieveAttr($(this), 'color', "#000"); },
+								"text-shadow": function() { return "0em 0em 0.2em " + $(this).css('color'); },
 								"user-select": "none",
 							},
 							colourTransparent
