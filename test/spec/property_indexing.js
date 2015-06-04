@@ -129,6 +129,15 @@ describe("property indexing", function() {
 			it("can be chained", function() {
 				expectMarkupToPrint('(print: (datamap:"W",(datamap:"W",1))\'s W\'s W)', "1");
 			});
+			it("can include numbers", function() {
+				runPassage("(set: $d to (datamap:1,5))(set: $d's 2 to 4)");
+				expectMarkupToPrint('(print: $d\'s 2)', "4");
+			});
+			it("can't be used if the datamap already contains a different-typed similar key", function() {
+				runPassage("(set: $d to (datamap:1,5,'2',4))");
+				expectMarkupToError('(set: $d\'s 2 to 7)');
+				expectMarkupToError('(set: $d\'s "1" to 6)');
+			});
 		});
 		it("only 'length' can be used with arrays", function() {
 			expectMarkupToPrint('(set: $s to (a: 2,3))(print: $s\'s length)', '2');

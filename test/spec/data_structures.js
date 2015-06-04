@@ -166,12 +166,24 @@ describe("data structure macros", function () {
 	});
 	describe("the (datamap:) macro", function() {
 		it("accepts any even number and type of arguments, but requires strings or numbers in the odd positions", function() {
-			for(var i = 1; i < 5; i += 1) {
-				expectMarkupToNotError("(datamap:" + ("'X',(a:),").repeat(i) + ")");
-				expectMarkupToNotError("(datamap:" + ("2,(a:),").repeat(i) + ")");
-				expectMarkupToError("(datamap:" + ("(a:),1,").repeat(i) + ")");
-				expectMarkupToError("(datamap:" + ("1,").repeat((i*2)-1) + ")");
+			expectMarkupToNotError("(datamap:'X',(a:))");
+			expectMarkupToNotError("(datamap:1,2,3,'B',4,true)");
+			expectMarkupToNotError("(datamap:2,3,4,5,6,7,8,9,10,11,12,13)");
+			expectMarkupToError("(datamap:(a:),1)");
+			expectMarkupToError("(datamap:1)");
+		});
+		it("can't store a string key and a number key which are similar", function() {
+			for(var i = -5; i < 5; i += 1) {
+				expectMarkupToError("(datamap:" + i + ',(a:),"' + i + '",(a:)' + ")");
 			}
+		});
+		it("can't reference a string key and a number key which are similar, either", function() {
+			expectMarkupToError("(print: (datamap:25, 'foo')'s '25'))");
+			expectMarkupToError("(print: (datamap:'25', 'foo')'s 25))");
+		});
+		it("can't use two identical keys in the same macro call", function() {
+			expectMarkupToError("(datamap:1,(a:),1,(a:))");
+			expectMarkupToError("(datamap:'A',(a:),'A',(a:))");
 		});
 	});
 	describe("the (dataset:) macro", function() {

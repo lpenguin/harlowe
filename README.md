@@ -49,7 +49,9 @@ Rough documentation is at http://twine2.neocities.org/
  * Reordered the precedence of `contains` - it should now be higher than `is`, so that e.g. `(print: "ABC" contains "A" is true)` should now work as expected.
  * Now, giving a datamap to `(print:)` will cause that macro to print out the datamap in a rough HTML `<table>` structure, showing each name and value. This is a superior alternative to just printing "[object Object]".
  * Now, variables and barename properties (as in `$var's property`) must have one non-numeral in their name. This means that, for instance, `$100` is no longer regarded as a valid variable name, but `$100m` still is.
+ * It is now an error if a `(datamap:)` call uses the same key twice: `(datamap: 2, "foo", 2, "bar")` cannot map both "foo" and "bar" to the number 2.
  * Now, datamaps may have numbers as data names: `(datamap: 1, "A")` is now accepted. However, due to their differing types, the number `1` and the string `"1"` are treated as separate names.
+   * To waylay confusion, you are not permitted to use a number as a name and then try to use its string equivalent on the same map. For instance, `(datamap: 2, "foo", "2", "bar")` produces an error, as does `(print: (datamap: 2, "foo")'s '2'))`
  * HTML-style comments `<!--` and `-->` can now be nested, unlike in actual HTML.
  * The heading syntax no longer removes trailing `#` characters, or trims terminating whitespace. This brings it more into line with the bulleted and numbered list syntax.
  * Changed `(textstyle:)` and `(transition:)` to produce errors when given incorrect style or transition names.

@@ -562,10 +562,10 @@ function($, NaturalSort, Macros, Utils, OperationUtils, State, Engine, Passages,
 			used in by-reference comparisons).
 		*/
 		("datamap", function() {
-			var key, ret;
+			var key, status, map = new Map();
 			/*
-				This converts the flat arguments "array" into an array of
-				key-value pairs [[key, value],[key, value]].
+				This takes the flat arguments "array" and runs
+				map.set() with every two values.
 				During each odd iteration, the element is the key.
 				Then, the element is the value.
 			*/
@@ -573,46 +573,53 @@ function($, NaturalSort, Macros, Utils, OperationUtils, State, Engine, Passages,
 				Note that, as is with most macro functions in this file,
 				the slice(1) eliminates the implicit first Section argument.
 			*/
-			ret = Array.from(arguments).slice(1).reduce(function(array, element) {
+			status = Array.from(arguments).slice(1).reduce(function(status, element) {
+				var error;
 				/*
 					Propagate earlier iterations' errors.
 				*/
-				if (TwineError.containsError(array)) {
-					return array;
+				if (TwineError.containsError(status)) {
+					return status;
 				}
 				if (key === undefined) {
 					key = element;
 				}
 				/*
-					Key type-checking must be done here, as the type signature format isn't flexible
-					enough for (datamap:).
+					Key type-checking must be done here.
 				*/
-				else if (typeof key !== "string" && typeof key !== "number") {
-					return TwineError.create(
-						"macrocall",
-						"Only strings and numbers can be used as datamap data names."
+				else if ((error = TwineError.containsError(OperationUtils.isValidDatamapName(map, key)))) {
+					return error;
+				}
+				/*
+					This syntax has a special restriction: you can't use the same key twice.
+				*/
+				else if (map.has(key)) {
+					return TwineError.create("macrocall",
+						"You used the same data name ("
+						+ OperationUtils.objectName(key)
+						+ ") twice in the same (datamap:) call."
 					);
 				}
 				else {
-					array.push([key, element]);
+					map.set(key, element);
 					key = undefined;
 				}
-				return array;
-			}, []);
+				return status;
+			}, true);
 			/*
 				Return an error if one was raised during iteration.
 			*/
-			if (TwineError.containsError(ret)) {
-				return ret;
+			if (TwineError.containsError(status)) {
+				return status;
 			}
 			/*
 				One error can result: if there's an odd number of arguments, that
 				means a key has not been given a value.
 			*/
 			if (key !== undefined) {
-				return TwineError.create("macrocall","This datamap has a data name without a value.");
+				return TwineError.create("macrocall", "This datamap has a data name without a value.");
 			}
-			return new Map(ret);
+			return map;
 		},
 		zeroOrMore(Any))
 		

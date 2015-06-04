@@ -44,25 +44,15 @@ function(Utils, State, TwineError, OperationUtils) {
 		if((error = TwineError.containsError(obj, prop))) {
 			return error;
 		}
+		
 		/*
-			The computed variable property syntax means that basically
-			any value can be used as a property key. Currently, we only allow strings
-			and numbers to be used.
-			(This kind of defeats the point of using ES6 Maps, though...)
+			Check if it's a valid property name.
 		*/
-		if(typeof prop !== "string" && typeof prop !== "number") {
-			return TwineError.create(
-				"property",
-				"Only strings and numbers can be used as data names for "
-				+ objectName(obj) + ", not " + objectName(prop) + "."
-				);
+		if (obj instanceof Map &&
+				(error = TwineError.containsError(OperationUtils.isValidDatamapName(obj,prop)))) {
+			return error;
 		}
-		/*
-			This is to ensure that TwineScript properties are not exposed to userland code.
-		*/
-		if(typeof prop === "string" && prop.startsWith("TwineScript") && prop !== "TwineScript_Assignee") {
-			return TwineError.create("property", "Only I can use data names beginning with 'TwineScript'.");
-		}
+		
 		/*
 			Sequentials have special sugar property indices:
 			
@@ -117,7 +107,8 @@ function(Utils, State, TwineError, OperationUtils) {
 			if (prop !== "length") {
 				return TwineError.create("property", "You can only get the 'length' of a "
 					+ objectName(obj)
-					+ ". To check contained values, use the 'contains' operator.");
+					+ ".",
+					"To check contained values, use the 'contains' operator.");
 			}
 			/*
 				This kludge must be used to pave over a little difference

@@ -38,6 +38,23 @@ require(['jquery', 'renderer', 'state', 'engine', 'passages', 'utils', 'utils/se
 		return eval(text + '');
 	}
 	
+	/*
+		This helper removes various globals created by TwineJS before it initiates a test play.
+	*/
+	function testPlayCleanup() {
+		["_", "Backbone", "Store", "Mn", "Marionette", "saveAs", "FastClick", "JSZip", "SVG", "requestAnimFrame", "UUID",
+		"XDate", "CodeMirror", "ui", "nwui", "AppPref", "Passage", "StoryFormat", "Story", "AppPrefCollection", "PassageCollection",
+		"StoryCollection", "StoryFormatCollection", "WelcomeView", "StoryItemView", "StoryListView", "PassageItemView",
+		"StoryEditView", "TwineRouter", "TransRegion", "TwineApp", "app", "storyFormat"].forEach(function(name) {
+			// Some of these are defined non-configurable, but still writable, for some reason.
+			try {
+				delete window[name];
+			} catch(e) {
+				window[name] = undefined;
+			}
+		});
+	}
+	
 	/**
 		Sets up event handlers for specific Twine elements. This should only be called
 		once at setup.
@@ -107,6 +124,12 @@ require(['jquery', 'renderer', 'state', 'engine', 'passages', 'utils', 'utils/se
 
 		if (header.length === 0) {
 			return;
+		}
+		
+		// If this is a test play, and globals created by TwineJS are present, delete them.
+		
+		if ("TwineApp" in window) {
+			testPlayCleanup();
 		}
 
 		// Load options from attribute into story object

@@ -26,6 +26,49 @@ define(['utils', 'internaltypes/twineerror'], function(Utils, TwineError) {
 			*/
 			"";
 	}
+	
+	/*
+		Next a quick function that determines if a datamap property name is valid.
+		This requires that the datamap itself be passed in.
+	*/
+	function isValidDatamapName(map, name) {
+		Utils.assert(map instanceof Map);
+		/*
+			The computed variable property syntax means that basically
+			any value can be used as a property key. Currently, we only allow strings
+			and numbers to be used.
+			(This kind of defeats the point of using ES6 Maps, though...)
+		*/
+		if(typeof name !== "string" && typeof name !== "number") {
+			return TwineError.create(
+				"property",
+				"Only strings and numbers can be used as data names for "
+				+ objectName(map) + ", not " + objectName(name) + "."
+			);
+		}
+		/*
+			To avoid confusion between types, it is not permitted to make OR REFERENCE
+			a number data key if a similar string key is present, and vice-versa.
+		*/
+		var otherName = (typeof name === "string" ? +name : ''+name);
+		
+		/*
+			If the name was a non-numeric string, otherName should be NaN.
+			Ignore it if it is.
+		*/
+		if(!Number.isNaN(otherName) && map.has(otherName)) {
+			return TwineError.create(
+				"property",
+				"You mustn't use both " + objectName(name) + " and "
+				+ objectName(otherName) + " as data names in the same datamap."
+			);
+		}
+		/*
+			Those are all the tests.
+		*/
+		return true;
+	}
+	
 	/*
 		Next, a shortcut to determine whether a given value should have
 		sequential collection functionality (e.g. Array, String, other stuff).
@@ -321,6 +364,7 @@ define(['utils', 'internaltypes/twineerror'], function(Utils, TwineError) {
 	
 	var OperationUtils = Object.freeze({
 		isObject: isObject,
+		isValidDatamapName: isValidDatamapName,
 		collectionType: collectionType,
 		isSequential: isSequential,
 		clone: clone,
