@@ -504,6 +504,12 @@ describe("basic twinemarkup syntax", function() {
 				"AB"
 			);
 		});
+		it("works on whitespace enclosed in elements", function() {
+			expectMarkupToPrint(
+				"A{ '' '' // // }B",
+				"AB"
+			);
+		});
 		it("reduces whitespace between non-whitespace to single spaces", function() {
 			expectMarkupToPrint(
 				"A { A  \n  B } B",
@@ -540,6 +546,10 @@ describe("basic twinemarkup syntax", function() {
 			expectMarkupToPrint(
 				"X{   A   B   }Y",
 				"XA BY"
+			);
+			expectMarkupToPrint(
+				"G{   A  }{ B   }H",
+				"GA BH"
 			);
 		});
 		it("can be nested", function() {
@@ -601,22 +611,44 @@ describe("basic twinemarkup syntax", function() {
 			p = runPassage("{A `   ` B}");
 			expect(p.text()).toBe("A     B");
 		});
-		it("will affect text inside nested hooks (?)", function() {
-			var p;
-			p = runPassage("{ A(if:true)[      ]B }");
-			expect(p.text()).toBe("AB");
-			p = runPassage("{ A (if:true)[    ] B }");
-			expect(p.text()).toBe("A B");
-			p = runPassage("{ A (if:true)[  B  ] C }");
-			expect(p.text()).toBe("A B C");
-			p = runPassage("{ A (if:true)[  B  C ] D }");
-			expect(p.text()).toBe("A B C D");
+		it("will affect text inside nested hooks", function() {
+			expectMarkupToPrint("{ A(if:true)[      ]B }", "A B");
+			expectMarkupToPrint("{ X(if:false)[      ]Y }", "XY");
+			expectMarkupToPrint("{ C (if:true)[    ] D }", "C D");
+			expectMarkupToPrint("{ E (if:true)[  F  ] G }", "E F G");
+			expectMarkupToPrint("{ H (if:true)[  I  J ] K }", "H I J K");
+		});
+		it("doesn't needlessly eliminate preceding and trailing spaces in nested hooks", function() {
+			expectMarkupToPrint(
+				"{A[ A]<1| [B ]<1|B}",
+				"A A B B"
+			);
+			expectMarkupToPrint(
+				"{E['' ''E]<1| [B'' '']<1|B}",
+				"E E B B"
+			);
+			expectMarkupToPrint(
+				"{''C''[ ''C'']<1| [''D'' ]<1|''D''}",
+				"C C D D"
+			);
+			expectMarkupToPrint(
+				"{E [ E]<1| [F ]<1| F}",
+				"E E F F"
+			);
+			expectMarkupToPrint(
+				"{''G'' [ ''G'']<1| [''H'' ]<1| ''H''}",
+				"G G H H"
+			);
+			expectMarkupToPrint(
+				"{I'' ''['' ''I]<1| [J'' '']<1|'' ''J}",
+				"I I J J"
+			);
 		});
 		it("will not affect text inside verbatim guards inside nested hooks", function() {
 			var p = runPassage("{ A (if:true)[`    `] B }");
 			expect(p.text()).toBe("A      B");
-			p = runPassage("{ A (if:true)[ ` `B` ` ] C }");
-			expect(p.text()).toBe("A  B  C");
+			p = runPassage("{ C (if:true)[ ` `B` ` ] D }");
+			expect(p.text()).toBe("C  B  D");
 		});
 		it("works even when empty", function() {
 			expectMarkupToNotError("{}");

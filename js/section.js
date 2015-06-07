@@ -237,7 +237,19 @@ function($, Utils, Selectors, Renderer, Environ, State, HookUtils, HookSet, Pseu
 		@param {jQuery} elem The element whose whitespace must collapse.
 	*/
 	function collapse(elem) {
-		var finalNode, lastVisibleNode;
+		var finalNode, lastVisibleNode,
+			/*
+				These hold the textNodes immediately outside the elem, before and after,
+				which are also inside a <tw-collapsed>. They're used to check if this is a nested
+				hook, and to treat opening and closing whitespace accordingly.
+			*/
+			beforeNode, afterNode,
+			/*
+				This is part of an uncomfortable #kludge used to determine whether to
+				retain a final space at the end, by checking how much was trimmed from
+				the finalNode and lastVisibleNode.
+			*/
+			finalSpaces = '';
 		
 		/*
 			A .filter() callback which removes nodes inside a <tw-verbatim> or
@@ -251,7 +263,18 @@ function($, Utils, Selectors, Renderer, Environ, State, HookUtils, HookSet, Pseu
 			*/
 			return $(this || e).parentsUntil('tw-collapsed').filter('tw-verbatim, tw-expression').length === 0;
 		}
-		
+		/*
+			We need to keep track of what the previous and next exterior text nodes are,
+			but only if they were also inside a <tw-collapsed>.
+		*/
+		beforeNode = elem.prevTextNode();
+		if (!$(beforeNode).parents('tw-collapsed').length) {
+			beforeNode = null;
+		}
+		afterNode = elem.nextTextNode();
+		if (!$(afterNode).parents('tw-collapsed').length) {
+			afterNode = null;
+		}
 		/*
 			- If the node contains <br>, replace with a single space.
 		*/
@@ -261,12 +284,13 @@ function($, Utils, Selectors, Renderer, Environ, State, HookUtils, HookSet, Pseu
 		
 		finalNode = elem.textNodes().reduce(function(prevNode, node) {
 			/*
-				- If the node is inside a <tw-verbatim> or <tw-expression>, regard it as an ordinary Text node.
+				- If the node is inside a <tw-verbatim> or <tw-expression>, regard it as a solid Text node
+				that cannot be split or permuted.
 			*/
 			if (!noVerbatim(node)) {
 				/*
-					We can skip the entire remainder of this function with just
-					this line here.
+					By pretending that this node was actually an "A" text node, the above rule is
+					adhered to during the next iteration.
 				*/
 				return (lastVisibleNode = document.createTextNode("A"));
 			}
@@ -290,22 +314,30 @@ function($, Utils, Selectors, Renderer, Environ, State, HookUtils, HookSet, Pseu
 				lastVisibleNode = node;
 			}
 			return node;
-		}, null);
+		}, beforeNode);
 		/*
-			- If this is the final node, trim it right.
-			In the case of { <b>A</b> }, the final node is not the last visible node,
-			and the last visible node doesn't end with whitespace.
+			- Trim both the final node and the last visible node right.
+			In the case of { <b>A </b> }, the final node is not the last visible node,
+			and both need to be trimmed.
 		*/
 		if (finalNode) {
-			finalNode.textContent = finalNode.textContent.replace(/\s+$/, '');
+			finalNode.textContent = finalNode.textContent.replace(/\s+$/, function(substr) {
+				finalSpaces += substr;
+				return '';
+			});
+		}
+		if (lastVisibleNode && lastVisibleNode !== finalNode) {
+			lastVisibleNode.textContent = lastVisibleNode.textContent.replace(/\s+$/, function(substr) {
+				finalSpaces += substr;
+				return '';
+			});
 		}
 		/*
-			- If the last visible node ends with whitespace, trim it right.
-			In the case of { <b>A </b> }, the final node has been trimmed,
-			but this one has not.
+			- If the afterNode is present, and the previous step removed whitespace, reinsert a single space.
+			In the case of {|1>[B ]C} and {|1>[''B'' ]C}, the space inside ?1 before "C" should be retained.
 		*/
-		if (lastVisibleNode) {
-			lastVisibleNode.textContent = lastVisibleNode.textContent.replace(/\s+$/, '');
+		if (finalSpaces.length && afterNode) {
+			finalNode.textContent += " ";
 		}
 		/*
 			Now that we're done, normalise the nodes.

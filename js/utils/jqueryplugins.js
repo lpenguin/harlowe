@@ -25,7 +25,6 @@ define(['jquery'], function($) {
 		tag: function() {
 			return this[0] && this[0].tagName && this[0].tagName.toLowerCase();
 		},
-
 		/*
 			This slightly complicated procedure is necessary to select all
 			descendent text nodes.
@@ -36,14 +35,14 @@ define(['jquery'], function($) {
 				Base case: this collection contains a single text node.
 				TODO: Handle a collection containing a mix of text nodes and elements.
 			*/
-			if (this[0] instanceof Text) {
+			if (this.length === 1 && this[0] instanceof Text) {
 				return [this[0]];
 			}
 			/*
 				First, create an array containing all descendent and contents nodes
 				which are text nodes.
 			*/
-			return Array.apply(0, $(this).find('*').addBack().contents().filter(function() {
+			return Array.apply(0, this.add(this.contents().add(this.find('*').contents())).filter(function() {
 				return this instanceof Text;
 			}))
 			/*
@@ -51,8 +50,61 @@ define(['jquery'], function($) {
 				sort the returned array using compareDocumentPosition.
 			*/
 			.sort(function(left, right) {
-				return (left.compareDocumentPosition(right)) === 2 ? 1 : -1;
+				return (left.compareDocumentPosition(right)) & 2 ? 1 : -1;
 			});
+		},
+		
+		/*
+			Both of these navigates up the tree to find the nearest text node outside this element,
+			earlier or later in the document.
+		*/
+		prevTextNode: function () {
+			var elem = this.first()[0],
+				parent = this.parent(),
+				textNodes;
+			/*
+				Quit early if there's no parent.
+			*/
+			if (!parent.length) {
+				return null;
+			}
+			/*
+				Get the parent's text nodes, and obtain only the last one which is
+				earlier (or later, depending on positionBitmask) than this element.
+			*/
+			textNodes = parent.textNodes().filter(function(e) {
+				var pos = e.compareDocumentPosition(elem);
+				return pos & 4 && !(pos & 8);
+			});
+			textNodes = textNodes[textNodes.length-1];
+			/*
+				If no text nodes were found, look higher up the tree, to the grandparent.
+			*/
+			return !textNodes ? parent.prevTextNode() : textNodes;
+		},
+		
+		nextTextNode: function () {
+			var elem = this.last()[0],
+				parent = this.parent(),
+				textNodes;
+			/*
+				Quit early if there's no parent.
+			*/
+			if (!parent.length) {
+				return null;
+			}
+			/*
+				Get the parent's text nodes, and obtain only the last one which is
+				earlier (or later, depending on positionBitmask) than this element.
+			*/
+			textNodes = parent.textNodes().filter(function(e) {
+				var pos = e.compareDocumentPosition(elem);
+				return pos & 2 && !(pos & 8);
+			})[0];
+			/*
+				If no text nodes were found, look higher up the tree, to the grandparent.
+			*/
+			return !textNodes ? parent.nextTextNode() : textNodes;
 		},
 	});
 });

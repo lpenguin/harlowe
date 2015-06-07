@@ -44,7 +44,7 @@ Rough documentation is at http://twine2.neocities.org/
  * Positional property indices are now case-insensitive - `1ST` is the same as `1st`.
  * `(if:)` now only works when given a boolean - if you had written `(if: $var)` and `$var` is a number or string, you must write `$var is not 0` or `$var's length > 0` instead.
  * `(text:)` now only works on strings, numbers, booleans and arrays, because the other datatypes cannot meaningfully be transformed into text.
- * Now, you can't use the `and`, `or` and `not` operators on non-boolean values. So, one must explicitly convert said values to boolean using `is not 0` and such instead of assuming it's boolean.
+ * Now, you can't use the `and`, `or` and `not` operators on non-boolean values (such as `(if: ($a > 4) and 3)`). So, one must explicitly convert said values to boolean using `is not 0` and such instead of assuming it's boolean.
  * Now, division operators (`/` and `%`) will produce an error if used to divide by zero.
  * Reordered the precedence of `contains` - it should now be higher than `is`, so that e.g. `(print: "ABC" contains "A" is true)` should now work as expected.
  * Now, giving a datamap to `(print:)` will cause that macro to print out the datamap in a rough HTML `<table>` structure, showing each name and value. This is a superior alternative to just printing "[object Object]".
