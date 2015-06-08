@@ -222,7 +222,7 @@ function($, Utils, Selectors, Renderer, Environ, State, HookUtils, HookSet, Pseu
 				and not normalising blank text nodes. This attempts to discern both bugs.
 			*/
 			p.append(document.createTextNode("0-"),document.createTextNode("2"),document.createTextNode(""))
-				.get(0).normalize();
+				[0].normalize();
 			return (result = (p.contents().length === 1));
 		};
 	}());
@@ -237,7 +237,7 @@ function($, Utils, Selectors, Renderer, Environ, State, HookUtils, HookSet, Pseu
 		@param {jQuery} elem The element whose whitespace must collapse.
 	*/
 	function collapse(elem) {
-		var finalNode, lastVisibleNode,
+		var nodes,
 			/*
 				These hold the textNodes immediately outside the elem, before and after,
 				which are also inside a <tw-collapsed>. They're used to check if this is a nested
@@ -249,7 +249,7 @@ function($, Utils, Selectors, Renderer, Environ, State, HookUtils, HookSet, Pseu
 				retain a final space at the end, by checking how much was trimmed from
 				the finalNode and lastVisibleNode.
 			*/
-			finalSpaces = '';
+			finalSpaces = 0;
 		
 		/*
 			A .filter() callback which removes nodes inside a <tw-verbatim> or
@@ -281,18 +281,19 @@ function($, Utils, Selectors, Renderer, Environ, State, HookUtils, HookSet, Pseu
 		Utils.findAndFilter(elem, 'br:not([data-raw])')
 			.filter(noVerbatim)
 			.replaceWith(document.createTextNode(" "));
+		/*
+			Having done that, we can now work on the element's nodes without concern for modifying the set.
+		*/
+		nodes = elem.textNodes();
 		
-		finalNode = elem.textNodes().reduce(function(prevNode, node) {
+		nodes.reduce(function(prevNode, node) {
 			/*
 				- If the node is inside a <tw-verbatim> or <tw-expression>, regard it as a solid Text node
-				that cannot be split or permuted.
+				that cannot be split or permuted. We do this by returning a new, disconnected text node,
+				and using that as prevNode in the next iteration.
 			*/
 			if (!noVerbatim(node)) {
-				/*
-					By pretending that this node was actually an "A" text node, the above rule is
-					adhered to during the next iteration.
-				*/
-				return (lastVisibleNode = document.createTextNode("A"));
+				return document.createTextNode("A");
 			}
 			/*
 				- If the node contains runs of whitespace, reduce all runs to single spaces.
@@ -307,37 +308,38 @@ function($, Utils, Selectors, Renderer, Environ, State, HookUtils, HookSet, Pseu
 					&& (!prevNode || !prevNode.textContent || prevNode.textContent.search(/\s$/) >-1)) {
 				node.textContent = node.textContent.slice(1);
 			}
-			/*
-				Save the last visible node for a following step.
-			*/
-			if (node.textContent && node.textContent.search(/^\s*$/) === -1) {
-				lastVisibleNode = node;
-			}
 			return node;
 		}, beforeNode);
 		/*
-			- Trim both the final node and the last visible node right.
-			In the case of { <b>A </b> }, the final node is not the last visible node,
-			and both need to be trimmed.
+			- Trim the rightmost nodes up to the nearest visible node.
+			In the case of { <b>A </b><i> </i> }, there are 3 text nodes that need to be trimmed.
+			This uses [].every to iterate up until a point.
 		*/
-		if (finalNode) {
-			finalNode.textContent = finalNode.textContent.replace(/\s+$/, function(substr) {
-				finalSpaces += substr;
-				return '';
-			});
-		}
-		if (lastVisibleNode && lastVisibleNode !== finalNode) {
-			lastVisibleNode.textContent = lastVisibleNode.textContent.replace(/\s+$/, function(substr) {
-				finalSpaces += substr;
-				return '';
-			});
-		}
+		[].concat(nodes).reverse().every(function(node) {
+			if (!noVerbatim(node)) {
+				return false;
+			}
+			// If this is the last visible node, merely trim it right, and return false;
+			if (!node.textContent.match(/^\s*$/)) {
+				node.textContent = node.textContent.replace(/\s+$/, function(substr) {
+					finalSpaces += substr.length;
+					return '';
+				});
+				return false;
+			}
+			// Otherwise, trim it down to 0, and set finalSpaces
+			else {
+				finalSpaces += node.textContent.length;
+				node.textContent = "";
+				return true;
+			}
+		});
 		/*
 			- If the afterNode is present, and the previous step removed whitespace, reinsert a single space.
 			In the case of {|1>[B ]C} and {|1>[''B'' ]C}, the space inside ?1 before "C" should be retained.
 		*/
-		if (finalSpaces.length && afterNode) {
-			finalNode.textContent += " ";
+		if (finalSpaces > 0 && afterNode) {
+			nodes[nodes.length-1].textContent += " ";
 		}
 		/*
 			Now that we're done, normalise the nodes.
@@ -672,16 +674,6 @@ function($, Utils, Selectors, Renderer, Environ, State, HookUtils, HookSet, Pseu
 			}
 			
 			/*
-				Special case for hooks inside existing collapsing syntax:
-				their whitespace must collapse as well.
-				(This may or may not change in a future version).
-			*/
-			if (dom.length && desc.target instanceof $ && desc.target.is(Selectors.hook)
-					&& desc.target.parents('tw-collapsed').length > 0) {
-				collapse(dom);
-			}
-			
-			/*
 				Before executing the expressions, put a fresh object on the
 				expression data stack.
 			*/
@@ -714,6 +706,16 @@ function($, Utils, Selectors, Renderer, Environ, State, HookUtils, HookSet, Pseu
 					}
 				}
 			});
+			
+			/*
+				Special case for hooks inside existing collapsing syntax:
+				their whitespace must collapse as well.
+				(This may or may not change in a future version).
+			*/
+			if (dom.length && desc.target instanceof $ && desc.target.is(Selectors.hook)
+					&& desc.target.parents('tw-collapsed').length > 0) {
+				collapse(dom);
+			}
 			
 			Utils.findAndFilter(dom, Selectors.collapsed).each(function() {
 				collapse($(this));

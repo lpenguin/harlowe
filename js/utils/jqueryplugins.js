@@ -28,12 +28,11 @@ define(['jquery'], function($) {
 		/*
 			This slightly complicated procedure is necessary to select all
 			descendent text nodes.
-			This returns a sorted Array.
+			This returns a sorted Array, not a jQuery.
 		*/
 		textNodes: function() {
 			/*
 				Base case: this collection contains a single text node.
-				TODO: Handle a collection containing a mix of text nodes and elements.
 			*/
 			if (this.length === 1 && this[0] instanceof Text) {
 				return [this[0]];
@@ -57,6 +56,7 @@ define(['jquery'], function($) {
 		/*
 			Both of these navigates up the tree to find the nearest text node outside this element,
 			earlier or later in the document.
+			These return an unwrapped Text node, not a jQuery.
 		*/
 		prevTextNode: function () {
 			var elem = this.first()[0],

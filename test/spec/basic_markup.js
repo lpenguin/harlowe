@@ -515,6 +515,10 @@ describe("basic twinemarkup syntax", function() {
 				"A { A  \n  B } B",
 				"A A B B"
 			);
+			expectMarkupToPrint(
+				"A{ C }B",
+				"ACB"
+			);
 		});
 		it("leaves other syntax as is", function() {
 			var p = runPassage("{   ''A ''   } B");
@@ -577,6 +581,11 @@ describe("basic twinemarkup syntax", function() {
 				"{A(set: $r to 1)B}",
 				"AB"
 			);
+		});
+		it("works with expressions", function() {
+			expectMarkupToPrint("(set: $a to '')(set: $b to 'B'){A  $a $b $a C}", "A B C");
+			expectMarkupToPrint("(set: $a to '')(set: $b to 'B')A{ $a $b $a }C", "ABC");
+			expectMarkupToPrint("A{ (print:'') (print:'B') (print:'') }C", "ABC");
 		});
 		it("works inside (display:)", function() {
 			createPassage("{B\nC}", "grault");
@@ -644,6 +653,15 @@ describe("basic twinemarkup syntax", function() {
 				"I I J J"
 			);
 		});
+		it("works with (replace:) and other macros", function() {
+			expectMarkupToPrint("{[]<1|}(replace:?1)[Good     golly!]", "Good     golly!");
+			expectMarkupToPrint("[]<2|{(replace:?2)[Good     golly!]}", "Good golly!");
+		});
+		it("works with links in nested hooks", function() {
+			expectMarkupToPrint("{A[ [[B]]]<1|}", "A B");
+			expectMarkupToPrint("{[[[D]] ]<1|C}", "D C");
+			expectMarkupToPrint("{E[ [[F]] ]<1|G}", "E F G");
+		});
 		it("will not affect text inside verbatim guards inside nested hooks", function() {
 			var p = runPassage("{ A (if:true)[`    `] B }");
 			expect(p.text()).toBe("A      B");
@@ -651,7 +669,7 @@ describe("basic twinemarkup syntax", function() {
 			expect(p.text()).toBe("C  B  D");
 		});
 		it("works even when empty", function() {
-			expectMarkupToNotError("{}");
+			expectMarkupToPrint("A{}B","AB");
 		});
 	});
 	
