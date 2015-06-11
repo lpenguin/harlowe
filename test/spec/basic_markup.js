@@ -653,9 +653,15 @@ describe("basic twinemarkup syntax", function() {
 				"I I J J"
 			);
 		});
-		it("works with (replace:) and other macros", function() {
+		it("works with (replace:) inserting text across collapsed regions", function() {
+			expectMarkupToPrint("{[]<1|(replace:?1)[Good     golly!]}", "Good golly!");
+			expectMarkupToPrint("{[]<1|}{(replace:?1)[Good     golly!]}", "Good golly!");
+		});
+		it("works with (replace:) inserting text into and out of collapsed regions", function() {
 			expectMarkupToPrint("{[]<1|}(replace:?1)[Good     golly!]", "Good     golly!");
 			expectMarkupToPrint("[]<2|{(replace:?2)[Good     golly!]}", "Good golly!");
+			expectMarkupToPrint("(replace:?1)[Good     golly?]{[]<1|}", "Good     golly?");
+			expectMarkupToPrint("{(replace:?2)[Good     golly?]}[]<2|", "Good golly?");
 		});
 		it("works with links in nested hooks", function() {
 			expectMarkupToPrint("{A[ [[B]]]<1|}", "A B");

@@ -59,11 +59,15 @@ define(['jquery', 'utils', 'renderer'], function($, Utils, Renderer) {
 			This creates an inheriting ChangeDescriptor, and is basically
 			another shorthand for the old create-assign pattern.
 			ChangeDescriptors can delegate to earlier descriptors if need be.
+			Passed-in properties can be added to the descriptor, and a single
+			(presumably composed) ChangerCommand as well.
 		*/
 		create: function(properties, changer) {
 			var ret = Object.assign(Object.create(this), {
-					attr:   [],
-					styles: [],
+					// Of course, we can't inherit array contents from the prototype chain,
+					// so we have to copy the arrays.
+					attr:   [].concat(this.attr   || []),
+					styles: [].concat(this.styles || []),
 				}, properties);
 			/*
 				If a ChangerCommand was passed in, run it.
@@ -190,18 +194,18 @@ define(['jquery', 'utils', 'renderer'], function($, Utils, Renderer) {
 			
 			/*
 				Now, insert the DOM structure into the target element.
-			
+				
 				Here are the reasons why the DOM must be connected to the target before the
 				expressions are evaluated:
-			
+				
 				* Various Twine macros perform DOM operations on this pre-inserted jQuery set of
 				rendered elements, but assume that all the elements have a parent item, so that e.g.
 				.insertBefore() can be performed on them.
-			
+				
 				* Also, and perhaps more saliently, the next block uses .find() to select
 				<tw-macro> elements etc., which assumes that the jQuery object has a single
 				container element at its "root level".
-			
+				
 				* Finally, sensor macros' interval functions deactivate themselves if the
 				section is disconnected from Utils.storyElement, and if they initially
 				run without being connected, they will immediately deactivate.

@@ -53,7 +53,8 @@ function($, Utils, Selectors, Renderer, Environ, State, HookUtils, HookSet, Pseu
 		if (result && result.changer) {
 			if (!nextHook.length) {
 				expr.replaceWith(TwineError.create("changer",
-					"The (" + result.macroName + ":) command should be assigned to a variable or attached to a hook."
+					"The (" + result.macroName + ":) command should be assigned to a variable or attached to a hook.",
+					"Macros like (if: $alive) should be touching the left side of a hook: (if: $alive)[Breathe]"
 				), expr.attr('title'));
 			}
 			else {
@@ -252,8 +253,8 @@ function($, Utils, Selectors, Renderer, Environ, State, HookUtils, HookSet, Pseu
 			finalSpaces = 0;
 		
 		/*
-			A .filter() callback which removes nodes inside a <tw-verbatim> or
-			<tw-expression> element, unless it is also inside a
+			A .filter() callback which removes nodes inside a <tw-verbatim>,
+			a replaced <tw-hook>, or a <tw-expression> element, unless it is also inside a
 			<tw-collapsed> inside the <tw-expression>.
 		*/
 		function noVerbatim(e) {
@@ -637,7 +638,6 @@ function($, Utils, Selectors, Renderer, Environ, State, HookUtils, HookSet, Pseu
 				return;
 			}
 			
-			
 			/*
 				Infinite regress can occur from a couple of causes: (display:) loops, or evaluation loops
 				caused by something as simple as (set: $x to "$x")$x.
@@ -711,9 +711,14 @@ function($, Utils, Selectors, Renderer, Environ, State, HookUtils, HookSet, Pseu
 				Special case for hooks inside existing collapsing syntax:
 				their whitespace must collapse as well.
 				(This may or may not change in a future version).
+				
+				Important note: this uses the **original** target, not desc.target,
+				to determine if it's inside a <tw-collapsed>. This means that
+				{(replace:?1)[  H  ]} will always collapse the affixed hook regardless of
+				where the ?1 hook is.
 			*/
-			if (dom.length && desc.target instanceof $ && desc.target.is(Selectors.hook)
-					&& desc.target.parents('tw-collapsed').length > 0) {
+			if (dom.length && target instanceof $ && target.is(Selectors.hook)
+					&& target.parents('tw-collapsed').length > 0) {
 				collapse(dom);
 			}
 			
