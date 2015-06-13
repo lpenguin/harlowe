@@ -31,6 +31,22 @@ function($, Utils, Macros, HookSet, ChangerCommand) {
 				return ChangerCommand.create(e, [scope]);
 			},
 			function(desc, scope) {
+				/*
+					Now, if the source hook was outside the collapsing syntax,
+					and its dest is inside it, then it should NOT be collapsed, reflecting
+					its, shall we say, "lexical" position rather than its "dynamic" position.
+					In order to obtain this information, though, we need the obscure jQuery
+					context property, to obtain the original target's context (which was
+					set in the findAndFilter() call inside renderInto() in section).
+					I don't like having to touch this API surface, but it has to be done, I guess.
+				*/
+				var collapsing = $(desc.target.context).parents().filter('tw-collapsed').length > 0;
+				if (!collapsing) {
+					desc.attr = [].concat(desc.attr, { collapsing: false });
+				}
+				/*
+					Having done that, we may now alter the desc's target.
+				*/
 				desc.target = scope;
 				desc.append = e;
 				return desc;

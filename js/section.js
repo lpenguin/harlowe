@@ -255,14 +255,23 @@ function($, Utils, Selectors, Renderer, Environ, State, HookUtils, HookSet, Pseu
 		/*
 			A .filter() callback which removes nodes inside a <tw-verbatim>,
 			a replaced <tw-hook>, or a <tw-expression> element, unless it is also inside a
-			<tw-collapsed> inside the <tw-expression>.
+			<tw-collapsed> inside the <tw-expression>. Used to prevent text inside those
+			elements from being truncated.
 		*/
 		function noVerbatim(e) {
 			/*
 				The (this || e) dealie is a kludge to support its use in a jQuery
 				.filter() callback as well as a bare function.
 			*/
-			return $(this || e).parentsUntil('tw-collapsed').filter('tw-verbatim, tw-expression').length === 0;
+			return $(this || e).parentsUntil('tw-collapsed')
+				.filter('tw-verbatim, tw-expression, '
+					/*
+						Also, remove nodes that have collapsed=false on their parent elements,
+						which is currently (June 2015) only used to denote hooks whose contents were (replace:)d from
+						outside the collapsing syntax - e.g. {[]<1|}(replace:?1)[Good  golly!]
+					*/
+					+ '[collapsing=false]')
+				.length === 0;
 		}
 		/*
 			We need to keep track of what the previous and next exterior text nodes are,
