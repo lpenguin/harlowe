@@ -29,7 +29,7 @@ describe("revision macros", function() {
 				expect(p.text()).toBe('1234');
 			});
 		});
-		describe("given multiple hooks", function() {
+		describe("given multiple same-named hooks", function() {
 			it("appends to each selected hook", function() {
 				var p = runPassage("[bu]<foo|[los]<foo|(append:?foo)[s]");
 				expect(p.find('tw-hook[name=foo]').length).toBe(2);
@@ -40,7 +40,7 @@ describe("revision macros", function() {
 				expect(p.text()).toBe('A1B2C3');
 			});
 		});
-		describe("given strings", function() {
+		describe("given a string", function() {
 			it("appends to every found string in the passage", function() {
 				var p = runPassage("good good(append:'good')[lands]");
 				expect(p.text()).toBe('goodlands goodlands');

@@ -56,6 +56,44 @@ describe("style changer macros", function() {
 		});
 		// TODO: Add .css() tests of output.
 	});
+	describe("the (background:) macro", function() {
+		it("requires 1 string argument or 1 colour argument", function() {
+			expectMarkupToError("(background:)");
+			expectMarkupToError("(background:1)");
+			expectMarkupToError("(background:'A','B')");
+			expectMarkupToNotError("(background:'A')");
+			expectMarkupToNotError("(background:red + white)");
+		});
+		it("given a string, applies it as the background-image property", function(done) {
+			var p = runPassage("(background:'garply')[Hey]").find('tw-hook');
+			setTimeout(function() {
+				expect(p.attr('style')).toMatch(/background-image:\s+url\(['"]?.*?garply['"]?\)/);
+				done();
+			});
+		});
+		it("given a string with a hex colour, applies it as the background-color property", function(done) {
+			var p = runPassage("(background:'#601040')[Hey]").find('tw-hook');
+			setTimeout(function() {
+				expect(p.attr('style')).toMatch(/background-color:\s+(?:#601040|rgb\(\s*96,\s*16,\s*64\s*\))/);
+				done();
+			});
+		});
+		it("given a colour, applies it as the background-color property", function(done) {
+			var p = runPassage("(background:black)[Hey]").find('tw-hook');
+			setTimeout(function() {
+				expect(p.attr('style')).toMatch(/background-color:\s+(?:#000000|rgb\(\s*0,\s*0,\s*0\s*\))/);
+				done();
+			});
+		});
+		it("can compose with itself", function(done) {
+			var p = runPassage("(set: $x to (background:black)+(background:'garply'))$x[Hey]").find('tw-hook');
+			setTimeout(function() {
+				expect(p.attr('style')).toMatch(/background-image:\s+url\(['"]?.*?garply['"]?\)/);
+				expect(p.attr('style')).toMatch(/background-color:\s+(?:#000000|rgb\(\s*0,\s*0,\s*0\s*\))/);
+				done();
+			});
+		});
+	});
 	describe("the (align:) macro", function() {
 		it("requires exactly 1 string argument", function() {
 			expectMarkupToError("(align:)");
