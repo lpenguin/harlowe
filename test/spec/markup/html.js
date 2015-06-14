@@ -52,4 +52,27 @@ describe("HTML in twinemarkup", function() {
 			expect(runPassage("<style>b { box-sizing: content-box; }</style><b>Hey</b>").find('b').css('box-sizing')).toBe('content-box');
 		});
 	});
+
+	describe("HTML comments", function() {
+		it("are removed from the rendered HTML", function() {
+			[0,1,2].forEach(function(i) {
+				expectMarkupToBecome(
+					"A<!--" + "\n".repeat(i) + "-->B",
+					"AB"
+				);
+			});
+		});
+		it("can handle partial syntax inside", function() {
+			expectMarkupToBecome(
+				"A<!--''-->B",
+				"AB"
+			);
+		});
+		it("can be nested", function() {
+			expectMarkupToBecome(
+				"A<!--Cool<!-- -->Cool-->B",
+				"AB"
+			);
+		});
+	});
 });

@@ -67,27 +67,37 @@ afterAll(function() {
 <tw-story style='visibility:hidden'></tw-story>
 
 <!-- include spec files here... -->
-<script src="spec/basic_markup.js"></script>
-<script src="spec/html_in_markup.js"></script>
-<script src="spec/hooks.js"></script>
+<script src="spec/markup/text_styles.js"></script>
+<script src="spec/markup/links.js"></script>
+<script src="spec/markup/hooks.js"></script>
+<script src="spec/markup/line_breaks.js"></script>
+<script src="spec/markup/headers.js"></script>
+<script src="spec/markup/lists.js"></script>
+<script src="spec/markup/aligners.js"></script>
+<script src="spec/markup/verbatim_syntax.js"></script>
+<script src="spec/markup/collapsing_syntax.js"></script>
+<script src="spec/markup/html.js"></script>
+<script src="spec/markup/restricted_syntax.js"></script>
 
-<script src="spec/operators.js"></script>
-<script src="spec/identifiers.js"></script>
+<script src="spec/tags/setup_passages.js"></script>
 
-<script src="spec/value_macros.js"></script>
-<script src="spec/data_structures.js"></script>
-<script src="spec/property_indexing.js"></script>
+<script src="spec/twinescript/operators.js"></script>
+<script src="spec/twinescript/identifiers.js"></script>
+<script src="spec/twinescript/property_indexing.js"></script>
 
-<script src="spec/command_macros.js"></script>
-<script src="spec/link_markup.js"></script>
+<script src="spec/value_macros/primitives.js"></script>
+<script src="spec/value_macros/data_structures.js"></script>
+<script src="spec/value_macros/game_state.js"></script>
 
-<script src="spec/style_changer_macros.js"></script>
-<script src="spec/revision_macros.js"></script>
-<script src="spec/interaction_macros.js"></script>
+<script src="spec/changer_macros/control_flow.js"></script>
+<script src="spec/changer_macros/style.js"></script>
+<script src="spec/changer_macros/links.js"></script>
+<script src="spec/changer_macros/hooks.js"></script>
+<script src="spec/changer_macros/interaction.js"></script>
+<script src="spec/changer_macros/revision.js"></script>
 
-<script src="spec/save_macros.js"></script>
-
-<script src="spec/setup_passages.js"></script>
+<script src="spec/command_macros/basics.js"></script>
+<script src="spec/command_macros/saving.js"></script>
 
 <tw-storydata options="debug" startnode="1">
 <tw-passagedata pid="1" name="1">
