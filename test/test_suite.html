@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<title>Jasmine Spec Runner v2.2.1</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jasmine/2.2.1/jasmine.css">
+<link rel="stylesheet" href="../build/harlowe-css.css"/>
+<script src="../node_modules/es6-shim/es6-shim.min.js"></script>
+<script src="../node_modules/grunt-contrib-requirejs/node_modules/requirejs/require.js"></script>
+<script>
+require.config({baseUrl: "../js/"});
+require(["markup/lexer","markup/patterns","markup/markup","harlowe"]);
+</script>
+<script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/jasmine/2.2.1/jasmine.js"></script>
+<script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/jasmine/2.2.1/jasmine-html.js"></script>
+<script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/jasmine/2.2.1/boot.js"></script>
+<script role="script" type="text/twine-javascript">
+window.createPassage = function(text, name, tags) {
+	Passages.set(name, new Map([
+		["source", text],
+		["name", name],
+		["tags", tags],
+	]));
+};
+window.goToPassage = function(text, name) {
+	Engine.goToPassage(text, name);
+	return $('tw-passage > tw-transition-container, tw-passage > tw-hook');
+};
+window.runPassage = function(text, name) {
+	name = name || "test";
+	createPassage(text, name);
+	Engine.goToPassage(name);
+	
+	return $('tw-passage > tw-transition-container, tw-passage > tw-hook');
+};
+window.expectMarkupToBecome = function(markup, html) {
+	expect(runPassage(markup).html() || '').toBe(html);
+};
+window.expectMarkupToPrint = function(markup, text) {
+	expect(runPassage(markup).find('br').replaceWith(document.createTextNode('\n')).end().text() || '').toBe(text);
+};
+window.expectMarkupToError = function(markup) {
+	expect(runPassage(markup).find('tw-error:not(.javascript)').length).toBe(1);
+};
+window.expectMarkupNotToError = window.expectMarkupToNotError = function(markup) {
+	expect(runPassage(markup).find('tw-error').length).toBe(0);
+};
+window.clearState = function() {
+	State.reset();
+	Passages.clear();
+};
+</script>
+<script>
+beforeEach(function f(done) {
+	if (window.$ && window.clearState) {
+		$('tw-story').empty();
+		clearState();
+		localStorage.clear();
+		done();
+		return;
+	}
+	setTimeout(f.bind(0, done), 1);
+});
+afterAll(function() {
+	$('tw-story').removeAttr('style');
+});
+</script>
+<body>
+<tw-story style='visibility:hidden'></tw-story>
+
+<!-- include spec files here... -->
+<script src="spec/markup/text_styles.js"></script>
+<script src="spec/markup/links.js"></script>
+<script src="spec/markup/hooks.js"></script>
+<script src="spec/markup/line_breaks.js"></script>
+<script src="spec/markup/headers.js"></script>
+<script src="spec/markup/lists.js"></script>
+<script src="spec/markup/aligners.js"></script>
+<script src="spec/markup/verbatim_syntax.js"></script>
+<script src="spec/markup/collapsing_syntax.js"></script>
+<script src="spec/markup/html.js"></script>
+<script src="spec/markup/restricted_syntax.js"></script>
+
+<script src="spec/tags/setup_passages.js"></script>
+
+<script src="spec/twinescript/operators.js"></script>
+<script src="spec/twinescript/identifiers.js"></script>
+<script src="spec/twinescript/property_indexing.js"></script>
+
+<script src="spec/value_macros/primitives.js"></script>
+<script src="spec/value_macros/data_structures.js"></script>
+<script src="spec/value_macros/game_state.js"></script>
+
+<script src="spec/changer_macros/control_flow.js"></script>
+<script src="spec/changer_macros/style.js"></script>
+<script src="spec/changer_macros/links.js"></script>
+<script src="spec/changer_macros/hooks.js"></script>
+<script src="spec/changer_macros/interaction.js"></script>
+<script src="spec/changer_macros/revision.js"></script>
+
+<script src="spec/command_macros/basics.js"></script>
+<script src="spec/command_macros/saving.js"></script>
+
+<tw-storydata options="debug" startnode="1">
+<tw-passagedata pid="1" name="1">

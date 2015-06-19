@@ -1,0 +1,777 @@
+define([
+	'jquery',
+	'utils',
+	'utils/selectors',
+	'renderer',
+	'twinescript/environ',
+	'state',
+	'utils/hookutils',
+	'datatypes/hookset',
+	'internaltypes/pseudohookset',
+	'internaltypes/changedescriptor',
+	'internaltypes/twineerror',
+	'internaltypes/twinenotifier',
+],
+function($, Utils, Selectors, Renderer, Environ, State, HookUtils, HookSet, PseudoHookSet, ChangeDescriptor, TwineError, TwineNotifier) {
+	"use strict";
+
+	var Section;
+
+	/**
+		Section objects represent a block of Twine source rendered into the DOM.
+		It contains its own DOM, a reference to any enclosing Section,
+		and methods and properties related to invoking TwineScript code within it.
+		
+		The big deal of having multiple Section objects (and the name Section itself
+		as compared to "passage" or "screen") is that multiple simultaneous passages'
+		(such as stretchtext mode) code can be hygenically scoped. Hook references
+		in one passage cannot affect another, and so forth.
+		
+		@class Section
+		@static
+	*/
+	
+	/**
+		Apply the result of a <tw-expression>'s evaluation to the next hook.
+		If the result is a changer command, live command or boolean, this will cause the hook
+		to be rendered differently.
+		
+		@method runExpression
+		@private
+		@param {jQuery} expr The <tw-expression> element.
+		@param {Any} result The result of running the expression.
+	*/
+	function applyExpressionToHook(expr, result) {
+		/*
+			To be considered connected, the next hook must be the very next element.
+		*/
+		var nextHook = expr.next(Selectors.hook);
+		
+		/*
+			If result is a ChangerCommand, please run it.
+		*/
+		if (result && result.changer) {
+			if (!nextHook.length) {
+				expr.replaceWith(TwineError.create("changer",
+					"The (" + result.macroName + ":) command should be assigned to a variable or attached to a hook.",
+					"Macros like (if: $alive) should be touching the left side of a hook: (if: $alive)[Breathe]"
+				), expr.attr('title'));
+			}
+			else {
+				this.renderInto(
+					/*
+						The use of popAttr prevents the hook from executing normally
+						if it wasn't actually the eventual target of the changer function.
+					*/
+					nextHook.popAttr('source'),
+					/*
+						Don't forget: nextHook may actually be empty.
+						This is acceptable - the result changer could alter the
+						target appropriately.
+					*/
+					nextHook,
+					result
+				);
+			}
+		}
+		/*
+			Else, if it's a live macro, please run that.
+		*/
+		else if (result && result.live) {
+			runLiveHook.call(this, nextHook, result.delay, result.event);
+		}
+		/*
+			And finally, the falsy primitive case.
+			This is special: as it prevents hooks from being run, an (else:)
+			that follows this will return true.
+		*/
+		else if   (result === false
+				|| result === null
+				|| result === undefined) {
+			nextHook.removeAttr('source');
+			expr.addClass("false");
+			
+			if (nextHook.length) {
+				/*
+					Unfortunately, (else-if:) must be special-cased, so that it doesn't affect
+					lastHookShown, instead preserving the value of the original (if:).
+				*/
+				if (Utils.insensitiveName(expr.attr('name')) !== "elseif") {
+					this.stack[0].lastHookShown = false;
+				}
+				return;
+			}
+		}
+		/*
+			The (else:) and (elseif:) macros require a little bit of state to be
+			saved after every hook interaction: whether or not the preceding hook
+			was shown or hidden by the attached expression.
+			Sadly, we must oblige with this overweening demand.
+		*/
+		if (nextHook.length) {
+			this.stack[0].lastHookShown = true;
+		}
+	}
+	
+	/**
+		Run a newly rendered <tw-expression> element's code, obtain the resulting value,
+		and apply it to the next <tw-hook> element, if present.
+		
+		@method runExpression
+		@private
+		@param {jQuery} expr The <tw-expression> to run.
+	*/
+	function runExpression(expr) {
+		var
+			/*
+				Execute the expression, and obtain its result value.
+			*/
+			result = this.eval(expr.popAttr('js') || '');
+		
+		/*
+			Print any error that resulted.
+			This must of course run after the sensor/changer function was run,
+			in case that provided an error.
+		*/
+		if (TwineError.containsError(result)) {
+			if (result instanceof Error) {
+				result = TwineError.fromError(result);
+			}
+			expr.replaceWith(result.render(expr.attr('title'), expr));
+		}
+		/*
+			If we're in debug mode, a TwineNotifier may have been sent.
+			In which case, print that *inside* the expr, not replacing it.
+		*/
+		else if (TwineNotifier.isPrototypeOf(result)) {
+			expr.append(result.render());
+		}
+		/*
+			If the expression had a TwineScript_Print method, do that.
+		*/
+		else if (result && result.TwineScript_Print && !result.changer) {
+			/*
+				TwineScript_Print() typically emits side-effects. These
+				will occur... now.
+			*/
+			result = result.TwineScript_Print();
+			
+			/*
+				If TwineScript_Print returns an object of the form { earlyExit },
+				then that's a signal to cease all further expression evaluation
+				immediately.
+			*/
+			if (result.earlyExit) {
+				return false;
+			}
+			/*
+				On rare occasions (specifically, when the passage component
+				of the link syntax produces an error) TwineScript_Print
+				returns a jQuery of the <tw-error>.
+			*/
+			if (result instanceof $) {
+				expr.append(result);
+			}
+			/*
+				Alternatively (and more commonly), TwineScript_Print() can
+				return an Error object.
+			*/
+			else if (TwineError.containsError(result)) {
+				if (result instanceof Error) {
+					result = TwineError.fromError(result);
+				}
+				expr.replaceWith(result.render(expr.attr('title'), expr));
+			}
+			else {
+				this.renderInto(result, expr);
+			}
+		}
+		/*
+			This prints an object if it's a string, number, or has a custom toString method
+			and isn't a function.
+		*/
+		else if (typeof result === "string"  || typeof result === "number"
+			|| (typeof result === "object" && result && result.toString !== Object.prototype.toString)) {
+			/*
+				Transition the resulting Twine code into the expression's element.
+			*/
+			this.renderInto(result + '', expr);
+		}
+		else {
+			applyExpressionToHook.call(this, expr, result);
+		}
+	}
+	
+	/*
+		This quick memoized feature test checks if the current platform supports Node#normalize().
+	*/
+	var supportsNormalize = (function() {
+		var result;
+		return function() {
+			if (result !== undefined) {
+				return result;
+			}
+			var p = $('<p>');
+			/*
+				If the method is absent, then...
+			*/
+			if (!p[0].normalize) {
+				return (result = false);
+			}
+			/*
+				There are two known normalize bugs: not normalising text ranges containing a hyphen,
+				and not normalising blank text nodes. This attempts to discern both bugs.
+			*/
+			p.append(document.createTextNode("0-"),document.createTextNode("2"),document.createTextNode(""))
+				[0].normalize();
+			return (result = (p.contents().length === 1));
+		};
+	}());
+	
+	/**
+		<tw-collapsed> elements should collapse whitespace inside them in a specific manner - only
+		single spaces between non-whitespace should remain.
+		This function performs this transformation by modifying the text nodes of the passed-in element.
+		
+		@method collapse
+		@private
+		@param {jQuery} elem The element whose whitespace must collapse.
+	*/
+	function collapse(elem) {
+		var nodes,
+			/*
+				These hold the textNodes immediately outside the elem, before and after,
+				which are also inside a <tw-collapsed>. They're used to check if this is a nested
+				hook, and to treat opening and closing whitespace accordingly.
+			*/
+			beforeNode, afterNode,
+			/*
+				This is part of an uncomfortable #kludge used to determine whether to
+				retain a final space at the end, by checking how much was trimmed from
+				the finalNode and lastVisibleNode.
+			*/
+			finalSpaces = 0;
+		
+		/*
+			A .filter() callback which removes nodes inside a <tw-verbatim>,
+			a replaced <tw-hook>, or a <tw-expression> element, unless it is also inside a
+			<tw-collapsed> inside the <tw-expression>. Used to prevent text inside those
+			elements from being truncated.
+		*/
+		function noVerbatim(e) {
+			/*
+				The (this || e) dealie is a kludge to support its use in a jQuery
+				.filter() callback as well as a bare function.
+			*/
+			return $(this || e).parentsUntil('tw-collapsed')
+				.filter('tw-verbatim, tw-expression, '
+					/*
+						Also, remove nodes that have collapsed=false on their parent elements,
+						which is currently (June 2015) only used to denote hooks whose contents were (replace:)d from
+						outside the collapsing syntax - e.g. {[]<1|}(replace:?1)[Good  golly!]
+					*/
+					+ '[collapsing=false]')
+				.length === 0;
+		}
+		/*
+			We need to keep track of what the previous and next exterior text nodes are,
+			but only if they were also inside a <tw-collapsed>.
+		*/
+		beforeNode = elem.prevTextNode();
+		if (!$(beforeNode).parents('tw-collapsed').length) {
+			beforeNode = null;
+		}
+		afterNode = elem.nextTextNode();
+		if (!$(afterNode).parents('tw-collapsed').length) {
+			afterNode = null;
+		}
+		/*
+			- If the node contains <br>, replace with a single space.
+		*/
+		Utils.findAndFilter(elem, 'br:not([data-raw])')
+			.filter(noVerbatim)
+			.replaceWith(document.createTextNode(" "));
+		/*
+			Having done that, we can now work on the element's nodes without concern for modifying the set.
+		*/
+		nodes = elem.textNodes();
+		
+		nodes.reduce(function(prevNode, node) {
+			/*
+				- If the node is inside a <tw-verbatim> or <tw-expression>, regard it as a solid Text node
+				that cannot be split or permuted. We do this by returning a new, disconnected text node,
+				and using that as prevNode in the next iteration.
+			*/
+			if (!noVerbatim(node)) {
+				return document.createTextNode("A");
+			}
+			/*
+				- If the node contains runs of whitespace, reduce all runs to single spaces.
+				(This reduces nodes containing only whitespace to just a single space.)
+			*/
+			node.textContent = node.textContent.replace(/\s+/g,' ');
+			/*
+				- If the node begins with a space and previous node ended with whitespace or is empty, trim left.
+				(This causes nodes containing only whitespace to be emptied.)
+			*/
+			if (node.textContent[0] === " "
+					&& (!prevNode || !prevNode.textContent || prevNode.textContent.search(/\s$/) >-1)) {
+				node.textContent = node.textContent.slice(1);
+			}
+			return node;
+		}, beforeNode);
+		/*
+			- Trim the rightmost nodes up to the nearest visible node.
+			In the case of { <b>A </b><i> </i> }, there are 3 text nodes that need to be trimmed.
+			This uses [].every to iterate up until a point.
+		*/
+		[].concat(nodes).reverse().every(function(node) {
+			if (!noVerbatim(node)) {
+				return false;
+			}
+			// If this is the last visible node, merely trim it right, and return false;
+			if (!node.textContent.match(/^\s*$/)) {
+				node.textContent = node.textContent.replace(/\s+$/, function(substr) {
+					finalSpaces += substr.length;
+					return '';
+				});
+				return false;
+			}
+			// Otherwise, trim it down to 0, and set finalSpaces
+			else {
+				finalSpaces += node.textContent.length;
+				node.textContent = "";
+				return true;
+			}
+		});
+		/*
+			- If the afterNode is present, and the previous step removed whitespace, reinsert a single space.
+			In the case of {|1>[B ]C} and {|1>[''B'' ]C}, the space inside ?1 before "C" should be retained.
+		*/
+		if (finalSpaces > 0 && afterNode) {
+			nodes[nodes.length-1].textContent += " ";
+		}
+		/*
+			Now that we're done, normalise the nodes.
+			(But, certain browsers' Node#normalize may not work,
+			in which case, don't bother at all.)
+		*/
+		elem[0] && supportsNormalize() && elem[0].normalize();
+	}
+	
+	/**
+		A live hook is one that has the (live:) macro attached.
+		It repeatedly re-renders, allowing a passage to have "live" behaviour.
+		
+		This is exclusively called by runExpression().
+		
+		@method runLiveHook
+		@private
+		@param {Function} sensor The sensor function.
+		@param {jQuery} target The <tw-hook> that the sensor is connected to.
+		@param {Number} delay The timeout delay.
+	*/
+	function runLiveHook(target, delay) {
+		/*
+			Remember the code of the hook.
+			
+			(We also remove (pop) the code from the hook
+			so that doExpressions() doesn't render it.)
+		*/
+		var source = target.popAttr('source') || "",
+			recursive;
+		
+		/*
+			Default the delay to 20ms if none was given.
+		*/
+		delay = (delay === undefined ? 20 : delay);
+		
+		/*
+			This closure runs every frame from now on, until
+			the target hook is gone.
+			
+			Notice that as this is bound, giving it a name isn't
+			all that useful.
+		*/
+		recursive = (function() {
+			this.renderInto(source, target, {append:'replace'});
+			/*
+				The (stop:) command causes the nearest (live:) command enclosing
+				it to be stopped. Inside an (if:), it allows one-off live events to be coded.
+				If a (stop:) is in the rendering target, we shan't continue running.
+			*/
+			if (target.find(Selectors.expression + "[name='stop']").length) {
+				return;
+			}
+			/*
+				Re-rendering will also cease if this section is removed from the DOM.
+			*/
+			if (!this.inDOM()) {
+				return;
+			}
+			/*
+				Otherwise, resume re-running.
+			*/
+			setTimeout(recursive, delay);
+		}.bind(this));
+		
+		setTimeout(recursive, delay);
+	}
+	
+	Section = {
+		/**
+			Creates a new Section which inherits from this one.
+			Note: while all Section use the methods on this Section prototype,
+			there isn't really much call for a Section to delegate to its
+			parent Section.
+			
+			@method create
+			@param {jQuery} newDom The DOM that comprises this section.
+			@return {Section} Object that inherits from this one.
+		*/
+		create: function(dom) {
+			var ret;
+			
+			// Just some overweening type-checking.
+			Utils.assert(dom instanceof $ && dom.length === 1);
+			
+			/*
+				Install all of the non-circular properties.
+			*/
+			ret = Object.assign(Object.create(this), {
+				/*
+					The time this Section was rendered. Of course, it's
+					not been rendered yet, but it needs to be recorded this early because
+					TwineScript uses it.
+				*/
+				timestamp: Date.now(),
+				/*
+					The root element for this section. Macros, hookRefs, etc.
+					can only affect those in this Section's DOM.
+				*/
+				dom: dom || Utils.storyElement,
+				/*
+					The expression stack is an array of plain objects,
+					each housing runtime data that is local to the expression being
+					evaluated. It is used by macros such as "display" and "if" to
+					keep track of prior evaluations - e.g. display loops, else().
+					
+					render() pushes a new object to this stack before
+					running expressions, and pops it off again afterward.
+				*/
+				stack: [],
+				/*
+					This is an enchantments stack. I'll explain later.
+				*/
+				enchantments: []
+			});
+			
+			/*
+				Add a TwineScript environ and mix in its eval() method.
+			*/
+			ret = Environ(ret);
+			return ret;
+		},
+		
+		/**
+			A quick check to see if this section's DOM is connected to the
+			story's DOM.
+			Currently only used by recursiveSensor().
+			
+			@method inDOM
+		*/
+		inDOM: function() {
+			return $(Utils.storyElement).find(this.dom).length > 0;
+		},
+
+		/**
+			This method runs Utils.$ (which is the $ function filtering out transition-out
+			elements) with the dom as the context.
+			
+			@method $
+		*/
+		$: function(str) {
+			return Utils.$(str, this.dom);
+		},
+		
+		/**
+			This function allows an expression of TwineMarkup to be evaluated as data, and
+			determine the text within it.
+			This is currently only used by runLink, to determine the link's passage name.
+		
+			@method evaluateTwineMarkup
+			@private
+			@param {String} expr
+			@param {String|jQuery} text, or a <tw-error> element.
+		*/
+		evaluateTwineMarkup: function(expr) {
+			/*
+				The expression is rendered into this loose DOM element, which
+				is then discarded after returning. Hopefully no leaks
+				will arise from this.
+			*/
+			var p = $('<p>'),
+				errors;
+			
+			/*
+				Render the text, using this own section as the base (which makes sense,
+				as the recipient of this function is usually a sub-expression within this section).
+			
+				No changers, etc. are capable of being applied here.
+			*/
+			this.renderInto(expr, p);
+			
+			/*
+				But first!! Pull out any errors that were generated.
+			*/
+			if ((errors = p.find('tw-error')).length > 0) {
+				return errors;
+			}
+			return p.text();
+		},
+		
+		/**
+			This method takes a selector string and selects hooks - usually single <tw-hook>s,
+			but also "pseudo-hooks", consecutive text nodes that match the selector -
+			querying only this section's DOM and all above it.
+			
+			This is most commonly invoked by TwineScript's desugaring of the HookRef
+			syntax (e.g. "?cupboard" becoming "section.selectHook('?cupboard')").
+			
+			@method selectHook
+			@param {String} selectorString
+			@return {HookSet|PseudoHookSet}
+		*/
+		selectHook: function(selectorString) {
+			/*
+				If a HookSet or PseudoHookSet was passed in, return it unmodified.
+				TODO: Should this be a bug?
+			*/
+			if (HookSet.isPrototypeOf(selectorString)
+				|| PseudoHookSet.isPrototypeOf(selectorString)) {
+				return selectorString;
+			}
+			switch(HookUtils.selectorType(selectorString)) {
+				case "hookRef": {
+					return HookSet.create(this, selectorString);
+				}
+				case "string": {
+					return PseudoHookSet.create(this, selectorString);
+				}
+			}
+			return null;
+		},
+		
+		/**
+			Renders the given TwineMarkup code into a given element,
+			transitioning it in. Changer functions can be provided to
+			modify the ChangeDescriptor object that controls how the code
+			is rendered.
+			
+			This is used primarily by Engine.showPassage() to render
+			passage data into a fresh <tw-passage>, but is also used to
+			render TwineMarkup into <tw-expression>s (by runExpression())
+			and <tw-hook>s (by render() and runLiveHook()).
+			
+			@method renderInto
+			@param {String} code The TwineMarkup code to render into the target.
+			@param target The render destination. Usually a HookSet, PseudoHookSet or jQuery.
+			@param {Function|Array} [changers] The changer function(s) to run.
+		*/
+		renderInto: function(source, target, changers) {
+			var
+				/*
+					This is the ChangeDescriptor that defines this rendering.
+				*/
+				desc = ChangeDescriptor.create({
+					target: target,
+					source: source,
+				}),
+				/*
+					This stores the returned DOM created by rendering the changeDescriptor.
+				*/
+				dom = $(),
+				/*
+					This provides (sigh) a reference to this object usable by the
+					inner doExpressions function, below.
+				*/
+				section = this;
+				
+			/*
+				Define an additional desc property linking it back to this section.
+				This is used by enchantment macros to determine where to register
+				their enchantments to.
+			*/
+			desc.section = section;
+			
+			/*
+				Run all the changer functions.
+				[].concat() wraps a non-array in an array, while
+				leaving arrays intact.
+			*/
+			changers && [].concat(changers).forEach(function(changer) {
+				/*
+					If a non-changer object was passed in (such as from
+					specificEnchantmentEvent()), assign its values,
+					overwriting the default descriptor's.
+					Honestly, having non-changer descriptor-altering objects
+					is a bit displeasingly rough-n-ready, but it's convenient...
+				*/
+				if (!changer || !changer.changer) {
+					Object.assign(desc, changer);
+				}
+				else {
+					changer.run(desc);
+				}
+			});
+			
+			/*
+				As you know, in TwineScript a pseudo-hook selector is just a
+				raw string. Such strings are passed directly to macros, and,
+				at that point of execution inside TwineScript.eval, they don't
+				have access to a particular section to call selectHook() from.
+				
+				So, we currently defer creating an array from the selector string
+				until just here.
+			*/
+			if (typeof desc.target === "string") {
+				desc.target = this.selectHook(desc.target);
+			}
+			
+			/*
+				If there's no target, something incorrect has transpired.
+			*/
+			if (!desc.target) {
+				Utils.impossible("Section.renderInto",
+					"ChangeDescriptor has source but not a target!");
+				return;
+			}
+			
+			/*
+				Infinite regress can occur from a couple of causes: (display:) loops, or evaluation loops
+				caused by something as simple as (set: $x to "$x")$x.
+				So here's a rudimentary check: bail if the stack length has now proceeded over 50 levels deep.
+			*/
+			if (this.stack.length >= 50) {
+				dom = TwineError.create("infinite", "Printing this expression may have trapped me in an infinite loop.")
+					.render(target.attr('title')).replaceAll(target);
+			}
+			/*
+				Otherwise, render the source into the target.
+				
+				When a non-jQuery is the target in the descriptor, it is bound to be
+				a HookSet or PseudoHookSet, and each word or hook within that set
+				must be rendered separately. This simplifies the implementation
+				of render() considerably.
+			*/
+			else if (!(desc.target instanceof $)) {
+				desc.target.forEach(function(e) {
+					/*
+						Generate a new descriptor which has the same properties
+						(rather, delegates to the old one via the prototype chain)
+						but has just this hook/word as its target.
+						Then, render using that descriptor.
+					*/
+					dom = dom.add(desc.create({ target: e }).render());
+				});
+			}
+			else {
+				/*
+					Now, run the changer.
+				*/
+				dom = desc.render();
+			}
+			
+			/*
+				Before executing the expressions, put a fresh object on the
+				expression data stack.
+			*/
+			this.stack.unshift(Object.create(null));
+			
+			/*
+				Execute the expressions immediately.
+			*/
+			
+			Utils.findAndFilter(dom, Selectors.hook + ',' + Selectors.expression)
+					.each(function doExpressions() {
+				var expr = $(this);
+				
+				switch(expr.tag()) {
+					case Selectors.hook:
+					{
+						if (expr.attr('source')) {
+							section.renderInto(expr.attr('source'), expr);
+							expr.removeAttr('source');
+						}
+						break;
+					}
+					case Selectors.expression:
+					{
+						/*
+							If this returns false, then the entire .each() loop
+							will terminate, thus halting expression evaluation.
+						*/
+						return runExpression.call(section, expr);
+					}
+				}
+			});
+			
+			/*
+				Special case for hooks inside existing collapsing syntax:
+				their whitespace must collapse as well.
+				(This may or may not change in a future version).
+				
+				Important note: this uses the **original** target, not desc.target,
+				to determine if it's inside a <tw-collapsed>. This means that
+				{(replace:?1)[  H  ]} will always collapse the affixed hook regardless of
+				where the ?1 hook is.
+			*/
+			if (dom.length && target instanceof $ && target.is(Selectors.hook)
+					&& target.parents('tw-collapsed').length > 0) {
+				collapse(dom);
+			}
+			
+			Utils.findAndFilter(dom, Selectors.collapsed).each(function() {
+				collapse($(this));
+			});
+			
+			/*
+				After evaluating the expressions, pop the expression data stack.
+				The data is purely temporary and can be safely discarded.
+			*/
+			this.stack.shift();
+			
+			/*
+				Finally, update the enchantments now that the DOM is modified.
+				We should only run updateEnchantments in the "top level" render call,
+				to save on unnecessary DOM mutation.
+				This can be determined by just checking that this Section's stack is empty.
+			*/
+			if (this.stack.length === 0) {
+				this.updateEnchantments();
+			}
+		},
+		
+		/**
+			Updates all enchantments in the section. Should be called after every
+			DOM manipulation within the section (such as, at the end of .render()).
+
+			@method updateEnchantments
+		*/
+		updateEnchantments: function () {
+			this.enchantments.forEach(function(e) {
+				/*
+					This first method removes old <tw-enchantment> elements...
+				*/
+				e.refreshScope();
+				/*
+					...and this one adds new ones.
+				*/
+				e.enchantScope();
+			});
+		},
+		
+	};
+	
+	return Object.preventExtensions(Section);
+});
