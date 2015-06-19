@@ -1,4 +1,5 @@
 describe("link syntax", function() {
+	'use strict';
 	describe("simple link syntax", function() {
 		it("consists of [[, text, then ]], and desugars to a (link-goto:) macro", function() {
 			var expression = runPassage("[[flea]]").find('tw-expression');

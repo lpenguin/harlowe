@@ -1,4 +1,5 @@
 describe("game state macros", function() {
+	'use strict';
 	describe("the (passage:) macro", function() {
 		it("accepts 0 or 1 string arguments", function() {
 			createPassage("Red","The Kitchen");
