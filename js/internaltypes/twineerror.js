@@ -1,4 +1,4 @@
-define(['jquery', 'utils'], function($, Utils) {
+define(['jquery', 'utils'], ($, {impossible, assert, escape}) => {
 	"use strict";
 	/*
 		TwineErrors are errors created by the TwineScript runtime. They are supplied with as much
@@ -9,7 +9,7 @@ define(['jquery', 'utils'], function($, Utils) {
 	/*
 		This dictionary supplies explanations for the most typical error types.
 	*/
-	var errorExplanations = {
+	const errorExplanations = {
 		syntax:        "The markup seems to contain a mistake.",
 		saving:        "I tried to save or load the game, but I couldn't do it.",
 		operation:     "I tried to use an operation on some data, but the data's type was incorrect.",
@@ -29,22 +29,22 @@ define(['jquery', 'utils'], function($, Utils) {
 			Normally, the type by itself suggests a rudimentary explanation from the above dict.
 			But, a different explanation can be provided by the caller, if they choose.
 		*/
-		create: function(type, message, explanation) {
+		create(type, message, explanation) {
 			if (!message) {
-				Utils.impossible("TwineError.create", "called with only 1 string.");
+				impossible("TwineError.create", "called with only 1 string.");
 			}
 			/*
 				Whatever happens, there absolutely must be a valid explanation from either source.
 			*/
-			Utils.assert(explanation || type in errorExplanations);
+			assert(explanation || type in errorExplanations);
 			
 			return Object.assign(Object.create(this), {
 				/*
 					The type of the TwineError consists of one of the errorExplanations keys.
 				*/
-				type:        type,
-				message:     message,
-				explanation: explanation,
+				type,
+				message,
+				explanation,
 			});
 		},
 		
@@ -55,7 +55,7 @@ define(['jquery', 'utils'], function($, Utils) {
 			Javascript error messages are presaged with a coffee cup (\u2615),
 			to signify that the browser produced them and not Twine.
 		*/
-		fromError: function(error) {
+		fromError(error) {
 			return TwineError.create("javascript", "\u2615 " + error.message);
 		},
 		
@@ -74,35 +74,35 @@ define(['jquery', 'utils'], function($, Utils) {
 			@method containsError
 			@return {Error|TwineError|Boolean} The first error encountered, or false.
 		*/
-		containsError: function containsError(/*variadic*/) {
-			return Array.from(arguments).reduce(
-				function(last, e) {
-					return last ? last
-						: e instanceof Error ? e
-						: TwineError.isPrototypeOf(e) ? e
-						: Array.isArray(e) ? containsError.apply(this, e)
-						: false;
-				}, false);
+		containsError(...args) {
+			return args.reduce(
+				(last, e) => last ? last
+					: e instanceof Error ? e
+					: TwineError.isPrototypeOf(e) ? e
+					: Array.isArray(e) ? TwineError.containsError(...e)
+					: false,
+				false
+			);
 		},
 		
 		/*
 			Twine warnings are just errors with a special "warning" bit.
 		*/
-		createWarning: function(type, message) {
+		createWarning(type, message) {
 			return Object.assign(this.create(type, message), {
 				warning: true,
 			});
 		},
 		
-		render: function(titleText) {
+		render(titleText) {
 			/*
 				Default the titleText value. It may be undefined if, for instance, debug mode is off.
 			*/
 			titleText = titleText || "";
-			var errorElement = $("<tw-error class='"
+			const errorElement = $("<tw-error class='"
 					+ (this.type === "javascript" ? "javascript ": "")
 					+ (this.warning ? "warning" : "error")
-					+ "' title='" + Utils.escape(titleText) + "'>" + Utils.escape(this.message) + "</tw-error>"),
+					+ "' title='" + escape(titleText) + "'>" + escape(this.message) + "</tw-error>"),
 				/*
 					The explanation text element.
 				*/
@@ -123,7 +123,7 @@ define(['jquery', 'utils'], function($, Utils) {
 			/*
 				Wire up the explanation button to reveal the error explanation.
 			*/
-			explanationButton.on('click', function() {
+			explanationButton.on('click', () => {
 				explanationElement.toggle();
 				explanationButton.children(".folddown-arrowhead").css(
 					'transform',

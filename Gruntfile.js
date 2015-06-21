@@ -1,15 +1,16 @@
 module.exports = function (grunt) {
 	"use strict";
+	
 	var
 		// Source files
 		sourceHTML = ['template.html'],
 		jsFileList = ['js/**/*.js'],
 		
 		// Destinations
-		destCSS = "./build/harlowe-css.css",
-		destJS = "./build/harlowe-min.js",
+		destCSS        = "./build/harlowe-css.css",
+		destJS         = "./build/harlowe-min.js",
 		
-		destMarkupJS = "./build/twinemarkup-min.js",
+		destMarkupJS   = "./build/twinemarkup-min.js",
 		
 		// Standard replacements
 		scriptStyleReplacements = [{
@@ -30,6 +31,31 @@ module.exports = function (grunt) {
 		clean: {
 			dist: ['dist/'],
 			build: ['build/']
+		},
+		babel: {
+			all: {
+				files: [{
+					expand:true,
+					src:  destJS,
+					dest: "./",
+				},
+				{
+					expand:true,
+					src:  destMarkupJS,
+					dest: "./",
+				}],
+			},
+		},
+		uglify: {
+			all: {
+				options: { beautify: true },
+				files: (function() {
+					var ret = {};
+					ret[destJS] = [destJS];
+					ret[destMarkupJS] = [destMarkupJS];
+					return ret;
+				}())
+			}
 		},
 		jshint: {
 			harlowe: jsFileList,
@@ -65,6 +91,7 @@ module.exports = function (grunt) {
 				// Environments
 				browser  : true,
 				devel    : true,
+				esnext   : true,
 			},
 			tests: {
 				files: {
@@ -94,7 +121,7 @@ module.exports = function (grunt) {
 				},
 			},
 		},
-
+		
 		requirejs: {
 			markup: {
 				options: {
@@ -102,7 +129,7 @@ module.exports = function (grunt) {
 					name: 'markup',
 					include: ['codemirror/mode'],
 					useStrict: true,
-					//optimize: "none",
+					optimize: "none",
 					out: function(src) {
 						/*
 							Crudely edit out the final define() call that's added
@@ -122,8 +149,9 @@ module.exports = function (grunt) {
 					insertRequire: ['harlowe'],
 					wrap: true,
 					useStrict: true,
-					out: destJS
-				}
+					optimize: "none",
+					out: destJS,
+				},
 			},
 		},
 
@@ -166,13 +194,6 @@ module.exports = function (grunt) {
 			},
 		},
 
-		watch: {
-			templates: {
-				files: ['template.html', 'js/**', 'css/**'],
-				tasks: ['default']
-			}
-		},
-
 		yuidoc: {
 			compile: {
 				name: '<% pkg.name %>',
@@ -202,7 +223,7 @@ module.exports = function (grunt) {
 					},
 				},
 			].concat(scriptStyleReplacements).reduce(function(a, e) {
-				return a.replace(e.from, e.to());
+				return a.replace(e.from, e.to.bind(e));
 			}, grunt.file.read(sourceHTML)));
 	});
 	
@@ -210,12 +231,13 @@ module.exports = function (grunt) {
 		Load the auxiliary tasks.
 	*/
 	grunt.loadTasks('tasks');
+	
 	/*
 		Load the standard plugins.
 	*/
 	grunt.loadNpmTasks('grunt-contrib-clean');
+	grunt.loadNpmTasks('grunt-contrib-uglify');
 	grunt.loadNpmTasks('grunt-contrib-jshint');
-	grunt.loadNpmTasks('grunt-contrib-watch');
 	grunt.loadNpmTasks('grunt-contrib-yuidoc');
 	grunt.loadNpmTasks('grunt-contrib-requirejs');
 	/*
@@ -226,9 +248,47 @@ module.exports = function (grunt) {
 	grunt.loadNpmTasks('grunt-sass');
 	grunt.loadNpmTasks('grunt-contrib-cssmin');
 	grunt.loadNpmTasks('grunt-text-replace');
-
-	grunt.registerTask('default', [ 'jshint:harlowe', 'jshint:tests', 'compile', ]);
-	grunt.registerTask('compile', [ 'clean', 'sass', 'cssmin', 'requirejs' ]);
+	grunt.loadNpmTasks('grunt-babel');
+	
+	// Hack to allow ES6 in RequireJS
+	grunt.registerTask('es6hack', function hack() {
+		var esprima = require('espree');
+		esprima.parse = (function(oldparse) {
+			return function(code, options) {
+				return oldparse(code, {
+					ecmaFeatures: {
+						arrowFunctions: true,
+						blockBindings: true,
+						destructuring: true,
+						regexYFlag: true,
+						regexUFlag: true,
+						templateStrings: true,
+						binaryLiterals: true,
+						octalLiterals: true,
+						unicodeCodePointEscapes: true,
+						defaultParams: true,
+						restParams: true,
+						forOf: true,
+						objectLiteralComputedProperties: true,
+						objectLiteralShorthandMethods: true,
+						objectLiteralShorthandProperties: true,
+						objectLiteralDuplicateProperties: true,
+						generators: true,
+						spread: true,
+						classes: true,
+						modules: true,
+					},
+					loc: options && options.loc,
+				});
+			}
+		}(esprima.parse));
+		require('grunt-contrib-requirejs/node_modules/requirejs').define('esprima', [], function () {
+			return esprima;
+		});
+	});
+	
+	grunt.registerTask('default', [ 'jshint:harlowe', 'jshint:tests', 'sass', 'cssmin', ]);
+	grunt.registerTask('compile', [ 'clean', 'sass', 'cssmin', 'es6hack', 'requirejs', 'babel', 'uglify', ]);
 	grunt.registerTask('runtime', [ 'compile', 'replace:runtime', 'examplefile', ]);
-	grunt.registerTask('quick',   [ 'sass', 'cssmin', 'requirejs', 'replace:runtime', ]);
+	grunt.registerTask('quick',   [ 'sass', 'cssmin', 'es6hack', 'requirejs', 'replace:runtime', ]);
 };

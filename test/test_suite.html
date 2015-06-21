@@ -6,8 +6,17 @@
 <script src="../node_modules/es6-shim/es6-shim.min.js"></script>
 <script src="../node_modules/grunt-contrib-requirejs/node_modules/requirejs/require.js"></script>
 <script>
-require.config({baseUrl: "../js/"});
-require(["markup/lexer","markup/patterns","markup/markup","harlowe"]);
+/*
+	Firefox (my primary test environment) supports most native ES6, so it can test the uncompiled ES6 source.
+	Other browsers test the compiled ES5 source.
+*/
+if(0..toSource) {
+	require.config({baseUrl: "../js/", scriptType: "application/javascript;version=1.8"});
+	require(["markup/lexer","markup/patterns","markup/markup","harlowe"]);
+}
+else {
+	document.write("<script src='../build/harlowe-min.js'><\/script>");
+}
 </script>
 <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/jasmine/2.2.1/jasmine.js"></script>
 <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/jasmine/2.2.1/jasmine-html.js"></script>
@@ -49,6 +58,7 @@ window.clearState = function() {
 };
 </script>
 <script>
+jasmine.DEFAULT_TIMEOUT_INTERVAL = 10000;
 beforeEach(function f(done) {
 	if (window.$ && window.clearState) {
 		$('tw-story').empty();

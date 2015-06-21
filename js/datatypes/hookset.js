@@ -1,4 +1,4 @@
-define(['utils/hookutils', 'jquery'],function(HookUtils, $) {
+define(['utils/hookutils', 'jquery'], ({hookToSelector}, $) => {
 	"use strict";
 	
 	/**
@@ -17,8 +17,8 @@ define(['utils/hookutils', 'jquery'],function(HookUtils, $) {
 		This private function allows a specific jQuery method to be called
 		on the collection of matched hooks in the HookSet.
 	*/
-	function jQueryCall(methodName /*variadic*/) {
-		var args = Array.from(arguments).slice(1),
+	function jQueryCall(methodName, ...args) {
+		const
 			/*
 				hooks is a jQuery collection of every <tw-hook> in the Section
 				which matches this HookSet's selector string.
@@ -27,14 +27,14 @@ define(['utils/hookutils', 'jquery'],function(HookUtils, $) {
 				up-to-date with the DOM.
 			*/
 			hooks = this.section.$(
-				HookUtils.hookToSelector(
+				hookToSelector(
 					this.selector.slice(1) /* slice off the hook sigil */
 				)
 			);
-		return methodName in hooks && hooks[methodName].apply(hooks, args);
+		return methodName in hooks && hooks[methodName](...args);
 	}
 	
-	var HookSet = Object.freeze({
+	const HookSet = Object.freeze({
 		
 		/**
 			An Array forEach-styled iteration function. The given function is
@@ -47,7 +47,7 @@ define(['utils/hookutils', 'jquery'],function(HookUtils, $) {
 			@param {Function} fn The callback, which is passed the following:
 				{jQuery} The <tw-hook> element to manipulate.
 		*/
-		forEach: function(fn) {
+		forEach(fn) {
 			return jQueryCall.call(this, "each", function(i) {
 				fn($(this), i);
 			});
@@ -63,7 +63,7 @@ define(['utils/hookutils', 'jquery'],function(HookUtils, $) {
 			
 			@method text
 		*/
-		text: function() {
+		text() {
 			return jQueryCall.call(this, "text");
 		},
 		
@@ -76,7 +76,7 @@ define(['utils/hookutils', 'jquery'],function(HookUtils, $) {
 			
 			@method TwineScript_ToString
 		*/
-		TwineScript_ToString: function() {
+		TwineScript_ToString() {
 			return this.text();
 		},
 		
@@ -85,7 +85,7 @@ define(['utils/hookutils', 'jquery'],function(HookUtils, $) {
 			it reaches the top level of a passage.
 			Much like ToString, it prints the first hook in this set.
 		*/
-		TwineScript_Print: function() {
+		TwineScript_Print() {
 			return this.text();
 		},
 		
@@ -115,7 +115,7 @@ define(['utils/hookutils', 'jquery'],function(HookUtils, $) {
 			a HookSet in a variable - which is good, as it carries with it
 			a reference to its origin hook.
 		*/
-		TwineScript_AssignValue: function() {
+		TwineScript_AssignValue() {
 			return jQueryCall.call(this, "text");
 		},
 		
@@ -132,8 +132,8 @@ define(['utils/hookutils', 'jquery'],function(HookUtils, $) {
 			@param {Section} section The section to use for DOM lookups.
 			@param {String} hookSelector The selector string.
 		*/
-		create: function(section, hookSelector) {
-			var ret = Object.create(this);
+		create(section, hookSelector) {
+			const ret = Object.create(this);
 			ret.section = section;
 			ret.selector = hookSelector;
 			return Object.freeze(ret);

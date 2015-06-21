@@ -1,4 +1,5 @@
-define(['utils', 'macros', 'utils/operationutils', 'internaltypes/twineerror'], function(Utils, Macros, OperationUtils, TwineError) {
+define(['macros', 'utils/operationutils', 'internaltypes/twineerror'],
+(Macros, {subset, objectName}, TwineError) => {
 	"use strict";
 	/*
 		Built-in value macros.
@@ -63,14 +64,13 @@ define(['utils', 'macros', 'utils/operationutils', 'internaltypes/twineerror'], 
 			See also:
 			(num:)
 		*/
-		(["text", "string"], function print(/*variadic */) {
+		(["text", "string"],
 			/*
 				Since only primitives (and arrays) are passed into this, and we use
 				JS's default toString() for primitives, we don't need
 				to do anything more than join() the array.
 			*/
-			return Array.prototype.slice.call(arguments, 1).join('');
-		},
+			(_, ...args) => args.join(''),
 		// (text: accepts a lot of any primitive)
 		[zeroOrMore(Macros.TypeSignature.either(String, Number, Boolean, Array))])
 
@@ -100,9 +100,7 @@ define(['utils', 'macros', 'utils/operationutils', 'internaltypes/twineerror'], 
 			See also:
 			(subarray:)
 		*/
-		("substring", function substring(_, string, a, b) {
-			return OperationUtils.subset(string, a, b);
-		},
+		("substring", (_, string, a, b) => subset(string, a, b),
 		[String, Number, Number])
 		
 		/*d:
@@ -156,13 +154,13 @@ define(['utils', 'macros', 'utils/operationutils', 'internaltypes/twineerror'], 
 			See also:
 			(text:)
 		*/
-		(["num", "number"], function number(_, expr) {
+		(["num", "number"], (_, expr) => {
 			/*
 				This simply uses JS's toNumber conversion, meaning that
 				decimals and leading spaces are handled, but leading letters etc. are not.
 			*/
 			if (Number.isNaN(+expr)) {
-				return TwineError.create("macrocall", "I couldn't convert " + OperationUtils.objectName(expr)
+				return TwineError.create("macrocall", "I couldn't convert " + objectName(expr)
 					+ " to a number.");
 			}
 			return +expr;
@@ -241,12 +239,10 @@ define(['utils', 'macros', 'utils/operationutils', 'internaltypes/twineerror'], 
 			(set: $robotAdvice to (font:Consolas) + (if: $choseTheRobot))
 		*/
 	
-	var IfTypeSignature = [wrapped(Boolean, "If you gave a number, you may instead want to check that the number is not 0. "
+	const IfTypeSignature = [wrapped(Boolean, "If you gave a number, you may instead want to check that the number is not 0. "
 			+ "If you gave a string, you may instead want to check that the string is not \"\".")];
 	
-	Macros.add("if", function _if(_, expr) {
-			return !!expr;
-		},
+	Macros.add("if", (_, expr) => !!expr,
 		IfTypeSignature)
 		
 		/*d:
@@ -259,9 +255,7 @@ define(['utils', 'macros', 'utils/operationutils', 'internaltypes/twineerror'], 
 			
 			For more information, see the documentation of (if:).
 		*/
-		("unless", function unless(_, expr) {
-			return !expr;
-		},
+		("unless", (_, expr) => !expr,
 		IfTypeSignature)
 		
 		/*d:
@@ -310,7 +304,7 @@ define(['utils', 'macros', 'utils/operationutils', 'internaltypes/twineerror'], 
 			See also:
 			(if:), (unless:), (else:)
 		*/
-		("elseif", function elseif(section, expr) {
+		("elseif", (section, expr) => {
 			/*
 				This and (else:) check the lastHookShown expando
 				property, if present.
@@ -348,7 +342,7 @@ define(['utils', 'macros', 'utils/operationutils', 'internaltypes/twineerror'], 
 			This usage can result in a somewhat puzzling passage source structure, where each (else:) hook
 			alternates between visible and hidden depending on the first such hook. So, it is best avoided.
 		*/
-		("else", function _else(section) {
+		("else", (section) => {
 			if (!("lastHookShown" in section.stack[0])) {
 				return TwineError.create("macrocall", "There's nothing before this to do (else:) with.");
 			}
@@ -366,8 +360,8 @@ define(['utils', 'macros', 'utils/operationutils', 'internaltypes/twineerror'], 
 		namely log, sqrt, etc.
 	*/
 	function mathFilter (fn) {
-		return function (/*variadic*/) {
-			var result = fn.apply(this, arguments);
+		return (args) => {
+			const result = fn(...args);
 			if (typeof result !== "number" || isNaN(result)) {
 				return TwineError.create("macrocall", "This mathematical expression doesn't compute!");
 			}
@@ -378,8 +372,8 @@ define(['utils', 'macros', 'utils/operationutils', 'internaltypes/twineerror'], 
 	/*
 		Choose one argument. Can be used as such: (either: "pantry", "larder", "cupboard" )
 	*/
-	function either(/*variadic*/) {
-		return arguments[~~(Math.random() * arguments.length)];
+	function either(...args) {
+		return args[~~(Math.random() * args.length)];
 	}
 	
 	({
@@ -388,21 +382,17 @@ define(['utils', 'macros', 'utils/operationutils', 'internaltypes/twineerror'], 
 		*/
 
 		// The current weekday, in full
-		weekday: [function () {
-			return ['Sun', 'Mon', 'Tues', 'Wednes', 'Thurs', 'Fri', 'Satur'][new Date().getDay()] + "day";
-		},
+		weekday: [() => ['Sun', 'Mon', 'Tues', 'Wednes', 'Thurs', 'Fri', 'Satur'][new Date().getDay()] + "day",
 		// 0 args
 		null],
 
 		// The current day number
-		monthday: [function () {
-			return new Date().getDate();
-		},
+		monthday: [() => new Date().getDate(),
 		null],
 
 		// The current time in 12-hour hours:minutes format.
-		currenttime: [function () {
-			var d = new Date(),
+		currenttime: [() => {
+			const d = new Date(),
 				am = d.getHours() < 12;
 
 			return d.getHours() % 12 + ":" + d.getMinutes() + " " + (am ? "A" : "P") + "M";
@@ -410,7 +400,7 @@ define(['utils', 'macros', 'utils/operationutils', 'internaltypes/twineerror'], 
 		null],
 
 		// The current date in DateString format (eg. "Thu Jan 01 1970").
-		currentdate: [function () {
+		currentdate: [() => {
 			return new Date().toDateString();
 		},
 		null],
@@ -444,15 +434,15 @@ define(['utils', 'macros', 'utils/operationutils', 'internaltypes/twineerror'], 
 		/*
 			This function returns a random integer from a to b inclusive.
 		*/
-		random: [function random(a, b) {
-			var from, to;
+		random: [(a, b) => {
 			/*
 				First, throw an error if either of the numbers is not a whole number.
 			*/
 			if (a !== (a|0) || b !== (b|0)) {
 				return TwineError.create("macrocall",
-					"(random:) only accepts whole numbers, not " + OperationUtils.objectName(a !== (a|0) ? a : b));
+					"(random:) only accepts whole numbers, not " + objectName(a !== (a|0) ? a : b));
 			}
+			let from, to;
 			if (!b) {
 				from = 0;
 				to = a;
@@ -471,24 +461,16 @@ define(['utils', 'macros', 'utils/operationutils', 'internaltypes/twineerror'], 
 		*/
 
 		// Keep "undefined" from being the default text.
-		alert: [function (text) {
-			return window.alert(text || "");
-		},
-		String],
-		prompt: [function (text, value) {
-			return window.prompt(text || "", value || "") || "";
-		},
-		String, String],
-		confirm: [function (text) {
-			return window.confirm(text || "");
-		},
-		String],
+		alert: [(text) => window.alert(text || ""),
+			String],
+		prompt: [(text, value) => window.prompt(text || "", value || "") || "",
+			String, String],
+		confirm: [(text) => window.confirm(text || ""),
+			String],
 		openURL: [window.open, String],
 		reload: [window.location.reload.bind(window.location), null],
 		gotoURL: [window.location.assign.bind(window.location), String],
-		pageURL: [function () {
-			return window.location.href;
-		}, null],
+		pageURL: [() => window.location.href, null],
 		
 		/*
 			This method takes all of the above and registers them
@@ -497,31 +479,20 @@ define(['utils', 'macros', 'utils/operationutils', 'internaltypes/twineerror'], 
 			By giving this JS's only falsy object key,
 			this method is prohibited from affecting itself.
 		*/
-		"": function() {
-			Object.keys(this).forEach(function(key) {
-				var fn, typeSignature;
-				
+		""() {
+			Object.keys(this).forEach((key) => {
 				if (key) {
-					fn = this[key][0],
-					typeSignature = this[key][1];
+					let fn = this[key][0];
+					let typeSignature = this[key][1];
 					
 					/*
 						Of course, the mandatory first argument of all macro
 						functions is section, so we have to convert the above
 						to use a contract that's amenable to this requirement.
 					*/
-					Macros.add(key, function(/* variadic */) {
-						/*
-							As none of the above actually need or use section,
-							we can safely discard it.
-							
-							Aside: in ES6 this function would be:
-							(section, ...rest) => this[key](...rest)
-						*/
-						return fn.apply(0, Array.from(arguments).slice(1));
-					}.bind(this), typeSignature);
+					Macros.add(key, (_, ...rest) => fn(...rest), typeSignature);
 				}
-			}.bind(this));
+			});
 		}
 	}[""]());
 	

@@ -1,5 +1,5 @@
 define(['requestAnimationFrame', 'macros', 'utils', 'state', 'passages', 'engine', 'internaltypes/twineerror', 'utils/operationutils'],
-function(requestAnimationFrame, Macros, Utils, State, Passages, Engine, TwineError, OperationUtils) {
+(requestAnimationFrame, Macros, {toJSLiteral, unescape}, State, Passages, Engine, TwineError, {isObject}) => {
 	"use strict";
 	
 	/*d:
@@ -16,12 +16,11 @@ function(requestAnimationFrame, Macros, Utils, State, Passages, Engine, TwineErr
 		hook in a certain manner. Macros that work like this include (text-style:), (font:), (transition:),
 		(rotate:), (position-x:), (position-y:), (hook:), (click:), (link:), and more.
 	*/
-	var
-		Any = Macros.TypeSignature.Any,
-		optional = Macros.TypeSignature.optional;
+	const
+		{Any, optional} = Macros.TypeSignature;
 	
-	var hasStorage = !!localStorage
-		&& (function() {
+	const hasStorage = !!localStorage
+		&& (() => {
 			/*
 				This is, to my knowledge, the only surefire way of measuring localStorage's
 				availability - on some browsers, setItem() will throw in Private Browsing mode.
@@ -33,7 +32,7 @@ function(requestAnimationFrame, Macros, Utils, State, Passages, Engine, TwineErr
 			} catch (e) {
 				return false;
 			}
-		}());
+		})();
 	
 	Macros.add
 	
@@ -64,18 +63,18 @@ function(requestAnimationFrame, Macros, Utils, State, Passages, Engine, TwineErr
 			useful in that state, but you can use that variable in place of that command,
 			such as writing `$var` in place of `(display: "Yggdrasil")`.
 		*/
-		("display", function display(_, name) {
+		("display",
 			/*
 				Create a DisplayCommand.
 			*/
-			return {
+			(_, name) => ({
 				TwineScript_ObjectName:
-					"a (display: " + Utils.toJSLiteral(name) + ") command",
+					"a (display: " + toJSLiteral(name) + ") command",
 				
 				TwineScript_TypeName:
 					"a (display:) command",
 				
-				TwineScript_Print: function() {
+				TwineScript_Print() {
 					/*
 						Test for the existence of the named passage in the story.
 						This and the next check must be made now, because the Passages
@@ -88,10 +87,9 @@ function(requestAnimationFrame, Macros, Utils, State, Passages, Engine, TwineErr
 							+ "' because it doesn't exist."
 						);
 					}
-					return Utils.unescape(Passages.get(name).get('source'));
+					return unescape(Passages.get(name).get('source'));
 				},
-			};
-		},
+			}),
 		[String])
 		
 		/*d:
@@ -122,7 +120,7 @@ function(requestAnimationFrame, Macros, Utils, State, Passages, Engine, TwineErr
 			See also:
 			(text:), (display:)
 		*/
-		("print", function print(_, expr) {
+		("print", (_, expr) => {
 			
 			/*
 				If an error was passed in, return the error now.
@@ -144,19 +142,18 @@ function(requestAnimationFrame, Macros, Utils, State, Passages, Engine, TwineErr
 				if (TwineError.containsError(expr)) {
 					return expr;
 				}
-				expr = expr.reduce(function(html, pair) {
+				expr = expr.reduce((html, pair) =>
 					/*
 						Print each value, recursively running (print:) on
 						each of them. Notice that the above conversion means
 						that none of these pairs contain error.
 					*/
-					return html + "<tr><td>" +
+					html + "<tr><td>" +
 						print(_, pair[0]).TwineScript_Print() +
 						"</td><td>" +
 						print(_, pair[1]).TwineScript_Print() +
-						"</td></tr>";
-					
-				}, "<table class=datamap>") + "</table>";
+						"</td></tr>",
+					"<table class=datamap>") + "</table>";
 			}
 			else if (expr instanceof Set) {
 				/*
@@ -172,7 +169,7 @@ function(requestAnimationFrame, Macros, Utils, State, Passages, Engine, TwineErr
 				If it's an object we don't know how to print, emit an error
 				instead of [object Object].
 			*/
-			else if (OperationUtils.isObject(expr)) {
+			else if (isObject(expr)) {
 				return TwineError.create("unimplemented", "I don't know how to print this value yet.");
 			}
 			/*
@@ -184,16 +181,15 @@ function(requestAnimationFrame, Macros, Utils, State, Passages, Engine, TwineErr
 			
 			return {
 				TwineScript_ObjectName:
-					"a (print: " + Utils.toJSLiteral(expr) + ") command",
+					"a (print: " + toJSLiteral(expr) + ") command",
 
 				TwineScript_TypeName:
 					"a (print:) command",
 				
-				TwineScript_Print: function() {
+				TwineScript_Print() {
 					return expr;
 				},
 			};
-
 		},
 		[Any])
 		
@@ -234,11 +230,10 @@ function(requestAnimationFrame, Macros, Utils, State, Passages, Engine, TwineErr
 			See also:
 			(loadgame:)
 		*/
-		("goto", function (_, name) {
-			return {
-				TwineScript_ObjectName: "a (go-to: " + Utils.toJSLiteral(name) + ") command",
+		("goto", (_, name) => ({
+				TwineScript_ObjectName: "a (go-to: " + toJSLiteral(name) + ") command",
 				TwineScript_TypeName:   "a (go-to:) command",
-				TwineScript_Print: function() {
+				TwineScript_Print() {
 					/*
 						First, of course, check for the passage's existence.
 					*/
@@ -267,8 +262,7 @@ function(requestAnimationFrame, Macros, Utils, State, Passages, Engine, TwineErr
 					*/
 					return { earlyExit: 1 };
 				},
-			};
-		},
+			}),
 		[String])
 		
 		/*d:
@@ -302,14 +296,12 @@ function(requestAnimationFrame, Macros, Utils, State, Passages, Engine, TwineErr
 			Yes, the actual implementation of this is in Section, not here.
 		*/
 		("live",
-			function live(_, delay) {
-				return {
-					TwineScript_ObjectName: "a (live: " + delay + ") command",
-					TwineScript_TypeName:   "a (live:) command",
-					live: true,
-					delay: delay
-				};
-			},
+			(_, delay) => ({
+				TwineScript_ObjectName: "a (live: " + delay + ") command",
+				TwineScript_TypeName:   "a (live:) command",
+				live: true,
+				delay,
+			}),
 			[optional(Number)]
 		)
 		
@@ -334,15 +326,13 @@ function(requestAnimationFrame, Macros, Utils, State, Passages, Engine, TwineErr
 			(live:)
 		*/
 		("stop",
-			function stop() {
-				return {
-					TwineScript_ObjectName: "a (stop:) command",
-					TwineScript_TypeName:   "a (stop:) command",
-					TwineScript_Print: function() {
-						return "";
-					},
-				};
-			},
+			() => ({
+				TwineScript_ObjectName: "a (stop:) command",
+				TwineScript_TypeName:   "a (stop:) command",
+				TwineScript_Print() {
+					return "";
+				},
+			}),
 			[]
 		)
 		/*d:
@@ -395,7 +385,7 @@ function(requestAnimationFrame, Macros, Utils, State, Passages, Engine, TwineErr
 			(load-game:)
 		*/
 		("savegame",
-			function savegame(_, slotName, fileName) {
+			(_, slotName, fileName) => {
 				/*
 					The default filename is the empty string.
 				*/
@@ -409,7 +399,7 @@ function(requestAnimationFrame, Macros, Utils, State, Passages, Engine, TwineErr
 					*/
 					return false;
 				}
-				var serialisation = State.serialise();
+				const serialisation = State.serialise();
 				if (!serialisation) {
 					/*
 						On the other hand, if serialisation fails, that's presumably
@@ -478,12 +468,12 @@ function(requestAnimationFrame, Macros, Utils, State, Passages, Engine, TwineErr
 			(save-game:)
 		*/
 		("loadgame",
-			function loadgame(_, slotName) {
+			(_, slotName) => {
 				return {
 					TwineScript_ObjectName: "a (load-game:) command",
 					TwineScript_TypeName:   "a (load-game:) command",
-					TwineScript_Print: function() {
-						var saveData = localStorage.getItem("(Saved Game) " + slotName);
+					TwineScript_Print() {
+						const saveData = localStorage.getItem("(Saved Game) " + slotName);
 						
 						if (!saveData) {
 							return TwineError.create("saving", "I can't find a save slot named '" + slotName + "'!");

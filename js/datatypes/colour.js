@@ -1,10 +1,10 @@
-define(['utils', 'jquery'], function(Utils, $){
+define(['utils', 'jquery'], ({assert}, $) => {
 	/*
 		Colours are first-class objects in TwineScript.
 		You can't do much with them, though - just add them.
 	*/
 	"use strict";
-	var Colour,
+	const
 		/*
 			These RegExps check for HTML #fff and #ffffff format colours.
 		*/
@@ -25,12 +25,12 @@ define(['utils', 'jquery'], function(Utils, $){
 		if (colourName in cssNameCache) {
 			return cssNameCache[colourName];
 		}
-		var colour = $("<p>").css("background-color", colourName).css("background-color");
+		let colour = $("<p>").css("background-color", colourName).css("background-color");
 		if (!colour.startsWith('rgb')) {
 			colour = { r:192, g:192, b:192 };
 		}
 		else {
-			colour = colour.match(/\d+/g).reduce(function(colour, num, ind) {
+			colour = colour.match(/\d+/g).reduce((colour, num, ind) => {
 				colour["rgb"[ind]] = +num;
 				return colour;
 			}, {});
@@ -65,7 +65,7 @@ define(['utils', 'jquery'], function(Utils, $){
 		};
 	}
 
-	Colour = Object.freeze({
+	const Colour = Object.freeze({
 		colour: true,
 		TwineScript_TypeName:   "a colour",
 		TwineScript_ObjectName: "a colour",
@@ -73,11 +73,12 @@ define(['utils', 'jquery'], function(Utils, $){
 		/*
 			Colours can be blended by addition.
 		*/
-		"TwineScript_+": function(other) {
+		"TwineScript_+"(other) {
 			/*
 				These are just shorthands (for "lvalue" and "rvalue").
 			*/
-			var l = this,
+			const
+				l = this,
 				r = other;
 			
 			return Colour.create({
@@ -93,19 +94,19 @@ define(['utils', 'jquery'], function(Utils, $){
 			});
 		},
 		
-		TwineScript_Print: function() {
+		TwineScript_Print() {
 			return "<tw-colour style='background-color:rgb("
 				+ [this.r, this.g, this.b].join(',') + ");'></span>";
 		},
 		
-		TwineScript_is: function(other) {
+		TwineScript_is(other) {
 			return Colour.isPrototypeOf(other) &&
 				other.r === this.r &&
 				other.g === this.g &&
 				other.b === this.b;
 		},
 		
-		TwineScript_Clone: function() {
+		TwineScript_Clone() {
 			return Colour.create(this);
 		},
 		
@@ -113,8 +114,8 @@ define(['utils', 'jquery'], function(Utils, $){
 			This converts the colour into a 6-char HTML hex string.
 			(No, this doesn't create a 3-char colour if one was possible. Sorry.)
 		*/
-		toHexString: function() {
-			Utils.assert(this !== Colour);
+		toHexString() {
+			assert(this !== Colour);
 			return "#"
 				/*
 					Number.toString() won't have a leading 0 unless
@@ -128,7 +129,7 @@ define(['utils', 'jquery'], function(Utils, $){
 			This constructor accepts an object containing r, g and b numeric properties,
 			or a string comprising a CSS hex colour.
 		*/
-		create: function(rgbObj) {
+		create(rgbObj) {
 			if (typeof rgbObj === "string") {
 				if (Colour.isHexString(rgbObj)) {
 					return this.create(hexToRGB(rgbObj));
@@ -140,7 +141,7 @@ define(['utils', 'jquery'], function(Utils, $){
 		/*
 			This static method determines if a given string matches a HTML hex colour format.
 		*/
-		isHexString: function(str) {
+		isHexString(str) {
 			return (typeof str === "string" && str[0] === "#"
 				&& (str.slice(1).match(tripleDigit) || str.slice(1).match(sextupleDigit)));
 		},

@@ -1,5 +1,5 @@
-define(['utils','state', 'internaltypes/twineerror', 'utils/operationutils'],
-function(Utils, State, TwineError, OperationUtils) {
+define(['state', 'internaltypes/twineerror', 'utils/operationutils'],
+(State, TwineError, {isObject, isSequential, objectName, clone, numericIndex, isValidDatamapName}) => {
 	'use strict';
 	/*
 		VarRefs are essentially objects pairing a chain of properties
@@ -10,19 +10,11 @@ function(Utils, State, TwineError, OperationUtils) {
 		them amounts to a VarRef.set() call made by the (set:) or (put:) macro,
 		and deleting them amounts to a VarRef.delete() call.
 	*/
-	var
-		/*
-			In ES6, this would be a destructured assignment.
-		*/
-		isObject        = OperationUtils.isObject,
-		isSequential    = OperationUtils.isSequential,
-		objectName      = OperationUtils.objectName,
-		clone           = OperationUtils.clone,
-		/*
-			The default defaultValue, used for all uninitialised properties
-			and variables, is 0.
-		*/
-		defaultValue = 0;
+	/*
+		The default defaultValue, used for all uninitialised properties
+		and variables, is 0.
+	*/
+	const defaultValue = 0;
 	
 	/*
 		This converts a TwineScript property index into a JavaScript property indexing
@@ -49,7 +41,7 @@ function(Utils, State, TwineError, OperationUtils) {
 			Check if it's a valid property name.
 		*/
 		if (obj instanceof Map &&
-				(error = TwineError.containsError(OperationUtils.isValidDatamapName(obj,prop)))) {
+				(error = TwineError.containsError(isValidDatamapName(obj,prop)))) {
 			return error;
 		}
 		
@@ -261,7 +253,7 @@ function(Utils, State, TwineError, OperationUtils) {
 	/*
 		The prototype object for VarRefs.
 	*/
-	var VarRefProto = Object.freeze({
+	const VarRefProto = Object.freeze({
 		varref: true,
 		
 		/*
@@ -273,8 +265,8 @@ function(Utils, State, TwineError, OperationUtils) {
 			@method get
 			@return {Error|Anything}
 		*/
-		get: function() {
-			var obj = this.deepestObject,
+		get() {
+			let obj = this.deepestObject,
 				prop = this.deepestProperty;
 			
 			/*
@@ -329,8 +321,7 @@ function(Utils, State, TwineError, OperationUtils) {
 			A wrapper around Javascript's [[set]], which does a lot of
 			preparation before the assignment is performed.
 		*/
-		set: function(value) {
-			var obj, error;
+		set(value) {
 			/*
 				If value has a TwineScript_AssignValue() method
 				(i.e. is a HookSet) then its returned value is used
@@ -343,6 +334,7 @@ function(Utils, State, TwineError, OperationUtils) {
 				Because the following transformations modify the referenced objects
 				in preparation for the set operation, this check must be done now.
 			*/
+			let error;
 			if ((error = TwineError.containsError(
 					canSet(this.deepestObject, this.deepestProperty)
 				))) {
@@ -355,15 +347,15 @@ function(Utils, State, TwineError, OperationUtils) {
 				So, for each element in the property chain, the object it references, if
 				existant, must be cloned and reassigned to its home object.
 			*/
-			obj = this.object;
+			let obj = this.object;
 			/*
 				(this.object will almost always be State.variables, by the way).
 			*/
-			this.compiledPropertyChain.slice(0,-1).every(function(prop) {
-				var newObj,
+			this.compiledPropertyChain.slice(0,-1).every((prop) => {
+				let newObj,
 					oldObj = objectOrMapGet(obj, prop);
 				
-				if (OperationUtils.isObject(oldObj)) {
+				if (isObject(oldObj)) {
 					newObj = clone(oldObj);
 					/*
 						This assumes that this.object will never have locked
@@ -392,14 +384,14 @@ function(Utils, State, TwineError, OperationUtils) {
 			returns an error if the deletion failed, and also removes holes in
 			arrays caused by the deletion.
 		*/
-		delete: function() {
-			var obj = this.deepestObject,
+		'delete'() {
+			const obj = this.deepestObject,
 				prop = this.deepestProperty;
 			/*
 				If it's an array, and the prop is an index,
 				we should remove the item in-place without creating a hole.
 			*/
-			if (Array.isArray(obj) && OperationUtils.numericIndex.exec(prop)) {
+			if (Array.isArray(obj) && numericIndex.exec(prop)) {
 				obj.splice(prop, 1);
 				return;
 			}
@@ -426,13 +418,11 @@ function(Utils, State, TwineError, OperationUtils) {
 			But, it can also expand another VarRef that's passed into it.
 			This is almost always called by compiled TwineScript code.
 		*/
-		create: function(object, propertyChain) {
-			var error,
-				deepestObject,
-				compiledPropertyChain = [];
+		create(object, propertyChain) {
 			/*
 				First, propagate passed-in errors.
 			*/
+			let error;
 			if ((error = TwineError.containsError(object))) {
 				return wrapError(error);
 			}
@@ -450,15 +440,13 @@ function(Utils, State, TwineError, OperationUtils) {
 				propertyChain = object.propertyChain.concat(propertyChain);
 				object = object.object;
 			}
-			deepestObject = object;
+			let deepestObject = object;
 			/*
 				Compile the property chain, converting "2ndlast" etc. into proper indices,
 				converting computed property objects into single indices,
 				and determining the deepestObject.
 			*/
-			compiledPropertyChain = propertyChain.reduce(function(arr, prop, i) {
-				var error;
-				
+			const compiledPropertyChain = propertyChain.reduce((arr, prop, i) => {
 				/*
 					If the property is computed, just compile its value.
 				*/
@@ -471,6 +459,7 @@ function(Utils, State, TwineError, OperationUtils) {
 					property resulted in an error. Due to the inability of .reduce to early-exit,
 					we must check on every loop.
 				*/
+				let error;
 				if ((error = TwineError.containsError([arr].concat(prop)))) {
 					return error;
 				}
@@ -506,9 +495,7 @@ function(Utils, State, TwineError, OperationUtils) {
 				print a $ instead of "[name]'s"
 			*/
 			return (this.object === State.variables ? "$" : (objectName(this.object) + "'s "))
-				+ this.propertyChain.reduce(function(a, e) {
-					return a + "'s " + propertyDebugName(e);
-				});
+				+ this.propertyChain.reduce((a, e) => a + "'s " + propertyDebugName(e));
 		},
 	});
 	

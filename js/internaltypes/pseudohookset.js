@@ -1,4 +1,4 @@
-define(['jquery', 'utils/hookutils'],function($, HookUtils) {
+define(['jquery', 'utils/hookutils'], ($, {wrapTextNodes}) => {
 	"use strict";
 	
 	/**
@@ -19,7 +19,7 @@ define(['jquery', 'utils/hookutils'],function($, HookUtils) {
 		@class PseudoHookSet
 		@static
 	*/
-	var PseudoHookSet = Object.freeze({
+	const PseudoHookSet = Object.freeze({
 		/**
 			An Array forEach-styled iteration function. This wraps all
 			matched words in the section DOM with a temporary element,
@@ -32,7 +32,7 @@ define(['jquery', 'utils/hookutils'],function($, HookUtils) {
 			@param {Function} fn The callback, which is passed the following:
 			@param {jQuery} The <tw-pseudo-hook> element to manipulate.
 		*/
-		forEach: function(fn) {
+		forEach(fn) {
 			/*
 				This is a bit of a #kludge, but no better solution
 				exists. In order for DOM replacement jQuery methods
@@ -44,7 +44,7 @@ define(['jquery', 'utils/hookutils'],function($, HookUtils) {
 				that already exist. As symmetry with that, the element name
 				used here is <tw-pseudo-hook>.
 			*/
-			var e = HookUtils.wrapTextNodes(this.selector, this.section.dom, '<tw-pseudo-hook>').parent();
+			const e = wrapTextNodes(this.selector, this.section.dom, '<tw-pseudo-hook>').parent();
 			/*
 				Now, call the passed function on all of the <tw-pseudo-hook> elements.
 			*/
@@ -66,8 +66,8 @@ define(['jquery', 'utils/hookutils'],function($, HookUtils) {
 			@param {Section} section The section to use for DOM lookups.
 			@param {String} pseudoHookSelector The selector string.
 		*/
-		create: function(section, pseudoHookSelector) {
-			var ret = Object.create(this);
+		create(section, pseudoHookSelector) {
+			const ret = Object.create(this);
 			
 			ret.section = section;
 			ret.selector = pseudoHookSelector;

@@ -12,10 +12,10 @@ define([
 	'internaltypes/twineerror',
 	'internaltypes/twinenotifier',
 ],
-function($, Utils, Selectors, Renderer, Environ, State, HookUtils, HookSet, PseudoHookSet, ChangeDescriptor, TwineError, TwineNotifier) {
+($, Utils, Selectors, Renderer, Environ, State, HookUtils, HookSet, PseudoHookSet, ChangeDescriptor, TwineError, TwineNotifier) => {
 	"use strict";
 
-	var Section;
+	let Section;
 
 	/**
 		Section objects represent a block of Twine source rendered into the DOM.
@@ -45,7 +45,7 @@ function($, Utils, Selectors, Renderer, Environ, State, HookUtils, HookSet, Pseu
 		/*
 			To be considered connected, the next hook must be the very next element.
 		*/
-		var nextHook = expr.next(Selectors.hook);
+		const nextHook = expr.next(Selectors.hook);
 		
 		/*
 			If result is a ChangerCommand, please run it.
@@ -122,12 +122,10 @@ function($, Utils, Selectors, Renderer, Environ, State, HookUtils, HookSet, Pseu
 		@param {jQuery} expr The <tw-expression> to run.
 	*/
 	function runExpression(expr) {
-		var
-			/*
-				Execute the expression, and obtain its result value.
-			*/
-			result = this.eval(expr.popAttr('js') || '');
-		
+		/*
+			Execute the expression, and obtain its result value.
+		*/
+		let result = this.eval(expr.popAttr('js') || '');
 		/*
 			Print any error that resulted.
 			This must of course run after the sensor/changer function was run,
@@ -205,13 +203,13 @@ function($, Utils, Selectors, Renderer, Environ, State, HookUtils, HookSet, Pseu
 	/*
 		This quick memoized feature test checks if the current platform supports Node#normalize().
 	*/
-	var supportsNormalize = (function() {
-		var result;
-		return function() {
+	const supportsNormalize = (() => {
+		let result;
+		return () => {
 			if (result !== undefined) {
 				return result;
 			}
-			var p = $('<p>');
+			const p = $('<p>');
 			/*
 				If the method is absent, then...
 			*/
@@ -226,7 +224,7 @@ function($, Utils, Selectors, Renderer, Environ, State, HookUtils, HookSet, Pseu
 				[0].normalize();
 			return (result = (p.contents().length === 1));
 		};
-	}());
+	})();
 	
 	/**
 		<tw-collapsed> elements should collapse whitespace inside them in a specific manner - only
@@ -238,20 +236,6 @@ function($, Utils, Selectors, Renderer, Environ, State, HookUtils, HookSet, Pseu
 		@param {jQuery} elem The element whose whitespace must collapse.
 	*/
 	function collapse(elem) {
-		var nodes,
-			/*
-				These hold the textNodes immediately outside the elem, before and after,
-				which are also inside a <tw-collapsed>. They're used to check if this is a nested
-				hook, and to treat opening and closing whitespace accordingly.
-			*/
-			beforeNode, afterNode,
-			/*
-				This is part of an uncomfortable #kludge used to determine whether to
-				retain a final space at the end, by checking how much was trimmed from
-				the finalNode and lastVisibleNode.
-			*/
-			finalSpaces = 0;
-		
 		/*
 			A .filter() callback which removes nodes inside a <tw-verbatim>,
 			a replaced <tw-hook>, or a <tw-expression> element, unless it is also inside a
@@ -277,11 +261,11 @@ function($, Utils, Selectors, Renderer, Environ, State, HookUtils, HookSet, Pseu
 			We need to keep track of what the previous and next exterior text nodes are,
 			but only if they were also inside a <tw-collapsed>.
 		*/
-		beforeNode = elem.prevTextNode();
+		let beforeNode = elem.prevTextNode();
 		if (!$(beforeNode).parents('tw-collapsed').length) {
 			beforeNode = null;
 		}
-		afterNode = elem.nextTextNode();
+		let afterNode = elem.nextTextNode();
 		if (!$(afterNode).parents('tw-collapsed').length) {
 			afterNode = null;
 		}
@@ -294,9 +278,16 @@ function($, Utils, Selectors, Renderer, Environ, State, HookUtils, HookSet, Pseu
 		/*
 			Having done that, we can now work on the element's nodes without concern for modifying the set.
 		*/
-		nodes = elem.textNodes();
+		const nodes = elem.textNodes();
 		
-		nodes.reduce(function(prevNode, node) {
+		/*
+			This is part of an uncomfortable #kludge used to determine whether to
+			retain a final space at the end, by checking how much was trimmed from
+			the finalNode and lastVisibleNode.
+		*/
+		let finalSpaces = 0;
+		
+		nodes.reduce((prevNode, node) => {
 			/*
 				- If the node is inside a <tw-verbatim> or <tw-expression>, regard it as a solid Text node
 				that cannot be split or permuted. We do this by returning a new, disconnected text node,
@@ -325,13 +316,13 @@ function($, Utils, Selectors, Renderer, Environ, State, HookUtils, HookSet, Pseu
 			In the case of { <b>A </b><i> </i> }, there are 3 text nodes that need to be trimmed.
 			This uses [].every to iterate up until a point.
 		*/
-		[].concat(nodes).reverse().every(function(node) {
+		[...nodes].reverse().every((node) => {
 			if (!noVerbatim(node)) {
 				return false;
 			}
 			// If this is the last visible node, merely trim it right, and return false;
 			if (!node.textContent.match(/^\s*$/)) {
-				node.textContent = node.textContent.replace(/\s+$/, function(substr) {
+				node.textContent = node.textContent.replace(/\s+$/, (substr) => {
 					finalSpaces += substr.length;
 					return '';
 				});
@@ -378,8 +369,7 @@ function($, Utils, Selectors, Renderer, Environ, State, HookUtils, HookSet, Pseu
 			(We also remove (pop) the code from the hook
 			so that doExpressions() doesn't render it.)
 		*/
-		var source = target.popAttr('source') || "",
-			recursive;
+		const source = target.popAttr('source') || "";
 		
 		/*
 			Default the delay to 20ms if none was given.
@@ -393,7 +383,7 @@ function($, Utils, Selectors, Renderer, Environ, State, HookUtils, HookSet, Pseu
 			Notice that as this is bound, giving it a name isn't
 			all that useful.
 		*/
-		recursive = (function() {
+		const recursive = (() => {
 			this.renderInto(source, target, {append:'replace'});
 			/*
 				The (stop:) command causes the nearest (live:) command enclosing
@@ -413,7 +403,7 @@ function($, Utils, Selectors, Renderer, Environ, State, HookUtils, HookSet, Pseu
 				Otherwise, resume re-running.
 			*/
 			setTimeout(recursive, delay);
-		}.bind(this));
+		});
 		
 		setTimeout(recursive, delay);
 	}
@@ -429,16 +419,14 @@ function($, Utils, Selectors, Renderer, Environ, State, HookUtils, HookSet, Pseu
 			@param {jQuery} newDom The DOM that comprises this section.
 			@return {Section} Object that inherits from this one.
 		*/
-		create: function(dom) {
-			var ret;
-			
+		create(dom) {
 			// Just some overweening type-checking.
 			Utils.assert(dom instanceof $ && dom.length === 1);
 			
 			/*
 				Install all of the non-circular properties.
 			*/
-			ret = Object.assign(Object.create(this), {
+			let ret = Object.assign(Object.create(this), {
 				/*
 					The time this Section was rendered. Of course, it's
 					not been rendered yet, but it needs to be recorded this early because
@@ -480,7 +468,7 @@ function($, Utils, Selectors, Renderer, Environ, State, HookUtils, HookSet, Pseu
 			
 			@method inDOM
 		*/
-		inDOM: function() {
+		inDOM() {
 			return $(Utils.storyElement).find(this.dom).length > 0;
 		},
 
@@ -490,7 +478,7 @@ function($, Utils, Selectors, Renderer, Environ, State, HookUtils, HookSet, Pseu
 			
 			@method $
 		*/
-		$: function(str) {
+		$(str) {
 			return Utils.$(str, this.dom);
 		},
 		
@@ -504,14 +492,13 @@ function($, Utils, Selectors, Renderer, Environ, State, HookUtils, HookSet, Pseu
 			@param {String} expr
 			@param {String|jQuery} text, or a <tw-error> element.
 		*/
-		evaluateTwineMarkup: function(expr) {
+		evaluateTwineMarkup(expr) {
 			/*
 				The expression is rendered into this loose DOM element, which
 				is then discarded after returning. Hopefully no leaks
 				will arise from this.
 			*/
-			var p = $('<p>'),
-				errors;
+			const p = $('<p>');
 			
 			/*
 				Render the text, using this own section as the base (which makes sense,
@@ -524,6 +511,7 @@ function($, Utils, Selectors, Renderer, Environ, State, HookUtils, HookSet, Pseu
 			/*
 				But first!! Pull out any errors that were generated.
 			*/
+			let errors;
 			if ((errors = p.find('tw-error')).length > 0) {
 				return errors;
 			}
@@ -542,7 +530,7 @@ function($, Utils, Selectors, Renderer, Environ, State, HookUtils, HookSet, Pseu
 			@param {String} selectorString
 			@return {HookSet|PseudoHookSet}
 		*/
-		selectHook: function(selectorString) {
+		selectHook(selectorString) {
 			/*
 				If a HookSet or PseudoHookSet was passed in, return it unmodified.
 				TODO: Should this be a bug?
@@ -578,7 +566,7 @@ function($, Utils, Selectors, Renderer, Environ, State, HookUtils, HookSet, Pseu
 			@param target The render destination. Usually a HookSet, PseudoHookSet or jQuery.
 			@param {Function|Array} [changers] The changer function(s) to run.
 		*/
-		renderInto: function(source, target, changers) {
+		renderInto(source, target, changers) {
 			var
 				/*
 					This is the ChangeDescriptor that defines this rendering.
@@ -609,7 +597,7 @@ function($, Utils, Selectors, Renderer, Environ, State, HookUtils, HookSet, Pseu
 				[].concat() wraps a non-array in an array, while
 				leaving arrays intact.
 			*/
-			changers && [].concat(changers).forEach(function(changer) {
+			changers && [].concat(changers).forEach((changer) => {
 				/*
 					If a non-changer object was passed in (such as from
 					specificEnchantmentEvent()), assign its values,
@@ -665,7 +653,7 @@ function($, Utils, Selectors, Renderer, Environ, State, HookUtils, HookSet, Pseu
 				of render() considerably.
 			*/
 			else if (!(desc.target instanceof $)) {
-				desc.target.forEach(function(e) {
+				desc.target.forEach((e) => {
 					/*
 						Generate a new descriptor which has the same properties
 						(rather, delegates to the old one via the prototype chain)
@@ -694,7 +682,7 @@ function($, Utils, Selectors, Renderer, Environ, State, HookUtils, HookSet, Pseu
 			
 			Utils.findAndFilter(dom, Selectors.hook + ',' + Selectors.expression)
 					.each(function doExpressions() {
-				var expr = $(this);
+				const expr = $(this);
 				
 				switch(expr.tag()) {
 					case Selectors.hook:
@@ -758,8 +746,8 @@ function($, Utils, Selectors, Renderer, Environ, State, HookUtils, HookSet, Pseu
 
 			@method updateEnchantments
 		*/
-		updateEnchantments: function () {
-			this.enchantments.forEach(function(e) {
+		updateEnchantments() {
+			this.enchantments.forEach((e) => {
 				/*
 					This first method removes old <tw-enchantment> elements...
 				*/

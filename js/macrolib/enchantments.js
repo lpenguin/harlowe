@@ -1,5 +1,5 @@
 define(['jquery', 'utils', 'macros', 'datatypes/hookset', 'datatypes/changercommand'],
-function($, Utils, Macros, HookSet, ChangerCommand) {
+($, Utils, Macros, HookSet, ChangerCommand) => {
 	"use strict";
 	/*
 		Built-in Revision, Interaction and Enchantment macros.
@@ -25,24 +25,22 @@ function($, Utils, Macros, HookSet, ChangerCommand) {
 			"prepend"
 		];
 	
-	revisionTypes.forEach(function(e) {
+	revisionTypes.forEach((e) => {
 		Macros.addChanger(e,
-			function(_, scope) {
-				return ChangerCommand.create(e, [scope]);
-			},
-			function(desc, scope) {
+			(_, scope) => ChangerCommand.create(e, [scope]),
+			(desc, scope) => {
 				/*
 					Now, if the source hook was outside the collapsing syntax,
 					and its dest is inside it, then it should NOT be collapsed, reflecting
 					its, shall we say, "lexical" position rather than its "dynamic" position.
 					In order to obtain this information, though, we need the obscure jQuery
-					context property, to obtain the original target's context (which was
+					context property, to obtain the original target's .context (which was
 					set in the findAndFilter() call inside renderInto() in section).
 					I don't like having to touch this API surface, but it has to be done, I guess.
 				*/
-				var collapsing = $(desc.target.context).parents().filter('tw-collapsed').length > 0;
+				const collapsing = $(desc.target.context).parents().filter('tw-collapsed').length > 0;
 				if (!collapsing) {
-					desc.attr = [].concat(desc.attr, { collapsing: false });
+					desc.attr = [...desc.attr, { collapsing: false }];
 				}
 				/*
 					Having done that, we may now alter the desc's target.
@@ -99,8 +97,8 @@ function($, Utils, Macros, HookSet, ChangerCommand) {
 			is "attached" via a jQuery .data() key, and must be called
 			from this <html> handler.
 		*/
-		$(function() {
-			$(Utils.storyElement).on(
+		$(() => {
+			Utils.storyElement.on(
 				/*
 					Put this event in the "enchantment" jQuery event
 					namespace, solely for personal tidiness.
@@ -111,7 +109,7 @@ function($, Utils, Macros, HookSet, ChangerCommand) {
 				"." + enchantDesc.classList.replace(/ /g, "."),
 			
 				function generalEnchantmentEvent() {
-					var enchantment = $(this),
+					const enchantment = $(this),
 						/*
 							Run the actual event handler.
 						*/
@@ -131,7 +129,7 @@ function($, Utils, Macros, HookSet, ChangerCommand) {
 			macro (in the case of "(macro: ?1)", selector will be "?1").
 		*/
 		return [
-			function enchantmentMacroFn(_, selector) {
+			(_, selector) => {
 				/*
 					If the selector is a HookRef (which it usually is), we must unwrap it
 					and extract its plain selector string, as this ChangerCommand
@@ -163,7 +161,7 @@ function($, Utils, Macros, HookSet, ChangerCommand) {
 				a #kludge that it piggybacks off the changer macro concept.
 			*/
 			function makeEnchanter(desc, selector) {
-				var enchantData,
+				let
 					/*
 						The scope is shared with both enchantData methods:
 						refreshScope removes the <tw-enchantment> elements
@@ -207,13 +205,13 @@ function($, Utils, Macros, HookSet, ChangerCommand) {
 					scope whenever its DOM is altered (e.g. words matching this enchantment's
 					selector are added or removed from the DOM).
 				*/
-				enchantData = {
+				const enchantData = {
 				
 					/*
 						This method enchants the scope, applying the macro's enchantment's
 						classes to the matched elements.
 					*/
-					enchantScope: function () {
+					enchantScope() {
 						/*
 							Create the scope, which is a HookSet or PseudoHookSet
 							depending on the selector.
@@ -235,9 +233,7 @@ function($, Utils, Macros, HookSet, ChangerCommand) {
 						/*
 							Now, enchant each selected word or hook within the scope.
 						*/
-						scope.forEach(function(e) {
-							var wrapping;
-							
+						scope.forEach((e) => {
 							/*
 								Create a fresh <tw-enchantment>, and wrap the elements in it.
 							*/
@@ -247,7 +243,7 @@ function($, Utils, Macros, HookSet, ChangerCommand) {
 								It's a little odd that the generated wrapper must be retrieved in
 								this roundabout fashion, but oh well.
 							*/
-							wrapping = e.parent();
+							const wrapping = e.parent();
 							
 							/*
 								Store the wrapping in the Section's enchantments list.
@@ -262,12 +258,11 @@ function($, Utils, Macros, HookSet, ChangerCommand) {
 							*/
 							e.parent().data('enchantmentEvent',
 								function specificEnchantmentEvent() {
-									var index;
 									if (enchantDesc.once) {
 										/*
 											Remove this enchantment from the Section's list.
 										*/
-										index = desc.section.enchantments.indexOf(enchantData);
+										const index = desc.section.enchantments.indexOf(enchantData);
 										desc.section.enchantments.splice(index,1);
 										/*
 											Of course, the <tw-enchantment>s
@@ -296,7 +291,7 @@ function($, Utils, Macros, HookSet, ChangerCommand) {
 					/*
 						This method refreshes the scope to reflect the current passage DOM state.
 					*/
-					refreshScope: function () {
+					refreshScope() {
 						/*
 							Clear all existing <tw-enchantment> wrapper elements placed by
 							the previous call to enchantScope().
@@ -325,7 +320,7 @@ function($, Utils, Macros, HookSet, ChangerCommand) {
 		hook's rendering, and enchantment a target hook, waiting for the
 		target to be interacted with and then performing the deferred rendering.
 	*/
-	var interactionTypes = [
+	const interactionTypes = [
 		// (click:)
 		// Reveal the enclosed hook only when the scope is clicked.
 		{
@@ -363,22 +358,19 @@ function($, Utils, Macros, HookSet, ChangerCommand) {
 	
 	//TODO: (hover:)
 	
-	interactionTypes.forEach(function(e) {
-		Macros.addChanger.apply(0, [e.name].concat(newEnchantmentMacroFns(e.enchantDesc, e.name)));
-	});
-
+	interactionTypes.forEach((e) => Macros.addChanger(e.name, ...newEnchantmentMacroFns(e.enchantDesc, e.name)));
 	
 	/*
 		Combos are shorthands for interaction and revision macros that target the same hook:
 		for instance, (click: ?1)[(replace:?1)[...]] can be written as (click-replace: ?1)[...]
 	*/
-	revisionTypes.forEach(function(revisionType) {
-		interactionTypes.forEach(function(interactionType) {
-			var enchantDesc = Object.assign({}, interactionType.enchantDesc, {
+	revisionTypes.forEach((revisionType) => {
+		interactionTypes.forEach((interactionType) => {
+			const enchantDesc = Object.assign({}, interactionType.enchantDesc, {
 					rerender: revisionType
 				}),
 				name = interactionType.name + "-" + revisionType;
-			Macros.addChanger.apply(0, [name].concat(newEnchantmentMacroFns(enchantDesc, name)));
+			Macros.addChanger(name, ...newEnchantmentMacroFns(enchantDesc, name));
 		});
 	});
 });

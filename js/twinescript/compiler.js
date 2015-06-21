@@ -1,4 +1,4 @@
-define(['utils'], function(Utils) {
+define(['utils'], ({toJSLiteral, assert}) => {
 	"use strict";
 	
 	/**
@@ -56,29 +56,19 @@ define(['utils'], function(Utils) {
 		first token that has one of those types. Very useful.
 		
 		@param {Array} array The tokens array.
-		@param {String} type* The token type(s).
+		@param {String} types* The token type(s).
 		@return {Number} The array index, or NaN.
 	*/
-	function indexOfType(array, type /* variadic */) {
-		var i,
-			types = (arguments.length === 1
-				? type
-				: Array.prototype.slice.call(arguments, 1));
-		
-		for (i = 0; i < array.length; i+=1) {
-			/*
-				Odd fact: unary + is often used to convert non-numbers to
-				numbers, but it also converts negative numbers to positive.
-				So, use 0+ instead when that matters.
-			*/
-			if (0+types.indexOf(array[i].type) > -1) {
+	function indexOfType(array, ...types) {
+		for (let i = 0; i < array.length; i+=1) {
+			if (types.indexOf(array[i].type) > -1) {
 				return i;
 			}
 		}
 		return NaN;
 	}
 	
-	function rightAssociativeIndexOfType(array /* variadic */) {
+	function rightAssociativeIndexOfType(array, ...types) {
 		/*
 			What this does is tricky: it reverses the passed-in array,
 			calls the normal indexOfType, then inverts the returned index
@@ -88,13 +78,13 @@ define(['utils'], function(Utils) {
 			For browser optimisation purposes, arguments is copied into an
 			array
 		*/
-		var a = Array.prototype.slice.call(arguments, 0);
-		/*
-			Regrettably, .reverse() is an in-place method, so a copy must be
-			manually made.
-		*/
-		a[0] = Array.from(array).reverse();
-		return (array.length - 1) - indexOfType.apply(0, a);
+		return (array.length - 1) - indexOfType(...[
+			/*
+				Regrettably, .reverse() is an in-place method, so a copy must be
+				manually made.
+			*/
+			[...array].reverse(), ...types
+		]);
 	}
 	
 	/**
@@ -107,38 +97,6 @@ define(['utils'], function(Utils) {
 		@return {String} String of Javascript code.
 	*/
 	function compile(tokens, isVarRef) {
-		var i,
-			/*
-				These hold the returned compilations of the tokens
-				surrounding a currently matched token, as part of this function's
-				recursive descent.
-			*/
-			left, right,
-			/*
-				Hoisted temp variables
-			*/
-			macroNameToken, token,
-			/*
-				Setting values to either of these variables
-				determines the code to emit:
-				- for midString, a plain JS infix operation between left and right;
-				- for operation, an Operations method call with left and right as arguments.
-				- for assignment, an AssignmentRequest.
-				- for possessive, a special VarRef.create() call.
-			*/
-			midString, operation, assignment, possessive,
-			/*
-				Some operators should present a simple error when one of their sides is missing.
-			*/
-			needsLeft = true, needsRight = true,
-			/*
-				Some JS operators, like >, don't automatically work when the other side
-				is absent, even when people expect them to. e.g. $var > 3 and < 5 (which is
-				legal in Inform 6). To cope, I implicitly convert a blank left side to
-				"it", which is the nearest previous left-hand operand.
-			*/
-			implicitLeftIt = false;
-		
 		/*
 			Recursive base case: no tokens.
 			Any behaviour that should be done in the event of no tokens
@@ -149,13 +107,15 @@ define(['utils'], function(Utils) {
 		}
 		// Convert tokens to a 1-size array if it's just a single non-array.
 		tokens = [].concat(tokens);
-		
+		/*
+			Obtain the first token, which is used for several base-cases in this function,
+			such as the one below.
+		*/
+		const token = tokens[0];
 		/*
 			Potential early return if we're at a leaf node.
 		*/
 		if (tokens.length === 1) {
-			token = tokens[0];
-			
 			if (token.type === "identifier") {
 				if (isVarRef) {
 					/*
@@ -167,7 +127,7 @@ define(['utils'], function(Utils) {
 			}
 			else if (token.type === "variable") {
 				return "VarRef.create(State.variables,"
-					+ Utils.toJSLiteral(token.name)
+					+ toJSLiteral(token.name)
 					+ ")" + (isVarRef ? "" : ".get()");
 			}
 			else if (token.type === "hookRef") {
@@ -200,7 +160,7 @@ define(['utils'], function(Utils) {
 			}
 			else if (token.type === "colour") {
 				return "Colour.create("
-					+ Utils.toJSLiteral(token.colour)
+					+ toJSLiteral(token.colour)
 					+ ")";
 			}
 			/*
@@ -241,6 +201,33 @@ define(['utils'], function(Utils) {
 			We must check these in reverse, so that the least-precedent
 			is associated last.
 		*/
+		let i, macroNameToken,
+			/*
+				These hold the returned compilations of the tokens
+				surrounding a currently matched token, as part of this function's
+				recursive descent.
+			*/
+			left, right,
+			/*
+				Setting values to either of these variables
+				determines the code to emit:
+				- for midString, a plain JS infix operation between left and right;
+				- for operation, an Operations method call with left and right as arguments.
+				- for assignment, an AssignmentRequest.
+				- for possessive, a special VarRef.create() call.
+			*/
+			midString, operation, assignment, possessive,
+			/*
+				Some operators should present a simple error when one of their sides is missing.
+			*/
+			needsLeft = true, needsRight = true,
+			/*
+				Some JS operators, like >, don't automatically work when the other side
+				is absent, even when people expect them to. e.g. $var > 3 and < 5 (which is
+				legal in Inform 6). To cope, I implicitly convert a blank left side to
+				"it", which is the nearest previous left-hand operand.
+			*/
+			implicitLeftIt = false;
 		
 		/*
 			I'll admit it: I'm not yet sure what place the JS comma will have in
@@ -350,7 +337,7 @@ define(['utils'], function(Utils) {
 					Utils.toJSLiteral() is used to both escape the name
 					string and wrap it in quotes.
 				*/
-				+ Utils.toJSLiteral(tokens[i].name) + ")"
+				+ toJSLiteral(tokens[i].name) + ")"
 				+ (isVarRef ? "" : ".get()");
 			midString = " ";
 			needsLeft = needsRight = false;
@@ -381,7 +368,7 @@ define(['utils'], function(Utils) {
 					Utils.toJSLiteral() is used to both escape the name
 					string and wrap it in quotes.
 				*/
-				+ Utils.toJSLiteral(tokens[i].name) + ")"
+				+ toJSLiteral(tokens[i].name) + ")"
 				+ (isVarRef ? "" : ".get()");
 			midString = " ";
 			needsLeft = needsRight = false;
@@ -393,7 +380,7 @@ define(['utils'], function(Utils) {
 				there is no left subtoken (it is always Identifiers.it).
 			*/
 			left = "VarRef.create(Operations.Identifiers.it,"
-				+ Utils.toJSLiteral(tokens[i].name) + ").get()";
+				+ toJSLiteral(tokens[i].name) + ").get()";
 			midString = " ";
 			needsLeft = needsRight = false;
 		}
@@ -409,7 +396,7 @@ define(['utils'], function(Utils) {
 				The first child token in a macro is always the method name.
 			*/
 			macroNameToken = tokens[i].children[0];
-			Utils.assert(macroNameToken.type === "macroName");
+			assert(macroNameToken.type === "macroName");
 			
 			midString = 'Macros.run('
 				/*
@@ -485,7 +472,7 @@ define(['utils'], function(Utils) {
 			}
 			else if (assignment) {
 				return "Operations.makeAssignmentRequest("
-					+ [left, right, Utils.toJSLiteral(assignment)]
+					+ [left, right, toJSLiteral(assignment)]
 					+")";
 			}
 			else if (possessive) {
@@ -497,7 +484,7 @@ define(['utils'], function(Utils) {
 					+ (isVarRef ? "" : ".get()");
 			}
 			else if (operation) {
-				return " Operations[" + Utils.toJSLiteral(operation) + "](" + left + "," + right + ") ";
+				return " Operations[" + toJSLiteral(operation) + "](" + left + "," + right + ") ";
 			}
 		}
 		/*
@@ -511,7 +498,7 @@ define(['utils'], function(Utils) {
 			return ((token.value || token.text) + "").trim() || " ";
 		}
 		else {
-			return tokens.reduce(function(a, token) { return a + compile(token, isVarRef); }, "");
+			return tokens.reduce((a, token) => a + compile(token, isVarRef), "");
 		}
 		return "";
 	}

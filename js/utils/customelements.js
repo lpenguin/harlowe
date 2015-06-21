@@ -1,4 +1,4 @@
-define([], function() {
+define([], () => {
 	"use strict";
 	/*
 		Custom Elements
@@ -12,28 +12,27 @@ define([], function() {
 	if (!document.registerElement) {
 		return;
 	}
-	var CustomElements = {};
+	const CustomElements = {};
 	/*
 		This is technically useless at the moment - not registering a custom element that has a conformant name
 		(i.e. features a hyphen anywhere after the first character) will just mean that element uses HTMLElement.prototype.
 		Nevertheless, this lays ground if the polyfill route is taken, and documents the custom elements used in Harlowe.
 	*/
-	(function register(name, props /* variadic */) {
-		var el,
+	(function register(name, ...props) {
+		const
 			proto = Object.create(HTMLElement.prototype),
 			propDef = {};
 		
-		props = Array.from(arguments).slice(1);
 		/*
 			Load up the prototype with the passed properties
 			while making them non-configurable, non-writable etc.
 		*/
-		props.forEach(function(p) {
+		props.forEach((p) => {
 			propDef[p] = { value: null };
 		});
 		Object.defineProperties(proto,propDef);
 		// Register the element!
-		el = document.registerElement(name, { prototype: proto });
+		const el = document.registerElement(name, { prototype: proto });
 		CustomElements[name] = el;
 		return register;
 	} // No semicolon - chained calls follow

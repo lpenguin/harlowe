@@ -1,4 +1,4 @@
-define(['utils', 'internaltypes/twineerror'], function(Utils, TwineError) {
+define(['utils', 'internaltypes/twineerror'], ({assert, impossible, toJSLiteral}, TwineError) => {
 	"use strict";
 	
 	/*
@@ -32,7 +32,7 @@ define(['utils', 'internaltypes/twineerror'], function(Utils, TwineError) {
 		This requires that the datamap itself be passed in.
 	*/
 	function isValidDatamapName(map, name) {
-		Utils.assert(map instanceof Map);
+		assert(map instanceof Map);
 		/*
 			The computed variable property syntax means that basically
 			any value can be used as a property key. Currently, we only allow strings
@@ -50,7 +50,7 @@ define(['utils', 'internaltypes/twineerror'], function(Utils, TwineError) {
 			To avoid confusion between types, it is not permitted to make OR REFERENCE
 			a number data key if a similar string key is present, and vice-versa.
 		*/
-		var otherName = (typeof name === "string" ? +name : ''+name);
+		const otherName = (typeof name === "string" ? +name : ''+name);
 		
 		/*
 			If the name was a non-numeric string, otherName should be NaN.
@@ -95,7 +95,7 @@ define(['utils', 'internaltypes/twineerror'], function(Utils, TwineError) {
 			If it's an array, the old standby is on call.
 		*/
 		if (Array.isArray(value)) {
-			return [].concat(value);
+			return [...value];
 		}
 		/*
 			For ES6 collections, we can depend on the constructors.
@@ -124,7 +124,7 @@ define(['utils', 'internaltypes/twineerror'], function(Utils, TwineError) {
 		/*
 			If we've gotten here, something unusual has been passed in.
 		*/
-		Utils.impossible("Operations.clone", "The value " + value + " cannot be cloned!");
+		impossible("Operations.clone", "The value " + value + " cannot be cloned!");
 		return value;
 	}
 
@@ -168,7 +168,7 @@ define(['utils', 'internaltypes/twineerror'], function(Utils, TwineError) {
 			: obj instanceof Set ? "a dataset"
 			: typeof obj === "boolean" ? "the logic value '" + obj + "'"
 			: (typeof obj === "string" || typeof obj === "number")
-				? 'the ' + typeof obj + " " + Utils.toJSLiteral(obj)
+				? 'the ' + typeof obj + " " + toJSLiteral(obj)
 			: obj === undefined ? "an empty variable"
 			: "...whatever this is";
 	}
@@ -192,7 +192,7 @@ define(['utils', 'internaltypes/twineerror'], function(Utils, TwineError) {
 		*/
 		if (obj.innerType) {
 			if (obj.pattern === "either") {
-				Utils.assert(Array.isArray(obj.innerType));
+				assert(Array.isArray(obj.innerType));
 				
 				return obj.innerType.map(typeName).join(" or ");
 			}
@@ -244,9 +244,7 @@ define(['utils', 'internaltypes/twineerror'], function(Utils, TwineError) {
 			if (l.length !== r.length) {
 				return false;
 			}
-			return l.every(function(element, index) {
-				return is(r[index], element);
-			});
+			return l.every((element, index) => is(r[index], element));
 		}
 		/*
 			For Maps and Sets, simply reduce them to Arrays.
@@ -290,17 +288,13 @@ define(['utils', 'internaltypes/twineerror'], function(Utils, TwineError) {
 				return container.indexOf(obj) > -1;
 			}
 			if(Array.isArray(container)) {
-				return container.some(function(e) {
-					return is(e, obj);
-				});
+				return container.some((e) => is(e, obj));
 			}
 			/*
 				For Sets and Maps, check that the key exists.
 			*/
 			if (container instanceof Set || container instanceof Map) {
-				return Array.from(container.keys()).some(function(e) {
-					return is(e, obj);
-				});
+				return Array.from(container.keys()).some(e => is(e, obj));
 			}
 		}
 		/*
@@ -314,14 +308,13 @@ define(['utils', 'internaltypes/twineerror'], function(Utils, TwineError) {
 		and (substring:) indices (which are 1-indexed), converting them to those preferred by JS.
 	*/
 	function subset(sequence, a, b) {
-		var ret, isString = typeof sequence === "string";
 		/*
 			A zero index or a NaN index is an error.
 		*/
 		if (!a || !b) {
 			return TwineError.create(
 				"macrocall",
-				"The sub" + collectionType(sequence) + " index arguments must not be 0 or NaN."
+				"The sub" + collectionType(sequence) + " index values must not be 0 or NaN."
 			);
 		}
 		/*
@@ -345,6 +338,7 @@ define(['utils', 'internaltypes/twineerror'], function(Utils, TwineError) {
 			means that, in order to treat astral plane characters as 1 character in 1 position,
 			they must be converted to and from arrays whenever indexing or .slice() is performed.
 		*/
+		const isString = typeof sequence === "string";
 		if (isString) {
 			sequence = Array.from(sequence);
 		}
@@ -352,7 +346,7 @@ define(['utils', 'internaltypes/twineerror'], function(Utils, TwineError) {
 			As the positive indices are 1-indexed, we shall subtract 1 from a if a is positive.
 			But, as they're inclusive, b shall be left as is.
 		*/
-		ret = sequence.slice(a > 0 ? a - 1 : a, b);
+		const ret = sequence.slice(a > 0 ? a - 1 : a, b);
 		/*
 			Now that that's done, convert any string sequence back into one.
 		*/
@@ -362,7 +356,7 @@ define(['utils', 'internaltypes/twineerror'], function(Utils, TwineError) {
 		return ret;
 	}
 	
-	var OperationUtils = Object.freeze({
+	const OperationUtils = Object.freeze({
 		isObject: isObject,
 		isValidDatamapName: isValidDatamapName,
 		collectionType: collectionType,

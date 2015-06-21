@@ -8,8 +8,8 @@
 */
 (function(){
 	"use strict";
-	var Lexer,
-		rules = {};
+	let Lexer;
+	const rules = {};
 	
 	/*
 		The "prototype" object for lexer tokens.
@@ -17,13 +17,11 @@
 		but which nonetheless lexer customers may find valuable.
 	*/
 	function Token(/*variadic*/) {
-		var i, j;
-		
 		/*
 			Due to speed paranoia, this uses longhand assignment.
 		*/
-		for (i = 0; i < arguments.length; i++) {
-			for (j in arguments[i]) {
+		for (let i = 0; i < arguments.length; i++) {
+			for (let j in arguments[i]) {
 				this[j] = arguments[i][j];
 			}
 		}
@@ -36,9 +34,8 @@
 		highlighter relies on them heavily.
 	*/
 	function cacheChildPos(token, childToken) {
-		var i;
 		token.childAt = token.childAt || {};
-		for(i = childToken.start; i < childToken.end; i += 1) {
+		for(let i = childToken.start; i < childToken.end; i += 1) {
 			token.childAt[i] = childToken;
 		}
 	}
@@ -49,15 +46,14 @@
 		/*
 			Create a token and put it in the children array.
 		*/
-		addChild: function addChild(tokenData) {
-			var index = this.lastChildEnd(),
-				childToken;
+		addChild(tokenData) {
+			const index = this.lastChildEnd();
 			
 			/*
 				Now, create the token, then assign to it the idiosyncratic data
 				properties and the tokenMethods.
 			*/
-			childToken = new Token(
+			const childToken = new Token(
 				{
 					start:     index,
 					end:       tokenData.text && index + tokenData.text.length,
@@ -86,7 +82,7 @@
 		/*
 			A shortcut to the last element in the children array.
 		*/
-		lastChild: function lastChild() {
+		lastChild() {
 			return this.children ? this.children[this.children.length-1] || null : null;
 		},
 		
@@ -97,8 +93,8 @@
 			Hence, when there are no children, it defaults to the start
 			index of this token.
 		*/
-		lastChildEnd: function lastChildEnd() {
-			var lastToken = this.lastChild();
+		lastChildEnd() {
+			const lastToken = this.lastChild();
 			return lastToken ? lastToken.end : this.start +
 				/*
 					Some macros' children do not exactly overlap their parents in terms of
@@ -116,8 +112,7 @@
 			Given an index in this token's text, find the deepest leaf,
 			if any, that corresponds to it.
 		*/
-		tokenAt: function tokenAt(index) {
-			var i, childToken;
+		tokenAt(index) {
 			// First, a basic range check.
 			if (index < this.start || index >= this.end) {
 				return null;
@@ -133,8 +128,8 @@
 				for this index is.
 			*/
 			if (this.children.length) {
-				for(i = 0; i < this.children.length; i+=1) {
-					childToken = this.children[i].tokenAt(index);
+				for(let i = 0; i < this.children.length; i+=1) {
+					const childToken = this.children[i].tokenAt(index);
 					if (childToken) {
 						return childToken;
 					}
@@ -153,9 +148,7 @@
 			Given an index in this token's text, return an array of tokens,
 			deepest-first, leading to and including that token.
 		*/
-		pathAt: function pathAt(index) {
-			var path = [],
-				i, childPath;
+		pathAt(index) {
 			// First, a basic range check.
 			if (index < this.start || index >= this.end) {
 				return [];
@@ -169,9 +162,10 @@
 			/*
 				Ask each child, if any, what their path for this index is.
 			*/
+			let path = [];
 			if (this.children.length) {
-				for(i = 0; i < this.children.length; i+=1) {
-					childPath = this.children[i].pathAt(index);
+				for(let i = 0; i < this.children.length; i+=1) {
+					const childPath = this.children[i].pathAt(index);
 					if (childPath.length) {
 						path.concat(childPath);
 						break;
@@ -186,7 +180,7 @@
 			(that is, only from among the token's immediate children)
 			that corresponds to it.
 		*/
-		nearestTokenAt: function nearestTokenAt(index) {
+		nearestTokenAt(index) {
 			// First, a basic range check.
 			if (index < this.start || index >= this.end) {
 				return null;
@@ -207,18 +201,18 @@
 			and returns true if all returned truthy values.
 		*/
 		everyLeaf: function everyLeaf(fn) {
-			var ret;
 			if (!this.children || this.children.length === 0) {
 				return !!fn(this);
 			}
-			return this.children.everyLeaf(function() { ret = ret && !!everyLeaf(fn); });
+			let ret;
+			return this.children.everyLeaf(() => { ret = ret && !!everyLeaf(fn); });
 		},
 		
 		/*
 			Check if all leaf nodes contain just whitespace.
 		*/
-		isWhitespace: function isWhitespace() {
-			return this.everyLeaf(function(e) {
+		isWhitespace() {
+			return this.everyLeaf((e) => {
 				/*
 					Check if it's the 'whitespace' type... or if it's a
 					mislabeled text leaf.
@@ -231,7 +225,7 @@
 			Check if this token is a Front token or not. A semantic shorthand for a simple test.
 			Currently unused inside Lexer itself.
 		*/
-		isFrontToken: function isFrontToken() {
+		isFrontToken() {
 			return this.isFront;
 		},
 		
@@ -239,7 +233,7 @@
 			In the same vein, this checks if this token is a Back token or not.
 			Currently unused inside Lexer itself.
 		*/
-		isBackToken: function isBackToken() {
+		isBackToken() {
 			return 'matches' in this;
 		},
 		
@@ -248,14 +242,14 @@
 			
 			TODO: Really, this should combine this with all adjacent text tokens.
 		*/
-		demote: function demote() {
+		demote() {
 			this.type = "text";
 		},
 		
 		/*
 			Convert this token in-place into an early error token, which renders as a <tw-error>.
 		*/
-		error: function(message) {
+		error(message) {
 			this.type = "error";
 			this.message = message;
 		},
@@ -264,8 +258,8 @@
 			This is used primarily for browser console debugging purposes - output from
 			LEX() may be turned to string to provide an overview of its contents.
 		*/
-		toString: function() {
-			var ret = this.type + "(" + this.start + "→" + this.end + ")";
+		toString() {
+			let ret = this.type + "(" + this.start + "→" + this.end + ")";
 			if (this.children && this.children.length > 0) {
 				ret += "[" + this.children + "]";
 			}
@@ -326,17 +320,10 @@
 		and add them as children.
 	*/
 	function lex(parentToken) {
-		var
-			// Some shortcuts
-			src = parentToken.innerText,
-			// Some hoisted temporary vars used in each loop iteration.
-			i, l, rule, match, slice, ft,
-			/*
-				This is used to store what "mode" the lexer is in, which is
-				either parentToken.innerMode, or the innerMode of the recentmost
-				unmatched frontToken.
-			*/
-			mode,
+		const
+			src = parentToken.innerText;
+		
+		let
 			/*
 				The frontTokenStack's items are "front" tokens, those
 				that pair up with a "back" token to make a token representing
@@ -359,34 +346,29 @@
 				This must be 'null' and not 'undefined' because some canFollow
 				arrays may contain null, to mean the start of input.
 			*/
-			lastToken = null,
-			/*
-				This stores the tokenData object produced by each rule's fn method,
-				which is called after deciding that a rule matches.
-				This needs to be examined before the final token can be created from it.
-			*/
-			tokenData,
-			/*
-				This boolean stores whether or not the currently examined token is a matching
-				Back token.
-			*/
-			isMatchingBack;
+			lastToken = null;
 		
 		/*
 			Run through the src, character by character, matching all the
 			rules on every slice, creating tokens as we go, until exhausted.
 		*/
 		while(index < endIndex) {
-			slice = src.slice(index);
+			const slice = src.slice(index);
 			
-			mode = (frontTokenStack.length ? frontTokenStack[0] : parentToken).innerMode;
+			/*
+				This is used to store what "mode" the lexer is in, which is
+				either parentToken.innerMode, or the innerMode of the recentmost
+				unmatched frontToken.
+			*/
+			let mode = (frontTokenStack.length ? frontTokenStack[0] : parentToken).innerMode;
 			/*
 				Run through all the rules in the current mode in turn.
 				Note that modeStack[0] means "the current mode in the modeStack".
 				Speed paranoia precludes the deployment of [].forEach() here.
 			*/
-			for (i = 0, l = mode.length; i < l; i+=1) {
-				rule = rules[mode[i]];
+			let i = 0, l = mode.length;
+			for (; i < l; i+=1) {
+				const rule = rules[mode[i]];
 				
 				/*
 					Before running the pattern, check to see if this rule is valid right now.
@@ -402,24 +384,25 @@
 						rule.pattern.test(slice))) {
 					continue;
 				}
-				match = rule.pattern.exec(slice);
+				const match = rule.pattern.exec(slice);
 				/*
 					Having run the pattern, we now create tokenData from the match. We use this
 					to create the token, but we shouldn't do so if certain invalidation criteria
 					are met...
 				*/
-				tokenData = rule.fn(match);
+				const tokenData = rule.fn(match);
 				/*
 					...such as this: if it would be a Back token, it must match with a Front token.
 				*/
-				isMatchingBack = false;
+				let isMatchingBack = false;
+				let ft = 0;
 				if (tokenData.matches) {
 					/*
 						Speed paranoia necessitates a for-loop here, which sets
 						ft to either the index of the rightmost frontToken matching
 						tokenData's matches, or -1.
 					*/
-					for(ft = 0; ft < frontTokenStack.length; ft += 1) {
+					for(; ft < frontTokenStack.length; ft += 1) {
 						if (frontTokenStack[ft].type in tokenData.matches) {
 							isMatchingBack = true;
 							break;
@@ -520,10 +503,8 @@
 			For convenience, let's promote the Back token (currently, "child")
 			into the folded-up single token.
 		*/
-		var backTokenIndex   = parentToken.children.indexOf(backToken),
-			frontTokenIndex  = parentToken.children.indexOf(frontToken),
-			// Hoisted loop vars
-			i, l;
+		const backTokenIndex   = parentToken.children.indexOf(backToken),
+			frontTokenIndex  = parentToken.children.indexOf(frontToken);
 		
 		/*
 			First, find the tokens enclosed by the pair, and make them the
@@ -553,7 +534,7 @@
 			Change its text and innerText to reflect its contents.
 		*/
 		backToken.innerText = "";
-		for (i = 0, l = backToken.children.length; i < l; i++) {
+		for (let i = 0, l = backToken.children.length; i < l; i++) {
 			backToken.innerText += backToken.children[i].text;
 		}
 		
@@ -581,7 +562,7 @@
 			This uses Object.keys() because Chrome deopts for-in over
 			the frontToken object.
 		*/
-		Object.keys(frontToken).forEach(function(key) {
+		Object.keys(frontToken).forEach((key) => {
 			if(!Object.hasOwnProperty.call(backToken, key)) {
 				backToken[key] = frontToken[key];
 			}
@@ -613,8 +594,8 @@
 			This returns the entire set of tokens, rooted in a "root"
 			token that has all of tokenMethods's methods.
 		*/
-		lex: function(src, initIndex) {
-			var ret = lex(new Token({
+		lex(src, initIndex) {
+			return lex(new Token({
 				type:                 "root",
 				start:        initIndex || 0,
 				end:              src.length,
@@ -624,7 +605,6 @@
 				childAt:                  {},
 				innerMode:   Lexer.startMode,
 			}));
-			return ret;
 		},
 		/*
 			The (initially empty) rules object should be augmented with
