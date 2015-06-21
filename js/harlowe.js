@@ -21,8 +21,8 @@ require.config({
 		'jqueryplugins',
 	],
 });
-require(['jquery', 'renderer', 'state', 'engine', 'passages', 'utils', 'utils/selectors', 'macrolib', 'repl'],
-		function ($, Renderer, State, Engine, Passages, Utils, Selectors) {
+require(['jquery', 'renderer', 'state', 'engine', 'passages', 'utils/selectors', 'macrolib', 'repl'],
+		($, Renderer, State, Engine, Passages, Selectors) => {
 	"use strict";
 	/**
 		Harlowe, the default story format for Twine 2.
@@ -45,7 +45,7 @@ require(['jquery', 'renderer', 'state', 'engine', 'passages', 'utils', 'utils/se
 		["_", "Backbone", "Store", "Mn", "Marionette", "saveAs", "FastClick", "JSZip", "SVG", "requestAnimFrame", "UUID",
 		"XDate", "CodeMirror", "ui", "nwui", "AppPref", "Passage", "StoryFormat", "Story", "AppPrefCollection", "PassageCollection",
 		"StoryCollection", "StoryFormatCollection", "WelcomeView", "StoryItemView", "StoryListView", "PassageItemView",
-		"StoryEditView", "TwineRouter", "TransRegion", "TwineApp", "app", "storyFormat"].forEach(function(name) {
+		"StoryEditView", "TwineRouter", "TransRegion", "TwineApp", "app", "storyFormat"].forEach((name) => {
 			// Some of these are defined non-configurable, but still writable, for some reason.
 			try {
 				delete window[name];
@@ -61,8 +61,8 @@ require(['jquery', 'renderer', 'state', 'engine', 'passages', 'utils', 'utils/se
 
 		@method installHandlers
 	*/
-	var installHandlers = function() {
-		var html = $(document.documentElement),
+	let installHandlers = () => {
+		const html = $(document.documentElement),
 			debugHTML =
 			"<tw-debugger><button class='show-invisibles'>&#9903; Debug View</button></tw-debugger>";
 		
@@ -80,7 +80,7 @@ require(['jquery', 'renderer', 'state', 'engine', 'passages', 'utils', 'utils/se
 		// If the debug option is on, add the debugger.
 		if (Engine.options.debug) {
 			$(document.body).append(debugHTML);
-			$('.show-invisibles').click(function() {
+			$('.show-invisibles').click(() => {
 				html.toggleClass('debug-mode').is(".debug-mode");
 			});
 		}
@@ -92,13 +92,13 @@ require(['jquery', 'renderer', 'state', 'engine', 'passages', 'utils', 'utils/se
 		This installs a window.onerror method, but we must be careful not to clobber any existing
 		onerror method.
 	*/
-	(function(oldOnError) {
+	((oldOnError) => {
 		window.onerror = function (message, _, __, ___, error) {
 			/*
 				This convoluted line retrieves the error stack, if it exists, and pretty-prints it with
 				URL references (in brackets) removed. If it doesn't exist, the message is used instead.
 			*/
-			var stack = (error && error.stack && ("\n" + error.stack.replace(/\([^\)]+\)/g,'') + "\n")) || ("(" + message + ")\n");
+			const stack = (error && error.stack && ("\n" + error.stack.replace(/\([^\)]+\)/g,'') + "\n")) || ("(" + message + ")\n");
 			alert("Sorry to interrupt, but this page's code has got itself in a mess. "
 				+ stack
 				+ "(This is probably due to a bug in the Twine game engine.)");
@@ -107,20 +107,16 @@ require(['jquery', 'renderer', 'state', 'engine', 'passages', 'utils', 'utils/se
 			*/
 			window.onerror = oldOnError;
 			if (typeof oldOnError === "function") {
-				oldOnError.apply(window, arguments);
+				oldOnError(...arguments);
 			}
 		};
-	}(window.onerror));
+	})(window.onerror);
 	
 	/*
 		This is the main function which starts up the entire program.
 	*/
-	$(document).ready(function main() {
-		var header = $(Selectors.storyData),
-			options,
-			startPassage,
-			script = $(Selectors.script),
-			stylesheet = $(Selectors.stylesheet);
+	$(() => {
+		const header = $(Selectors.storyData);
 
 		if (header.length === 0) {
 			return;
@@ -134,20 +130,20 @@ require(['jquery', 'renderer', 'state', 'engine', 'passages', 'utils', 'utils/se
 
 		// Load options from attribute into story object
 
-		options = header.attr('options');
+		const options = header.attr('options');
 
 		if (options) {
-			options.split(/\s/).forEach(function(b) {
+			options.split(/\s/).forEach((b) => {
 				Renderer.options[b] = Engine.options[b] = true;
 			});
 		}
-		startPassage = header.attr('startnode');
+		let startPassage = header.attr('startnode');
 		
 		// If there's no set start passage, find the passage with the
 		// lowest passage ID, and use that.
 		if (!startPassage) {
-			startPassage = [].reduce.call($(Selectors.passageData), function(id, el) {
-				var pid = el.getAttribute('pid');
+			startPassage = [].reduce.call($(Selectors.passageData), (id, el) => {
+				const pid = el.getAttribute('pid');
 				return (pid < id ? pid : id);
 			}, Infinity);
 		}
@@ -159,7 +155,7 @@ require(['jquery', 'renderer', 'state', 'engine', 'passages', 'utils', 'utils/se
 		
 		// Execute the custom scripts
 		
-		script.each(function(i) {
+		$(Selectors.script).each(function(i) {
 			try {
 				_eval($(this).html());
 			} catch (e) {
@@ -170,7 +166,7 @@ require(['jquery', 'renderer', 'state', 'engine', 'passages', 'utils', 'utils/se
 		
 		// Apply the stylesheets
 		
-		stylesheet.each(function(i) {
+		$(Selectors.stylesheet).each(function(i) {
 			// In the future, pre-processing may occur.
 			$(document.head).append('<style data-title="Story stylesheet ' + (i + 1) + '">' + $(this).html());
 		});

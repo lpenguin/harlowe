@@ -1,20 +1,20 @@
-define(['jquery'], function($) {
+define(['jquery'], ($) => {
 	"use strict";
 	
 	$.prototype.extend({
 		/*
 			popAttr: returns an attribute while removing it. Accepts only 1 argument.
 		*/
-		popAttr: function(attr) {
-			var ret = this.attr(attr);
+		popAttr(attr) {
+			const ret = this.attr(attr);
 			this.removeAttr(attr);
 			return ret;
 		},
 		/*
 			popAttr: return data while removing it. Accepts only 1 argument.
 		*/
-		popData: function(name) {
-			var ret = this.data(name);
+		popData(name) {
+			const ret = this.data(name);
 			this.removeData(name);
 			return ret;
 		},
@@ -22,7 +22,7 @@ define(['jquery'], function($) {
 			tag: returns the **lowercase** tag name of the first matched element.
 			This is only a getter.
 		*/
-		tag: function() {
+		tag() {
 			return this[0] && this[0].tagName && this[0].tagName.toLowerCase();
 		},
 		/*
@@ -30,7 +30,7 @@ define(['jquery'], function($) {
 			descendent text nodes.
 			This returns a sorted Array, not a jQuery.
 		*/
-		textNodes: function() {
+		textNodes() {
 			/*
 				Base case: this collection contains a single text node.
 			*/
@@ -41,16 +41,14 @@ define(['jquery'], function($) {
 				First, create an array containing all descendent and contents nodes
 				which are text nodes.
 			*/
-			return Array.apply(0, this.add(this.contents().add(this.find('*').contents())).filter(function() {
+			return Array.from(this.add(this.contents().add(this.find('*').contents())).filter(function() {
 				return this instanceof Text;
 			}))
 			/*
 				the addBack() call adds back the descendents in an unwanted order, so we must
 				sort the returned array using compareDocumentPosition.
 			*/
-			.sort(function(left, right) {
-				return (left.compareDocumentPosition(right)) & 2 ? 1 : -1;
-			});
+			.sort((left, right) => (left.compareDocumentPosition(right)) & 2 ? 1 : -1);
 		},
 		
 		/*
@@ -58,10 +56,9 @@ define(['jquery'], function($) {
 			earlier or later in the document.
 			These return an unwrapped Text node, not a jQuery.
 		*/
-		prevTextNode: function () {
-			var elem = this.first()[0],
-				parent = this.parent(),
-				textNodes;
+		prevTextNode() {
+			const elem = this.first()[0],
+				parent = this.parent();
 			/*
 				Quit early if there's no parent.
 			*/
@@ -72,8 +69,8 @@ define(['jquery'], function($) {
 				Get the parent's text nodes, and obtain only the last one which is
 				earlier (or later, depending on positionBitmask) than this element.
 			*/
-			textNodes = parent.textNodes().filter(function(e) {
-				var pos = e.compareDocumentPosition(elem);
+			let textNodes = parent.textNodes().filter((e) => {
+				const pos = e.compareDocumentPosition(elem);
 				return pos & 4 && !(pos & 8);
 			});
 			textNodes = textNodes[textNodes.length-1];
@@ -83,10 +80,9 @@ define(['jquery'], function($) {
 			return !textNodes ? parent.prevTextNode() : textNodes;
 		},
 		
-		nextTextNode: function () {
-			var elem = this.last()[0],
-				parent = this.parent(),
-				textNodes;
+		nextTextNode() {
+			const elem = this.last()[0],
+				parent = this.parent();
 			/*
 				Quit early if there's no parent.
 			*/
@@ -97,8 +93,8 @@ define(['jquery'], function($) {
 				Get the parent's text nodes, and obtain only the last one which is
 				earlier (or later, depending on positionBitmask) than this element.
 			*/
-			textNodes = parent.textNodes().filter(function(e) {
-				var pos = e.compareDocumentPosition(elem);
+			const textNodes = parent.textNodes().filter((e) => {
+				const pos = e.compareDocumentPosition(elem);
 				return pos & 2 && !(pos & 8);
 			})[0];
 			/*

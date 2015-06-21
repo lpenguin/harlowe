@@ -1,5 +1,5 @@
 define(['jquery','macros', 'utils', 'utils/selectors', 'datatypes/colour', 'datatypes/changercommand', 'internaltypes/twineerror'],
-function($, Macros, Utils, Selectors, Colour, ChangerCommand, TwineError) {
+($, Macros, {insensitiveName, assert}, Selectors, Colour, ChangerCommand, TwineError) => {
 	"use strict";
 
 	/*
@@ -31,12 +31,8 @@ function($, Macros, Utils, Selectors, Colour, ChangerCommand, TwineError) {
 			the name of `eyes1` if `$eyeCount` is 1.
 		*/
 		(["hook"],
-			function hook(_, name) {
-				return ChangerCommand.create("hook", [name]);
-			},
-			function(d, name) {
-				d.attr.push({name: name});
-			},
+			(_, name) => ChangerCommand.create("hook", [name]),
+			(d, name) => d.attr.push({name: name}),
 			[String]
 		)
 
@@ -63,9 +59,9 @@ function($, Macros, Utils, Selectors, Colour, ChangerCommand, TwineError) {
 			(textstyle:)
 		*/
 		(["transition", "t8n"],
-			function transition(_, name) {
-				var validT8ns = ["dissolve", "shudder", "pulse"];
-				name = Utils.insensitiveName(name);
+			(_, name) => {
+				const validT8ns = ["dissolve", "shudder", "pulse"];
+				name = insensitiveName(name);
 				if (validT8ns.indexOf(name) === -1) {
 					return TwineError.create(
 						"macrocall",
@@ -75,7 +71,7 @@ function($, Macros, Utils, Selectors, Colour, ChangerCommand, TwineError) {
 				}
 				return ChangerCommand.create("transition", [name]);
 			},
-			function(d, name) {
+			(d, name) => {
 				d.transition     = name;
 				return d;
 			},
@@ -85,10 +81,8 @@ function($, Macros, Utils, Selectors, Colour, ChangerCommand, TwineError) {
 		// (font:)
 		// A shortcut for applying a font to a span of text.
 		("font",
-			function font(_, family) {
-				return ChangerCommand.create("font", [family]);
-			},
-			function(d, family) {
+			(_, family) => ChangerCommand.create("font", [family]),
+			(d, family) => {
 				d.styles.push({'font-family': family});
 				return d;
 			},
@@ -98,13 +92,12 @@ function($, Macros, Utils, Selectors, Colour, ChangerCommand, TwineError) {
 		// (align:)
 		// A composable shortcut for the ===><== aligner syntax.
 		("align",
-			function align(_, arrow) {
+			(_, arrow) => {
 				/*
 					I've decided to reimplement the aligner arrow parsing algorithm
 					used in markup/Markup and Renderer here for decoupling purposes.
 				*/
-				var style,
-					alignPercent,
+				let style,
 					centerIndex = arrow.indexOf("><");
 				
 				if (!/^(==+>|<=+|=+><=+|<==+>)$/.test(arrow)) {
@@ -119,7 +112,7 @@ function($, Macros, Utils, Selectors, Colour, ChangerCommand, TwineError) {
 						halve the left-align - hence I multiply by 50 instead of 100
 						to convert to a percentage.)
 					*/
-					alignPercent = Math.round(centerIndex / (arrow.length - 2) * 50);
+					const alignPercent = Math.round(centerIndex / (arrow.length - 2) * 50);
 					style = Object.assign({
 							'text-align'  : 'center',
 							'max-width'   : '50%',
@@ -147,7 +140,7 @@ function($, Macros, Utils, Selectors, Colour, ChangerCommand, TwineError) {
 				style.display = 'block';
 				return ChangerCommand.create("align", [style]);
 			},
-			function(d, style) {
+			(d, style) => {
 				d.styles.push(style);
 			},
 			[String]
@@ -161,7 +154,7 @@ function($, Macros, Utils, Selectors, Colour, ChangerCommand, TwineError) {
 			But, I suppose this is the more well-trod use-case for this keyword.
 		*/
 		(["text-colour", "text-color", "color", "colour"],
-			function textcolour(_, CSScolour) {
+			(_, CSScolour) => {
 				/*
 					Convert TwineScript CSS colours to bad old hexadecimal.
 					This is important as it enables the ChangerCommand to be serialised
@@ -172,7 +165,7 @@ function($, Macros, Utils, Selectors, Colour, ChangerCommand, TwineError) {
 				}
 				return ChangerCommand.create("text-colour", [CSScolour]);
 			},
-			function (d, CSScolour) {
+			(d, CSScolour) => {
 				d.styles.push({'color': CSScolour});
 				return d;
 			},
@@ -183,12 +176,10 @@ function($, Macros, Utils, Selectors, Colour, ChangerCommand, TwineError) {
 			A shortcut for applying a CSS rotation to a span of text.
 		*/
 		("text-rotate",
-			function transform(_, rotation) {
-				return ChangerCommand.create("rotate", [rotation]);
-			},
-			function (d, rotation) {
-				d.styles.push({display: 'inline-block', 'transform': function() {
-					var currentTransform = $(this).css('transform') || '';
+			(_, rotation) => ChangerCommand.create("rotate", [rotation]),
+			(d, rotation) => {
+				d.styles.push({display: 'inline-block', 'transform'() {
+					let currentTransform = $(this).css('transform') || '';
 					if (currentTransform === "none") {
 						currentTransform = '';
 					}
@@ -204,15 +195,15 @@ function($, Macros, Utils, Selectors, Colour, ChangerCommand, TwineError) {
 			depending on what is supplied.
 		*/
 		("background",
-			function backgroundcolour(_, value) {
+			(_, value) => {
 				//Convert TwineScript CSS colours to bad old hexadecimal.
 				if (value && value.colour) {
 					value = value.toHexString(value);
 				}
 				return ChangerCommand.create("background", [value]);
 			},
-			function (d, value) {
-				var property;
+			(d, value) => {
+				let property;
 				/*
 					Different kinds of values can be supplied to this macro
 				*/
@@ -277,9 +268,9 @@ function($, Macros, Utils, Selectors, Colour, ChangerCommand, TwineError) {
 		*/
 		/*
 			For encapsulation, the helpers that these two methods use are stored inside
-			this closure, and used in the addChanger call via .apply().
+			this closure, and used in the addChanger call.
 		*/
-		.apply(Macros, (function() {
+		(...(() => {
 				var
 					/*
 						This is a shorthand used for the definitions below.
@@ -314,8 +305,8 @@ function($, Macros, Utils, Selectors, Colour, ChangerCommand, TwineError) {
 							"letter-spacing": "0.1em",
 						},
 						outline: [{
-								"text-shadow": function() {
-									var colour = $(this).css('color');
+								"text-shadow"() {
+									const colour = $(this).css('color');
 									return "-1px -1px 0 " + colour
 										+ ", 1px -1px 0 " + colour
 										+ ",-1px  1px 0 " + colour
@@ -323,20 +314,20 @@ function($, Macros, Utils, Selectors, Colour, ChangerCommand, TwineError) {
 								},
 							},
 							{
-								color: function() {
+								color() {
 									return $(this).css('background-color');
 								},
 							}
 						],
 						shadow: {
-							"text-shadow": function() { return "0.08em 0.08em 0.08em " + $(this).css('color'); },
+							"text-shadow"() { return "0.08em 0.08em 0.08em " + $(this).css('color'); },
 						},
 						emboss: {
-							"text-shadow": function() { return "0.08em 0.08em 0em " + $(this).css('color'); },
+							"text-shadow"() { return "0.08em 0.08em 0em " + $(this).css('color'); },
 						},
 						smear: [{
-								"text-shadow": function() {
-									var colour = $(this).css('color');
+								"text-shadow"() {
+									const colour = $(this).css('color');
 									return "0em   0em 0.02em " + colour + ","
 										+ "-0.2em 0em  0.5em " + colour + ","
 										+ " 0.2em 0em  0.5em " + colour;
@@ -347,12 +338,12 @@ function($, Macros, Utils, Selectors, Colour, ChangerCommand, TwineError) {
 							colourTransparent
 						],
 						blur: [{
-								"text-shadow": function() { return "0em 0em 0.08em " + $(this).css('color'); },
+								"text-shadow"() { return "0em 0em 0.08em " + $(this).css('color'); },
 							},
 							colourTransparent
 						],
 						blurrier: [{
-								"text-shadow": function() { return "0em 0em 0.2em " + $(this).css('color'); },
+								"text-shadow"() { return "0em 0em 0.2em " + $(this).css('color'); },
 								"user-select": "none",
 							},
 							colourTransparent
@@ -376,12 +367,12 @@ function($, Macros, Utils, Selectors, Colour, ChangerCommand, TwineError) {
 				
 				return [
 					"text-style",
-					function textstyle(_, styleName) {
+					(_, styleName) => {
 						/*
 							The name should be insensitive to normalise both capitalisation,
 							and hyphenation of names like "upside-down".
 						*/
-						styleName = Utils.insensitiveName(styleName);
+						styleName = insensitiveName(styleName);
 						
 						if (!(styleName in styleTagNames)) {
 							return TwineError.create(
@@ -392,13 +383,13 @@ function($, Macros, Utils, Selectors, Colour, ChangerCommand, TwineError) {
 						}
 						return ChangerCommand.create("text-style", [styleName]);
 					},
-					function (d, styleName) {
-						Utils.assert(styleName in styleTagNames);
+					(d, styleName) => {
+						assert(styleName in styleTagNames);
 						d.styles = d.styles.concat(styleTagNames[styleName]);
 						return d;
 					}
 				];
-			}()),
+			})(),
 			[String]
 		)
 		
@@ -428,7 +419,7 @@ function($, Macros, Utils, Selectors, Colour, ChangerCommand, TwineError) {
 			(text-style:)
 		*/
 		("css",
-			function css(_, text) {
+			(_, text) => {
 				/*
 					Add a trailing ; if one was neglected. This allows it to
 					be concatenated with existing styles.
@@ -438,8 +429,8 @@ function($, Macros, Utils, Selectors, Colour, ChangerCommand, TwineError) {
 				}
 				return ChangerCommand.create("css", [text]);
 			},
-			function (d, text) {
-				d.attr.push({'style': function() {
+			(d, text) => {
+				d.attr.push({'style'() {
 					return ($(this).attr('style') || "") + text;
 				}});
 				return d;

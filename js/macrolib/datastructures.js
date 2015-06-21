@@ -2,7 +2,6 @@ define([
 	'jquery',
 	'utils/naturalsort',
 	'macros',
-	'utils',
 	'utils/operationutils',
 	'state',
 	'engine',
@@ -10,14 +9,10 @@ define([
 	'datatypes/assignmentrequest',
 	'internaltypes/twineerror',
 	'internaltypes/twinenotifier'],
-function($, NaturalSort, Macros, Utils, OperationUtils, State, Engine, Passages, AssignmentRequest, TwineError, TwineNotifier) {
+($, NaturalSort, Macros, {objectName, subset, collectionType, isValidDatamapName}, State, Engine, Passages, AssignmentRequest, TwineError, TwineNotifier) => {
 	"use strict";
 	
-	var
-		optional   = Macros.TypeSignature.optional,
-		rest       = Macros.TypeSignature.rest,
-		zeroOrMore = Macros.TypeSignature.zeroOrMore,
-		Any        = Macros.TypeSignature.Any;
+	const {optional, rest, zeroOrMore, Any}   = Macros.TypeSignature;
 	
 	Macros.add
 		/*d:
@@ -67,23 +62,20 @@ function($, NaturalSort, Macros, Utils, OperationUtils, State, Engine, Passages,
 			See also:
 			(push:)
 		*/
-		("set", function set(_, assignmentRequests /*variadic*/) {
-			var i, ar, result,
-				debugMessage = "";
-			
-			assignmentRequests = Array.prototype.slice.call(arguments, 1);
+		("set", (_, ...assignmentRequests) => {
+			let debugMessage = "";
 			
 			/*
 				This has to be a plain for-loop so that an early return
 				is possible.
 			*/
-			for(i = 0; i < assignmentRequests.length; i+=1) {
-				ar = assignmentRequests[i];
+			for(let i = 0; i < assignmentRequests.length; i+=1) {
+				const ar = assignmentRequests[i];
 				
 				if (ar.operator === "into") {
 					return TwineError.create("macrocall", "Please say 'to' when using the (set:) macro.");
 				}
-				result = ar.dest.set(ar.src);
+				const result = ar.dest.set(ar.src);
 				/*
 					If the setting caused an error to occur, abruptly return the error.
 				*/
@@ -93,9 +85,9 @@ function($, NaturalSort, Macros, Utils, OperationUtils, State, Engine, Passages,
 				if (Engine.options.debug) {
 					// Add a semicolon only if a previous iteration appended a message.
 					debugMessage += (debugMessage ? "; " : "")
-						+ OperationUtils.objectName(ar.dest)
+						+ objectName(ar.dest)
 						+ " is now "
-						+ OperationUtils.objectName(ar.src);
+						+ objectName(ar.src);
 				}
 			}
 			return debugMessage && TwineNotifier.create(debugMessage);
@@ -128,22 +120,18 @@ function($, NaturalSort, Macros, Utils, OperationUtils, State, Engine, Passages,
 			
 			Once again, this evaluates to an empty string.
 		*/
-		("put", function put(_, assignmentRequests /*variadic*/) {
-			var i, ar, result;
-			
-			assignmentRequests = Array.prototype.slice.call(arguments, 1);
-			
+		("put", (_, ...assignmentRequests) => {
 			/*
 				This has to be a plain for-loop so that an early return
 				is possible.
 			*/
-			for(i = 0; i < assignmentRequests.length; i+=1) {
-				ar = assignmentRequests[i];
+			for(let i = 0; i < assignmentRequests.length; i+=1) {
+				const ar = assignmentRequests[i];
 				
 				if (ar.operator === "to") {
 					return TwineError.create("macrocall", "Please say 'into' when using the (put:) macro.");
 				}
-				result = ar.dest.set(ar.src);
+				let result = ar.dest.set(ar.src);
 				/*
 					If the setting caused an error to occur, abruptly return the error.
 				*/
@@ -166,11 +154,10 @@ function($, NaturalSort, Macros, Utils, OperationUtils, State, Engine, Passages,
 			that you'll only use once, such as a list of names to print out. When it comes time
 			to use them, you can remove it from the structure and retrieve it in one go.
 		*/
-		("move", function move(_, ar) {
-			var get, error;
-			
+		("move", (_, ar) => {
 			if (ar.src && ar.src.varref) {
-				get = ar.src.get();
+				const get = ar.src.get();
+				let error;
 				if ((error = TwineError.containsError(get))) {
 					return error;
 				}
@@ -243,11 +230,7 @@ function($, NaturalSort, Macros, Utils, OperationUtils, State, Engine, Passages,
 			See also:
 			(datamap:), (dataset:)
 		*/
-		(["a", "array"], function() {
-			return Array.from(arguments)
-				// This eliminates the section argument, which comes first.
-				.slice(1);
-		}, zeroOrMore(Any))
+		(["a", "array"], (_, ...args) => args, zeroOrMore(Any))
 		
 		/*d:
 			(range: Number, Number) -> Array
@@ -286,7 +269,7 @@ function($, NaturalSort, Macros, Utils, OperationUtils, State, Engine, Passages,
 				instead of an empty array. The rationale is that since it is
 				inclusive, a can serve as both start and end term just fine.
 			*/
-			var ret = [a];
+			const ret = [a];
 			b -= a;
 			while(b-- > 0) {
 				ret.push(++a);
@@ -323,9 +306,7 @@ function($, NaturalSort, Macros, Utils, OperationUtils, State, Engine, Passages,
 			See also:
 			(substring:), (rotated:)
 		*/
-		("subarray", function subarray(_, array, a, b) {
-			return OperationUtils.subset(array, a, b);
-		},
+		("subarray", (_, array, a, b) => subset(array, a, b),
 		[Array, Number, Number])
 		
 		/*d:
@@ -358,11 +339,11 @@ function($, NaturalSort, Macros, Utils, OperationUtils, State, Engine, Passages,
 			See also:
 			(array:), (either:), (rotated:)
 		*/
-		("shuffled", function shuffled() {
+		("shuffled", (_, ...args) =>
 			// The following is an in-place Fisher–Yates shuffle.
-			return Array.from(arguments).slice(1).reduce(function(a,e,ind){
+			args.reduce((a,e,ind) => {
 				// Obtain a random number from 0 to ind inclusive.
-				var j = (Math.random()*(ind+1)) | 0;
+				const j = (Math.random()*(ind+1)) | 0;
 				if (j === ind) {
 					a.push(e);
 				}
@@ -371,8 +352,7 @@ function($, NaturalSort, Macros, Utils, OperationUtils, State, Engine, Passages,
 					a[j] = e;
 				}
 				return a;
-			},[]);
-		},
+			},[]),
 		[Any, rest(Any)])
 		
 		/*d:
@@ -410,9 +390,7 @@ function($, NaturalSort, Macros, Utils, OperationUtils, State, Engine, Passages,
 			See also:
 			(array:), (shuffled:), (rotated:)
 		*/
-		("sorted", function shuffled() {
-			return Array.from(arguments).slice(1).sort(NaturalSort("en"));
-		},
+		("sorted", (_, ...args) => args.sort(NaturalSort("en")),
 		[String, rest(String)])
 		
 		/*d:
@@ -449,8 +427,7 @@ function($, NaturalSort, Macros, Utils, OperationUtils, State, Engine, Passages,
 			See also:
 			(subarray:), (sorted:)
 		*/
-		("rotated", function shuffled(_, number /*variadic*/) {
-			var array = Array.from(arguments).slice(2);
+		("rotated", (_, number, ...array) => {
 			/*
 				The number is thought of as an offset that's added to every index.
 				So, to produce this behaviour, it must be negated.
@@ -477,22 +454,19 @@ function($, NaturalSort, Macros, Utils, OperationUtils, State, Engine, Passages,
 			This takes a datamap, and returns an array of its key names, sorted
 			alphabetically.
 		*/
-		("datanames", function datanames(_, map) {
-			return Array.from(map.keys()).sort(NaturalSort("en"));
-		},
+		("datanames", (_, map) =>  Array.from(map.keys()).sort(NaturalSort("en")),
 		[Map])
 		/*
 			(datavalues:)
 			This takes a datamap, and returns an array of its values, sorted
 			alphabetically by their keys.
 		*/
-		("datavalues", function datavalues(_, map) {
-			return Array.from(map.entries()).sort(function(a,b) {
-				return [a[0],b[0]].sort(NaturalSort("en"))[0] === a[0] ? -1 : 1;
-			}).map(function(e) {
-				return e[1];
-			});
-		},
+		("datavalues", (_, map) =>
+			Array.from(map.entries()).sort(
+				(a,b) => ([a[0],b[0]].sort(NaturalSort("en"))[0] === a[0] ? -1 : 1)
+			).map(
+				e => e[1]
+			),
 		[Map])
 		
 		/*
@@ -501,9 +475,7 @@ function($, NaturalSort, Macros, Utils, OperationUtils, State, Engine, Passages,
 			(It should be changed to return Passage datamaps, but, it is what it is.)
 			This is used to implement the visited() function from Twine 1.
 		*/
-		("history", function history() {
-			return State.pastPassageNames();
-		},
+		("history", () => State.pastPassageNames(),
 		[])
 		
 		/*
@@ -511,23 +483,23 @@ function($, NaturalSort, Macros, Utils, OperationUtils, State, Engine, Passages,
 			Returns the array of past passage names, directly from State.
 			This is used to implement the visited() function from Twine 1.
 		*/
-		("passage", function passage(_, passageName) {
-			return Passages.get(passageName || State.passage)
-				|| TwineError.create('macrocall', "There's no passage named '" + passageName + "' in this story.");
-		},
+		("passage", (_, passageName) =>
+			Passages.get(passageName || State.passage)
+				|| TwineError.create('macrocall', "There's no passage named '" + passageName + "' in this story."),
 		[optional(String)])
 		
 		/*
 			(savedgames:)
 			Returns a datamap of currently saved games.
 		*/
-		("savedgames", function savedgames() {
+		("savedgames", () => {
 			/*
 				This reads all of the localStorage keys with save slot-related names.
 			*/
-			var i = 0,
-				savesMap = new Map(),
-				key;
+			let
+				i = 0, key;
+			const
+				savesMap = new Map();
 			/*
 				Iterate over all the localStorage keys using this somewhat clunky do-loop.
 			*/
@@ -561,8 +533,9 @@ function($, NaturalSort, Macros, Utils, OperationUtils, State, Engine, Passages,
 			of Twine 2's unique object types are immutable (hence, can't be
 			used in by-reference comparisons).
 		*/
-		("datamap", function() {
-			var key, status, map = new Map();
+		("datamap", (_, ...args) => {
+			let key;
+			const map = new Map();
 			/*
 				This takes the flat arguments "array" and runs
 				map.set() with every two values.
@@ -573,8 +546,8 @@ function($, NaturalSort, Macros, Utils, OperationUtils, State, Engine, Passages,
 				Note that, as is with most macro functions in this file,
 				the slice(1) eliminates the implicit first Section argument.
 			*/
-			status = Array.from(arguments).slice(1).reduce(function(status, element) {
-				var error;
+			const status = args.reduce((status, element) => {
+				let error;
 				/*
 					Propagate earlier iterations' errors.
 				*/
@@ -587,7 +560,7 @@ function($, NaturalSort, Macros, Utils, OperationUtils, State, Engine, Passages,
 				/*
 					Key type-checking must be done here.
 				*/
-				else if ((error = TwineError.containsError(OperationUtils.isValidDatamapName(map, key)))) {
+				else if ((error = TwineError.containsError(isValidDatamapName(map, key)))) {
 					return error;
 				}
 				/*
@@ -596,7 +569,7 @@ function($, NaturalSort, Macros, Utils, OperationUtils, State, Engine, Passages,
 				else if (map.has(key)) {
 					return TwineError.create("macrocall",
 						"You used the same data name ("
-						+ OperationUtils.objectName(key)
+						+ objectName(key)
 						+ ") twice in the same (datamap:) call."
 					);
 				}
@@ -631,10 +604,7 @@ function($, NaturalSort, Macros, Utils, OperationUtils, State, Engine, Passages,
 			Sets are more straightforward - their JS constructors can accept
 			arrays straight off.
 		*/
-		("dataset", function() {
-			return new Set(Array.from(arguments).slice(1));
-		},
-		zeroOrMore(Any))
+		("dataset", (_, ...args) => new Set(args), zeroOrMore(Any))
 		
 		/*
 			COLLECTION OPERATIONS
@@ -645,8 +615,8 @@ function($, NaturalSort, Macros, Utils, OperationUtils, State, Engine, Passages,
 			of occurrences of the value in the collection, using the same semantics
 			as the "contains" operator.
 		*/
-		("count", function(_, collection, value) {
-			switch(OperationUtils.collectionType(collection)) {
+		("count", (_, collection, value) => {
+			switch(collectionType(collection)) {
 				case "dataset":
 				case "datamap": {
 					return +collection.has(name);
@@ -654,18 +624,16 @@ function($, NaturalSort, Macros, Utils, OperationUtils, State, Engine, Passages,
 				case "string": {
 					if (typeof value !== "string") {
 						return new TypeError(
-							OperationUtils.objectName(collection)
+							objectName(collection)
 							+ " can't contain  "
-							+ OperationUtils.objectName(value)
+							+ objectName(value)
 							+ " because it isn't a string."
 						);
 					}
 					return collection.split(value).length-1;
 				}
 				case "array": {
-					return collection.reduce(function(count, e) {
-						return count + (e === value);
-					}, 0);
+					return collection.reduce((count, e) => count + (e === value), 0);
 				}
 			}
 		},

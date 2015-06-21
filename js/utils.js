@@ -1,8 +1,8 @@
 define(['jquery', 'markup', 'utils/selectors', 'utils/customelements'],
-function($, TwineMarkup, Selectors) {
+($, TwineMarkup, Selectors) => {
 	"use strict";
 
-	var
+	const
 		// Used by lockProperties
 		lockDesc = {
 			configurable: 0,
@@ -14,9 +14,6 @@ function($, TwineMarkup, Selectors) {
 			"transition-in": Object.create(null),
 			"transition-out": Object.create(null)
 		},
-		
-		//A binding for the cached <tw-story> reference (see below).
-		storyElement,
 		
 		// These two are used by childrenProbablyInline (see below).
 		usuallyBlockElements = (
@@ -33,6 +30,9 @@ function($, TwineMarkup, Selectors) {
 			// Note that <tw-hook> and <tw-expression> aren't included.
 			+ "tw-link,tw-broken-link,tw-verbatim,tw-collapsed,tw-error"
 		).split(',');
+	let
+		//A binding for the cached <tw-story> reference (see below).
+		storyElement;
 	
 	/**
 		A static class with helper methods used throughout Harlowe.
@@ -56,8 +56,8 @@ function($, TwineMarkup, Selectors) {
 			This is used to store elements which daunted all of the easy tests,
 			so that $css() can be run on them after the first loop has returned all-true.
 		*/
-		var unknown = [];
-		return Array.prototype.every.call(jq.find('*'), function(elem) {
+		const unknown = [];
+		return Array.prototype.every.call(jq.find('*'), elem => {
 			/*
 				If it actually has "style=display:inline", "hidden", or "style=display:none"
 				as an inline attribute, well, that makes life easy for us.
@@ -90,12 +90,10 @@ function($, TwineMarkup, Selectors) {
 			unknown.push(elem);
 			return true;
 		})
-		&& unknown.every(function(elem) {
-			return /none|inline/.test(elem.style.display);
-		});
+		&& unknown.every(elem => /none|inline/.test(elem.style.display));
 	}
 	
-	var Utils = {
+	const Utils = {
 		/**
 			Make object properties immutable and impossible to delete,
 			without preventing the object from being extended.
@@ -106,15 +104,12 @@ function($, TwineMarkup, Selectors) {
 			@param {Object} obj Object to lock
 			@return The locked object
 		*/
-		lockProperties: function (obj) {
-			var i, prop,
-				keys = Object.keys(obj),
+		lockProperties(obj) {
+			const keys = Object.keys(obj),
 				propDesc = {};
 
-			for (i = 0; i < keys.length; i++) {
-				prop = keys[i];
-
-				propDesc[prop] = lockDesc;
+			for (let i = 0; i < keys.length; i++) {
+				propDesc[keys[i]] = lockDesc;
 			}
 
 			return Object.defineProperties(obj, propDesc);
@@ -128,10 +123,10 @@ function($, TwineMarkup, Selectors) {
 			@param {String} value	A value to set the property to
 			@return The affected object
 		*/
-		lockProperty: function (obj, prop, value) {
+		lockProperty(obj, prop, value) {
 			// Object.defineProperty does walk the prototype chain
 			// when reading a property descriptor dict.
-			var propDesc = Object.create(lockDesc);
+			const propDesc = Object.create(lockDesc);
 			value && (propDesc.value = value);
 			Object.defineProperty(obj, prop, propDesc);
 			return obj;
@@ -146,7 +141,7 @@ function($, TwineMarkup, Selectors) {
 			@param {String} prop The property to investigate.
 			@return The descriptor, or null.
 		*/
-		getInheritedPropertyDescriptor: function(obj, prop) {
+		getInheritedPropertyDescriptor(obj, prop) {
 			while(obj && !obj.hasOwnProperty(prop)) {
 				obj = Object.getPrototypeOf(obj);
 			}
@@ -174,14 +169,13 @@ function($, TwineMarkup, Selectors) {
 			@method toTSStringLiteral
 			@return {String}
 		*/
-		toTSStringLiteral: function(str) {
-			var consecutiveGraves =
-				Math.max.apply(
-					0,
+		toTSStringLiteral(str) {
+			const consecutiveGraves =
+				Math.max(
 					/*
 						This finds the length of the longest run of ` characters in the string.
 					*/
-					(str.match(/(`+)/g) || []).map(function(e) { return e.length; }).concat(0)
+					...(str.match(/(`+)/g) || []).map(e => e.length).concat(0)
 				) + 1;
 			return "`".repeat(consecutiveGraves)
 				+ str
@@ -200,9 +194,7 @@ function($, TwineMarkup, Selectors) {
 			@param s either string, or array of strings
 			@return either single string or array of times
 		*/
-		cssTimeUnit: function (s) {
-			var ret;
-
+		cssTimeUnit(s) {
 			if (typeof s === "string") {
 				s = s.toLowerCase();
 
@@ -211,9 +203,9 @@ function($, TwineMarkup, Selectors) {
 				if (s.slice(-1) === "s")
 					return (+s.slice(0, -1)) * 1000 || 0;
 			} else if (Array.isArray(s)) {
-				ret = [];
-				s.forEach(function (e) {
-					var time = Utils.cssTimeUnit(e);
+				const ret = [];
+				s.forEach((e) => {
+					const time = Utils.cssTimeUnit(e);
 					(time > 0 && ret.push(time));
 				});
 
@@ -230,8 +222,8 @@ function($, TwineMarkup, Selectors) {
 			@param {String|Number} num
 			@return {String}
 		*/
-		nth: function (num) {
-			var lastDigit = (num + '').slice(-1);
+		nth(num) {
+			const lastDigit = (num + '').slice(-1);
 			return num + (
 				lastDigit === "1" ? "st" :
 				lastDigit === "2" ? "nd" :
@@ -247,7 +239,7 @@ function($, TwineMarkup, Selectors) {
 			@param {String} noun  The noun to possibly pluralise
 			@return {String}
 		*/
-		plural: function (num, noun) {
+		plural(num, noun) {
 			return num + " " + noun + (num > 1 ? "s" : "");
 		},
 
@@ -262,9 +254,9 @@ function($, TwineMarkup, Selectors) {
 			@param {String} text Text to convert
 			@return {String} converted text
 		*/
-		unescape: function(text) {
-			return text.replace(/&(?:amp|lt|gt|quot|nbsp|zwnj|#39|#96);/g, function(e) {
-				return {
+		unescape(text) {
+			return text.replace(/&(?:amp|lt|gt|quot|nbsp|zwnj|#39|#96);/g,
+				e => ({
 					'&amp;'  : '&',
 					'&gt;'   : '>',
 					'&lt;'   : '<',
@@ -272,8 +264,8 @@ function($, TwineMarkup, Selectors) {
 					'&#39;'  : "'",
 					"&nbsp;" : String.fromCharCode(160),
 					"&zwnj;" : String.fromCharCode(8204)
-				}[e];
-			});
+				}[e])
+			);
 		},
 
 		/**
@@ -283,16 +275,16 @@ function($, TwineMarkup, Selectors) {
 			@param {String} text Text to escape
 			@return {String} converted text
 		*/
-		escape: function(text) {
-			return text.replace(/[&><"']/g, function(e) {
-				return {
+		escape(text) {
+			return text.replace(/[&><"']/g,
+				e => ({
 					'&' : '&amp;',
 					'>' : '&gt;',
 					'<' : '&lt;',
 					'"' : '&quot;',
 					"'" : '&#39;',
-				}[e];
-			});
+				}[e])
+			);
 		},
 
 		/**
@@ -304,7 +296,7 @@ function($, TwineMarkup, Selectors) {
 			@param {String} text Text to convert.
 			@return {String} converted text
 		*/
-		insensitiveName: function (e) {
+		insensitiveName(e) {
 			return (e + "").toLowerCase().replace(/-|_/g, "");
 		},
 
@@ -315,7 +307,7 @@ function($, TwineMarkup, Selectors) {
 			@param {String} tagName Name of the HTML tag to wrap in.
 			@return {String} The wrapped text.
 		*/
-		wrapHTMLTag: function(text, tagName) {
+		wrapHTMLTag(text, tagName) {
 			return '<' + tagName + '>' + text + '</' + tagName + '>';
 		},
 		
@@ -334,7 +326,7 @@ function($, TwineMarkup, Selectors) {
 			@param {String} selector Query string
 			@return {jQuery} jQuery result
 		*/
-		findAndFilter: function (q, selector) {
+		findAndFilter (q, selector) {
 			q = $(q || Utils.storyElement);
 			return q.filter(selector).add(q.find(selector));
 		},
@@ -346,8 +338,8 @@ function($, TwineMarkup, Selectors) {
 			@param elems    jQuery object
 		*/
 
-		closestHookSpan: function (elems) {
-			var ret = elems.closest(Selectors.hook + "," + Selectors.pseudoHook);
+		closestHookSpan (elems) {
+			const ret = elems.closest(Selectors.hook + "," + Selectors.pseudoHook);
 			return (ret.length ? ret : elems);
 		},
 
@@ -361,17 +353,16 @@ function($, TwineMarkup, Selectors) {
 			@return this
 		*/
 
-		transitionReplace: function (oldElem, newElem, transIndex) {
-			var container1, container2a, container2b;
-
+		transitionReplace(oldElem, newElem, transIndex) {
 			oldElem = Utils.closestHookSpan(oldElem);
 
 			// Create a transition-main-container
-			container1 = $('<tw-transition-container>').css('position', 'relative');
+			const container1 = $('<tw-transition-container>').css('position', 'relative');
 
 			// Insert said container into the DOM (next to oldElem)
 			container1.insertBefore(oldElem.first());
 
+			let container2a;
 			if (newElem) {
 				// Create a transition-in-container
 				container2a = $('<tw-transition-container>').appendTo(container1);
@@ -382,7 +373,7 @@ function($, TwineMarkup, Selectors) {
 
 			// Create a transition-out-container
 			// and insert it into the transition-main-container.
-			container2b = $('<tw-transition-container>').css('position', 'absolute')
+			const container2b = $('<tw-transition-container>').css('position', 'absolute')
 				.prependTo(container1);
 
 			// Insert the old element into the transition-out-container
@@ -410,9 +401,8 @@ function($, TwineMarkup, Selectors) {
 			@param (String) transIndex    transition to use
 		*/
 
-		transitionOut: function (el, transIndex) {
-			var delay,
-				childrenInline = childrenProbablyInline(el),
+		transitionOut(el, transIndex) {
+			const childrenInline = childrenProbablyInline(el),
 				/*
 					If the element is not a tw-hook or tw-passage, we must
 					wrap it in a temporary element first, which can thus be
@@ -448,7 +438,7 @@ function($, TwineMarkup, Selectors) {
 				but in the event of CSS being off, these events won't trigger
 				- whereas the below method will simply occur immediately.
 			*/
-			delay = Utils.transitionTime(transIndex, "transition-out");
+			const delay = Utils.transitionTime(transIndex, "transition-out");
 
 			!delay ? onComplete() : window.setTimeout(onComplete, delay);
 		},
@@ -461,9 +451,8 @@ function($, TwineMarkup, Selectors) {
 			@param (String) transIndex      Transition to use
 		*/
 
-		transitionIn: function (el, transIndex) {
-			var delay,
-				childrenInline = childrenProbablyInline(el),
+		transitionIn(el, transIndex) {
+			const childrenInline = childrenProbablyInline(el),
 				/*
 					If the element is not a tw-hook or tw-passage, we must
 					wrap it in a temporary element first, which can thus be
@@ -506,7 +495,7 @@ function($, TwineMarkup, Selectors) {
 			if (childrenProbablyInline(el)) {
 				el.css('display','inline-block');
 			}
-			delay = Utils.transitionTime(transIndex, "transition-in");
+			const delay = Utils.transitionTime(transIndex, "transition-in");
 
 			!delay ? onComplete() : window.setTimeout(onComplete, delay);
 		},
@@ -521,14 +510,14 @@ function($, TwineMarkup, Selectors) {
 			@return this
 		*/
 
-		transitionTime: function(transIndex, className) {
-			var p;
-			if (!t8nAnimationTimes[className][transIndex]) {
-				p = $('<p>').appendTo(document.body).attr("data-t8n", transIndex).addClass(className);
-				t8nAnimationTimes[className][transIndex] = Utils.cssTimeUnit(p.css("animation-duration")) + Utils.cssTimeUnit(p.css("animation-delay"));
+		transitionTime(transIndex, className) {
+			const animClass = t8nAnimationTimes[className];
+			if (!animClass[transIndex]) {
+				const p = $('<p>').appendTo(document.body).attr("data-t8n", transIndex).addClass(className);
+				animClass[transIndex] = Utils.cssTimeUnit(p.css("animation-duration")) + Utils.cssTimeUnit(p.css("animation-delay"));
 				p.remove();
 			}
-			return t8nAnimationTimes[className][transIndex];
+			return animClass[transIndex];
 		},
 
 		/**
@@ -541,7 +530,7 @@ function($, TwineMarkup, Selectors) {
 			@param context		jQuery context
 		*/
 
-		$: function (str, context) {
+		$(str, context) {
 			return $(str, context || Utils.storyElement).not(".transition-out, .transition-out *");
 		},
 
@@ -557,7 +546,7 @@ function($, TwineMarkup, Selectors) {
 			@param data	line to log
 		*/
 
-		log: function (data) {
+		log(data) {
 			if (!window.console) {
 				return;
 			}
@@ -573,7 +562,7 @@ function($, TwineMarkup, Selectors) {
 			@param data	Line to log
 		*/
 
-		impossible: function (where, data) {
+		impossible(where, data) {
 			if (!window.console) {
 				return;
 			}
@@ -586,7 +575,7 @@ function($, TwineMarkup, Selectors) {
 			@method assert
 			@param {Boolean} assertion
 		*/
-		assert: function(assertion) {
+		assert(assertion) {
 			if (!window.console) {
 				return;
 			}
@@ -604,11 +593,11 @@ function($, TwineMarkup, Selectors) {
 			@param {Object} object
 			@param {Array} props
 		*/
-		assertMustHave: function(object, props) {
+		assertMustHave(object, props) {
 			if (!window.console) {
 				return;
 			}
-			for(var i = 0; i < props.length; i += 1) {
+			for(let i = 0; i < props.length; i += 1) {
 				if(!(props[i] in object)) {
 					console.error("Assertion failed: " + object
 						+ " lacks property " + props[i]);
@@ -623,11 +612,11 @@ function($, TwineMarkup, Selectors) {
 			@param {Object} object
 			@param {Array} props
 		*/
-		assertOnlyHas: function(object, props) {
+		assertOnlyHas(object, props) {
 			if (!window.console) {
 				return;
 			}
-			for(var i in object) {
+			for(let i in object) {
 				if (props.indexOf(i) === -1) {
 					console.error("Assertion failed: " + object
 						+ " had unexpected property '" + i + "'!");
@@ -644,7 +633,6 @@ function($, TwineMarkup, Selectors) {
 			@property storyElement
 			@static
 		*/
-
 		get storyElement() {
 			return storyElement;
 		},
@@ -655,9 +643,7 @@ function($, TwineMarkup, Selectors) {
 		used even when it is disconnected from the DOM (which occurs when a new
 		passage is being rendered into it).
 	*/
-	$(document).ready(function() {
-		storyElement = $(Selectors.story);
-	});
+	$(()=> storyElement = $(Selectors.story));
 
 	return Object.freeze(Utils);
 });

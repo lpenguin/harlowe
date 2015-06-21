@@ -1,6 +1,11 @@
 define(['jquery', 'utils', 'utils/selectors', 'state', 'section', 'passages'],
-function ($, Utils, Selectors, State, Section, Passages) {
+($, Utils, Selectors, State, Section, Passages) => {
 	"use strict";
+	/*
+		Utils.storyElement is a getter, so we need a reference to Utils as well
+		as all of these methods.
+	*/
+	const {escape, impossible, passageSelector, transitionOut, assert} = Utils;
 	
 	/**
 		A singleton class responsible for rendering passages to the DOM.
@@ -8,6 +13,7 @@ function ($, Utils, Selectors, State, Section, Passages) {
 		@class Engine
 		@static
 	*/
+	let Engine;
 	
 	/**
 		Story options, loaded at startup and provided to other modules that may use them.
@@ -20,7 +26,7 @@ function ($, Utils, Selectors, State, Section, Passages) {
 		
 		@property {Object} options
 	*/
-	var options = Object.create(null);
+	const options = Object.create(null);
 
 	/**
 		Creates the HTML structure of the <tw-passage>. Sub-function of showPassage().
@@ -30,9 +36,9 @@ function ($, Utils, Selectors, State, Section, Passages) {
 		@return {jQuery} the element
 	*/
 	function createPassageElement () {
-		var container, back, fwd, sidebar;
-		container = $('<tw-passage><tw-sidebar>'),
-		sidebar = container.children(Selectors.sidebar);
+		const
+			container = $('<tw-passage><tw-sidebar>'),
+			sidebar = container.children(Selectors.sidebar);
 		
 		/*
 			Generate the HTML for the permalink.
@@ -44,8 +50,9 @@ function ($, Utils, Selectors, State, Section, Passages) {
 			);
 		}
 		// Apart from the Permalink, the sidebar buttons consist of Undo (Back) and Redo (Forward) buttons.
-		back = $('<tw-icon tabindex=0 class="undo" title="Undo">&#8630;</tw-icon>').click(Engine.goBack);
-		fwd  = $('<tw-icon tabindex=0 class="redo" title="Redo">&#8631;</tw-icon>').click(Engine.goForward);
+		const
+			back = $('<tw-icon tabindex=0 class="undo" title="Undo">&#8630;</tw-icon>').click(Engine.goBack),
+			fwd  = $('<tw-icon tabindex=0 class="redo" title="Redo">&#8631;</tw-icon>').click(Engine.goForward);
 
 		if (State.pastLength <= 0) {
 			back.css("visibility", "hidden");
@@ -64,7 +71,7 @@ function ($, Utils, Selectors, State, Section, Passages) {
 	*/
 	function setupPassageElement(tagType, setupPassage) {
 		return "<tw-include type=" + tagType + " title='"
-			+ Utils.escape(setupPassage.get('name'))
+			+ escape(setupPassage.get('name'))
 			+ "'>"
 			+ setupPassage.get('source')
 			+ "</tw-include>";
@@ -79,19 +86,12 @@ function ($, Utils, Selectors, State, Section, Passages) {
 		@param {Boolean} stretch Is stretchtext
 	*/
 	function showPassage (name, stretch) {
-		var
-			// Passage element to create
-			newPassage,
+		const
 			// Transition ID
 			// Temporary measure: must change when customisable links are implemented.
 			t8n = "instant",
 			// The passage
 			passageData = Passages.get(name),
-			oldPassages,
-			section,
-			// The source to render, which is drawn from both the passageData and the
-			// setup passages, if any.
-			source,
 			// The <tw-story> element
 			story = Utils.storyElement,
 			/*
@@ -104,7 +104,7 @@ function ($, Utils, Selectors, State, Section, Passages) {
 			Author error must never propagate to this method - it should have been caught earlier.
 		*/
 		if (!passageData || !(passageData instanceof Map) || !passageData.has('source')) {
-			Utils.impossible("Engine.showPassage", "There's no passage with the name \""+name+"\"!");
+			impossible("Engine.showPassage", "There's no passage with the name \""+name+"\"!");
 		}
 		
 		/*
@@ -117,27 +117,27 @@ function ($, Utils, Selectors, State, Section, Passages) {
 			Find out how many tw-passage elements there are currently in the
 			destination element.
 		*/
-		oldPassages = Utils.$(story.children(Utils.passageSelector));
+		const oldPassages = Utils.$(story.children(passageSelector));
 		
 		/*
 			If this isn't a stretchtext transition, send away all of the
 			old passage instances.
 		*/
 		if (!stretch && t8n) {
-			Utils.transitionOut(oldPassages, t8n);
+			transitionOut(oldPassages, t8n);
 		}
 		
-		newPassage = createPassageElement().appendTo(story);
+		const newPassage = createPassageElement().appendTo(story);
 		
-		Utils.assert(newPassage.length > 0);
+		assert(newPassage.length > 0);
 		
-		section = Section.create(newPassage);
+		const section = Section.create(newPassage);
 		
 		/*
 			Actually do the work of rendering the passage now.
 			First, gather the source of the passage in question.
 		*/
-		source = passageData.get('source');
+		let source = passageData.get('source');
 		
 		/*
 			Now, we add to it the source of the 'header' and 'footer' tagged passages.
@@ -211,14 +211,14 @@ function ($, Utils, Selectors, State, Section, Passages) {
 		);
 	}
 	
-	var Engine = {
+	Engine = {
 		
 		/**
 			Moves the game state backward one turn. If there is no previous state, this does nothing.
 
 			@method goBack
 		*/
-		goBack: function () {
+		goBack() {
 			//TODO: get the stretch value from state
 
 			if (State.rewind()) {
@@ -231,7 +231,7 @@ function ($, Utils, Selectors, State, Section, Passages) {
 
 			@method goForward
 		*/
-		goForward: function () {
+		goForward() {
 			//TODO: get the stretch value from state
 
 			if (State.fastForward()) {
@@ -246,7 +246,7 @@ function ($, Utils, Selectors, State, Section, Passages) {
 			@param {String} id			id of the passage to display
 			@param {Boolean} stretch	display as stretchtext?
 		*/
-		goToPassage: function (id, stretch) {
+		goToPassage(id, stretch) {
 			// Update the state.
 			State.play(id);
 			showPassage(id, stretch);

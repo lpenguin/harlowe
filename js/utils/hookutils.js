@@ -1,4 +1,4 @@
-define(['jquery', 'utils', 'utils/selectors'], function($, Utils, Selectors) {
+define(['jquery', 'utils/selectors'], ($, Selectors) => {
 	"use strict";
 	
 	/**
@@ -19,7 +19,7 @@ define(['jquery', 'utils', 'utils/selectors'], function($, Utils, Selectors) {
 			We need to cache the length here, as the node is transformed
 			by the subsequent splitText calls.
 		*/
-		var l = node.textContent.length;
+		const l = node.textContent.length;
 		/*
 			Of course, we can't omit simple range checks before going further.
 		*/
@@ -32,7 +32,8 @@ define(['jquery', 'utils', 'utils/selectors'], function($, Utils, Selectors) {
 			(We skip this if the substring is at the start, as splitting
 			will create a 0-char text node.)
 		*/
-		var newNode, ret = [(newNode = (start === 0 ? node : node.splitText(start)))];
+		let newNode;
+		const ret = [(newNode = (start === 0 ? node : node.splitText(start)))];
 		if (end) {
 			/*
 				This function supports negative end indices, using the
@@ -72,7 +73,7 @@ define(['jquery', 'utils', 'utils/selectors'], function($, Utils, Selectors) {
 		actual DOM hierarchy which those matches bestride.
 	*/
 	function findTextInNodes(textNodes, searchString) {
-		var
+		let
 			/*
 				examinedNodes holds the text nodes which are currently being
 				scrutinised for any possibility of holding the search string.
@@ -86,11 +87,7 @@ define(['jquery', 'utils', 'utils/selectors'], function($, Utils, Selectors) {
 			/*
 				ret is the returned array of split-off text nodes.
 			*/
-			ret = [],
-			/*
-				And these are just hoisted junk.
-			*/
-			index, remainingLength, slices;
+			ret = [];
 		
 		/*
 			First, if either search set is 0, return.
@@ -112,12 +109,12 @@ define(['jquery', 'utils', 'utils/selectors'], function($, Utils, Selectors) {
 			/*
 				Now, perform the examination: does this set of nodes contain the string?
 			*/
-			index = examinedText.indexOf(searchString);
+			let index = examinedText.indexOf(searchString);
 			/*
 				If so, proceed to extract the substring.
 			*/
 			if (index > -1) {
-				remainingLength = examinedText.length - (index + searchString.length);
+				const remainingLength = examinedText.length - (index + searchString.length);
 				/*
 					First, remove all nodes which do not contain any
 					part of the search string (as this algorithm scans left-to-right
@@ -133,7 +130,7 @@ define(['jquery', 'utils', 'utils/selectors'], function($, Utils, Selectors) {
 					simply slice that node only.
 				*/
 				if (examinedNodes.length === 1) {
-					slices = sliceNode(examinedNodes[0], index, index + searchString.length);
+					const slices = sliceNode(examinedNodes[0], index, index + searchString.length);
 					ret.push(slices[0]);
 					// The extra slice at the end shall be examined
 					// in the next recursion.
@@ -159,12 +156,12 @@ define(['jquery', 'utils', 'utils/selectors'], function($, Utils, Selectors) {
 				/*
 					Then, all of the nodes between first and last:
 				*/
-				ret.push.apply(ret, examinedNodes.slice(1,-1));
+				ret.push(...examinedNodes.slice(1,-1));
 				/*
 					Then, a slice from the last examined node (which will extract
 					the entire left side).
 				*/
-				slices = sliceNode(
+				const slices = sliceNode(
 					examinedNodes[examinedNodes.length-1],
 					0,
 					examinedNodes[examinedNodes.length-1].textContent.length - remainingLength
@@ -184,13 +181,13 @@ define(['jquery', 'utils', 'utils/selectors'], function($, Utils, Selectors) {
 			The above only finds the first substring match. The further ones
 			are obtained through this recursive call.
 		*/
-		return [ret].concat(findTextInNodes(textNodes, searchString));
+		return [ret, ...findTextInNodes(textNodes, searchString)];
 	}
 	
 	/*
 		Public methods here on are laid.
 	*/
-	var HookUtils = {
+	const HookUtils = {
 		
 		/**
 			@method wrapTextNodes
@@ -200,10 +197,10 @@ define(['jquery', 'utils', 'utils/selectors'], function($, Utils, Selectors) {
 			@param {String} htmlTag The HTML tag to wrap around
 			@return {jQuery} A jQuery set holding the created HTML wrapper tags.
 		*/
-		wrapTextNodes: function(searchString, dom, htmlTag) {
-			var nodes = findTextInNodes(dom.textNodes(), searchString),
-				ret = $();
-			nodes.forEach(function(e) {
+		wrapTextNodes(searchString, dom, htmlTag) {
+			const nodes = findTextInNodes(dom.textNodes(), searchString);
+			let ret = $();
+			nodes.forEach((e) => {
 				ret = ret.add($(e).wrapAll(htmlTag));
 			});
 			return ret;
@@ -219,11 +216,9 @@ define(['jquery', 'utils', 'utils/selectors'], function($, Utils, Selectors) {
 			@param val Value to examine
 			@return {String} Description
 		*/
-		selectorType: function (val) {
-			var r;
-			
+		selectorType(val) {
 			if (val && typeof val === "string") {
-				r = /\?(\w*)/.exec(val);
+				const r = /\?(\w*)/.exec(val);
 
 				if (r && r.length) {
 					return "hookRef";
@@ -241,7 +236,7 @@ define(['jquery', 'utils', 'utils/selectors'], function($, Utils, Selectors) {
 			@param {String} list	chain to convert
 			@return {String} classlist string
 		*/
-		hookToSelector: function (c) {
+		hookToSelector(c) {
 			c = c.replace(/"/g, "&quot;");
 			return Selectors.hook+'[name="' + c + '"]';
 		}

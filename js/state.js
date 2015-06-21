@@ -1,4 +1,4 @@
-define(['utils', 'passages'], function(Utils, Passages) {
+define(['utils', 'passages'], ({impossible}, Passages) => {
 	"use strict";
 	/**
 		State
@@ -11,7 +11,7 @@ define(['utils', 'passages'], function(Utils, Passages) {
 	/*
 		The root prototype for every Moment's variables collection.
 	*/
-	var SystemVariables = {
+	const SystemVariables = {
 		/*
 			Note that it's not possible for userland TwineScript to directly access or
 			modify this base object.
@@ -31,7 +31,7 @@ define(['utils', 'passages'], function(Utils, Passages) {
 		@class Moment
 		@for State
 	*/
-	var Moment = {
+	const Moment = {
 		/**
 			Current passage name
 			@property {String} passage
@@ -58,8 +58,8 @@ define(['utils', 'passages'], function(Utils, Passages) {
 			@param {Object} [v] Variables to include in this moment.
 			@returns {Moment} created object
 		*/
-		create: function (p, v) {
-			var ret = Object.create(Moment);
+		create(p, v) {
+			const ret = Object.create(Moment);
 			ret.passage = p || "";
 			// Variables are stored as deltas of the previous state's variables.
 			// This is implemented using JS's prototype chain :o
@@ -76,7 +76,7 @@ define(['utils', 'passages'], function(Utils, Passages) {
 		the player has undone).
 		Count begins at 0 (the game start).
 	*/
-	var timeline = [ ];
+	let timeline = [ ];
 	
 	/*
 		Index to the game state just when the current passage was entered.
@@ -84,7 +84,7 @@ define(['utils', 'passages'], function(Utils, Passages) {
 		Everything beyond this index is the future. Everything before and including is the past.
 		It usually equals timeline.length-1, except when the player undos.
 	*/
-	var recent = -1;
+	let recent = -1;
 	
 	/*
 		The present - the resultant game state after the current passage executed.
@@ -93,19 +93,19 @@ define(['utils', 'passages'], function(Utils, Passages) {
 		and discarded when going backward.
 		Its passage name should equal that of recent.
 	*/
-	var present = Moment.create();
+	let present = Moment.create();
 	
 	/*
 		The serialisability status of the story state.
 		This starts as true, but will be irreversibly set to false
 		whenever a non-serialisable object is stored in a variable.
 	*/
-	var serialisable = true;
+	let serialisable = true;
 	
 	/*
 		The current game's state.
 	*/
-	var State = Object.assign({
+	const State = Object.assign({
 		/*
 			Getters/setters
 		*/
@@ -154,13 +154,13 @@ define(['utils', 'passages'], function(Utils, Passages) {
 			@param {String} name Name of the passage.
 			@return {Boolean} Whether it was visited.
 		*/
-		passageNameVisited: function (name) {
-			var i, ret = 0;
+		passageNameVisited(name) {
+			let ret = 0;
 
 			if (!Passages.get(name)) {
 				return 0;
 			}
-			for (i = 0; i <= recent; i++) {
+			for (let i = 0; i <= recent; i++) {
 				ret += +(name === timeline[i].passage);
 			}
 
@@ -174,9 +174,7 @@ define(['utils', 'passages'], function(Utils, Passages) {
 			@param {String} name Name of the passage.
 			@return {Number} How many turns ago it was visited.
 		*/
-		passageNameLastVisited: function (name) {
-			var i;
-
+		passageNameLastVisited(name) {
 			if (!Passages.get(name)) {
 				return Infinity;
 			}
@@ -185,7 +183,7 @@ define(['utils', 'passages'], function(Utils, Passages) {
 				return 0;
 			}
 
-			for (i = recent; i > 0; i--) {
+			for (let i = recent; i > 0; i--) {
 				if (timeline[i].passage === name) {
 					return (recent-i) + 1;
 				}
@@ -201,10 +199,10 @@ define(['utils', 'passages'], function(Utils, Passages) {
 			@method previousPassage
 			@return {Array} Array of previously visited passages.
 		*/
-		pastPassageNames: function () {
-			var i, ret = [];
+		pastPassageNames() {
+			const ret = [];
 
-			for (i = recent-1; i >= 0; i--) {
+			for (let i = recent-1; i >= 0; i--) {
 				ret.unshift(timeline[i].passage);
 			}
 			return ret;
@@ -219,7 +217,7 @@ define(['utils', 'passages'], function(Utils, Passages) {
 			@method newPresent
 			@param {String} newPassageName The name of the passage the player is now currently at.
 		*/
-		newPresent: function(newPassageName) {
+		newPresent(newPassageName) {
 			present = (timeline[recent] || Moment).create(newPassageName);
 		},
 
@@ -228,9 +226,9 @@ define(['utils', 'passages'], function(Utils, Passages) {
 			@method play
 			@param {String} newPassageName The name of the passage the player is now currently at.
 		*/
-		play: function (newPassageName) {
+		play(newPassageName) {
 			if (!present) {
-				Utils.impossible("State.play","present is undefined!");
+				impossible("State.play","present is undefined!");
 			}
 			// Assign the passage name
 			present.passage = newPassageName;
@@ -249,8 +247,8 @@ define(['utils', 'passages'], function(Utils, Passages) {
 			@param {String|Number} arg Either a string (passage id) or a number of steps to rewind.
 			@return {Boolean} Whether the rewind was actually performed.
 		*/
-		rewind: function (arg) {
-			var steps = 1,
+		rewind(arg) {
+			let steps = 1,
 				moved = false;
 
 			if (arg) {
@@ -281,8 +279,8 @@ define(['utils', 'passages'], function(Utils, Passages) {
 			@param {Number} arg The number of turns to move forward.
 			@return {Boolean} Whether the fast-forward was actually performed.
 		*/
-		fastForward: function (arg) {
-			var steps = 1,
+		fastForward(arg) {
+			let steps = 1,
 				moved = false;
 			
 			if (typeof arg === "number") {
@@ -303,7 +301,7 @@ define(['utils', 'passages'], function(Utils, Passages) {
 			
 			@method reset
 		*/
-		reset: function() {
+		reset() {
 			timeline = [];
 			recent = -1;
 			present = Moment.create();
@@ -312,9 +310,9 @@ define(['utils', 'passages'], function(Utils, Passages) {
 	},
 	/*
 		In addition to the above simple methods, two serialisation methods are also present.
-		These have a number of helper functions which are wrapped in this IIFE.
+		These have a number of helper functions which are wrapped in this block.
 	*/
-	(function(){
+	(()=>{
 		
 		/*
 			This helper checks if serialisation is possible for this data value.
@@ -378,7 +376,7 @@ define(['utils', 'passages'], function(Utils, Passages) {
 			@return {String|Boolean} The serialised state, or false if serialisation failed.
 		*/
 		function serialise() {
-			var ret = timeline.slice(0, recent + 1);
+			const ret = timeline.slice(0, recent + 1);
 			/*
 				We must determine if the state is serialisable.
 				Once it is deemed unserialisable, it remains that way for the rest
@@ -386,13 +384,9 @@ define(['utils', 'passages'], function(Utils, Passages) {
 				where an unserialisable object was (set:) does NOT revert the
 				serialisability status.)
 			*/
-			serialisable = serialisable && ret.every(function(moment) {
-				return Object.keys(moment.variables).every(function(e) {
-					var variable = moment.variables[e];
-				
-					return isSerialisable(variable);
-				});
-			});
+			serialisable = serialisable && ret.every(
+				(moment) => Object.keys(moment.variables).every((e) => isSerialisable(moment.variables[e]))
+			);
 			/*
 				If it can't be serialised, just return false. Don't worry, it's
 				the responsibility of the caller to create a proper TwineError
@@ -414,7 +408,7 @@ define(['utils', 'passages'], function(Utils, Passages) {
 			@method deserialise
 		*/
 		function deserialise(str) {
-			var newTimeline,
+			let newTimeline,
 				lastVariables = SystemVariables;
 			
 			try {
@@ -430,7 +424,7 @@ define(['utils', 'passages'], function(Utils, Passages) {
 				return false;
 			}
 			
-			if ((newTimeline = newTimeline.map(function(moment) {
+			if ((newTimeline = newTimeline.map((moment) => {
 				/*
 					Here, we do some brief verification that the moments in the array are
 					objects with "passage" and "variables" keys.
@@ -462,7 +456,7 @@ define(['utils', 'passages'], function(Utils, Passages) {
 			serialise: serialise,
 			deserialise: deserialise,
 		};
-	}()));
+	})());
 	
 	Object.seal(Moment);
 	return Object.freeze(State);

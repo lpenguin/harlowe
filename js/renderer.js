@@ -1,4 +1,5 @@
-define(['utils', 'markup', 'twinescript/compiler', 'internaltypes/twineerror'], function(Utils, TwineMarkup, Compiler, TwineError) {
+define(['utils', 'markup', 'twinescript/compiler', 'internaltypes/twineerror'],
+({wrapHTMLTag, escape, impossible, toJSLiteral}, TwineMarkup, Compiler, TwineError) => {
 	"use strict";
 	/**
 		The Renderer takes the syntax tree from TwineMarkup and returns a HTML string.
@@ -11,14 +12,14 @@ define(['utils', 'markup', 'twinescript/compiler', 'internaltypes/twineerror'], 
 		@class Renderer
 		@static
 	*/
-	
+	let Renderer;
 	/*
 		This makes a basic enclosing HTML tag with no attributes, given the tag name,
 		and renders the contained text.
 	*/
 	function renderTag(token, tagName) {
-		var contents = Renderer.render(token.children);
-		return contents && Utils.wrapHTMLTag(contents, tagName);
+		const contents = Renderer.render(token.children);
+		return contents && wrapHTMLTag(contents, tagName);
 	}
 
 	/*
@@ -26,12 +27,12 @@ define(['utils', 'markup', 'twinescript/compiler', 'internaltypes/twineerror'], 
 		The string "text-align: " is selected by the debugmode CSS, so the one space
 		must be present.
 	*/
-	var center = "text-align: center; max-width:50%; ",
-		escape = Utils.escape,
-		/*
-			The public Renderer object.
-		*/
-		Renderer = {
+	const center = "text-align: center; max-width:50%; ";
+	
+	/*
+		The public Renderer object.
+	*/
+	Renderer = {
 		
 		/**
 			Renderer accepts the same story options that Harlowe does.
@@ -46,18 +47,18 @@ define(['utils', 'markup', 'twinescript/compiler', 'internaltypes/twineerror'], 
 			A composition of TwineMarkup.lex and Renderer.render,
 			but with a (currently rudimentary) memoizer.
 		*/
-		exec: (function() {
+		exec: (() => {
 			/*
 				These two vars cache the previously rendered source text, and
 				the syntax tree returned by TwineMarkup.lex from that.
 			*/
-			var cachedInput,
+			let cachedInput,
 				cachedOutput;
 
-			return function(src) {
+			return (src) => {
 				// If a non-string is passed into here, there's really nothing to do.
 				if (typeof src !== "string") {
-					Utils.impossible("Renderer.exec", "source was not a string, but " + typeof src);
+					impossible("Renderer.exec", "source was not a string, but " + typeof src);
 					return "";
 				}
 				
@@ -65,10 +66,10 @@ define(['utils', 'markup', 'twinescript/compiler', 'internaltypes/twineerror'], 
 					return cachedOutput;
 				}
 				cachedInput = src;
-				cachedOutput = this.render(TwineMarkup.lex(src).children);
+				cachedOutput = Renderer.render(TwineMarkup.lex(src).children);
 				return cachedOutput;
 			};
-		}()),
+		})(),
 		
 		/**
 			The recursive rendering method.
@@ -79,26 +80,15 @@ define(['utils', 'markup', 'twinescript/compiler', 'internaltypes/twineerror'], 
 			@return {String} The rendered HTML string.
 		*/
 		render: function render(tokens) {
-			var token,
-				// Cache the tokens array length
-				len,
-				// Hoisted vars, used only by the numbered/bulleted case
-				tagName, depth,
-				// Hoisted vars, used only by the align case
-				style, body, align, j,
-				
-				// This is the for-i loop variable. Speed concerns lead me to use
-				// a plain for-i loop for this renderer.
-				i = 0,
-				// The output string.
-				out = '';
+			// The output string.
+			let out = '';
 			
 			if (!tokens) {
 				return out;
 			}
-			len = tokens.length;
-			for(; i < len; i += 1) {
-				token = tokens[i];
+			const len = tokens.length;
+			for(let i = 0; i < len; i += 1) {
+				let token = tokens[i];
 				switch(token.type) {
 					case "error": {
 						out += TwineError.create("syntax",token.message)
@@ -107,11 +97,10 @@ define(['utils', 'markup', 'twinescript/compiler', 'internaltypes/twineerror'], 
 					}
 					case "numbered":
 					case "bulleted": {
-					
 						// Run through the tokens, consuming all consecutive list items
-						tagName = (token.type === "numbered" ? "ol" : "ul");
+						let tagName = (token.type === "numbered" ? "ol" : "ul");
 						out += "<" + tagName + ">";
-						depth = 1;
+						let depth = 1;
 						while(i < len && tokens[i] && tokens[i].type === token.type) {
 							/*
 								For differences in depth, raise and lower the <ul> depth
@@ -134,10 +123,10 @@ define(['utils', 'markup', 'twinescript/compiler', 'internaltypes/twineerror'], 
 					}
 					case "align": {
 						while(token && token.type === "align") {
-							style = '';
-							body = '';
-							align = token.align;
-							j = (i += 1);
+							let style = '';
+							let body = '';
+							const align = token.align;
+							const j = (i += 1);
 							
 							/*
 								Base case.
@@ -220,9 +209,9 @@ define(['utils', 'markup', 'twinescript/compiler', 'internaltypes/twineerror'], 
 							This crudely desugars the twineLink token into a
 							(link-goto:) token.
 						*/
-						var newTwineLinkToken = TwineMarkup.lex("(link-goto:"
-							+ Utils.toJSLiteral(token.innerText) + ","
-							+ Utils.toJSLiteral(token.passage) + ")");
+						const newTwineLinkToken = TwineMarkup.lex("(link-goto:"
+							+ toJSLiteral(token.innerText) + ","
+							+ toJSLiteral(token.passage) + ")");
 						out += render(newTwineLinkToken.children);
 						break;
 					}
@@ -236,7 +225,7 @@ define(['utils', 'markup', 'twinescript/compiler', 'internaltypes/twineerror'], 
 						break;
 					}
 					case "verbatim": {
-						out += Utils.wrapHTMLTag(escape(token.innerText)
+						out += wrapHTMLTag(escape(token.innerText)
 							/*
 								The only replacement that should be done is \n -> <br>. In
 								browsers, even if the CSS is set to preserve whitespace, copying text

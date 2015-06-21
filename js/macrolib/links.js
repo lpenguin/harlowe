@@ -1,5 +1,5 @@
 define(['jquery', 'macros', 'utils', 'utils/selectors', 'state', 'passages', 'engine', 'datatypes/changercommand'],
-function($, Macros, Utils, Selectors, State, Passages, Engine, ChangerCommand) {
+($, Macros, Utils, Selectors, State, Passages, Engine, ChangerCommand) => {
 	"use strict";
 	/*
 		This module defines the behaviour of links in Harlowe - both
@@ -7,7 +7,7 @@ function($, Macros, Utils, Selectors, State, Passages, Engine, ChangerCommand) {
 		But, this does not include (click:) enchantments, which
 		are technically not links (but behave identically).
 	*/
-	var optional = Macros.TypeSignature.optional;
+	const {optional} = Macros.TypeSignature;
 	
 	/*
 		Register the event that this enchantment responds to
@@ -18,7 +18,7 @@ function($, Macros, Utils, Selectors, State, Passages, Engine, ChangerCommand) {
 		is "attached" via a jQuery .data() key, and must be called
 		from this <html> handler.
 	*/
-	$(document).ready(function() {
+	$(() => {
 		$(Utils.storyElement).on(
 			/*
 				The jQuery event namespace is "passage-link".
@@ -26,7 +26,7 @@ function($, Macros, Utils, Selectors, State, Passages, Engine, ChangerCommand) {
 			"click.passage-link",
 			Selectors.internalLink,
 			function clickLinkEvent() {
-				var link = $(this),
+				const link = $(this),
 					/*
 						This could be a (link:) link. Such links' events
 						are, due to limitations in the ChangeDescriptor format,
@@ -42,7 +42,7 @@ function($, Macros, Utils, Selectors, State, Passages, Engine, ChangerCommand) {
 					If no event was registered, then this must be
 					a passage link.
 				*/
-				var next = link.attr('passage-name');
+				const next = link.attr('passage-name');
 			
 				if (next) {
 					// TODO: stretchtext
@@ -71,15 +71,14 @@ function($, Macros, Utils, Selectors, State, Passages, Engine, ChangerCommand) {
 		(link-goto:), (click:)
 	*/
 	Macros.addChanger
-		(["link"], function(_, expr) {
-			return ChangerCommand.create("link", [expr]);
-		},
-		function(desc, text) {
-			var innerSource = desc.source;
+		(["link"],
+		(_, expr) => ChangerCommand.create("link", [expr]),
+		(desc, text) => {
+			const innerSource = desc.source;
 			desc.source = '<tw-link tabindex=0>' + text + '</tw-link>';
 			desc.append = "replace";
 			desc.data = {
-				clickEvent: function() {
+				clickEvent() {
 					desc.source = innerSource;
 					desc.section.renderInto(innerSource + "", null, desc);
 				},
@@ -93,18 +92,17 @@ function($, Macros, Utils, Selectors, State, Passages, Engine, ChangerCommand) {
 		It is also what the standard link syntax desugars to.
 	*/
 	Macros.add
-		(["link-goto"], function(section, text, passage) {
+		(["link-goto"],
 			/*
 				Return a new (link-goto:) object.
 			*/
-			return {
+			(section, text, passage) => ({
 				TwineScript_TypeName: "a (link-goto: "
 					+ Utils.toJSLiteral(text) + ", "
 					+ Utils.toJSLiteral(passage) + ") command",
 				TwineScript_ObjectName: "a (link-goto:) command",
 				
-				TwineScript_Print: function() {
-					var visited = -1, passageName;
+				TwineScript_Print() {
 					/*
 						The string representing the passage name is evaluated as TwineMarkup here -
 						the link syntax accepts TwineMarkup in both link and passage position
@@ -117,7 +115,7 @@ function($, Macros, Utils, Selectors, State, Passages, Engine, ChangerCommand) {
 						already discards the ordering of link text and passage name in the link
 						syntax ([[a->b]] vs [[b<-a]]) then this can't be helped, and probably doesn't matter.
 					*/
-					passageName = section.evaluateTwineMarkup(Utils.unescape(passage || text));
+					const passageName = section.evaluateTwineMarkup(Utils.unescape(passage || text));
 					
 					/*
 						If a <tw-error> was returned by evaluateTwineMarkup, replace the link with it.
@@ -145,7 +143,7 @@ function($, Macros, Utils, Selectors, State, Passages, Engine, ChangerCommand) {
 						Previously visited passages may be styled differently compared
 						to unvisited passages.
 					*/
-					visited = (State.passageNameVisited(passageName));
+					const visited = (State.passageNameVisited(passageName));
 					
 					/*
 						This regrettably exposes the destination passage name in the DOM...
@@ -155,7 +153,6 @@ function($, Macros, Utils, Selectors, State, Passages, Engine, ChangerCommand) {
 						+ 'passage-name="' + passageName
 						+ '">' + (text || passage) + '</tw-link>';
 				}
-			};
-		},
+			}),
 		[String, optional(String)]);
 });

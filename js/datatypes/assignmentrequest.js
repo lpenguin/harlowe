@@ -1,4 +1,4 @@
-define(['utils'], function(Utils) {
+define(['utils'], ({assert}) => {
 	/*
 		AssignmentRequests represent an assignment statement. Different
 		macros may handle this request differently (for instance,
@@ -10,20 +10,20 @@ define(['utils'], function(Utils) {
 	*/
 	"use strict";
 	
-	var assignmentRequest = Object.freeze({
+	const assignmentRequest = Object.freeze({
 		
 		assignmentRequest: true,
 		
 		TwineScript_TypeName: "an assignment operation",
 		TwineScript_ObjectName: "an assignment operation",
 		
-		TwineScript_Print: function() {
+		TwineScript_Print() {
 			return "[an assignment operation]";
 		},
 		
-		create: function(dest, src, operator) {
+		create(dest, src, operator) {
 			// Assert: dest is a varRef
-			Utils.assert("propertyChain" in dest && "object" in dest);
+			assert("propertyChain" in dest && "object" in dest);
 			
 			return Object.assign(Object.create(this), {
 				dest:              dest,
@@ -32,7 +32,7 @@ define(['utils'], function(Utils) {
 			});
 		},
 		
-		TwineScript_Clone: function() {
+		TwineScript_Clone() {
 			return assignmentRequest.create(this.dest, this.src, this.operator);
 		},
 	});

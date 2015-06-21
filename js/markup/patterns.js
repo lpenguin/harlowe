@@ -7,7 +7,7 @@
 */
 (function(){
 	"use strict";
-	var Patterns;
+	let Patterns;
 	
 	/*
 		Escapes characters in a string so that RegExp(str) produces a valid regex.
@@ -43,11 +43,12 @@
 		};
 	}
 	
-	var either = makeWrapper("?:"),
+	const
+		either = makeWrapper("?:"),
 		notBefore = makeWrapper("?!"),
 		before = makeWrapper("?=");
 	
-	var
+	const
 		// This includes all forms of whitespace except \n and \r
 		ws = "[ \\f\\t\\v\u00a0\u1680\u180e\u2000-\u200a\u2028\u2029\u202f\u205f\u3000]*",
 		
@@ -222,14 +223,14 @@
 		
 		upperLetter: "[A-Z\u00c0-\u00de\u0150\u0170]",
 		lowerLetter: "[a-z0-9_\\-\u00df-\u00ff\u0151\u0171]",
-		anyLetter:   anyLetter,
-		anyLetterStrict: anyLetterStrict,
+		anyLetter,
+		anyLetterStrict,
 		
 		whitespace:  mws,
 		
-		escapedLine: escapedLine,
+		escapedLine,
 		
-		br: br,
+		br,
 		
 		/*
 			Twine currently just uses HTML comment syntax for comments.
@@ -247,13 +248,13 @@
 		
 		url:         "(" + either("https?","mailto","javascript","ftp","data") + ":\\/\\/[^\\s<]+[^<.,:;\"')\\]\\s])",
 		
-		bullet:      bullet,
+		bullet,
 		
-		hr:          hr,
-		heading:     heading,
-		align:       align,
-		bulleted:    bulleted,
-		numbered:    numbered,
+		hr,
+		heading,
+		align,
+		bulleted,
+		numbered,
 		
 		/*
 			The text style syntaxes.
@@ -341,39 +342,31 @@
 		
 		groupingBack:  "\\)",
 		
-		twine1Macro:
-			twine1Macro,
+		twine1Macro,
 		twine1MacroPeek: "<<",
 		
 		/*
 			Macro code
 		*/
 		
-		property:
-			property,
+		property,
 		propertyPeek: "'s",
 		
-		belongingProperty:
-			belongingProperty,
+		belongingProperty,
 		
-		possessiveOperator:
-			possessiveOperator,
+		possessiveOperator,
 		
-		belongingOperator:
-			belongingOperator,
+		belongingOperator,
 		belongingOperatorPeek:
 			"of",
 		
-		itsOperator:
-			itsOperator,
+		itsOperator,
 		itsOperatorPeek: "its",
 		
-		belongingItOperator:
-			belongingItOperator,
+		belongingItOperator,
 		belongingItOperatorPeek: "of",
 		
-		variable:
-			variable,
+		variable,
 		variablePeek: "$",
 		
 		hookRef:
@@ -400,15 +393,15 @@
 		/*
 			Natural types
 		*/
-		number: number,
+		number,
 		
 		boolean: either("true","false") + wb,
 		
 		// Special identifiers
-		identifier: identifier,
-		itsProperty: itsProperty,
+		identifier,
+		itsProperty,
 		itsPropertyPeek: "its",
-		belongingItProperty: belongingItProperty,
+		belongingItProperty,
 		
 		singleStringOpener:    "'",
 		doubleStringOpener:    '"',

@@ -1,4 +1,4 @@
-define(['jquery', 'utils', 'utils/selectors'], function($, Utils, Selectors) {
+define(['jquery', 'utils', 'utils/selectors'], ($, {unescape}, Selectors) => {
 	"use strict";
 	/**
 		Passages
@@ -20,7 +20,7 @@ define(['jquery', 'utils', 'utils/selectors'], function($, Utils, Selectors) {
 				Passage objects have the following properties:
 				source: the raw TwineMarkup source of the passage.
 			*/
-			["source", Utils.unescape(elem.html())],
+			["source", unescape(elem.html())],
 			/*
 				tags: an array of its tags, as strings.
 			*/
@@ -43,26 +43,24 @@ define(['jquery', 'utils', 'utils/selectors'], function($, Utils, Selectors) {
 		});
 	}
 	
-	var Passages = Object.assign(new Map(), {
+	const Passages = Object.assign(new Map(), {
 		TwineScript_ObjectName: "the Passages datamap",
 		
 		/*
 			This method retrieves passages which have a given tag.
 		*/
-		getTagged: function(tag) {
-			var ret = [];
-			this.forEach(function(v) {
+		getTagged(tag) {
+			const ret = [];
+			this.forEach((v) => {
 				/*
 					We need this instanceof check in case a non-datamap was added by the author.
 				*/
-				var tags = v instanceof Map && v.get('tags');
+				const tags = v instanceof Map && v.get('tags');
 				if (Array.isArray(tags) && tags.indexOf(tag) >-1) {
 					ret.push(v);
 				}
 			});
-			return ret.sort(function(left, right) {
-				return left.get('name') > right.get('name');
-			});
+			return ret.sort((left, right) => left.get('name') > right.get('name'));
 		},
 		
 		create: Passage,
@@ -72,8 +70,8 @@ define(['jquery', 'utils', 'utils/selectors'], function($, Utils, Selectors) {
 		Unfortunately, the DOM isn't visible until the page is loaded, so we can't
 		read every <tw-passagedata> from the <tw-storydata> HTML and store them in Passages until then.
 	*/
-	$(document).ready(function() {
-		Array.from($(Selectors.storyData + " > " + Selectors.passageData)).forEach(function(e) {
+	$(() => {
+		Array.from($(Selectors.storyData + " > " + Selectors.passageData)).forEach(e => {
 			e = $(e);
 			Passages.set(e.attr('name'), new Passage(e));
 		});

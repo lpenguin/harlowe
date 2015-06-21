@@ -7,13 +7,12 @@
 		
 		This is a copy of Utils.insensitiveName(), used to check macro names.
 	*/
-	function insensitiveName(e) {
-		return (e + "").toLowerCase().replace(/-|_/g, "");
-	}
+	const insensitiveName = (e) => (e + "").toLowerCase().replace(/-|_/g, "");
+	
 	/*
 		This is a manually generated list of existent macros in Harlowe.
 	*/
-	var validMacros = (
+	const validMacros = (
 		"text,string,substring,num,number,if,unless,elseif,else,nonzero,first-nonzero,passage," +
 		"nonempty,first-nonempty,weekday,monthday,currenttime,currentdate,min,max,abs,sign,sin,cos,tan,floor," +
 		"round,ceil,pow,exp,sqrt,log,log10,log2,random,either,alert,prompt,confirm,openURL,reload,gotoURL," +
@@ -50,9 +49,9 @@
 			First, obtain the text area's full text line array, truncated
 			to just the line featuring the change.
 		*/
-		var line = changeObj.from.line;
+		const line = changeObj.from.line;
 		
-		var newText = oldText
+		let newText = oldText
 			.split('\n')
 			.slice(0, changeObj.from.line + 1);
 		
@@ -79,12 +78,11 @@
 	/*
 		The mode is defined herein.
 	*/
-	window.CodeMirror && CodeMirror.defineMode('harlowe', function() {
-		var tree;
+	window.CodeMirror && CodeMirror.defineMode('harlowe', () => {
+		let tree;
 		
-		var init = function() {
-			var
-				doc = cm.doc;
+		let init = () => {
+			const doc = cm.doc;
 			/*
 				CodeMirror doesn't allow modes to have full access to the text of
 				the document. This hack overcomes this respectable limitation:
@@ -98,13 +96,13 @@
 				Attach the all-important beforeChanged event, but make sure it's only attached once.
 				Note that this event is removed by TwineJS when it uses swapDoc to dispose of old docs.
 			*/
-			doc.on('beforeChange', function(_, change) {
-				var oldText = doc.getValue();
+			doc.on('beforeChange', (_, change) => {
+				const oldText = doc.getValue();
 				forceFullChange(change, oldText);
 			});
 			doc.off('change');
-			doc.on('change', function() {
-				var text = doc.getValue();
+			doc.on('change', () => {
+				const text = doc.getValue();
 				tree = lex(text);
 			});
 			doc.on('swapDoc', init);
@@ -116,7 +114,7 @@
 				The startState is vacant because all of the computation is done
 				inside token().
 			*/
-			startState: function() {
+			startState() {
 				/*
 					We can't reliably obtain the CodeMirror instance reference until now.
 				*/
@@ -138,13 +136,12 @@
 					pos: 0,
 				};
 			},
-			blankLine: function(state) {
+			blankLine(state) {
 				state.pos++;
 			},
 			token: function token(stream, state) {
-				var currentBranch, currentToken,
+				var
 					// Some hoisted vars from the for-loop.
-					name, type, counts = {}, i,
 					ret = '';
 				
 				if (init) {
@@ -154,9 +151,9 @@
 					We must render each token using the cumulative styles of all parent tokens
 					above it. So, we obtain the full path.
 				*/
-				currentBranch = tree.pathAt(state.pos);
+				const currentBranch = tree.pathAt(state.pos);
 				// The path is deepest-first - the bottom token is at 0.
-				currentToken = currentBranch[0];
+				const currentToken = currentBranch[0];
 				
 				/*
 					If, say, the doc had no text in it, the currentToken would be null.
@@ -186,9 +183,10 @@
 				/*
 					For performance paranoia, this is a plain for-loop.
 				*/
-				for (i = 0; i < currentBranch.length; i+=1) {
-					type = currentBranch[i].type;
-					name = "harlowe-" + type;
+				let counts = {};
+				for (let i = 0; i < currentBranch.length; i+=1) {
+					const type = currentBranch[i].type;
+					let name = "harlowe-" + type;
 					// If this name has been used earlier in the chain, suffix
 					// this name with an additional number.
 					if (counts[name] > 1) {
@@ -232,13 +230,12 @@
 		the styles used by the editor. Each property in the returned object indirectly maps to
 		a CSS selector, and the value maps directly to CSS attributes assigned by the selector.
 	*/
-	harloweStyles.innerHTML = (function() {
+	harloweStyles.innerHTML = (() => {
 		function nestedBG(h,s,l) {
-			return function(e) {
-				return "background-color: hsla(" + h + "," + s + "%," + l + "%," + e +");";
-			};
+			return (e) => "background-color: hsla(" + h + "," + s + "%," + l + "%," + e +");";
 		}
-		var warmHookBG   = nestedBG(40, 100, 50),
+		const
+			warmHookBG   = nestedBG(40, 100, 50),
 			coolHookBG   = nestedBG(220, 100, 50),
 			macro        = "color: #a84186;",
 			macroName    = macro + "font-style:italic;",
@@ -268,10 +265,8 @@
 			error:
 				invalid,
 			
-			macro:
-				macro,
-			macroName:
-				macroName,
+			macro,
+			macroName,
 			
 			// The bottommost element is a macro open/close bracket
 			"^=macro ":  "font-weight:bold;",
@@ -297,8 +292,7 @@
 			"collapsed.hook-7":    coolHookBG(0.35),
 			"collapsed.hook-8":    coolHookBG(0.4),
 			
-			twineLink:
-				twineLink,
+			twineLink,
 			tag:
 				"color: #4d4d9d;",
 			
@@ -326,8 +320,8 @@
 			"identifier, property, belongingProperty, itsProperty, belongingItProperty, belongingItOperator":
 				"color: #0076b2;",
 			
-			toString: function() {
-				return Object.keys(this).reduce(function(a, e) {
+			toString() {
+				return Object.keys(this).reduce((a,e) => {
 					var selector;
 					if (e === 'toString') {
 						return a;
@@ -347,7 +341,7 @@
 							- It converts the keys to a selector (by consequence of the above)
 							and the values to a CSS body.
 						*/
-						.map(function map(e) {
+						.map(function map() {
 							if (e.indexOf('.') > -1) {
 								return e.split(/\./g).map(map).join('');
 							}
@@ -357,8 +351,8 @@
 							return ".cm-harlowe-" + e;
 						});
 					return a + selector.join(', ') + "{" + this[e] + "}";
-				}.bind(this), '');
+				}, '');
 			},
 		} + "";
-	}());
+	})();
 }.call(this));

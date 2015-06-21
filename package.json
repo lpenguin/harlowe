@@ -25,16 +25,18 @@
 		"grunt": "*",
 		"grunt-contrib-clean": "*",
 		"grunt-contrib-jshint": "*",
-		"grunt-contrib-watch": "*",
+		"grunt-contrib-uglify": "*",
 		"grunt-contrib-yuidoc": "*",
 		"grunt-contrib-requirejs": "*",
 		"grunt-contrib-cssmin": "*",
 		"grunt-text-replace": "*",
 		"grunt-sass": "0.15.0",
+		"grunt-babel": "*",
+		"espree": "*",
 		
 		"es6-shim": "*",
 		"requestanimationframe": "*",
-		"jquery": "2.1.1",
+		"jquery": ">=2.1.1",
 		"almond": "*"
 	}
 }

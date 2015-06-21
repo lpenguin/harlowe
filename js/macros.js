@@ -1,5 +1,5 @@
 define(['jquery', 'utils', 'utils/operationutils', 'internaltypes/twineerror'],
-function($, Utils, OperationUtils, TwineError) {
+($, {insensitiveName, nth, plural, assert, lockProperty}, {objectName, typeName}, TwineError) => {
 	"use strict";
 	/**
 		This contains a registry of macro definitions, and methods to add to that registry.
@@ -8,7 +8,8 @@ function($, Utils, OperationUtils, TwineError) {
 		@static
 	*/
 	
-	var Macros,
+	let Macros;
+	const
 		// Private collection of registered macros.
 		macroRegistry = {},
 		// Private collection of command definitions, which are created by command macros.
@@ -24,10 +25,10 @@ function($, Utils, OperationUtils, TwineError) {
 			The arguments are already in array form - no need
 			to use Array.from(arguments) here!
 		*/
-		return function macroResult(args) {
+		return (args) => {
 			
 			// Spreaders are spread out now.
-			args = args.reduce(function(newArgs, el) {
+			args = args.reduce((newArgs, el) => {
 				if (el && el.spreader === true) {
 					/*
 						Currently, the full gamut of spreadable
@@ -35,20 +36,18 @@ function($, Utils, OperationUtils, TwineError) {
 					*/
 					if (Array.isArray(el.value)
 							|| typeof el.value === "string") {
-						for(var i = 0; i < el.value.length; i++) {
+						for(let i = 0; i < el.value.length; i++) {
 							newArgs.push(el.value[i]);
 						}
 					}
 					else if (el.value instanceof Set) {
-						el.value.forEach(function(item) {
-							newArgs.push(item);
-						});
+						el.value.forEach((item) => newArgs.push(item));
 					}
 					else {
 						newArgs.push(
 							TwineError.create("operation",
 								"I can't spread out "
-								+ OperationUtils.objectName(el.value)
+								+ objectName(el.value)
 								+ ", which is not a string, dataset or array."
 							)
 						);
@@ -61,12 +60,12 @@ function($, Utils, OperationUtils, TwineError) {
 			}, []);
 			
 			// Do the error check now.
-			var error = TwineError.containsError(args);
+			const error = TwineError.containsError(args);
 
 			if (error) {
 				return error;
 			}
-			return fn.apply(0, args);
+			return fn(...args);
 		};
 	}
 	
@@ -105,9 +104,7 @@ function($, Utils, OperationUtils, TwineError) {
 				/*
 					The arg passes the test if it matches some of the types.
 				*/
-				return type.innerType.some(function(type) {
-					return singleTypeCheck(arg, type);
-				});
+				return type.innerType.some(type => singleTypeCheck(arg, type));
 			}
 			/*
 				Otherwise, if this is a Wrapped signature, ignore the included
@@ -161,8 +158,6 @@ function($, Utils, OperationUtils, TwineError) {
 		@param {Array|Object|null} typeSignature   An array of Twine macro parameter type data.
 	*/
 	function typeSignatureCheck(name, fn, typeSignature) {
-		var signatureInfo;
-		
 		/*
 			Return early if no signature was present for this macro.
 		*/
@@ -187,33 +182,31 @@ function($, Utils, OperationUtils, TwineError) {
 			This is also used for error message generation: it provides the author with
 			a readable sentence about the type signature of the macro.
 		*/
+		let signatureInfo;
 		if (typeSignature.length > 0) {
 			signatureInfo = "The " + name + " macro must only be given "
 				// Join [A,B,C] into "A, B, and C".
-				+ typeSignature.map(OperationUtils.typeName).reduce(function(a,e,i,arr) {
+				+ typeSignature.map(typeName).reduce(
 					/*
 						This somewhat convoluted line only prints:
 						* a separating comma if there are multiple items,
 						* "and" if this is the final item.
 					*/
-					return a + (i === 0 ? "" : i < arr.length-1 ? ", " : ", and ") + e;
-				},'')
+					(a,e,i,arr) => a + (i === 0 ? "" : i < arr.length-1 ? ", " : ", and ") + e,
+					''
+				)
 				+ (typeSignature.length > 1 ? ", in that order" : ".");
 		} else {
 			signatureInfo = "The macro must not be given any data - just write " + name + ".";
 		}
 		
 		// That being done, we now have the wrapping function.
-		return function typeCheckedMacro() {
-			var args = Array.from(arguments)
-				// The first argument is the Section, not a user-provided argument.
-				// We discard it thus.
-					.slice(1),
-				type, arg, ind, end, rest;
+		return (section, ...args) => {
+			let rest;
 			
-			for(ind = 0, end = Math.max(args.length, typeSignature.length); ind < end; ind += 1) {
-				type = typeSignature[ind];
-				arg = args[ind];
+			for(let ind = 0, end = Math.max(args.length, typeSignature.length); ind < end; ind += 1) {
+				let type = typeSignature[ind];
+				const arg = args[ind];
 				
 				/*
 					A rare early error check can be made up here: if ind >= typeSignature.length,
@@ -262,7 +255,7 @@ function($, Utils, OperationUtils, TwineError) {
 						return TwineError.create(
 							"typesignature",
 							"The " + name + " macro needs "
-								+ Utils.plural((typeSignature.length - ind), "more value") + ".",
+								+ plural((typeSignature.length - ind), "more value") + ".",
 							signatureInfo
 						);
 					}
@@ -273,9 +266,9 @@ function($, Utils, OperationUtils, TwineError) {
 					return TwineError.create(
 						"typesignature",
 						name + "'s " +
-							Utils.nth(ind + 1) + " value is " + OperationUtils.objectName(arg) +
+							nth(ind + 1) + " value is " + objectName(arg) +
 							", but should be " +
-							OperationUtils.typeName(type) + ".",
+							typeName(type) + ".",
 						/*
 							If this type signature has a custom error message, use that here.
 						*/
@@ -286,7 +279,7 @@ function($, Utils, OperationUtils, TwineError) {
 			/*
 				Type checking has passed - now let the macro run.
 			*/
-			return fn.apply(0, arguments);
+			return fn(section, ...args);
 		};
 	}
 	
@@ -303,11 +296,9 @@ function($, Utils, OperationUtils, TwineError) {
 	function privateAdd(name, type, fn) {
 		// Add the fn to the macroRegistry, plus aliases (if name is an array of aliases)
 		if (Array.isArray(name)) {
-			name.forEach(function (n) {
-				Utils.lockProperty(macroRegistry, Utils.insensitiveName(n), fn);
-			});
+			name.forEach((n) => lockProperty(macroRegistry, insensitiveName(n), fn));
 		} else {
-			Utils.lockProperty(macroRegistry, Utils.insensitiveName(name), fn);
+			lockProperty(macroRegistry, insensitiveName(name), fn);
 		}
 	}
 	
@@ -318,8 +309,8 @@ function($, Utils, OperationUtils, TwineError) {
 			@param {String} Name of the macro definition to check for existence
 			@return {Boolean} Whether the name is registered.
 		*/
-		has: function (e) {
-			e = Utils.insensitiveName(e);
+		has(e) {
+			e = insensitiveName(e);
 			return macroRegistry.hasOwnProperty(e);
 		},
 		
@@ -330,8 +321,8 @@ function($, Utils, OperationUtils, TwineError) {
 			@param {String} Name of the macro definition to get
 			@return Macro definition object, or false
 		*/
-		get: function (e) {
-			e = Utils.insensitiveName(e);
+		get(e) {
+			e = insensitiveName(e);
 			return (macroRegistry.hasOwnProperty(e) && macroRegistry[e]);
 		},
 		
@@ -375,7 +366,7 @@ function($, Utils, OperationUtils, TwineError) {
 			@param {Function} changerCommand
 		*/
 		addChanger: function addChanger(name, fn, changerCommandFn, typeSignature) {
-			Utils.assert(changerCommandFn);
+			assert(changerCommandFn);
 			
 			privateAdd(name,
 				"changer",
@@ -399,7 +390,7 @@ function($, Utils, OperationUtils, TwineError) {
 			@param {String} name
 			@return {Function} the registered changer function.
 		*/
-		getChangerFn: function getChanger(name) {
+		getChangerFn(name) {
 			return commandRegistry[name];
 		},
 		
@@ -409,19 +400,19 @@ function($, Utils, OperationUtils, TwineError) {
 		*/
 		TypeSignature: {
 			
-			optional: function(type) {
+			optional(type) {
 				return {pattern: "optional",         innerType: type };
 			},
 			
-			zeroOrMore: function(type) {
+			zeroOrMore(type) {
 				return {pattern: "zero or more",     innerType: type };
 			},
 			
-			either: function(/*variadic*/) {
-				return {pattern: "either",           innerType: Array.from(arguments)};
+			either(...innerType) {
+				return {pattern: "either",           innerType };
 			},
 			
-			rest: function(type) {
+			rest(type) {
 				return {pattern: "rest",             innerType: type };
 			},
 			
@@ -430,8 +421,8 @@ function($, Utils, OperationUtils, TwineError) {
 				type constraints.
 			*/
 			
-			wrapped: function(type, message) {
-				return {pattern: "wrapped", innerType: type, message: message };
+			wrapped(innerType, message) {
+				return {pattern: "wrapped", innerType, message };
 			},
 			
 			/*d:
@@ -456,8 +447,7 @@ function($, Utils, OperationUtils, TwineError) {
 			@param {Array}  args     An array enclosing the passed arguments.
 			@return The result of the macro function.
 		*/
-		run: function(name, args) {
-			var fn;
+		run(name, args) {
 			// First and least, the error rejection check.
 			if (TwineError.containsError(name)) {
 				return name;
@@ -472,9 +462,7 @@ function($, Utils, OperationUtils, TwineError) {
 					+ "' because it doesn't exist."
 				);
 			}
-			else fn = Macros.get(name);
-			
-			return fn(args);
+			return Macros.get(name)(args);
 		},
 		
 	};

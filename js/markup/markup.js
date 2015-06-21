@@ -7,17 +7,15 @@
 (function () {
 	"use strict";
 	
-	var Patterns;
+	let Patterns;
 	
 	/*
 		Polyfill for Object.assign()
 	*/
 	Object.assign = Object.assign || function polyfilledAssign(obj /* variadic */) {
-		var i = 1,
-			target, key;
-		for(; i < arguments.length; i++) {
-			target = arguments[i];
-			for(key in target) {
+		for(let i = 1; i < arguments.length; i++) {
+			const target = arguments[i];
+			for(let key in target) {
 				if(Object.hasOwnProperty.call(target, key)) {
 					obj[key] = target[key];
 				}
@@ -30,32 +28,6 @@
 		When passed a Lexer object, this function augments it with rules.
 	*/
 	function rules(Lexer) {
-		var
-			/*
-				These objects contain each ordered category of rules.
-				(blockRules and inlineRules are currently only differentiated
-				for categorisation purposes - they are both equally usable in
-				Markup Mode.)
-			*/
-			blockRules,
-			inlineRules,
-			expressionRules,
-			macroRules,
-			// ..and, this is the union of them.
-			allRules,
-			/*
-				Modes determine which rules are applicable when. They are (or will be)
-				arrays of string keys of the allRules object.
-			*/
-			/*
-				The standard TwineMarkup mode.
-			*/
-			markupMode     = [],
-			/*
-				The contents of macro tags - expressions and other macros.
-			*/
-			macroMode    = [];
-		
 		/*
 			Creates a function that pushes a token with innerText;
 			designed for styling rules like **strong** or //italic//.
@@ -70,7 +42,7 @@
 					This function returns the rightmost non-zero array-indexed value.
 					It's designed for matches created from regexes that only have 1 group.
 				*/
-				var innerText = match.reduceRight(function(a, b, index) { return a || (index ? b : ""); }, ""),
+				const innerText = match.reduceRight(function(a, b, index) { return a || (index ? b : ""); }, ""),
 					data = {};
 				
 				data[name] = innerText;
@@ -85,21 +57,19 @@
 			The foldedName is the type of the final token, once a pair of these is folded.
 		*/
 		function openerFn(name, foldedName) {
-			var matches = {};
+			const matches = {};
 			matches[name] = foldedName;
-			return function() {
-				return {
-					isFront: true,
-					matches: matches,
-				};
-			};
+			return () => ({
+				isFront: true,
+				matches: matches,
+			});
 		}
 		
 		/*
 			Used as a token fn to provide an empty object with no properties,
 			regardless of the function's input.
 		*/
-		var emptyFn = Object.bind(0, null);
+		const emptyFn = Object.bind(0, null);
 		
 		/*
 			Alters the rules object's fn methods, so that their returned objects
@@ -109,20 +79,20 @@
 			/*
 				Iterate over every rule in the object (the "target").
 			*/
-			Object.keys(target).forEach(function(ruleName) {
+			Object.keys(target).forEach((ruleName) => {
 				/*
 					First, take the function to wrap. Originally this used Function#bind(),
 					but speed paranoia suggests a simpler solution.
 				*/
-				var innerFn = target[ruleName].fn;
+				const innerFn = target[ruleName].fn;
 				/*
 					Then, wrap it as follows:
 				*/
-				target[ruleName].fn = function(match) {
+				target[ruleName].fn = (match) => {
 					/*
 						Call the wrapped function and obtain its result.
 					*/
-					var ret = innerFn(match);
+					const ret = innerFn(match);
 					/*
 						Attach the matched text, if it isn't already.
 					*/
@@ -150,7 +120,27 @@
 			return target;
 		}
 		
-		blockRules = setupRules(markupMode, {
+		const
+			/*
+				Modes determine which rules are applicable when. They are (or will be)
+				arrays of string keys of the allRules object.
+			*/
+			/*
+				The standard TwineMarkup mode.
+			*/
+			markupMode     = [],
+			/*
+				The contents of macro tags - expressions and other macros.
+			*/
+			macroMode    = [];
+		
+		/*
+			These rules objects contain each ordered category of rules.
+			(blockRules and inlineRules are currently only differentiated
+			for categorisation purposes - they are both equally usable in
+			Markup Mode.)
+		*/
+		const blockRules = setupRules(markupMode, {
 			/*
 				First, the block rules.
 			*/
@@ -158,28 +148,22 @@
 				fn: emptyFn,
 			},
 			bulleted: {
-				fn: function(match) {
-					return {
-						depth: match[1].length,
-						innerText: match[2]
-					};
-				},
+				fn: (match) => ({
+					depth: match[1].length,
+					innerText: match[2]
+				}),
 			},
 			numbered: {
-				fn: function(match) {
-					return {
-						depth: match[1].length / 2,
-						innerText: match[2]
-					};
-				},
+				fn: (match) => ({
+					depth: match[1].length / 2,
+					innerText: match[2]
+				}),
 			},
 			heading: {
-				fn: function(match) {
-					return {
-						depth: match[1].length,
-						innerText: match[2]
-					};
-				},
+				fn: (match) => ({
+					depth: match[1].length,
+					innerText: match[2]
+				}),
 			},
 			/*
 				Text align syntax
@@ -192,8 +176,9 @@
 				=><===== : margins 1/6 left, 5/6 right, etc.
 			*/
 			align: {
-				fn: function (match) {
-					var align,
+				fn(match) {
+					let align;
+					const
 						arrow = match[1],
 						centerIndex = arrow.indexOf("><");
 						
@@ -222,7 +207,7 @@
 		/*
 			All block rules have a single specific canFollow and cannotFollow.
 		*/
-		Object.keys(blockRules).forEach(function(key) {
+		Object.keys(blockRules).forEach((key) => {
 			blockRules[key].canFollow = [null, "br", "hr", "bulleted", "numbered", "heading", "align"];
 			blockRules[key].cannotFollow = ["text"];
 		});
@@ -230,7 +215,7 @@
 		/*
 			Now, the inline rules.
 		*/
-		inlineRules = setupRules(markupMode, {
+		const inlineRules = setupRules(markupMode, {
 		
 			/*
 				This is a legacy match that simply provides
@@ -238,12 +223,10 @@
 				macro syntax in Twine 2.
 			*/
 			twine1Macro: {
-				fn: function() {
-					return {
-						type: "error",
-						message: "Twine 2 macros use a different syntax to Twine 1 macros.",
-					};
-				},
+				fn: () => ({
+					type: "error",
+					message: "Twine 2 macros use a different syntax to Twine 1 macros.",
+				}),
 			},
 			
 			/*
@@ -260,36 +243,28 @@
 				***A*** -> <em><strong>A</strong></em>
 			*/
 			emBack: {
-				fn: function() {
-					return {
-						matches: {
-							emFront: "em",
-						},
-					};
-				},
+				fn: () => ({
+					matches: {
+						emFront: "em",
+					},
+				}),
 			},
 			strongBack: {
-				fn: function() {
-					return {
-						matches: {
-							strongFront: "strong",
-						},
-					};
-				},
+				fn: () => ({
+					matches: {
+						strongFront: "strong",
+					},
+				}),
 			},
 			strongFront: {
-				fn: function() {
-					return {
-						isFront: true,
-					};
-				},
+				fn: () => ({
+					isFront: true,
+				}),
 			},
 			emFront: {
-				fn: function() {
-					return {
-						isFront: true,
-					};
-				},
+				fn: () => ({
+					isFront: true,
+				}),
 			},
 			
 			boldOpener:    { fn: openerFn("boldOpener",   "bold")   },
@@ -298,20 +273,16 @@
 			supOpener:     { fn: openerFn("supOpener",    "sup")    },
 			
 			commentFront: {
-				fn: function() {
-					return {
-						isFront: true,
-					};
-				},
+				fn: () => ({
+					isFront: true,
+				}),
 			},
 			commentBack: {
-				fn: function() {
-					return {
-						matches: {
-							commentFront: "comment",
-						},
-					};
-				},
+				fn: () => ({
+					matches: {
+						commentFront: "comment",
+					},
+				}),
 			},
 			// This must come before the generic tag rule
 			scriptStyleTag: { fn:        emptyFn },
@@ -319,7 +290,7 @@
 			url:            { fn:        emptyFn },
 			
 			passageLink: {
-				fn: function(match) {
+				fn(match) {
 					var p1 = match[1],
 						p2 = match[2],
 						p3 = match[3];
@@ -332,43 +303,35 @@
 			},
 			
 			simpleLink: {
-				fn: function(match) {
-					return {
-						type: "twineLink",
-						innerText: match[1],
-						passage:   match[1],
-					};
-				},
+				fn: (match) => ({
+					type: "twineLink",
+					innerText: match[1],
+					passage:   match[1],
+				}),
 			},
 			
 			hookPrependedFront: {
-				fn: function(match) {
-					return {
-						name: match[1],
-						isFront: true,
-						tagPosition: "prepended"
-					};
-				},
+				fn: (match) => ({
+					name: match[1],
+					isFront: true,
+					tagPosition: "prepended"
+				}),
 			},
 			
 			hookAnonymousFront: {
-				fn: function() {
-					return {
-						isFront: true,
-						demote: function() {
-							this.error("This tagged hook doesn't have a matching ].");
-						}
-					};
-				},
+				fn: () => ({
+					isFront: true,
+					demote() {
+						this.error("This tagged hook doesn't have a matching ].");
+					},
+				}),
 				canFollow: ["macro", "variable"],
 			},
 			
 			hookAppendedFront: {
-				fn: function() {
-					return {
-						isFront: true,
-					};
-				},
+				fn: () => ({
+					isFront: true,
+				}),
 				/*
 					Because hookAnonymousFront's and hookAppendedFront's
 					rules are identical, the canFollow of one must match
@@ -378,32 +341,28 @@
 			},
 			
 			hookBack: {
-				fn: function() {
-					return {
-						type: "hookAppendedBack",
-						matches: {
-							// Matching front token : Name of complete token
-							hookPrependedFront: "hook",
-							hookAnonymousFront: "hook",
-						},
-					};
-				},
+				fn: () => ({
+					type: "hookAppendedBack",
+					matches: {
+						// Matching front token : Name of complete token
+						hookPrependedFront: "hook",
+						hookAnonymousFront: "hook",
+					},
+				}),
 			},
 			
 			hookAppendedBack: {
-				fn: function(match) {
-					return {
-						name: match[1],
-						tagPosition: "appended",
-						matches: {
-							hookAppendedFront: "hook",
-						},
-					};
-				},
+				fn: (match) => ({
+					name: match[1],
+					tagPosition: "appended",
+					matches: {
+						hookAppendedFront: "hook",
+					},
+				}),
 			},
 			
 			verbatimOpener: {
-				fn: function(match) {
+				fn(match) {
 					var number = match[0].length,
 						matches = {};
 					
@@ -417,58 +376,48 @@
 				},
 			},
 			collapsedFront: {
-				fn: function() {
-					return {
-						isFront: true,
-					};
-				},
+				fn: () => ({
+					isFront: true,
+				}),
 			},
 			collapsedBack: {
-				fn: function() {
-					return {
-						matches: {
-							collapsedFront: "collapsed",
-						},
-					};
-				},
+				fn: () => ({
+					matches: {
+						collapsedFront: "collapsed",
+					},
+				}),
 			},
 			escapedLine: {
 				fn: emptyFn,
 			},
 			legacyLink: {
-				fn: function(match) {
-					return {
-						type: "twineLink",
-						innerText: match[1],
-						passage: match[2]
-					};
-				},
+				fn: (match) => ({
+					type: "twineLink",
+					innerText: match[1],
+					passage: match[2]
+				}),
 			},
 		});
 		
 		/*
 			Expression rules.
 		*/
-		expressionRules = setupRules(macroMode, {
+		const expressionRules = setupRules(macroMode, {
 			macroFront: {
-				fn: function(match) {
-					return {
-						isFront: true,
-						name: match[1],
-					};
-				},
+				fn: (match) => ({
+					isFront: true,
+					name: match[1],
+				}),
 			},
 			groupingBack: {
-				fn: function() {
-					return {
-						matches: {
-							groupingFront:
-								"grouping",
-							macroFront:
-								"macro",
-						},
-					};
-				},
+				fn: () => ({
+					matches: {
+						groupingFront:
+							"grouping",
+						macroFront:
+							"macro",
+					},
+				}),
 			},
 			
 			hookRef:  { fn: textTokenFn("name") },
@@ -489,7 +438,7 @@
 		/*
 			Now, macro code rules.
 		*/
-		macroRules = setupRules(macroMode, Object.assign({
+		const macroRules = setupRules(macroMode, Object.assign({
 				/*
 					The macroName must be a separate token, because it could
 					be a method call (which in itself contains a variable token
@@ -498,7 +447,7 @@
 				macroName: {
 					// This must be the first token inside a macro.
 					canFollow: ['macroFront'],
-					fn: function(match) {
+					fn(match) {
 						/*
 							If match[2] is present, then it matched a variable.
 							Thus, it's a method call.
@@ -514,11 +463,9 @@
 				},
 				
 				groupingFront: {
-					fn: function() {
-						return {
-							isFront: true,
-						};
-					},
+					fn: () => ({
+						isFront: true,
+					}),
 				},
 				
 				/*
@@ -563,35 +510,29 @@
 				},
 				
 				singleStringOpener: {
-					fn: function() {
-						return {
-							isFront: true,
-							matches: {
-								singleStringOpener:
-									"string",
-							},
-						};
-					},
+					fn: () => ({
+						isFront: true,
+						matches: {
+							singleStringOpener:
+								"string",
+						},
+					}),
 				},
 				doubleStringOpener: {
-					fn: function() {
-						return {
-							isFront: true,
-							matches: {
-								doubleStringOpener:
-									"string",
-							},
-						};
-					},
+					fn: () => ({
+						isFront: true,
+						matches: {
+							doubleStringOpener:
+								"string",
+						},
+					}),
 				},
 				
 				cssTime: {
-					fn: function(match) {
-						return {
-							value: +match[1]
-								* (match[2].toLowerCase() === "s" ? 1000 : 1),
-						};
-					},
+					fn: (match) => ({
+						value: +match[1]
+							* (match[2].toLowerCase() === "s" ? 1000 : 1),
+					}),
 				},
 				
 				colour: {
@@ -600,7 +541,7 @@
 						The colour names are translated into hex codes here,
 						rather than later in TwineScript.
 					*/
-					fn: function(match) {
+					fn(match) {
 						var colour,
 							m = match[0].toLowerCase(),
 							/*
@@ -641,14 +582,12 @@
 				},
 				
 				number: {
-					fn: function(match) {
-						/*
-							This fixes accidental octal (by eliminating octal)
-						*/
-						return {
-							value: parseFloat(match[0]),
-						};
-					},
+					/*
+						This fixes accidental octal (by eliminating octal)
+					*/
+					fn: (match) => ({
+						value: parseFloat(match[0]),
+					}),
 				},
 				addition: {
 					fn: emptyFn,
@@ -663,19 +602,15 @@
 					fn: emptyFn,
 				},
 				inequality: {
-					fn: function(match) {
-						return {
-							operator: match[0],
-						};
-					},
+					fn: (match) => ({
+						operator: match[0],
+					}),
 				},
 				augmentedAssign: {
-					fn: function(match) {
-						return {
-							// This selects just the first character, like the + of +=.
-							operator: match[0][0],
-						};
-					},
+					fn: (match) => ({
+						// This selects just the first character, like the + of +=.
+						operator: match[0][0],
+					}),
 				},
 				identifier:          { fn: textTokenFn("name") },
 			},
@@ -700,9 +635,9 @@
 			Note: as the mode arrays are passed by reference by the above,
 			the arrays must now be modified in-place, using [].push.apply().
 		*/
-		[].push.apply(markupMode,       Object.keys(blockRules)
-								.concat(Object.keys(inlineRules))
-								.concat(Object.keys(expressionRules)));
+		markupMode.push(            ...Object.keys(blockRules),
+									...Object.keys(inlineRules),
+									...Object.keys(expressionRules));
 		
 		/*
 			Warning: the property pattern "'s" conflicts with the string literal
@@ -710,27 +645,27 @@
 			the former is always matched first, expressionRules
 			must be pushed first.
 		*/
-		[].push.apply(macroMode,        Object.keys(expressionRules)
-								.concat(Object.keys(macroRules)));
+		macroMode.push(             ...Object.keys(expressionRules),
+									...Object.keys(macroRules));
 
 		/*
 			Merge all of the categories together.
 		*/
-		allRules = Object.assign({}, blockRules, inlineRules, expressionRules, macroRules);
+		const allRules = Object.assign({}, blockRules, inlineRules, expressionRules, macroRules);
 		
 		/*
 			Add the 'pattern' property to each rule
 			(the RegExp used by the lexer to match it), as well
 			as some other properties.
 		*/
-		Object.keys(allRules).forEach(function(key) {
+		Object.keys(allRules).forEach((key) => {
 			/*
 				Each named rule uses the same-named Pattern for its
 				regular expression.
 				That is, each rule key *should* map directly to a Pattern key.
 				The Patterns are added now.
 			*/
-			var re = Patterns[key];
+			const re = Patterns[key];
 			if (typeof re !== "string") {
 				allRules[key].pattern = re;
 			}
@@ -770,7 +705,7 @@
 			@class TwineMarkup
 			@static
 		*/	
-		var TwineMarkup = Object.freeze({
+		const TwineMarkup = Object.freeze({
 			
 			/**
 				@method lex
@@ -784,7 +719,7 @@
 				
 				@property {Object} Patterns
 			*/
-			Patterns: Patterns
+			Patterns,
 		});
 		return TwineMarkup;
 	}

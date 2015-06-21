@@ -1,4 +1,4 @@
-define(['jquery', 'utils', 'renderer'], function($, Utils, Renderer) {
+define(['jquery', 'utils', 'renderer'], ($, {assertOnlyHas, impossible, transitionIn}, {exec}) => {
 	"use strict";
 	/**
 		When a new Section (generally a hook or expression) is about to be rendered,
@@ -6,14 +6,14 @@ define(['jquery', 'utils', 'renderer'], function($, Utils, Renderer) {
 		attached to the Section. They mutate the ChangeDescriptor, and the result describes
 		all of the changes that must be made to the Section on rendering.
 	*/
-	var ChangeDescriptor,
-		/*
-			changeDescriptorShape is an array of all expected properties on
-			ChangeDescriptor instances. It's cached for performance paranoia.
-		*/
-		changeDescriptorShape;
-	
-	ChangeDescriptor = {
+
+	/*
+		changeDescriptorShape is an array of all expected properties on
+		ChangeDescriptor instances. It's cached for performance paranoia.
+	*/
+	let changeDescriptorShape;
+
+	const ChangeDescriptor = {
 		
 		// A ChangeDescriptor is a TwineScript internal object with the following values:
 		
@@ -62,8 +62,8 @@ define(['jquery', 'utils', 'renderer'], function($, Utils, Renderer) {
 			Passed-in properties can be added to the descriptor, and a single
 			(presumably composed) ChangerCommand as well.
 		*/
-		create: function(properties, changer) {
-			var ret = Object.assign(Object.create(this), {
+		create(properties, changer) {
+			const ret = Object.assign(Object.create(this), {
 					// Of course, we can't inherit array contents from the prototype chain,
 					// so we have to copy the arrays.
 					attr:   [].concat(this.attr   || []),
@@ -82,8 +82,8 @@ define(['jquery', 'utils', 'renderer'], function($, Utils, Renderer) {
 			This method applies the style/attribute/data entries of this descriptor
 			to the target HTML element.
 		*/
-		update: function() {
-			var target = this.target;
+		update() {
+			const {target} = this;
 			/*
 				Apply the style attributes to the target element.
 			*/
@@ -97,17 +97,13 @@ define(['jquery', 'utils', 'renderer'], function($, Utils, Renderer) {
 					until it's connected to the DOM. So, now this .css call is deferred
 					for 1 frame, which should (._.) be enough time for it to become attached.
 				*/
-				setTimeout(function() {
-					target.css(Object.assign.apply(0, [{}].concat(this.styles)));
-				}.bind(this));
+				setTimeout(() => target.css(Object.assign(...[{}].concat(this.styles))));
 			}
 			/*
 				If HTML attributes were included in the changerDescriptor, apply them now.
 			*/
 			if (this.attr) {
-				this.attr.forEach(function(e) {
-					target.attr(e);
-				});
+				this.attr.forEach(e => target.attr(e));
 			}
 			/*
 				Same with jQuery data (such as functions to call in event of, say, clicking).
@@ -125,16 +121,13 @@ define(['jquery', 'utils', 'renderer'], function($, Utils, Renderer) {
 			@method render
 			@return {jQuery} The rendered passage DOM.
 		*/
-		render: function() {
-			var
-				target      = this.target,
-				source      = this.source,
-				append      = this.append,
-				transition  = this.transition,
-				enabled     = this.enabled,
-				dom;
+		render() {
+			const
+				{target, source, transition, enabled} = this;
+			let
+				{append} = this;
 			
-			Utils.assertOnlyHas(this, changeDescriptorShape);
+			assertOnlyHas(this, changeDescriptorShape);
 			
 			/*
 				First, a quick check to see if this is enabled and with a target.
@@ -163,7 +156,7 @@ define(['jquery', 'utils', 'renderer'], function($, Utils, Renderer) {
 					hook, then I'd change append to "replaceWith".
 				*/
 				else {
-					Utils.impossible("Section.render", "The target jQuery doesn't have a '" + append + "' method.");
+					impossible("Section.render", "The target jQuery doesn't have a '" + append + "' method.");
 					return;
 				}
 			}
@@ -189,8 +182,8 @@ define(['jquery', 'utils', 'renderer'], function($, Utils, Renderer) {
 				early-exit from this method.
 			*/
 			
-			dom = $(source &&
-				$.parseHTML(Renderer.exec(source), document, true));
+			const dom = $(source &&
+				$.parseHTML(exec(source), document, true));
 			
 			/*
 				Now, insert the DOM structure into the target element.
@@ -223,7 +216,7 @@ define(['jquery', 'utils', 'renderer'], function($, Utils, Renderer) {
 				Transition it using this descriptor's given transition.
 			*/
 			if (transition) {
-				Utils.transitionIn(
+				transitionIn(
 					/*
 						There's a slight problem: when we want to replace the
 						target, we don't need to apply a transition to every

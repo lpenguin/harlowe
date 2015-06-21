@@ -1,12 +1,11 @@
 define([
-	'utils',
 	'state',
 	'datatypes/colour',
 	'datatypes/assignmentrequest',
 	'utils/operationutils',
 	'internaltypes/twineerror',
 ],
-function(Utils, State, Colour, AssignmentRequest, OperationUtils, TwineError) {
+(State, Colour, AssignmentRequest, {isObject, collectionType, coerceToString, is, contains, objectName}, TwineError) => {
 	"use strict";
 	/**
 		Operation objects are a table of operations which TwineScript proxies
@@ -17,15 +16,7 @@ function(Utils, State, Colour, AssignmentRequest, OperationUtils, TwineError) {
 		
 		@class Operations
 	*/
-	var Operations,
-		/*
-			In ES6, this would be a destructured assignment.
-		*/
-		isObject        = OperationUtils.isObject,
-		collectionType  = OperationUtils.collectionType,
-		coerceToString  = OperationUtils.coerceToString,
-		objectName      = OperationUtils.objectName,
-		contains        = OperationUtils.contains,
+	let Operations,
 		/*
 			The "it" keyword is bound to whatever the last left-hand-side value
 			in a comparison operation was. Since its scope is so ephemeral,
@@ -49,8 +40,7 @@ function(Utils, State, Colour, AssignmentRequest, OperationUtils, TwineError) {
 	*/
 	function onlyPrimitives(type, fn, operationVerb, message) {
 		operationVerb = operationVerb || "do this to";
-		return function(left, right) {
-			var error;
+		return (left, right) => {
 			/*
 				If the passed function has an arity of 1, ignore the
 				right value.
@@ -61,6 +51,7 @@ function(Utils, State, Colour, AssignmentRequest, OperationUtils, TwineError) {
 			/*
 				This part allows errors to propagate up the TwineScript stack.
 			*/
+			let error;
 			if ((error = TwineError.containsError(left, right))) {
 				return error;
 			}
@@ -84,11 +75,11 @@ function(Utils, State, Colour, AssignmentRequest, OperationUtils, TwineError) {
 		@return {Function}
 	*/
 	function doNotCoerce(fn) {
-		return function(left, right) {
-			var error;
+		return (left, right) => {
 			/*
 				This part allows errors to propagate up the TwineScript stack.
 			*/
+			let error;
 			if ((error = TwineError.containsError(left, right))) {
 				return error;
 			}
@@ -127,13 +118,13 @@ function(Utils, State, Colour, AssignmentRequest, OperationUtils, TwineError) {
 		@return {Function}
 	*/
 	function comparisonOp(fn) {
-		return function(left, right) {
+		return (left, right) => {
 			It = left;
 			return fn(left, right);
 		};
 	}
 
-	var andOrNotMessage =
+	const andOrNotMessage =
 		"If one of these values is a number, you may want to write a check that it 'is not 0'. "
 		+ "Also, if one is a string, you may want to write a check that it 'is not \"\" '.";
 	
@@ -146,7 +137,7 @@ function(Utils, State, Colour, AssignmentRequest, OperationUtils, TwineError) {
 			While for the most part Operations is static, instances should
 			nonetheless be created...
 		*/
-		create: function(section) {
+		create(section) {
 			/*
 				The only varying state that an Operations instance would have
 				compared to the prototype is this "section" argument, which
@@ -154,7 +145,7 @@ function(Utils, State, Colour, AssignmentRequest, OperationUtils, TwineError) {
 				Hrmmm... #awkward
 			*/
 			
-			var ret = Object.create(this);
+			const ret = Object.create(this);
 			
 			/*
 				This contains special runtime identifiers which may change at any time.
@@ -185,20 +176,13 @@ function(Utils, State, Colour, AssignmentRequest, OperationUtils, TwineError) {
 			return ret;
 		},
 		
-		"and": onlyPrimitives("boolean", doNotCoerce(function(l, r) {
-			return l && r;
-		}), "use 'and' to join", andOrNotMessage),
+		"and": onlyPrimitives("boolean", doNotCoerce((l, r) => l && r), "use 'and' to join", andOrNotMessage),
 		
-		"or": onlyPrimitives("boolean", doNotCoerce(function(l, r) {
-			return l || r;
-		}), "use 'or' to join", andOrNotMessage),
+		"or": onlyPrimitives("boolean", doNotCoerce((l, r) => l || r), "use 'or' to join", andOrNotMessage),
 		
-		"not": onlyPrimitives("boolean", function(e) {
-			return !e;
-		}, "use 'not' to invert", andOrNotMessage),
+		"not": onlyPrimitives("boolean", e => !e, "use 'not' to invert", andOrNotMessage),
 		
-		"+":  doNotCoerce(function(l, r) {
-			var ret;
+		"+":  doNotCoerce((l, r) => {
 			/*
 				I'm not a fan of the fact that + is both concatenator and
 				arithmetic op, but I guess it's close to what people expect.
@@ -211,8 +195,9 @@ function(Utils, State, Colour, AssignmentRequest, OperationUtils, TwineError) {
 					Note that the doNotCoerce wrapper above requires that
 					the right side also be an array.
 				*/
-				return [].concat(l, r);
+				return [...l, ...r];
 			}
+			let ret;
 			/*
 				For Maps and Sets, create a new instance combining left and right.
 				You may note that in the case of Maps, values of keys used on the
@@ -220,16 +205,12 @@ function(Utils, State, Colour, AssignmentRequest, OperationUtils, TwineError) {
 			*/
 			if (l instanceof Map) {
 				ret = new Map(l);
-				r.forEach(function(v,k) {
-					ret.set(k, v);
-				});
+				r.forEach((v,k) => ret.set(k, v));
 				return ret;
 			}
 			if (l instanceof Set) {
 				ret = new Set(l);
-				r.forEach(function(v) {
-					ret.add(v);
-				});
+				r.forEach((v) => ret.add(v));
 				return ret;
 			}
 			/*
@@ -250,8 +231,7 @@ function(Utils, State, Colour, AssignmentRequest, OperationUtils, TwineError) {
 			*/
 			return TwineError.create("operation", "I can't use + on " + objectName(l) + ".");
 		}),
-		"-":  doNotCoerce(function(l, r) {
-			var ret;
+		"-":  doNotCoerce((l, r) => {
 			/*
 				Overloading - to mean "remove all instances from".
 				So, "reed" - "e" = "rd", and [1,3,5,3] - 3 = [1,5].
@@ -262,19 +242,18 @@ function(Utils, State, Colour, AssignmentRequest, OperationUtils, TwineError) {
 					the right side also be an array. Subtracting 1 element
 					from an array requires it be wrapped in an (a:) macro.
 				*/
-				return l.filter(function(e) { return r.indexOf(e) === -1; });
+				return l.filter(e => r.indexOf(e) === -1);
 			}
+			let ret;
 			/*
 				Sets, but not Maps, can be subtracted.
 			*/
-			else if (l instanceof Set) {
+			if (l instanceof Set) {
 				ret = new Set(l);
-				r.forEach(function(v) {
-					ret.delete(v);
-				});
+				r.forEach(v => ret.delete(v));
 				return ret;
 			}
-			else if (typeof l === "string") {
+			if (typeof l === "string") {
 				/*
 					This is an easy but cheesy way to remove all instances
 					of the right string from the left string.
@@ -283,43 +262,37 @@ function(Utils, State, Colour, AssignmentRequest, OperationUtils, TwineError) {
 			}
 			return l - r;
 		}),
-		"*":  onlyPrimitives("number", doNotCoerce(function(l, r) {
-			return l * r;
-		}), "multiply"),
-		"/":  onlyPrimitives("number", doNotCoerce(function(l, r) {
+		"*":  onlyPrimitives("number", doNotCoerce((l, r) => l * r), "multiply"),
+		"/":  onlyPrimitives("number", doNotCoerce((l, r) => {
 			if (r === 0) {
 				return TwineError.create("operation", "I can't divide " + objectName(l) + " by zero.");
 			}
 			return l / r;
 		}), "divide"),
-		"%":  onlyPrimitives("number", doNotCoerce(function(l, r) {
+		"%":  onlyPrimitives("number", doNotCoerce((l, r) => {
 			if (r === 0) {
 				return TwineError.create("operation", "I can't modulo " + objectName(l) + " by zero.");
 			}
 			return l % r;
 		}), "modulus"),
 		
-		"<":  comparisonOp( onlyPrimitives("number", doNotCoerce(function(l,r) { return l <  r; }), "do < to")),
-		">":  comparisonOp( onlyPrimitives("number", doNotCoerce(function(l,r) { return l >  r; }), "do > to")),
-		"<=": comparisonOp( onlyPrimitives("number", doNotCoerce(function(l,r) { return l <= r; }), "do <= to")),
-		">=": comparisonOp( onlyPrimitives("number", doNotCoerce(function(l,r) { return l >= r; }), "do >= to")),
+		"<":  comparisonOp( onlyPrimitives("number", doNotCoerce((l,r) => l <  r), "do < to")),
+		">":  comparisonOp( onlyPrimitives("number", doNotCoerce((l,r) => l >  r), "do > to")),
+		"<=": comparisonOp( onlyPrimitives("number", doNotCoerce((l,r) => l <= r), "do <= to")),
+		">=": comparisonOp( onlyPrimitives("number", doNotCoerce((l,r) => l >= r), "do >= to")),
 		
-		is: comparisonOp(OperationUtils.is),
+		is: comparisonOp(is),
 		
-		isNot: comparisonOp(function(l,r) {
-			return !Operations.is(l,r);
-		}),
+		isNot: comparisonOp((l,r) => !Operations.is(l,r)),
 		contains: comparisonOp(contains),
-		isIn: comparisonOp(function(l,r) {
-			return contains(r,l);
-		}),
+		isIn: comparisonOp((l,r) => contains(r,l)),
 		
 		/*
 			This takes a plain value assumed to be an array, and wraps
 			it in a special structure that denotes it to be spreadable.
 			This is created by the spread (...) operator.
 		*/
-		makeSpreader: function(val) {
+		makeSpreader(val) {
 			return {
 				value: val,
 				spreader: true,
@@ -332,8 +305,8 @@ function(Utils, State, Colour, AssignmentRequest, OperationUtils, TwineError) {
 			appropriate error messages must be generated, all of this
 			is part of TwineScript instead of the AssignmentRequest module.
 		*/
-		makeAssignmentRequest: function(dest, src, operator) {
-			var propertyChain,
+		makeAssignmentRequest(dest, src, operator) {
+			const
 				/*
 					Refuse if the object or value is an error.
 				*/
@@ -352,7 +325,6 @@ function(Utils, State, Colour, AssignmentRequest, OperationUtils, TwineError) {
 					+ objectName(dest)
 					+ ".");
 			}
-			propertyChain = dest.compiledPropertyChain;
 			
 			// The input is all clear, it seems.
 			return AssignmentRequest.create(dest, src, operator);
@@ -363,7 +335,7 @@ function(Utils, State, Colour, AssignmentRequest, OperationUtils, TwineError) {
 			while returning the original VarRef.
 			It's used for easy compilation of assignment requests.
 		*/
-		setIt: function(e) {
+		setIt(e) {
 			/*
 				Propagate any errors passed in, as usual for these operations.
 				Note that this does NOT handle errors returned in

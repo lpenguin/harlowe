@@ -7,7 +7,7 @@ define([
 	'macrolib/enchantments',
 	'macrolib/links',
 ],
-function(Utils) {
+function({log}) {
 	"use strict";
 	/*
 		Twine macro standard library.
@@ -30,6 +30,5 @@ function(Utils) {
 		* verbs:
 			Should be saved for commands only.
 	*/
-	
-	Utils.log("Loaded the built-in macros.");
+	log("Loaded the built-in macros.");
 });
