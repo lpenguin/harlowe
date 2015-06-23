@@ -54,8 +54,8 @@ define([
 			if (!nextHook.length) {
 				expr.replaceWith(TwineError.create("changer",
 					"The (" + result.macroName + ":) command should be assigned to a variable or attached to a hook.",
-					"Macros like (if: $alive) should be touching the left side of a hook: (if: $alive)[Breathe]"
-				), expr.attr('title'));
+					"Macros like this should usually be touching the left side of a hook: " + expr.attr('title') + "[Some text]"
+				).render(expr.attr('title')));
 			}
 			else {
 				this.renderInto(

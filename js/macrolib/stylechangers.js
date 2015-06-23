@@ -126,14 +126,25 @@ define(['jquery','macros', 'utils', 'utils/selectors', 'datatypes/colour', 'data
 						} : {
 							'margin-left' : alignPercent + '%',
 					});
-				} else if (arrow[0] === "<" && arrow.slice(-1) === ">") {
+				}
+				else if (arrow[0] === "<" && arrow.slice(-1) === ">") {
 					style = {
 						'text-align'  : 'justify',
 						'max-width'   : '50%',
 					};
-				} else if (arrow.includes(">")) {
+				}
+				else if (arrow.includes(">")) {
 					style = {
 						'text-align'  : 'right'
+					};
+				}
+				else {
+					/*
+						If this is nested inside another (align:)-affected hook,
+						this is necessary to assert leftward alignment.
+					*/
+					style = {
+						'text-align'  : 'left'
 					};
 				}
 				// This final property is necessary for margins to appear.
