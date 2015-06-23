@@ -23,46 +23,62 @@ describe("style changer macros", function() {
 			expect(hook.css('display')).toBe('inline-block');
 			expect(hook.css('clear')).toBe('both');
 		});
+		it("errors when placed in passage prose while not attached to a hook", function() {
+			expectMarkupToError("(css:'color:red')");
+			expectMarkupToNotError("(css:'color:red')[]");
+		});
 	});
 	describe("the (textstyle:) macro", function() {
 		it("requires exactly 1 string argument", function() {
-			expectMarkupToError("(textstyle:)");
-			expectMarkupToError("(textstyle:1)");
-			expectMarkupToError("(textstyle:'A','B')");
+			expectMarkupToError("(print:(textstyle:))");
+			expectMarkupToError("(print:(textstyle:1))");
+			expectMarkupToError("(print:(textstyle:'A','B'))");
 		});
 		it("errors unless given a valid textstyle name", function() {
-			expectMarkupToError("(textstyle:'')");
-			expectMarkupToError("(textstyle:'garply corge')");
+			expectMarkupToError("(print:(textstyle:''))");
+			expectMarkupToError("(print:(textstyle:'garply corge'))");
 			['bold', 'italic', 'underline', 'strike', 'superscript', 'subscript', 'blink', 'shudder',
 			'mark', 'condense', 'expand', 'outline', 'shadow', 'emboss', 'smear', 'blur', 'blurrier',
 			'mirror', 'upsidedown', 'fadeinout', 'rumble'].forEach(function(e) {
-				expectMarkupToNotError("(textstyle:'" + e + "')");
+				expectMarkupToNotError("(print:(textstyle:'" + e + "'))");
 			});
+		});
+		it("errors when placed in passage prose while not attached to a hook", function() {
+			expectMarkupToError("(textstyle:'bold')");
+			expectMarkupToNotError("(textstyle:'bold')[]");
 		});
 		// TODO: Add .css() tests of output.
 	});
 	describe("the (transition:) macro", function() {
 		it("requires exactly 1 string argument", function() {
-			expectMarkupToError("(transition:)");
-			expectMarkupToError("(transition:1)");
-			expectMarkupToError("(transition:'A','B')");
+			expectMarkupToError("(print:(transition:))");
+			expectMarkupToError("(print:(transition:1))");
+			expectMarkupToError("(print:(transition:'A','B'))");
 		});
 		it("errors unless given a valid transition name", function() {
-			expectMarkupToError("(transition:'')");
-			expectMarkupToError("(transition:'garply corge')");
+			expectMarkupToError("(print:(transition:''))");
+			expectMarkupToError("(print:(transition:'garply corge'))");
 			["dissolve", "shudder", "pulse"].forEach(function(e) {
-				expectMarkupToNotError("(transition:'" + e + "')");
+				expectMarkupToNotError("(print:(transition:'" + e + "'))");
 			});
+		});
+		it("errors when placed in passage prose while not attached to a hook", function() {
+			expectMarkupToError("(transition:'dissolve')");
+			expectMarkupToNotError("(transition:'dissolve')[]");
 		});
 		// TODO: Add .css() tests of output.
 	});
 	describe("the (background:) macro", function() {
 		it("requires 1 string argument or 1 colour argument", function() {
-			expectMarkupToError("(background:)");
-			expectMarkupToError("(background:1)");
-			expectMarkupToError("(background:'A','B')");
-			expectMarkupToNotError("(background:'A')");
-			expectMarkupToNotError("(background:red + white)");
+			expectMarkupToError("(print:(background:))");
+			expectMarkupToError("(print:(background:1))");
+			expectMarkupToError("(print:(background:'A','B'))");
+			expectMarkupToNotError("(print:(background:'A'))");
+			expectMarkupToNotError("(print:(background:red + white))");
+		});
+		it("errors when placed in passage prose while not attached to a hook", function() {
+			expectMarkupToError("(background:'A')");
+			expectMarkupToNotError("(background:'A')[]");
 		});
 		it("given a string, applies it as the background-image property", function(done) {
 			var p = runPassage("(background:'garply')[Hey]").find('tw-hook');
@@ -96,15 +112,19 @@ describe("style changer macros", function() {
 	});
 	describe("the (align:) macro", function() {
 		it("requires exactly 1 string argument", function() {
-			expectMarkupToError("(align:)");
-			expectMarkupToError("(align:1)");
-			expectMarkupToError("(align:'A','B')");
+			expectMarkupToError("(print:(align:))");
+			expectMarkupToError("(print:(align:1))");
+			expectMarkupToError("(print:(align:'A','B'))");
 		});
 		it("errors if not given an valid arrow", function() {
-			expectMarkupToError("(align:'')");
-			expectMarkupToError("(align:'===')");
-			expectMarkupToError("(align:'<<==')");
-			expectMarkupToError("(align:'===><==>')");
+			expectMarkupToError("(align:'')[]");
+			expectMarkupToError("(align:'===')[]");
+			expectMarkupToError("(align:'<<==')[]");
+			expectMarkupToError("(align:'===><==>')[]");
+		});
+		it("errors when placed in passage prose while not attached to a hook", function() {
+			expectMarkupToError("(align:'==>')");
+			expectMarkupToNotError("(align:'==>')[]");
 		});
 		it("right-aligns text when given '==>'", function(done) {
 			var align = runPassage("(align:'==>')[garply]").find('tw-hook');
@@ -143,6 +163,17 @@ describe("style changer macros", function() {
 				expect(align.css('text-align')).toBe('justify');
 				expect(align.text()).toBe('garply');
 				expect(align.css('margin-left')).toMatch(/^(?:0px)?$/);
+				done();
+			});
+		});
+		it("left-aligns text when given '<=='", function(done) {
+			var align = runPassage("(align:'==>')[(align:'<==')[garply]]").find('tw-hook');
+			setTimeout(function() {
+				expect(align.css('text-align')).toBe('right');
+				expect(align.css('margin-left')).toMatch(/^(?:0px)?$/);
+				align = align.find('tw-hook');
+				expect(align.css('text-align')).toBe('left');
+				expect(align.css('margin-right')).toMatch(/^(?:0px)?$/);
 				done();
 			});
 		});

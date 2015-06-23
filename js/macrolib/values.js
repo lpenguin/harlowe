@@ -6,18 +6,16 @@ define(['macros', 'utils/operationutils', 'internaltypes/twineerror'],
 		These macros manipulate the primitive values - boolean, string, number.
 	*/
 	
-	var
-		rest = Macros.TypeSignature.rest,
-		zeroOrMore = Macros.TypeSignature.zeroOrMore,
-		wrapped = Macros.TypeSignature.wrapped,
-		// Any is a value, not a method.
-		Any = Macros.TypeSignature.Any;
+	const
+		{rest, zeroOrMore, wrapped,
+		/* Any is a value, not a method. */
+		Any} = Macros.TypeSignature;
 	
 	Macros.add
 		/*d:
 			String data
 			
-			A string is just a line of text - a bunch of text characters strung together.
+			A string is just a block of text - a bunch of text characters strung together.
 			
 			When making a story, you'll mostly work with strings that you intend to insert into
 			the passage source. If a string contains markup, then the markup will be processed when it's
