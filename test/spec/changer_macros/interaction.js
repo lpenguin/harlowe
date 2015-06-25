@@ -23,6 +23,10 @@ describe("interaction macros", function() {
 				expectMarkupToError("(print:(" + e.name + ":?foo, 'baz'))");
 				expectMarkupToError("(print:(" + e.name + ":'baz', 'baz'))");
 			});
+			it("errors when placed in passage prose while not attached to a hook", function() {
+				expectMarkupToError("(" + e.name + ":?foo)");
+				expectMarkupToNotError("(" + e.name + ":?foo)[]");
+			});
 			describe("given a single hook", function() {
 				it("enchants the selected hook as a " + e.action, function() {
 					var p = runPassage("[cool]<foo|(" + e.name + ":?foo)[]").find('tw-enchantment');

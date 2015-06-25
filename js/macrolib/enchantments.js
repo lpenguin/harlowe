@@ -1,5 +1,5 @@
-define(['jquery', 'utils', 'macros', 'datatypes/hookset', 'datatypes/changercommand'],
-($, Utils, Macros, HookSet, ChangerCommand) => {
+define(['jquery', 'utils', 'macros', 'datatypes/hookset', 'datatypes/changercommand', 'internaltypes/enchantment'],
+($, Utils, Macros, HookSet, ChangerCommand, Enchantment) => {
 	"use strict";
 	/*
 		Built-in Revision, Interaction and Enchantment macros.
@@ -161,26 +161,6 @@ define(['jquery', 'utils', 'macros', 'datatypes/hookset', 'datatypes/changercomm
 				a #kludge that it piggybacks off the changer macro concept.
 			*/
 			function makeEnchanter(desc, selector) {
-				let
-					/*
-						The scope is shared with both enchantData methods:
-						refreshScope removes the <tw-enchantment> elements
-						set on the scope, and enchantScope creates an updated
-						scope to enchant.
-					*/
-					scope,
-					/*
-						A store for the <tw-enchantment> wrappers created
-						by enchantScope. Used by the enchantment's event function.
-						
-						This is a case of a jQuery object being used as a
-						data structure rather than as a query result set.
-						Search function calls for DOM elements 'contained' in
-						these enchantments is more succinct using jQuery
-						than using a plain Array or Set.
-					*/
-					enchantments = $();
-				
 				/*
 					Prevent the target's source from running immediately.
 					This is unset when the event is finally triggered.
@@ -205,102 +185,42 @@ define(['jquery', 'utils', 'macros', 'datatypes/hookset', 'datatypes/changercomm
 					scope whenever its DOM is altered (e.g. words matching this enchantment's
 					selector are added or removed from the DOM).
 				*/
-				const enchantData = {
-				
-					/*
-						This method enchants the scope, applying the macro's enchantment's
-						classes to the matched elements.
-					*/
-					enchantScope() {
-						/*
-							Create the scope, which is a HookSet or PseudoHookSet
-							depending on the selector.
-						*/
-						scope = desc.section.selectHook(selector);
-						/*
-							In the unlikely event that no scope could be created, call it quits.
-							Q: should it make a fuss?
-						*/
-						if (!scope) {
-							return;
-						}
-						/*
-							Reset the enchantments store, to prepare for the insertion of
-							a fresh set of <tw-enchantment>s.
-						*/
-						enchantments = $();
-						
-						/*
-							Now, enchant each selected word or hook within the scope.
-						*/
-						scope.forEach((e) => {
-							/*
-								Create a fresh <tw-enchantment>, and wrap the elements in it.
-							*/
-							e.wrapAll("<tw-enchantment class='"
-								+ enchantDesc.classList +"'>");
-							/*
-								It's a little odd that the generated wrapper must be retrieved in
-								this roundabout fashion, but oh well.
-							*/
-							const wrapping = e.parent();
-							
-							/*
-								Store the wrapping in the Section's enchantments list.
-							*/
-							enchantments = enchantments.add(wrapping);
-							/*
-								Affix to it an event function, to run when it experiences the
-								enchantment event.
-								
-								Alas, this is a #kludge to allow the jQuery event handler
-								function above to access this inner data (as in, call this.event).
-							*/
-							e.parent().data('enchantmentEvent',
-								function specificEnchantmentEvent() {
-									if (enchantDesc.once) {
-										/*
-											Remove this enchantment from the Section's list.
-										*/
-										const index = desc.section.enchantments.indexOf(enchantData);
-										desc.section.enchantments.splice(index,1);
-										/*
-											Of course, the <tw-enchantment>s
-											must also be removed.
-										*/
-										enchantData.refreshScope();
-									}
-									/*
-										At last, the target originally specified
-										by the ChangeDescriptor can now be filled with the
-										ChangeDescriptor's original source.
-										
-										By passing the desc as the third argument,
-										all its values are assigned, not just the target.
-										The second argument may be extraneous. #awkward
-									*/
-									desc.section.renderInto(
-										desc.source,
-										null,
-										Object.assign({}, desc, { enabled: true })
-									);
-								}
-							);
-						});
+				const enchantData = Enchantment.create({
+					attr: {
+						'class': enchantDesc.classList,
 					},
-					/*
-						This method refreshes the scope to reflect the current passage DOM state.
-					*/
-					refreshScope() {
-						/*
-							Clear all existing <tw-enchantment> wrapper elements placed by
-							the previous call to enchantScope().
-						*/
-						enchantments.each(function() {
-							$(this).contents().unwrap();
-						});
-					}
-				};
+					data: {
+						'enchantmentEvent'() {
+							if (enchantDesc.once) {
+								/*
+									Remove this enchantment from the Section's list.
+								*/
+								const index = desc.section.enchantments.indexOf(enchantData);
+								desc.section.enchantments.splice(index,1);
+								/*
+									Of course, the <tw-enchantment>s
+									must also be removed.
+								*/
+								enchantData.disenchant();
+							}
+							/*
+								At last, the target originally specified
+								by the ChangeDescriptor can now be filled with the
+								ChangeDescriptor's original source.
+								
+								By passing the desc as the third argument,
+								all its values are assigned, not just the target.
+								The second argument may be extraneous. #awkward
+							*/
+							desc.section.renderInto(
+								desc.source,
+								null,
+								Object.assign({}, desc, { enabled: true })
+							);
+						},
+					},
+					scope: desc.section.selectHook(selector),
+				});
 				/*
 					Add the above object to the section's enchantments.
 				*/
