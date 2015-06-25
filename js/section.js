@@ -751,7 +751,7 @@ define([
 				/*
 					This first method removes old <tw-enchantment> elements...
 				*/
-				e.refreshScope();
+				e.disenchant();
 				/*
 					...and this one adds new ones.
 				*/

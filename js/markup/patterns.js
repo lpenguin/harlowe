@@ -50,26 +50,26 @@
 	
 	const
 		// This includes all forms of whitespace except \n and \r
-		ws = "[ \\f\\t\\v\u00a0\u1680\u180e\u2000-\u200a\u2028\u2029\u202f\u205f\u3000]*",
+		ws                   = "[ \\f\\t\\v\u00a0\u1680\u180e\u2000-\u200a\u2028\u2029\u202f\u205f\u3000]*",
 		
 		// Mandatory whitespace
-		mws = ws.replace("*","+"),
+		mws                  = ws.replace("*","+"),
 		
 		// Word break
-		wb = "\\b",
+		wb                   = "\\b",
 		
 		//Escaped line
-		escapedLine =  "\\\\\\n\\\\?|\\n\\\\",
+		escapedLine          =  "\\\\\\n\\\\?|\\n\\\\",
 		
 		// Line break without postfix escape
-		br = "\\n(?!\\\\)",
+		br                   = "\\n(?!\\\\)",
 		
 		// Handles Unicode ranges not covered by \w. Copied from TiddlyWiki5 source - may need updating.
-		anyLetter       = "[\\w\\-\u00c0-\u00de\u00df-\u00ff\u0150\u0170\u0151\u0171]",
+		anyLetter            = "[\\w\\-\u00c0-\u00de\u00df-\u00ff\u0150\u0170\u0151\u0171]",
 		// Identical to the above, but excludes hyphens.
-		anyLetterStrict =    "[\\w\u00c0-\u00de\u00df-\u00ff\u0150\u0170\u0151\u0171]",
+		anyLetterStrict      =    "[\\w\u00c0-\u00de\u00df-\u00ff\u0150\u0170\u0151\u0171]",
 		
-		eol = either("\\n", "$"),
+		eol                  = either("\\n", "$"),
 		
 		noUnescapedLineBreak = "(" + either(escapedLine,"[^\\n]") + "+)",
 		
@@ -84,15 +84,15 @@
 			presentational purposes: putting a bullet-point before a line.
 		*/
 		
-		bullet = "\\*",
+		bullet      = "\\*",
 		
-		bulleted = ws + "(" + bullet + "+)" + mws + noUnescapedLineBreak + eol,
+		bulleted    = ws + "(" + bullet + "+)" + mws + noUnescapedLineBreak + eol,
 		
 		numberPoint = "(?:0\\.)",
 		
-		numbered = ws + "(" + numberPoint + "+)" + mws + noUnescapedLineBreak + eol,
+		numbered    = ws + "(" + numberPoint + "+)" + mws + noUnescapedLineBreak + eol,
 		
-		hr = ws + "\-{3,}" + ws + eol,
+		hr          = ws + "\-{3,}" + ws + eol,
 		
 		/*
 			Markdown setext headers conflict with the hr syntax, and are thus gone.
@@ -129,9 +129,9 @@
 			$bag's bonnet
 			$a's 1st's 2nd
 		*/
-		variable = "\\$(" + validPropertyName + ")",
+		variable          = "\\$(" + validPropertyName + ")",
 		
-		property = "'s" + mws + "(" + validPropertyName + ")",
+		property          = "'s" + mws + "(" + validPropertyName + ")",
 		
 		belongingProperty = "(" + validPropertyName + ")" + mws + "of" + wb + notBefore("it" + wb),
 		
@@ -154,11 +154,11 @@
 			"it" is a bit of a problem because its possessive is "its", not "it's",
 			so we can't use a derivation similar to property.
 		*/
-		identifier = either("it","time") + wb,
+		identifier          = either("it","time") + wb,
 		
-		itsProperty = "its" + mws + "(" + validPropertyName + ")",
+		itsProperty         = "its" + mws + "(" + validPropertyName + ")",
 		
-		itsOperator = "its" + mws,
+		itsOperator         = "its" + mws,
 		
 		belongingItProperty = "(" + validPropertyName + ")" + mws + "of" + mws + "it" + wb,
 		
