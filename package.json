@@ -20,6 +20,10 @@
 			"email": "klimas@gmail.com"
 		}
 	],
+	"engines":
+	{
+		"npm": ">=3.0"
+	},
 	"dependencies":
 	{
 		"grunt": "*",

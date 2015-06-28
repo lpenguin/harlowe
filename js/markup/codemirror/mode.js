@@ -1,7 +1,5 @@
 (function() {
 	'use strict';
-	var lex, harloweStyles, cm;
-	
 	/*
 		First, a preamble of helpers.
 		
@@ -26,6 +24,7 @@
 	/*
 		Import the TwineMarkup lexer function, and store it locally.
 	*/
+	let lex;
 	if(typeof define === 'function' && define.amd) {
 		define('markup', [], function (markup) {
 			lex = markup.lex;
@@ -78,6 +77,7 @@
 	/*
 		The mode is defined herein.
 	*/
+	let cm;
 	window.CodeMirror && CodeMirror.defineMode('harlowe', () => {
 		let tree;
 		
@@ -219,7 +219,7 @@
 		If the style element already exists, it is reused. Otherwise, it's created.
 		(Let's use pure DOM calls in the absence of a jQuery require() call.)
 	*/
-	harloweStyles = document.querySelector('style#cm-harlowe');
+	let harloweStyles = document.querySelector('style#cm-harlowe');
 	if (!harloweStyles) {
 		harloweStyles = document.createElement('style');
 		harloweStyles.setAttribute('id','cm-harlowe');
@@ -341,7 +341,7 @@
 							- It converts the keys to a selector (by consequence of the above)
 							and the values to a CSS body.
 						*/
-						.map(function map() {
+						.map(function map(e) {
 							if (e.indexOf('.') > -1) {
 								return e.split(/\./g).map(map).join('');
 							}
@@ -355,4 +355,4 @@
 			},
 		} + "";
 	})();
-}.call(this));
+}.call(eval('this')));

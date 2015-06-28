@@ -280,9 +280,9 @@ module.exports = function (grunt) {
 					},
 					loc: options && options.loc,
 				});
-			}
+			};
 		}(esprima.parse));
-		require('grunt-contrib-requirejs/node_modules/requirejs').define('esprima', [], function () {
+		require('requirejs').define('esprima', [], function () {
 			return esprima;
 		});
 	});
@@ -290,5 +290,5 @@ module.exports = function (grunt) {
 	grunt.registerTask('default', [ 'jshint:harlowe', 'jshint:tests', 'sass', 'cssmin', ]);
 	grunt.registerTask('compile', [ 'clean', 'sass', 'cssmin', 'es6hack', 'requirejs', 'babel', 'uglify', ]);
 	grunt.registerTask('runtime', [ 'compile', 'replace:runtime', 'examplefile', ]);
-	grunt.registerTask('quick',   [ 'sass', 'cssmin', 'es6hack', 'requirejs', 'replace:runtime', ]);
+	grunt.registerTask('quick',   [ 'sass', 'cssmin', 'es6hack', 'requirejs', 'babel', 'replace:runtime', ]);
 };
