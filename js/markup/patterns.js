@@ -451,4 +451,4 @@
 	else {
 		this.Patterns = Patterns;
 	}
-}).call(this || (typeof global !== 'undefined' ? global : window));
+}).call(eval('this') || (typeof global !== 'undefined' ? global : window));

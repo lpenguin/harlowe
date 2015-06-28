@@ -1,19 +1,38 @@
 define(['jquery', 'utils', 'macros', 'datatypes/hookset', 'datatypes/changercommand', 'internaltypes/enchantment'],
 ($, Utils, Macros, HookSet, ChangerCommand, Enchantment) => {
 	"use strict";
+
+	const {either} = Macros.TypeSignature;
 	/*
 		Built-in Revision, Interaction and Enchantment macros.
 		This module modifies the Macros module only, and exports nothing.
 	*/
 
 	/*
+		This experimental (enchant:) macro is currently just for testing purposes.
+	*/
+	Macros.add("enchant",
+		(section, changer, scope) => ({
+			TwineScript_ObjectName: "an (enchant:) command",
+			TwineScript_TypeName:   "an (enchant:) command",
+			TwineScript_Print() {
+				const enchantment = Enchantment.create({
+					scope: section.selectHook(scope),
+					changer,
+				});
+				section.enchantments.push(enchantment);
+				enchantment.enchantScope();
+				return "";
+			},
+		}),
+		[ChangerCommand, either(HookSet,String)]
+	);
+
+	/*
 		Revision macros produce ChangerCommands that redirect where the attached hook's
 		text is rendered - usually rendering inside an entirely different hook.
 	*/
-	var
-		either = Macros.TypeSignature.either,
-		
-		revisionTypes = [
+	const revisionTypes = [
 			// (replace:)
 			// A macro that replaces the scope element(s) with its contents.
 			"replace",
@@ -147,18 +166,12 @@ define(['jquery', 'utils', 'macros', 'datatypes/hookset', 'datatypes/changercomm
 				
 				It must perform the following tasks:
 				1. Silence the passed-in ChangeDescriptor.
-				2. Call Section.selectHook() to find which hooks are
-				selected by the given selector.
-				3. Set up the <tw-enchantment> elements around the hooks.
-				4. Affix an enchantment event function (that is, a function to run
+				2. Create an enchantment for the hooks selected by the given selector.
+				3. Affix an enchantment event function (that is, a function to run
 				when the enchantment's event is triggered) to the <tw-enchantment> elements.
-				5. Provide an API for refreshing/resetting the enchantment's
-				<tw-enchantment> elements to the Section (usually performing steps
-				2-4 again).
 				
-				You may notice most of these are side-effects to a changer function's
-				proper task of altering a ChangeDescriptor. Alas... it is something of
-				a #kludge that it piggybacks off the changer macro concept.
+				You may notice some of these are side-effects to a changer function's
+				proper task of altering a ChangeDescriptor. Alas...
 			*/
 			function makeEnchanter(desc, selector) {
 				/*
@@ -246,9 +259,9 @@ define(['jquery', 'utils', 'macros', 'datatypes/hookset', 'datatypes/changercomm
 		{
 			name: "click",
 			enchantDesc: {
-				event: "click",
-				once: true,
-				rerender: "",
+				event    : "click",
+				once     : true,
+				rerender : "",
 				classList: "link enchantment-link"
 			}
 		},
@@ -257,9 +270,9 @@ define(['jquery', 'utils', 'macros', 'datatypes/hookset', 'datatypes/changercomm
 		{
 			name: "mouseover",
 			enchantDesc: {
-				event: "mouseenter",
-				once: true,
-				rerender: "",
+				event    : "mouseenter",
+				once     : true,
+				rerender : "",
 				classList: "enchantment-mouseover"
 			}
 		},
@@ -268,9 +281,9 @@ define(['jquery', 'utils', 'macros', 'datatypes/hookset', 'datatypes/changercomm
 		{
 			name: "mouseout",
 			enchantDesc: {
-				event: "mouseleave",
-				once: true,
-				rerender: "",
+				event    : "mouseleave",
+				once     : true,
+				rerender : "",
 				classList: "enchantment-mouseout"
 			}
 		}

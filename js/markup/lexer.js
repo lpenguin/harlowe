@@ -629,4 +629,4 @@
 	else {
 		this.TwineLexer = Lexer;
 	}
-}).call(this || (typeof global !== 'undefined' ? global : window));
+}).call(eval('this') || (typeof global !== 'undefined' ? global : window));

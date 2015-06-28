@@ -1,4 +1,4 @@
-define(['jquery', 'utils'], ($, Utils) => {
+define(['jquery', 'utils', 'internaltypes/changedescriptor'], ($, Utils, ChangeDescriptor) => {
 	'use strict';
 	/*
 		Enchantments are special styling that is applied to selected elements of a
@@ -18,7 +18,7 @@ define(['jquery', 'utils'], ($, Utils) => {
 			scope to enchant.
 		*/
 		create(descriptor) {
-			Utils.assertMustHave(descriptor, ['scope','attr','data']);
+			Utils.assertOnlyHas(descriptor, ['scope', 'attr', 'data', 'changer']);
 
 			return Object.assign(Object.create(this), {
 				/*
@@ -39,7 +39,7 @@ define(['jquery', 'utils'], ($, Utils) => {
 			classes to the matched elements.
 		*/
 		enchantScope() {
-			const {scope, attr, data} = this;
+			const {scope, attr, data, changer} = this;
 			/*
 				Reset the enchantments store, to prepare for the insertion of
 				a fresh set of <tw-enchantment>s.
@@ -66,6 +66,11 @@ define(['jquery', 'utils'], ($, Utils) => {
 				}
 				if (data) {
 					wrapping.data(data);
+				}
+				if (changer) {
+					const cd = ChangeDescriptor.create({target:wrapping});
+					changer.run(cd);
+					cd.update();
 				}
 				
 				/*

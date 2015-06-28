@@ -748,4 +748,4 @@
 		Patterns = this.Patterns;
 		this.TwineMarkup = exporter(this.TwineLexer);
 	}
-}).call(this || (typeof global !== 'undefined' ? global : window));
+}).call(eval('this') || (typeof global !== 'undefined' ? global : window));
