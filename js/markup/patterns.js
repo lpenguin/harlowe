@@ -92,7 +92,7 @@
 		
 		numbered    = ws + "(" + numberPoint + "+)" + mws + noUnescapedLineBreak + eol,
 		
-		hr          = ws + "\-{3,}" + ws + eol,
+		hr          = ws + "-{3,}" + ws + eol,
 		
 		/*
 			Markdown setext headers conflict with the hr syntax, and are thus gone.
@@ -173,7 +173,7 @@
 		twine1Macro = "<<[^>\\s]+\\s*(?:\\\\.|'(?:[^'\\\\]*\\\\.)*[^'\\\\]*'|\"(?:[^\"\\\\]*\\\\.)*[^\"\\\\]*\"|[^'\"\\\\>]|>(?!>))*>>",
 		
 		tag = {
-			name:              "\\w[\\w\\-]*",
+			name:              "[a-zA-Z][\\w\\-]*",
 			attrs:             "(?:\"[^\"]*\"|'[^']*'|[^'\">])*?",
 		},
 		
