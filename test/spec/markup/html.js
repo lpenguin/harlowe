@@ -5,7 +5,16 @@ describe("HTML in twinemarkup", function() {
 		r.find('[data-raw]').removeAttr('data-raw');
 		expect(r.html()).toBe(expected);
 	}
-	
+
+	it("due to the behaviour of jQuery.parseHTML(), orphaned end-tags are silently removed", function() {
+		expectMarkupToPrint("Bee</b>", "Bee");
+	});
+
+	it("doesn't recognise tags that begin with a non-ASCII-letter", function() {
+		expectMarkupToPrint("<3>Bee</3>", "<3>Bee");
+		expectMarkupToPrint("<é>Bee</é>", "<é>Bee");
+	});
+
 	describe("span-level tags", function() {
 		it("are rendered as HTML, with an added data-raw attribute", function() {
 			expect(runPassage("<b>Bee</b>").find('b[data-raw]').length).toBe(1);
