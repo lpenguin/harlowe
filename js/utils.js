@@ -20,7 +20,7 @@ define(['jquery', 'markup', 'utils/selectors', 'utils/customelements'],
 			// The most common block HTML tags that would be used in passage source
 			"audio,blockquote,canvas,div,h1,h2,h3,h4,h5,hr,ol,p,pre,table,ul,video,"
 			// And the one(s) that Harlowe itself creates through its syntax
-			+ "tw-align"
+			+ "tw-align,tw-story,tw-passage"
 		).split(','),
 		
 		usuallyInlineElements = (
@@ -40,58 +40,6 @@ define(['jquery', 'markup', 'utils/selectors', 'utils/customelements'],
 		@class Utils
 		@static
 	*/
-	
-	/*
-		childrenProbablyInline: returns true if the matched elements probably only contain elements that
-		are of the 'inline' or 'none' CSS display type.
-		
-		This takes some shortcuts to avoid use of the costly $css() function as much as possible,
-		hence, it can only "probably" say so.
-		
-		This is used to crudely determine whether to make a <tw-transition-container> inline or block,
-		given that block children cannot inherit opacity from inline parents in Chrome (as of April 2015).
-	*/
-	function childrenProbablyInline(jq) {
-		/*
-			This is used to store elements which daunted all of the easy tests,
-			so that $css() can be run on them after the first loop has returned all-true.
-		*/
-		const unknown = [];
-		return Array.prototype.every.call(jq.find('*'), elem => {
-			/*
-				If it actually has "style=display:inline", "hidden", or "style=display:none"
-				as an inline attribute, well, that makes life easy for us.
-			*/
-			if (elem.hidden || /none|inline/.test(elem.style.display)) {
-				return true;
-			}
-			/*
-				If the children contain an element which is usually block,
-				then *assume* it is and return false early.
-			*/
-			if (usuallyBlockElements.indexOf(elem.tagName.toLowerCase()) >-1
-					/*
-						If it has an inline style which is NOT none or inline,
-						then go ahead and return false.
-					*/
-					|| /none|inline/.test(elem.style.display)) {
-				return false;
-			}
-			/*
-				If the child's tag name is that of an element which is
-				usually inline, then *assume* it is and return true early.
-			*/
-			if (usuallyInlineElements.indexOf(elem.tagName.toLowerCase()) >-1) {
-				return true;
-			}
-			/*
-				For all else, we fall back to the slow case.
-			*/
-			unknown.push(elem);
-			return true;
-		})
-		&& unknown.every(elem => /none|inline/.test(elem.style.display));
-	}
 	
 	const Utils = {
 		/**
@@ -344,6 +292,61 @@ define(['jquery', 'markup', 'utils/selectors', 'utils/customelements'],
 		},
 
 		/**
+			childrenProbablyInline: returns true if the matched elements probably only contain elements that
+			are of the 'inline' or 'none' CSS display type.
+			
+			This takes some shortcuts to avoid use of the costly $css() function as much as possible,
+			hence, it can only "probably" say so.
+			
+			This is used to crudely determine whether to make a <tw-transition-container> inline or block,
+			given that block children cannot inherit opacity from inline parents in Chrome (as of April 2015).
+			
+			@method childrenProbablyInline
+			@param jq    jQuery object
+		*/
+		childrenProbablyInline(jq) {
+			/*
+				This is used to store elements which daunted all of the easy tests,
+				so that $css() can be run on them after the first loop has returned all-true.
+			*/
+			const unknown = [];
+			return Array.prototype.every.call(jq.find('*'), elem => {
+				/*
+					If it actually has "style=display:inline", "hidden", or "style=display:none"
+					as an inline attribute, well, that makes life easy for us.
+				*/
+				if (elem.hidden || /none|inline/.test(elem.style.display)) {
+					return true;
+				}
+				/*
+					If the children contain an element which is usually block,
+					then *assume* it is and return false early.
+				*/
+				if (usuallyBlockElements.indexOf(elem.tagName.toLowerCase()) >-1
+						/*
+							If it has an inline style which is NOT none or inline,
+							then go ahead and return false.
+						*/
+						|| /none|inline/.test(elem.style.display)) {
+					return false;
+				}
+				/*
+					If the child's tag name is that of an element which is
+					usually inline, then *assume* it is and return true early.
+				*/
+				if (usuallyInlineElements.indexOf(elem.tagName.toLowerCase()) >-1) {
+					return true;
+				}
+				/*
+					For all else, we fall back to the slow case.
+				*/
+				unknown.push(elem);
+				return true;
+			})
+			&& unknown.every(elem => /none|inline/.test(elem.style.display));
+		},
+
+		/**
 			Replaces oldElem with newElem while transitioning between both.
 
 			@method transitionReplace
@@ -402,7 +405,7 @@ define(['jquery', 'markup', 'utils/selectors', 'utils/customelements'],
 		*/
 
 		transitionOut(el, transIndex) {
-			const childrenInline = childrenProbablyInline(el),
+			const childrenInline = Utils.childrenProbablyInline(el),
 				/*
 					If the element is not a tw-hook or tw-passage, we must
 					wrap it in a temporary element first, which can thus be
@@ -428,7 +431,7 @@ define(['jquery', 'markup', 'utils/selectors', 'utils/customelements'],
 				Now, apply the transition.
 			*/
 			el.attr("data-t8n", transIndex).addClass("transition-out");
-			if (childrenProbablyInline(el)) {
+			if (Utils.childrenProbablyInline(el)) {
 				el.css('display','inline-block');
 			}
 			
@@ -452,7 +455,7 @@ define(['jquery', 'markup', 'utils/selectors', 'utils/customelements'],
 		*/
 
 		transitionIn(el, transIndex) {
-			const childrenInline = childrenProbablyInline(el),
+			const childrenInline = Utils.childrenProbablyInline(el),
 				/*
 					If the element is not a tw-hook or tw-passage, we must
 					wrap it in a temporary element first, which can thus be
@@ -492,7 +495,7 @@ define(['jquery', 'markup', 'utils/selectors', 'utils/customelements'],
 			*/
 			el.attr("data-t8n", transIndex).addClass("transition-in");
 			
-			if (childrenProbablyInline(el)) {
+			if (Utils.childrenProbablyInline(el)) {
 				el.css('display','inline-block');
 			}
 			const delay = Utils.transitionTime(transIndex, "transition-in");

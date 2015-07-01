@@ -25,7 +25,13 @@ define([
 		The big deal of having multiple Section objects (and the name Section itself
 		as compared to "passage" or "screen") is that multiple simultaneous passages'
 		(such as stretchtext mode) code can be hygenically scoped. Hook references
-		in one passage cannot affect another, and so forth.
+		in one passage cannot affect another, and so forth. (This hygeine is currently
+		not implemented, however, as neither is stretchtext.)
+
+		After a section has finished rendering, one can expect it to be discarded.
+		The following things allow a section object to persist:
+		* Live hook macros (until they deactivate themselves when the section is removed from the DOM)
+		* Saved (enchant:), (link-goto:) and other macros.
 		
 		@class Section
 		@static
@@ -542,6 +548,23 @@ define([
 			switch(HookUtils.selectorType(selectorString)) {
 				case "hookRef": {
 					return HookSet.create(this, selectorString);
+				}
+				case "html": {
+					/*
+						This should be rewritten to account for more thorough HTML search
+						strings, such as:
+						<class="grault">
+						<id="grault">
+					*/
+					return Utils.findAndFilter(
+						/*
+							This selects only elements inside this section, plus the <tw-story> element.
+							This ensures stretchtext remains hygenically scoped, even though the
+							most recent passage decides the entire <tw-story>'s formatting.
+						*/
+						this.dom.add(Utils.storyElement),
+						selectorString.slice(1,-1)
+					);
 				}
 				case "string": {
 					return PseudoHookSet.create(this, selectorString);

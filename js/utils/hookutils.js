@@ -223,6 +223,12 @@ define(['jquery', 'utils/selectors'], ($, Selectors) => {
 				if (r && r.length) {
 					return "hookRef";
 				}
+				/*
+					July 2015: HTML selectors are text that resembles a HTML tag.
+				*/
+				if (val[0] === "<" && val[val.length-1] === ">") {
+					return "html";
+				}
 				// Assume it's a plain word selector
 				return "string";
 			}

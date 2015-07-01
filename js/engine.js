@@ -93,12 +93,22 @@ define(['jquery', 'utils', 'utils/selectors', 'state', 'section', 'passages'],
 			// The passage
 			passageData = Passages.get(name),
 			// The <tw-story> element
-			story = Utils.storyElement,
+			story = Utils.storyElement;
+		let
 			/*
 				The <tw-story>'s parent is usually <body>, but if this game is embedded
 				in a larger HTML page, it could be different.
 			*/
 			parent = story.parent();
+
+		/*
+			If the story has a <tw-enchantment> around it (which could have been placed)
+			by an (enchant: "<tw-story>") macro), then remove it.
+		*/
+		if (parent.is(Selectors.enchantment)) {
+			parent = story.unwrap().parent();
+		}
+
 		/*
 			Early exit: the wrong passage name was supplied.
 			Author error must never propagate to this method - it should have been caught earlier.
@@ -197,8 +207,7 @@ define(['jquery', 'utils', 'utils/selectors', 'state', 'section', 'passages'],
 			[{ transition: "dissolve" }]
 		);
 		
-		// TODO: Change `$('html')` to `parent` for 2.0.0
-		$('html').append(story);
+		parent.append(story.parent().length ? story.parent() : story);
 		/*
 			In stretchtext, scroll the window to the top of the inserted element,
 			minus an offset of 5% of the viewport's height.
@@ -206,8 +215,7 @@ define(['jquery', 'utils', 'utils/selectors', 'state', 'section', 'passages'],
 		*/
 		scroll(
 			0,
-			// TODO: Change `parent` to `story` for 2.0.0
-			stretch ? newPassage.offset().top - ($(window).height() * 0.05) : parent.offset().top
+			stretch ? newPassage.offset().top - ($(window).height() * 0.05) : story.offset().top
 		);
 	}
 	

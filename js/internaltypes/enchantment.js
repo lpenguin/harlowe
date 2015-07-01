@@ -39,7 +39,15 @@ define(['jquery', 'utils', 'internaltypes/changedescriptor'], ($, Utils, ChangeD
 			classes to the matched elements.
 		*/
 		enchantScope() {
-			const {scope, attr, data, changer} = this;
+			const {attr, data, changer} = this;
+			let {scope} = this;
+			/*
+				scope could be a jQuery, if this is a HTML scope created by, say, (enchant: "<i>"). In which
+				case, convert it to an array for the purposes of this method.
+			*/
+			if (scope instanceof $) {
+				scope = Array.prototype.map.call(scope, e => $(e));
+			}
 			/*
 				Reset the enchantments store, to prepare for the insertion of
 				a fresh set of <tw-enchantment>s.
@@ -72,7 +80,6 @@ define(['jquery', 'utils', 'internaltypes/changedescriptor'], ($, Utils, ChangeD
 					changer.run(cd);
 					cd.update();
 				}
-				
 				/*
 					Store the wrapping in the Section's enchantments list.
 				*/
