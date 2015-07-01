@@ -1,5 +1,5 @@
 define(['jquery','macros', 'utils', 'utils/selectors', 'datatypes/colour', 'datatypes/changercommand', 'internaltypes/twineerror'],
-($, Macros, {insensitiveName, assert}, Selectors, Colour, ChangerCommand, TwineError) => {
+($, Macros, {insensitiveName, assert, childrenProbablyInline}, Selectors, Colour, ChangerCommand, TwineError) => {
 	"use strict";
 
 	/*
@@ -232,7 +232,12 @@ define(['jquery','macros', 'utils', 'utils/selectors', 'datatypes/colour', 'data
 					*/
 					property = {"background-size": "cover", "background-image":"url(" + value + ")"};
 				}
-				d.styles.push(property);
+				d.styles.push(property,
+					/*
+						We also need to alter the "display" property in a case where the element
+						has block children - the background won't display if it's kept as
+					 */
+					{ display() { return childrenProbablyInline($(this)) ? "initial" : "block"; } });
 				return d;
 			},
 			[either(String,Colour)]
