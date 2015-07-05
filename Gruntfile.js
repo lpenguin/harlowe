@@ -79,6 +79,7 @@ module.exports = function (grunt) {
 						afterEach: true,
 						beforeEach:true,
 						// User-defined
+						Engine : true,
 						createPassage : true,
 						runPassage : true,
 						goToPassage : true,

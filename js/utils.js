@@ -34,6 +34,10 @@ function($, TwineMarkup, Selectors) {
 			+ "tw-link,tw-broken-link,tw-verbatim,tw-collapsed,tw-error"
 		).split(',');
 	
+	// Certain HTML elements cannot have their parents unwrapped: <audio>, for instance,
+	// will break if it is ever detached from the DOM.
+	var nonDetachableElements = ["audio"];
+
 	/**
 		A static class with helper methods used throughout Harlowe.
 
@@ -479,9 +483,11 @@ function($, TwineMarkup, Selectors) {
 			*/
 			function onComplete () {
 				/*
-					If it's a text node, then the element is just a wrapper - discard it.
+					Unwrap the wrapping... unless it contains a non-unwrappable element,
+					in which case the wrapping must just have its attributes removed.
 				*/
-				if (mustWrap) {
+				var detachable = Utils.findAndFilter(el, nonDetachableElements.join(",")).length === 0;
+				if (mustWrap && detachable) {
 					el.contents().unwrap();
 				}
 				/*

@@ -4,7 +4,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jasmine/2.2.1/jasmine.css">
 <link rel="stylesheet" href="../build/harlowe-css.css"/>
 <script src="../node_modules/es6-shim/es6-shim.min.js"></script>
-<script src="../node_modules/grunt-contrib-requirejs/node_modules/requirejs/require.js"></script>
+<script src="../node_modules/requirejs/require.js"></script>
 <script>
 require.config({baseUrl: "../js/"});
 require(["markup/lexer","markup/patterns","markup/markup","harlowe"]);
@@ -47,6 +47,7 @@ window.clearState = function() {
 	State.reset();
 	Passages.clear();
 };
+window.Engine = Engine;
 </script>
 <script>
 beforeEach(function f(done) {
@@ -99,5 +100,5 @@ afterAll(function() {
 <script src="spec/command_macros/basics.js"></script>
 <script src="spec/command_macros/saving.js"></script>
 
-<tw-storydata options="debug" startnode="1">
+<tw-storydata options="debug" ifid="107370AE-1D5A-4A33-A52C-D1180BA69750" startnode="1">
 <tw-passagedata pid="1" name="1">

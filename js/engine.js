@@ -17,6 +17,7 @@ function ($, Utils, Selectors, State, Section, Passages) {
 		debug : debug mode is ready. Click the bug icon to reveal all macro spans.
 		undo : enable the undo button.
 		redo : enable the redo button.
+		ifid : the UUID of the story. The only non-boolean option.
 		
 		@property {Object} options
 	*/
