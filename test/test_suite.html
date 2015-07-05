@@ -40,6 +40,9 @@ window.expectMarkupToPrint = function(markup, text) {
 window.expectMarkupToError = function(markup) {
 	expect(runPassage(markup).find('tw-error:not(.javascript)').length).toBe(1);
 };
+window.expectMarkupToJSError = function(markup) {
+	expect(runPassage(markup).find('tw-error.javascript').length).toBe(1);
+};
 window.expectMarkupNotToError = window.expectMarkupToNotError = function(markup) {
 	expect(runPassage(markup).find('tw-error').length).toBe(0);
 };
@@ -82,6 +85,7 @@ afterAll(function() {
 
 <script src="spec/tags/setup_passages.js"></script>
 
+<script src="spec/twinescript/literals.js"></script>
 <script src="spec/twinescript/operators.js"></script>
 <script src="spec/twinescript/identifiers.js"></script>
 <script src="spec/twinescript/property_indexing.js"></script>

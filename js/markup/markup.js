@@ -562,6 +562,12 @@
 					fn: emptyFn
 				},
 				
+				escapedStringChar: {
+					fn: function() {
+						return { type: "text", };
+					},
+				},
+				
 				singleStringOpener: {
 					fn: function() {
 						return {

@@ -410,6 +410,9 @@
 		itsPropertyPeek: "its",
 		belongingItProperty: belongingItProperty,
 		
+		// This sad-looking property is designed to disambiguate escaped quotes inside string literals.
+		escapedStringChar:     "\\\\[^\\n]",
+		
 		singleStringOpener:    "'",
 		doubleStringOpener:    '"',
 		

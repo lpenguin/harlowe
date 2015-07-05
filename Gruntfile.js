@@ -87,6 +87,7 @@ module.exports = function (grunt) {
 						expectMarkupToBecome : true,
 						expectMarkupToPrint : true,
 						expectMarkupToError : true,
+						expectMarkupToJSError : true,
 						expectMarkupNotToError : true,
 						expectMarkupToNotError : true,
 						$ : true,

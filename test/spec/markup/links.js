@@ -39,6 +39,20 @@ describe("link syntax", function() {
 			expect(runPassage("|a>[[b]]").find('tw-expression, tw-error').length).toBe(0);
 			expect(runPassage("[[b]]<a|").find('tw-expression').length).toBe(1);
 		});
+		it("works correctly with double-quotes", function() {
+			createPassage("",'"do it"');
+			var link = runPassage('[["do it"]]').find('tw-link');
+			expect(link.tag()).toBe("tw-link");
+			expect(link.html()).toBe('"do it"');
+			expect(link.attr("passage-name")).toBe('"do it"');
+		});
+		it("works correctly with single-quotes", function() {
+			createPassage("","'do it'");
+			var link = runPassage("[['do it']]").find('tw-link');
+			expect(link.tag()).toBe("tw-link");
+			expect(link.html()).toBe("'do it'");
+			expect(link.attr("passage-name")).toBe("'do it'");
+		});
 	});
 	describe("proper link syntax", function() {
 		it("consists of a simple link with <- or ->", function() {
