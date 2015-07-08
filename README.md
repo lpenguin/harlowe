@@ -2,7 +2,18 @@
 
 Rough documentation is at http://twine2.neocities.org/
 
-###1.1.0 changes (unreleased):
+###1.1.1 changes:
+
+####Bugfixes
+
+ * Fixed a bug where hand-coded `<audio>` elements inside transitioning-in passage elements (including the passage itself) would, when the transition concluded, be briefly detached from the DOM, and thus stop playing.
+ * Now, save files should be properly namespaced with each story's unique IFID - stories in the same domain will no longer share save files.
+ * Fixed a bug where `(live:)` macros would run one iteration too many when their attached hook triggered a `(goto:)`. Now, `(live:)` macros will always stop once their passage is removed from the DOM.
+ * Fixed a bug where `<` and a number, followed by `>`, was interpreted as a HTML tag. In reality, HTML tag names can never begin with numbers.
+ * Fixed a bug where backslash-escapes in string literals stopped working (so `"The \"End\""` again produces the string `The "End"`). I don't really like this old method of escaping characters, because it hinders readability and isn't particularly scalable - but I let it be usable in 1.0.1, so it must persist until at least version 2.0.0.
+ * Fixed a bug, related to the above, where the link syntax would break if the link text contained double-quote marks - such as `[["Stop her!"->Pursue]]`.
+
+###1.1.0 changes:
 
 ####Bugfixes
 
@@ -76,7 +87,7 @@ Rough documentation is at http://twine2.neocities.org/
  * `<style>` tags in passage text can now be used without needing to escape their contents with the verbatim syntax (backticks).
  * Added `(passage:)` - similar to the Twine 1 function, it gives information about the current passage. A datamap, to be precise, containing a `name` string, a `source` string, and a `tags` array of strings. `(print: (passage:)'s name)` prints the name, and so forth.
     * But, providing a string to `(passage:)` will provide information about the passage with that name - `(passage: "Estuary")` provides a datamap of information about the Estuary passage, or an error if it doesn't exist.
- * Added `(css:)` as a 'low-level' solution for styling elements, which is essentially the same as a raw HTML `<span style='...'>` tag, but can be combined with other changer commands. I feel obliged to offer this to provide some CSS-familiar users some access to higher functionality, even though it's not intended for general use in place of `(text-style:)`, `(position-x:)` or whatever.
+ * Added `(css:)` as a 'low-level' solution for styling elements, which is essentially the same as a raw HTML `<span style='...'>` tag, but can be combined with other changer commands. I feel obliged to offer this to provide some CSS-familiar users some access to higher functionality, even though it's not intended for general use in place of `(text-style:)` or whatever.
  * Added `(align:)`, a macro form of the aligner syntax. It accepts a string containing an ASCII arrow of the same type that makes up the syntax ('==>', '=><==', etc). 
  * Added special behaviour for passages tagged with `footer`, `header` or `startup`: their code will be *automatically* `(display:)`ed at the start or end of passages, allowing you to set up code actions (like `(click: ?switch)` etc.) or give passages a textual header. `header` passages are prepended to every passage, `footer` passages are appended; `startup` passages are only prepended to the first passage in the game.
     * Also added debug mode versions of these tags: `debug-header`, `debug-footer` and `debug-startup` are only active during debug mode.

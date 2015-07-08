@@ -390,6 +390,14 @@ define([
 			all that useful.
 		*/
 		const recursive = (() => {
+			/*
+				We must do an inDOM check here in case a different (live:) macro
+				(or a (goto:) macro) caused this to leave the DOM between
+				previous runs.
+			*/
+			if (!this.inDOM()) {
+				return;
+			}
 			this.renderInto(source, target, {append:'replace'});
 			/*
 				The (stop:) command causes the nearest (live:) command enclosing

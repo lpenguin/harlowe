@@ -49,6 +49,9 @@ window.expectMarkupToPrint = function(markup, text) {
 window.expectMarkupToError = function(markup) {
 	expect(runPassage(markup).find('tw-error:not(.javascript)').length).toBe(1);
 };
+window.expectMarkupToJSError = function(markup) {
+	expect(runPassage(markup).find('tw-error.javascript').length).toBe(1);
+};
 window.expectMarkupNotToError = window.expectMarkupToNotError = function(markup) {
 	expect(runPassage(markup).find('tw-error').length).toBe(0);
 };
@@ -56,6 +59,7 @@ window.clearState = function() {
 	State.reset();
 	Passages.clear();
 };
+window.Engine = Engine;
 </script>
 <script>
 jasmine.DEFAULT_TIMEOUT_INTERVAL = 10000;
@@ -91,6 +95,7 @@ afterAll(function() {
 
 <script src="spec/tags/setup_passages.js"></script>
 
+<script src="spec/twinescript/literals.js"></script>
 <script src="spec/twinescript/operators.js"></script>
 <script src="spec/twinescript/identifiers.js"></script>
 <script src="spec/twinescript/property_indexing.js"></script>
@@ -109,5 +114,5 @@ afterAll(function() {
 <script src="spec/command_macros/basics.js"></script>
 <script src="spec/command_macros/saving.js"></script>
 
-<tw-storydata options="debug" startnode="1">
+<tw-storydata options="debug" ifid="107370AE-1D5A-4A33-A52C-D1180BA69750" startnode="1">
 <tw-passagedata pid="1" name="1">

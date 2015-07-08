@@ -33,6 +33,14 @@ define(['requestAnimationFrame', 'macros', 'utils', 'state', 'passages', 'engine
 				return false;
 			}
 		})();
+
+	/*
+		As localstorage keys are shared across domains, this prefix, using the current story's IFID,
+		is necessary to ensure that multiple stories on a domain have their save files properly namespaced.
+	*/
+	function storagePrefix(text) {
+		return "(" + text + " " + Engine.options.ifid + ") ";
+	}
 	
 	Macros.add
 	
@@ -416,12 +424,9 @@ define(['requestAnimationFrame', 'macros', 'utils', 'state', 'passages', 'engine
 				try {
 					localStorage.setItem(
 						/*
-							Saved games are prefixed with (Saved Game) to avoid collisions.
-							I'm loathe to use any particular prefix which brands the game
-							as a Twine creation: it should be able to stand with its own
-							identity, even in an obscure a place as its localStorage key names.
+							Saved games are prefixed with (Saved Game <ifid>).
 						*/
-						"(Saved Game) " + slotName, serialisation);
+						storagePrefix("Saved Game") + slotName, serialisation);
 					
 					/*
 						The file name is saved separately from the state, so that it can be retrieved
@@ -429,9 +434,9 @@ define(['requestAnimationFrame', 'macros', 'utils', 'state', 'passages', 'engine
 					*/
 					localStorage.setItem(
 						/*
-							Saved games are prefixed with (Saved Game Filename) to avoid collisions.
+							Saved games are prefixed with (Saved Game Filename <ifid>).
 						*/
-						"(Saved Game Filename) " + slotName, fileName);
+						storagePrefix("Saved Game Filename") + slotName, fileName);
 					return true;
 				} catch(e) {
 					/*
@@ -473,7 +478,7 @@ define(['requestAnimationFrame', 'macros', 'utils', 'state', 'passages', 'engine
 					TwineScript_ObjectName: "a (load-game:) command",
 					TwineScript_TypeName:   "a (load-game:) command",
 					TwineScript_Print() {
-						const saveData = localStorage.getItem("(Saved Game) " + slotName);
+						const saveData = localStorage.getItem(storagePrefix("Saved Game") + slotName);
 						
 						if (!saveData) {
 							return TwineError.create("saving", "I can't find a save slot named '" + slotName + "'!");

@@ -509,6 +509,12 @@
 					fn: emptyFn
 				},
 				
+				escapedStringChar: {
+					fn: function() {
+						return { type: "text", };
+					},
+				},
+				
 				singleStringOpener: {
 					fn: () => ({
 						isFront: true,

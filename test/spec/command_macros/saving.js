@@ -10,7 +10,13 @@ describe("save macros", function() {
 		expect(storedItem).not.toBe(null);
 		return storedItem;
 	}
-	
+	/*
+		This should be identical to the internal function in macrolib/commands.js
+	*/
+	function storagePrefix(text) {
+		return "(" + text + " " + Engine.options.ifid + ") ";
+	}
+
 	describe("the (savegame:) macro", function() {
 		it("accepts 1 or 2 strings", function() {
 			expectMarkupToNotError("(savegame:'1')");
@@ -24,7 +30,7 @@ describe("save macros", function() {
 			runPassage("(set:$foo to 1)", "corge");
 			expectMarkupToNotError("(savegame:'1','Filename')", "qux");
 			
-			retrieveStoredState("(Saved Game) 1");
+			retrieveStoredState(storagePrefix('Saved Game') + "1");
 		});
 		it("can save collection variables", function() {
 			runPassage(
@@ -38,7 +44,7 @@ describe("save macros", function() {
 		it("works from the start of the game", function() {
 			expectMarkupToNotError("(savegame:'1','Filename')", "qux");
 			
-			retrieveStoredState("(Saved Game) 1");
+			retrieveStoredState(storagePrefix('Saved Game') + "1");
 		});
 		it("stores lots of data", function() {
 			Array(1000).join().split(',').forEach(function(e) {
@@ -46,13 +52,13 @@ describe("save macros", function() {
 			});
 			expectMarkupToNotError("(savegame:'1','Filename')", "qux");
 			
-			retrieveStoredState("(Saved Game) 1");
+			retrieveStoredState(storagePrefix('Saved Game') + "1");
 		});
 		it("stores the save file's name", function() {
 			runPassage("(set:$foo to 1)", "corge");
 			expectMarkupToNotError("(savegame:'1','Quux')", "qux");
 			
-			var storedItem = localStorage.getItem("(Saved Game Filename) 1");
+			var storedItem = localStorage.getItem(storagePrefix('Saved Game Filename') + "1");
 			expect(storedItem).toBe("Quux");
 		});
 		it("alters the (savedgames:) datamap", function() {
