@@ -135,7 +135,7 @@ define(['jquery', 'macros', 'utils', 'utils/selectors', 'state', 'passages', 'en
 							Since the passage isn't available, create a broken link.
 							TODO: Maybe this should be an error as well??
 						*/
-						return '<tw-broken-link passage-name="' + passageName + '">'
+						return '<tw-broken-link passage-name="' + Utils.escape(passageName) + '">'
 							+ (text || passage)
 							+ '</tw-broken-link>';
 					}
@@ -150,7 +150,8 @@ define(['jquery', 'macros', 'utils', 'utils/selectors', 'state', 'passages', 'en
 						but I hope to somehow eliminate this in the near future.
 					*/
 					return '<tw-link tabindex=0 ' + (visited > 0 ? 'class="visited" ' : '')
-						+ 'passage-name="' + passageName
+						// Always remember to Utils.escape() any strings that must become raw HTML attributes.
+						+ 'passage-name="' + Utils.escape(passageName)
 						+ '">' + (text || passage) + '</tw-link>';
 				}
 			}),

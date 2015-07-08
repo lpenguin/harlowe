@@ -138,6 +138,11 @@ require(['jquery', 'renderer', 'state', 'engine', 'passages', 'utils/selectors',
 			});
 		}
 		let startPassage = header.attr('startnode');
+
+		/*
+			The IFID is currently only used with the saving macros.
+		*/
+		Renderer.options.ifid = Engine.options.ifid = header.attr('ifid');
 		
 		// If there's no set start passage, find the passage with the
 		// lowest passage ID, and use that.

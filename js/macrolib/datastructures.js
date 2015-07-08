@@ -494,6 +494,13 @@ define([
 		*/
 		("savedgames", () => {
 			/*
+				This should be identical to the internal function in macrolib/commands.js.
+				TODO: Add this to Engine itself, maybe.
+			*/
+			function storagePrefix(text) {
+				return "(" + text + " " + Engine.options.ifid + ") ";
+			}
+			/*
 				This reads all of the localStorage keys with save slot-related names.
 			*/
 			let
@@ -506,11 +513,12 @@ define([
 			do {
 				key = localStorage.key(i);
 				i += 1;
-				if (key && key.startsWith("(Saved Game) ")) {
+				var prefix = storagePrefix("Saved Game");
+				if (key && key.startsWith(prefix)) {
 					// Trim off the prefix
-					key = key.slice(13);
+					key = key.slice(prefix.length);
 					// Populate the saves map with the save slot name.
-					savesMap.set(key, localStorage.getItem("(Saved Game Filename) " + key));
+					savesMap.set(key, localStorage.getItem(storagePrefix("Saved Game Filename") + key));
 				}
 			}
 			while(key);

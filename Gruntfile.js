@@ -106,6 +106,7 @@ module.exports = function (grunt) {
 						afterEach: true,
 						beforeEach:true,
 						// User-defined
+						Engine : true,
 						createPassage : true,
 						runPassage : true,
 						goToPassage : true,
@@ -113,6 +114,7 @@ module.exports = function (grunt) {
 						expectMarkupToBecome : true,
 						expectMarkupToPrint : true,
 						expectMarkupToError : true,
+						expectMarkupToJSError : true,
 						expectMarkupNotToError : true,
 						expectMarkupToNotError : true,
 						$ : true,
