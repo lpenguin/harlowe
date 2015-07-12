@@ -18,73 +18,147 @@ define(['jquery', 'macros', 'utils', 'utils/selectors', 'state', 'passages', 'en
 		is "attached" via a jQuery .data() key, and must be called
 		from this <html> handler.
 	*/
-	$(() => {
-		$(Utils.storyElement).on(
-			/*
-				The jQuery event namespace is "passage-link".
-			*/
-			"click.passage-link",
-			Selectors.internalLink,
-			function clickLinkEvent() {
-				const link = $(this),
-					/*
-						This could be a (link:) link. Such links' events
-						are, due to limitations in the ChangeDescriptor format,
-						attached to the <tw-expression> enclosing it.
-					*/
-					event = link.parent().data('clickEvent');
-			
-				if (event) {
-					event(link);
-					return;
-				}
+	$(() => $(Utils.storyElement).on(
+		/*
+			The jQuery event namespace is "passage-link".
+		*/
+		"click.passage-link",
+		Selectors.internalLink,
+		function clickLinkEvent() {
+			const link = $(this),
 				/*
-					If no event was registered, then this must be
-					a passage link.
+					This could be a (link:) link. Such links' events
+					are, due to limitations in the ChangeDescriptor format,
+					attached to the <tw-expression> enclosing it.
 				*/
-				const next = link.attr('passage-name');
+				event = link.parent().data('clickEvent');
 			
-				if (next) {
-					// TODO: stretchtext
-					Engine.goToPassage(next,false);
-				}
+			if (event) {
+				event(link);
+				return;
 			}
-		);
-	});
+			/*
+				If no event was registered, then this must be
+				a passage link.
+			*/
+			const next = link.attr('passage-name');
+			
+			if (next) {
+				// TODO: stretchtext
+				Engine.goToPassage(next,false);
+			}
+		}
+	));
 	
-	/*d:
-		(link: String) -> Command
-		
-		Makes a command to create a special link that can be used to show spans of text.
-		
-		Rationale:
-		
-		As you're aware, links are what the player uses to traverse your story. However,
-		links can also be used to simply display text or run macros inside hooks. Just
-		use the (link:) macro, and the entire hook will not run or appear at all until the
-		player clicks the link.
-		
-		Details:
-		This creates a link which is visually indistinguishable from normal passage links.
-		
-		See also:
-		(link-goto:), (click:)
-	*/
-	Macros.addChanger
-		(["link"],
-		(_, expr) => ChangerCommand.create("link", [expr]),
-		(desc, text) => {
-			const innerSource = desc.source;
-			desc.source = '<tw-link tabindex=0>' + text + '</tw-link>';
-			desc.append = "replace";
-			desc.data = {
-				clickEvent() {
-					desc.source = innerSource;
-					desc.section.renderInto(innerSource + "", null, desc);
-				},
-			};
-		},
-		[String]);
+	[
+		/*d:
+			(link: String) -> Command
+			Also known as: (link-replace:)
+			
+			Makes a command to create a special link that can be used to show a hook.
+			
+			Example usage:
+			`(link: "Stake")[The dracula crumbles to dust.]` will create a link reading "Stake"
+			which, when clicked, disappears and shows "The dracula crumbles to dust."
+			
+			Rationale:
+			
+			As you're aware, links are what the player uses to traverse your story. However,
+			links can also be used to simply display text or run macros inside hooks. Just
+			attach the (link:) macro to a hook, and the entire hook will not run or appear at all until the
+			player clicks the link.
+			
+			Note that this particular macro's links disappear when they are clicked - if you want
+			their words to remain in the text, consider using (link-reveal:).
+			
+			Details:
+			This creates a link which is visually indistinguishable from normal passage links.
+			
+			See also:
+			(link-reveal:), (link-repeat:), (link-goto:), (click:)
+		*/
+		["link", "link-replace"],
+		/*d:
+			(link-reveal: String) -> Command
+			
+			Makes a command to create a special link that shows a hook, keeping the link's
+			text visible after clicking.
+			
+			Example usage:
+			`(link-reveal: "Heart")[broken]` will create a link reading "Heart"
+			which, when clicked, changes to plain text, and shows "broken" after it.
+			
+			Rationale:
+			
+			This is similar to (link:), but allows the text of the link to remain in the passage
+			after it is clicked. It allows key words and phrases in the passage to expand and
+			reveal more text after themselves. Simply attach it to a hook, and the hook will only be
+			revealed when the link is clicked.
+			
+			Details:
+			This creates a link which is visually indistinguishable from normal passage links.
+			
+			If the link text contains formatting syntax, such as "**bold**", then it will be retained
+			when the link is demoted to text.
+			
+			See also:
+			(link:), (link-repeat:), (link-goto:), (click:)
+		*/
+		["link-reveal"],
+		/*d:
+			(link-repeat: String) -> Command
+			
+			Makes a command to create a special link that shows a hook, and, when clicked again,
+			re-runs the hook, replacing its contents with a newer version.
+			
+			Example usage:
+			`(link-repeat: "Add cheese")[(set:$cheese to it + 1)]` will create a link reading "Add cheese"
+			which, when clicked, adds 1 to the $cheese variable using (set:), and can be clicked repeatedly.
+			
+			Rationale:
+			
+			This is similar to (link:), but allows the created link to remain in the passage
+			after it is clicked. It can be used to make a link that displays different text after
+			each click, or which must be clicked multiple times before something can happen (using (set:)
+			and (if:) to keep count of the number of clicks).
+			
+			Details:
+			This creates a link which is visually indistinguishable from normal passage links.
+			Each time the link is clicked, the text and macros printed in the previous run are
+			removed and replaced.
+			
+			See also:
+			(link-reveal:), (link:), (link-goto:), (click:)
+		*/
+		["link-repeat"]
+	].forEach(arr =>
+		Macros.addChanger(arr,
+			(_, expr) => ChangerCommand.create(arr[0], [expr]),
+			(desc, text) => {
+				const innerSource = desc.source;
+				desc.source = '<tw-link tabindex=0>' + text + '</tw-link>';
+				/*
+					Only (link-replace:) removes the link on click (by using the "replace"
+					append method) - the others merely append.
+				*/
+				desc.append = arr[0] === "link" ? "replace" : "append";
+				desc.data = {
+					clickEvent(link) {
+						desc.source = innerSource;
+						desc.section.renderInto(innerSource + "", null, desc);
+						/*
+							Only (link-reveal:) turns the link into plain text:
+							the others either remove it (via the above) or leave it be.
+						*/
+						if (arr[0] === "link-reveal") {
+							link.contents().unwrap();
+						}
+					},
+				};
+			},
+			[String]
+		)
+	);
 	
 	/*
 		(link-goto:) is an eager version of (link:...)[(goto:...)], where the
