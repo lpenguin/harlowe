@@ -291,7 +291,8 @@
 			
 			passageLink: {
 				fn(match) {
-					var p1 = match[1],
+					const
+						p1 = match[1],
 						p2 = match[2],
 						p3 = match[3];
 					return {

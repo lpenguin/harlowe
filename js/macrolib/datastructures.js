@@ -513,7 +513,7 @@ define([
 			do {
 				key = localStorage.key(i);
 				i += 1;
-				var prefix = storagePrefix("Saved Game");
+				const prefix = storagePrefix("Saved Game");
 				if (key && key.startsWith(prefix)) {
 					// Trim off the prefix
 					key = key.slice(prefix.length);

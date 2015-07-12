@@ -1,22 +1,91 @@
 describe("link macros", function() {
 	'use strict';
 	
-	describe("(link:)", function() {
+	describe("(link-replace:)", function() {
 		it("accepts exactly 1 string", function() {
-			expectMarkupToError("(print:(link:))");
-			expectMarkupToNotError("(print:(link:'baz'))");
-			expectMarkupToError("(print:(link:2))");
-			expectMarkupToError("(print:(link:false))");
-			expectMarkupToError("(print:(link:'baz', 'baz'))");
+			expectMarkupToError("(print:(link-replace:))");
+			expectMarkupToNotError("(print:(link-replace:'baz'))");
+			expectMarkupToError("(print:(link-replace:2))");
+			expectMarkupToError("(print:(link-replace:false))");
+			expectMarkupToError("(print:(link-replace:'baz', 'baz'))");
 		});
 		it("errors when placed in passage prose while not attached to a hook", function() {
-			expectMarkupToError("(link:'A')");
-			expectMarkupToNotError("(link:'A')[]");
+			expectMarkupToError("(link-replace:'A')");
+			expectMarkupToNotError("(link-replace:'A')[]");
 		});
 		it("when attached to a hook, creates a link", function() {
-			var link = runPassage("(link:'A')[]").find('tw-link');
+			var link = runPassage("(link-replace:'A')[]").find('tw-link');
 			expect(link.parent().is('tw-hook')).toBe(true);
 			expect(link.tag()).toBe("tw-link");
+		});
+		it("when clicked, reveals the hook and removes itself", function() {
+			var p = runPassage("(link-replace:'A')[B(set:$c to 12)]");
+			p.find('tw-link').click();
+			expect(p.text()).toBe("B");
+			expectMarkupToPrint("$c", "12");
+		});
+		it("is aliased as (link:)", function() {
+			var p = runPassage("(link:'A')[B(set:$c to 12)]");
+			p.find('tw-link').click();
+			expect(p.text()).toBe("B");
+			expectMarkupToPrint("$c", "12");
+		});
+	});
+	describe("(link-reveal:)", function() {
+		it("accepts exactly 1 string", function() {
+			expectMarkupToError("(print:(link-reveal:))");
+			expectMarkupToNotError("(print:(link-reveal:'baz'))");
+			expectMarkupToError("(print:(link-reveal:2))");
+			expectMarkupToError("(print:(link-reveal:false))");
+			expectMarkupToError("(print:(link-reveal:'baz', 'baz'))");
+		});
+		it("errors when placed in passage prose while not attached to a hook", function() {
+			expectMarkupToError("(link-reveal:'A')");
+			expectMarkupToNotError("(link-reveal:'A')[]");
+		});
+		it("when attached to a hook, creates a link", function() {
+			var link = runPassage("(link-reveal:'A')[]").find('tw-link');
+			expect(link.parent().is('tw-hook')).toBe(true);
+			expect(link.tag()).toBe("tw-link");
+		});
+		it("when clicked, reveals the hook and becomes plain text", function() {
+			var p = runPassage("(link-reveal:'A')[B(set:$c to 12)]");
+			p.find('tw-link').click();
+			expect(p.text()).toBe("AB");
+			expect(p.find('tw-link').length).toBe(0);
+			expectMarkupToPrint("$c", "12");
+		});
+	});
+	describe("(link-repeat:)", function() {
+		it("accepts exactly 1 string", function() {
+			expectMarkupToError("(print:(link-repeat:))");
+			expectMarkupToNotError("(print:(link-repeat:'baz'))");
+			expectMarkupToError("(print:(link-repeat:2))");
+			expectMarkupToError("(print:(link-repeat:false))");
+			expectMarkupToError("(print:(link-repeat:'baz', 'baz'))");
+		});
+		it("errors when placed in passage prose while not attached to a hook", function() {
+			expectMarkupToError("(link-repeat:'A')");
+			expectMarkupToNotError("(link-repeat:'A')[]");
+		});
+		it("when attached to a hook, creates a link", function() {
+			var link = runPassage("(link-repeat:'A')[]").find('tw-link');
+			expect(link.parent().is('tw-hook')).toBe(true);
+			expect(link.tag()).toBe("tw-link");
+		});
+		it("when clicked, reveals the hook and leaves the link as-is", function() {
+			var p = runPassage("(link-repeat:'A')[B(set:$c to 12)]");
+			p.find('tw-link').click();
+			expect(p.text()).toBe("AB");
+			expectMarkupToPrint("$c", "12");
+			expect(p.find('tw-link').length).toBe(1);
+		});
+		it("the link can be clicked multiple times", function() {
+			var p = runPassage("(set:$c to 0)(link-repeat:'A')[B(set:$c to it + 12)]");
+			p.find('tw-link').click();
+			p.find('tw-link').click();
+			p.find('tw-link').click();
+			expectMarkupToPrint("$c", "36");
 		});
 	});
 	describe("(link-goto:)", function() {
