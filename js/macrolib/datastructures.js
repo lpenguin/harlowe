@@ -9,7 +9,7 @@ define([
 	'datatypes/assignmentrequest',
 	'internaltypes/twineerror',
 	'internaltypes/twinenotifier'],
-($, NaturalSort, Macros, {objectName, subset, collectionType, isValidDatamapName}, State, Engine, Passages, AssignmentRequest, TwineError, TwineNotifier) => {
+($, NaturalSort, Macros, {objectName, subset, collectionType, isValidDatamapName}, State, Engine, Passages, AssignmentRequest, TwineError) => {
 	"use strict";
 	
 	const {optional, rest, zeroOrMore, Any}   = Macros.TypeSignature;
@@ -63,8 +63,6 @@ define([
 			(push:)
 		*/
 		("set", (_, ...assignmentRequests) => {
-			let debugMessage = "";
-			
 			/*
 				This has to be a plain for-loop so that an early return
 				is possible.
@@ -82,15 +80,11 @@ define([
 				if (TwineError.isPrototypeOf(result)) {
 					return result;
 				}
-				if (Engine.options.debug) {
-					// Add a semicolon only if a previous iteration appended a message.
-					debugMessage += (debugMessage ? "; " : "")
-						+ objectName(ar.dest)
-						+ " is now "
-						+ objectName(ar.src);
-				}
 			}
-			return debugMessage && TwineNotifier.create(debugMessage);
+			/*
+				TODO: This should really be a proper command object, not an empty string.
+			*/
+			return "";
 		},
 		[rest(AssignmentRequest)])
 		
@@ -139,6 +133,9 @@ define([
 					return result;
 				}
 			}
+			/*
+				TODO: As with (set:), this should be a proper command object.
+			*/
 			return "";
 		},
 		[rest(AssignmentRequest)])

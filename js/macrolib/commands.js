@@ -174,11 +174,11 @@ define(['requestAnimationFrame', 'macros', 'utils', 'state', 'passages', 'engine
 				expr += "";
 			}
 			/*
-				If it's an object we don't know how to print, emit an error
+				If it's an object we don't know how to print, emit a JS error
 				instead of [object Object].
 			*/
 			else if (isObject(expr)) {
-				return TwineError.create("unimplemented", "I don't know how to print this value yet.");
+				throw new TypeError("I don't know how to print this value yet.");
 			}
 			/*
 				At this point, primitives have safely fallen through.

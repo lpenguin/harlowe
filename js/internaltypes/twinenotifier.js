@@ -3,6 +3,8 @@ define(['jquery', 'utils'], ($, {impossible}) => {
 	/*
 		TwineNotifiers are special debug notifications created by the TwineScript runtime in debug mode.
 		They are used to signify when a special event has occurred.
+
+		NOTE: Currently (July 2015), nothing uses this.
 	*/
 	
 	const TwineNotifier = {
@@ -23,6 +25,7 @@ define(['jquery', 'utils'], ($, {impossible}) => {
 			*/
 			return $("<tw-notifier>").attr('message', this.message);
 		},
+
 	};
 	return TwineNotifier;
 });
