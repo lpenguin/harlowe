@@ -80,6 +80,17 @@ define(['jquery', 'utils', 'internaltypes/changedescriptor'], ($, Utils, ChangeD
 					changer.run(cd);
 					cd.update();
 				}
+
+				/*
+					This brief CSS kludge allows a <tw-enchantment> wrapping <tw-story>
+					to not restrict the <tw-story>'s width and height.
+					It must be performed now because the aforementioned .attr() call
+					may entirely alter the style attribute.
+				*/
+				if (e.is('tw-story')) {
+					wrapping.css({ width: '100%', height: '100%' });
+				}
+
 				/*
 					Store the wrapping in the Section's enchantments list.
 				*/
