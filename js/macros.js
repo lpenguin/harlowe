@@ -119,8 +119,8 @@ define(['jquery', 'utils', 'utils/operationutils', 'internaltypes/twineerror'],
 			return false;
 		}
 		
-		// The Any type permits any argument, as long as it's present.
-		if (type === Macros.TypeSignature.Any && arg !== undefined) {
+		// The Any type permits any accessible argument, as long as it's present.
+		if (type === Macros.TypeSignature.Any && arg !== undefined && !arg.TwineScript_Unobservable) {
 			return true;
 		}
 		/*
@@ -256,6 +256,17 @@ define(['jquery', 'utils', 'utils/operationutils', 'internaltypes/twineerror'],
 							"typesignature",
 							"The " + name + " macro needs "
 								+ plural((typeSignature.length - ind), "more value") + ".",
+							signatureInfo
+						);
+					}
+					/*
+						Unobservable data types are the only kinds which Any signatures will not
+						match. Produce a special error message in this case.
+					*/
+					if (arg && arg.TwineScript_Unobservable && type === Macros.TypeSignature.Any) {
+						return TwineError.create(
+							"typesignature",
+							name + "'s " + nth(ind + 1) + " value is not valid data for this macro.",
 							signatureInfo
 						);
 					}
