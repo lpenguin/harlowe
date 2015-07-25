@@ -7,6 +7,8 @@ define(['utils'], ({assert}) => {
 		They take a VarRef (a basic object with "object" and "propertyChain" properties)
 		and do something to it with a value (which could be another VarRef, in case
 		a macro wished to manipulate it somehow).
+
+		They are unobservable - attempts to store them or use them in any other macros must fail.
 	*/
 	"use strict";
 	
@@ -14,12 +16,13 @@ define(['utils'], ({assert}) => {
 		
 		assignmentRequest: true,
 		
+		/*
+			These should normally only appear during type signature error messages.
+		*/
 		TwineScript_TypeName: "an assignment operation",
 		TwineScript_ObjectName: "an assignment operation",
-		
-		TwineScript_Print() {
-			return "[an assignment operation]";
-		},
+
+		TwineScript_Unobservable: true,
 		
 		create(dest, src, operator) {
 			// Assert: dest is a varRef
@@ -30,10 +33,6 @@ define(['utils'], ({assert}) => {
 				src:               src,
 				operator:          operator,
 			});
-		},
-		
-		TwineScript_Clone() {
-			return assignmentRequest.create(this.dest, this.src, this.operator);
 		},
 	});
 	return assignmentRequest;

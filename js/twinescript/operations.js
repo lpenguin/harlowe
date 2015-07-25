@@ -1,7 +1,7 @@
 define([
 	'state',
 	'datatypes/colour',
-	'datatypes/assignmentrequest',
+	'internaltypes/assignmentrequest',
 	'utils/operationutils',
 	'internaltypes/twineerror',
 ],
@@ -314,6 +314,15 @@ define([
 			
 			if (error) {
 				return error;
+			}
+
+			/*
+				Also refuse if the src is a value which is "unobservable",
+				that is, must not be storable.
+			*/
+			if (src && src.TwineScript_Unobservable) {
+				return TwineError.create("operation",
+					"That type of value can't be stored.");
 			}
 			
 			/*

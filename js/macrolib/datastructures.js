@@ -6,7 +6,7 @@ define([
 	'state',
 	'engine',
 	'passages',
-	'datatypes/assignmentrequest',
+	'internaltypes/assignmentrequest',
 	'internaltypes/twineerror',
 	'internaltypes/twinenotifier'],
 ($, NaturalSort, Macros, {objectName, subset, collectionType, isValidDatamapName}, State, Engine, Passages, AssignmentRequest, TwineError) => {
@@ -81,10 +81,18 @@ define([
 					return result;
 				}
 			}
+
 			/*
-				TODO: This should really be a proper command object, not an empty string.
+				There's nothing that can be done with the results of (set:) or (put:)
+				operations, except to display nothing when they're in bare passage text.
+				Return a plain unobservable value that prints out as "".
 			*/
-			return "";
+			return {
+				TwineScript_TypeName:     "a (set:) operation",
+				TwineScript_ObjectName:   "a (set:) operation",
+				TwineScript_Unobservable: true,
+				TwineScript_Print:        "",
+			};
 		},
 		[rest(AssignmentRequest)])
 		
@@ -133,10 +141,12 @@ define([
 					return result;
 				}
 			}
-			/*
-				TODO: As with (set:), this should be a proper command object.
-			*/
-			return "";
+			return {
+				TwineScript_TypeName:     "a (put:) operation",
+				TwineScript_ObjectName:   "a (put:) operation",
+				TwineScript_Unobservable: true,
+				TwineScript_Print:        "",
+			};
 		},
 		[rest(AssignmentRequest)])
 		
@@ -215,6 +225,14 @@ define([
 			Example usage:
 			`(a:)` creates an empty array, which could be filled with other values later.
 			`(a: "gold", "frankincense", "myrrh")` creates an array with three strings.
+			This is also a valid array, but with its elements spaced in a way that makes them more readable:
+			```
+			(a:
+				"You didn't sleep in the tiniest bed",
+				"You never ate the just-right porridge",
+				"You never sat in the smallest chair",
+			)
+			```
 			
 			Rationale:
 			For an explanation of what arrays are, see the Array article. This macro is the primary
@@ -531,6 +549,15 @@ define([
 			Similar to (a:), these create standard JS Maps and Sets.
 			But, instead of supplying an iterator, you supply keys and values
 			interleaved: (datamap: key, value, key, value).
+
+			Example usage:
+			```
+			(datamap:
+				"Susan", "A petite human in a yellow dress",
+				"Tina", "A ten-foot lizardoid in a three-piece suit",
+				"Gertie", "A griffin draped in a flowing cape",
+			)
+			```
 			
 			One concern about maps: even though they are a Map,
 			inserting a non-primitive in key position is problematic because
