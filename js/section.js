@@ -598,30 +598,17 @@ define([
 			@param {Function|Array} [changers] The changer function(s) to run.
 		*/
 		renderInto(source, target, changers) {
-			var
-				/*
-					This is the ChangeDescriptor that defines this rendering.
-				*/
-				desc = ChangeDescriptor.create({
-					target: target,
-					source: source,
-				}),
-				/*
-					This stores the returned DOM created by rendering the changeDescriptor.
-				*/
-				dom = $(),
-				/*
-					This provides (sigh) a reference to this object usable by the
-					inner doExpressions function, below.
-				*/
-				section = this;
+			/*
+				This is the ChangeDescriptor that defines this rendering.
+			*/
+			const desc = ChangeDescriptor.create({ target, source, });
 				
 			/*
 				Define an additional desc property linking it back to this section.
 				This is used by enchantment macros to determine where to register
 				their enchantments to.
 			*/
-			desc.section = section;
+			desc.section = this;
 			
 			/*
 				Run all the changer functions.
@@ -667,6 +654,11 @@ define([
 			}
 			
 			/*
+				This stores the returned DOM created by rendering the changeDescriptor.
+			*/
+			let dom = $();
+			
+			/*
 				Infinite regress can occur from a couple of causes: (display:) loops, or evaluation loops
 				caused by something as simple as (set: $x to "$x")$x.
 				So here's a rudimentary check: bail if the stack length has now proceeded over 50 levels deep.
@@ -707,6 +699,12 @@ define([
 			*/
 			this.stack.unshift(Object.create(null));
 			
+			/*
+				This provides (sigh) a reference to this object usable by the
+				inner doExpressions function, below.
+			*/
+			const section = this;
+
 			/*
 				Execute the expressions immediately.
 			*/

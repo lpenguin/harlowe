@@ -23,6 +23,12 @@ describe("style changer macros", function() {
 			expect(hook.css('display')).toBe('inline-block');
 			expect(hook.css('clear')).toBe('both');
 		});
+		it("compositions have structural equality", function() {
+			expectMarkupToPrint("(print: (css:'display:inline-block') + (css:'clear:both')"
+				+ " is (css:'display:inline-block') + (css:'clear:both'))", "true");
+			expectMarkupToPrint("(print: (css:'display:inline-block') + (css:'clear:both')"
+				+ " is (css:'display:flex') + (css:'clear:both'))", "false");
+		});
 		it("errors when placed in passage prose while not attached to a hook", function() {
 			expectMarkupToError("(css:'color:red')");
 			expectMarkupToNotError("(css:'color:red')[]");
@@ -66,6 +72,10 @@ describe("style changer macros", function() {
 			expectMarkupToError("(transition:'dissolve')");
 			expectMarkupToNotError("(transition:'dissolve')[]");
 		});
+		it("has structural equality", function() {
+			expectMarkupToPrint("(print: (transition:'dissolve') is (transition:'dissolve'))","true");
+			expectMarkupToPrint("(print: (transition:'dissolve') is (transition:'pulse'))","false");
+		});
 		// TODO: Add .css() tests of output.
 	});
 	describe("the (background:) macro", function() {
@@ -108,6 +118,10 @@ describe("style changer macros", function() {
 				expect(p.attr('style')).toMatch(/background-color:\s+(?:#000000|rgb\(\s*0,\s*0,\s*0\s*\))/);
 				done();
 			});
+		});
+		it("compositions have structural equality", function() {
+			expectMarkupToPrint("(print: (background:black)+(background:'garply') is (background:black)+(background:'garply'))","true");
+			expectMarkupToPrint("(print: (background:black)+(background:'garply') is (background:black)+(background:'grault'))","false");
 		});
 	});
 	describe("the (align:) macro", function() {
@@ -190,6 +204,10 @@ describe("style changer macros", function() {
 					done();
 				});
 			});
+		});
+		it("has structural equality", function() {
+			expectMarkupToPrint("(print: (align:'<==') is (align:'<=='))","true");
+			expectMarkupToPrint("(print: (align:'<==') is (align:'=><=='))","false");
 		});
 	});
 });
