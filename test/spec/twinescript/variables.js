@@ -19,10 +19,12 @@ describe("twinescript variables", function() {
 		it("when given a variable assignment request, sets the variable to a value", function() {
 			expectMarkupToPrint("(set: $a to 1)(print: $a)","1");
 		});
-		it("when given a hook assignment request, fills the hook with the contents, as twinemarkup", function() {
-			expectMarkupToPrint("|a>[Gee](set: ?a to '//Golly//')","Golly");
-			expectMarkupToPrint("|a>[Gee](set: ?a to false)","");
-			expectMarkupToPrint("|a>[Gee](set: ?a to (a:1,2,3))","1,2,3");
+		it("when given a hook/string assignment request, fills the hook with the contents, as twinemarkup", function() {
+			expectMarkupToPrint("|a>[Gee] |a>[Wow](set: ?a to '//Golly//')","Golly Golly");
+		});
+		it("errors when a hook is assigned a non-string value", function() {
+			expectMarkupToError("|a>[Gee] |a>[Wow](set: ?a to false)");
+			expectMarkupToError("|a>[Gee] |a>[Wow](set: ?a to (a:1,2,3))");
 		});
 		it("assignment requests can't be assigned", function() {
 			expectMarkupToError("(set: $wordy to ($wordy to 2)) ");

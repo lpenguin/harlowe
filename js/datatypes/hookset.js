@@ -1,4 +1,4 @@
-define(['utils/hookutils', 'jquery'], ({hookToSelector}, $) => {
+define(['jquery', 'utils/hookutils'], ($, {hookToSelector}) => {
 	"use strict";
 	
 	/**
@@ -14,24 +14,29 @@ define(['utils/hookutils', 'jquery'], ({hookToSelector}, $) => {
 	*/
 	
 	/*
+		This private function returns a jQuery collection of every <tw-hook>
+		in this HookSet's Section which matches this HookSet's selector string.
+	*/
+	function hooks() {
+		return this.section.$(
+			hookToSelector(
+				this.selector.slice(1) /* slice off the hook sigil */
+			)
+		);
+	}
+
+	/*
 		This private function allows a specific jQuery method to be called
 		on the collection of matched hooks in the HookSet.
 	*/
 	function jQueryCall(methodName, ...args) {
 		const
 			/*
-				hooks is a jQuery collection of every <tw-hook> in the Section
-				which matches this HookSet's selector string.
-			
 				This is re-evaluated during every jQueryCall, so that it's always
 				up-to-date with the DOM.
 			*/
-			hooks = this.section.$(
-				hookToSelector(
-					this.selector.slice(1) /* slice off the hook sigil */
-				)
-			);
-		return methodName in hooks && hooks[methodName](...args);
+			myHooks = hooks.call(this);
+		return methodName in myHooks && myHooks[methodName](...args);
 	}
 	
 	const HookSet = Object.freeze({
@@ -104,7 +109,7 @@ define(['utils/hookutils', 'jquery'], ({hookToSelector}, $) => {
 		*/
 		get TwineScript_Assignee() {},
 		set TwineScript_Assignee(value) {
-			return jQueryCall.call(this, "text", value);
+			this.section.renderInto(value, hooks.call(this), { append: "replace"});
 		},
 		/**
 			TwineScript_AssignValue is used when this object is an rvalue

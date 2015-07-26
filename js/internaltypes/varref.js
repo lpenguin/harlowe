@@ -1,5 +1,5 @@
-define(['state', 'internaltypes/twineerror', 'utils/operationutils'],
-(State, TwineError, {isObject, isSequential, objectName, clone, numericIndex, isValidDatamapName}) => {
+define(['state', 'internaltypes/twineerror', 'utils/operationutils', 'datatypes/hookset'],
+(State, TwineError, {isObject, isSequential, objectName, clone, numericIndex, isValidDatamapName}, HookSet) => {
 	'use strict';
 	/*
 		VarRefs are essentially objects pairing a chain of properties
@@ -25,14 +25,10 @@ define(['state', 'internaltypes/twineerror', 'utils/operationutils'],
 		@return {String|Error}
 	*/
 	function compilePropertyIndex(obj, prop) {
-		var
-			// Hoisted variables.
-			match,
-			error;
-		
 		/*
 			First, check for and propagate earlier errors.
 		*/
+		let error;
 		if((error = TwineError.containsError(obj, prop))) {
 			return error;
 		}
@@ -54,6 +50,7 @@ define(['state', 'internaltypes/twineerror', 'utils/operationutils'],
 			2ndlast, 3rdlast: reverse indices.
 		*/
 		if (isSequential(obj)) {
+			let match;
 			/*
 				Number properties are treated differently from strings by sequentials:
 				the number 1 is treated the same as the string "1st", and so forth.
@@ -340,6 +337,18 @@ define(['state', 'internaltypes/twineerror', 'utils/operationutils'],
 				))) {
 				return error;
 			}
+			
+			/*
+				HookSets have a special restriction: only strings can be assigned to it.
+				As of July 2015, nothing else has an assignee restriction.
+			*/
+			if (HookSet.isPrototypeOf(this.deepestObject) && typeof value !== "string") {
+				return TwineError.create(
+					"datatype",
+					"You can only set hook references to strings, not " + objectName(value) + "."
+				);
+			}
+
 			/*
 				Since Twine has undos and State.variables, in-place mutation of collection
 				objects is unallowable. Each (set:) must create a new entry in State.variables.

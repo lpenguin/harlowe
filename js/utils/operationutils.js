@@ -268,6 +268,17 @@ define(['utils', 'internaltypes/twineerror'], ({assert, impossible, toJSLiteral}
 		if (l && typeof l.TwineScript_is === "function") {
 			return l.TwineScript_is(r);
 		}
+		/*
+			For plain objects (such as ChangerCommand params), compare structurally.
+		*/
+		if (l && typeof l === "object" && r && typeof r === "object"
+				&& Object.getPrototypeOf(l) === Object.prototype
+				&& Object.getPrototypeOf(r) === Object.prototype) {
+			return is(
+				Object.getOwnPropertyNames(l).map(name => [name, l[name]]),
+				Object.getOwnPropertyNames(r).map(name => [name, r[name]])
+			);
+		}
 		return Object.is(l, r);
 	}
 	
@@ -279,9 +290,9 @@ define(['utils', 'internaltypes/twineerror'], ({assert, impossible, toJSLiteral}
 	*/
 	function contains(container,obj) {
 		/*
-			TODO: this has the problem, though, that all objects are compared by reference
-			using JS's strict equality algorithm, rather than a more intuitive
-			compare-by-value proposition.
+			For containers, compare the contents (if it can hold objects)
+			using the above is() algorithm rather than by JS's typical by-reference
+			comparison.
 		*/
 		if (container) {
 			if (typeof container === "string") {
@@ -357,17 +368,17 @@ define(['utils', 'internaltypes/twineerror'], ({assert, impossible, toJSLiteral}
 	}
 	
 	const OperationUtils = Object.freeze({
-		isObject: isObject,
-		isValidDatamapName: isValidDatamapName,
-		collectionType: collectionType,
-		isSequential: isSequential,
-		clone: clone,
-		coerceToString: coerceToString,
-		objectName: objectName,
-		typeName: typeName,
-		is: is,
-		contains: contains,
-		subset: subset,
+		isObject,
+		isValidDatamapName,
+		collectionType,
+		isSequential,
+		clone,
+		coerceToString,
+		objectName,
+		typeName,
+		is,
+		contains,
+		subset,
 		/*
 			Used to determine if a property name is an array index.
 			If negative indexing sugar is ever added, this could

@@ -439,12 +439,13 @@ define(['jquery', 'utils', 'utils/operationutils', 'internaltypes/twineerror'],
 			/*d:
 				Any data
 				
-				A macro that is said to accept "Any" will accept any kind of data,
-				without complaint, as long as the data does not contain any errors.
+				A macro that is said to accept "Any" will accept any kind of data
+				(except for Unobservable data) without complaint, as long as the data
+				does not contain any errors.
 			*/
 			Any: {
 				TwineScript_TypeName: "anything",
-			}, // In ES6, this would probably be a Symbol.
+			},
 			
 		},
 		
