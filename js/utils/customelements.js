@@ -62,7 +62,7 @@ define([], () => {
 	// - js: raw JS code to execute in order to evaluate this expr.
 	// Classes:
 	// .hook-macro: is a hook macro.
-	// .false-if: name is "if" but it evaluated to false.
+	// .false: name is "if" but it evaluated to false.
 	// .error: a problem occurred while running.
 	('tw-expression', 'type', 'name', 'js')
 	('tw-sidebar') // Sidebar (block)

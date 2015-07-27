@@ -6,12 +6,24 @@ describe("control flow macros", function() {
 			expectMarkupToNotError("(if:true)[]");
 			expectMarkupToError("(if:'1')[]");
 		});
-		it("returns its passed argument", function() {
+		it("returns a command that shows/hides the attached hook based on the provided boolean", function() {
 			expectMarkupToPrint("(if:false)[Gosh]", '');
 			expectMarkupToPrint("(if:true)[Gosh]", 'Gosh');
 		});
 		it("errors when placed in passage prose while not attached to a hook", function() {
 			expectMarkupToError("(if:true)");
+		});
+		it("can be composed with itself", function() {
+			expectMarkupToPrint("(set: $a to (if: true) + (if:true))$a[Gee]","Gee");
+			expectMarkupToPrint("(set: $a to (if: false) + (if:true))$a[Gee]","");
+		});
+		it("has structural equality", function() {
+			expectMarkupToPrint("(print: (if: true) is (if:true))","true");
+			expectMarkupToPrint("(print: (if: true) is not (if:false))","true");
+		});
+		it("can be composed with other style macros", function() {
+			expectMarkupToPrint("(set: $a to (if: true) + (text-style:'bold'))$a[Gee]","Gee");
+			expectMarkupToPrint("(set: $a to (if: false) + (text-style:'bold'))$a[Gee]","");
 		});
 	});
 	describe("the (unless:) macro", function() {
@@ -20,9 +32,21 @@ describe("control flow macros", function() {
 			expectMarkupToNotError("(unless:true)[]");
 			expectMarkupToError("(unless:'1')[]");
 		});
-		it("inverts its passed argument", function() {
+		it("behaves as the inverse of (if:)", function() {
 			expectMarkupToPrint("(unless:false)[Gosh]", 'Gosh');
 			expectMarkupToPrint("(unless:true)[Gosh]", '');
+		});
+		it("can be composed with itself", function() {
+			expectMarkupToPrint("(set: $a to (unless: false) + (unless:false))$a[Gee]","Gee");
+			expectMarkupToPrint("(set: $a to (unless: true) + (unless:false))$a[Gee]","");
+		});
+		it("has structural equality", function() {
+			expectMarkupToPrint("(print: (unless: true) is (unless:true))","true");
+			expectMarkupToPrint("(print: (unless: true) is not (unless:false))","true");
+		});
+		it("can be composed with other style macros", function() {
+			expectMarkupToPrint("(set: $a to (unless: false) + (text-style:'bold'))$a[Gee]","Gee");
+			expectMarkupToPrint("(set: $a to (unless: true) + (text-style:'bold'))$a[Gee]","");
 		});
 	});
 	describe("the (else-if:) macro", function() {
@@ -38,7 +62,7 @@ describe("control flow macros", function() {
 		it("errors when placed in passage prose while not attached to a hook", function() {
 			expectMarkupToError("(if:true)[](else-if:true)");
 		});
-		it("is false if the preceding hook was displayed, else returns its argument", function() {
+		it("hides the hook if the preceding hook was displayed, otherwise acts like (if:)", function() {
 			expectMarkupToPrint("(either:false)[Wow](else-if:true)[Gee]", 'Gee');
 			expectMarkupToPrint("(either:false)[Wow](else-if:false)[Gee]", '');
 			expectMarkupToPrint("(either:true)[Wow](else-if:true)[Gee]", 'Wow');
@@ -61,7 +85,7 @@ describe("control flow macros", function() {
 		it("errors when placed in passage prose while not attached to a hook", function() {
 			expectMarkupToError("(if:true)[](else:)");
 		});
-		it("is false if the preceding hook was displayed, else returns true", function() {
+		it("hides the hook if the preceding hook was displayed, otherwise shows it", function() {
 			expectMarkupToPrint("(either:false)[Wow](else:)[Gee]", 'Gee');
 			expectMarkupToPrint("(either:true)[Wow](else:)[Gee]", 'Wow');
 		});

@@ -46,11 +46,17 @@ window.expectMarkupToBecome = function(markup, html) {
 window.expectMarkupToPrint = function(markup, text) {
 	expect(runPassage(markup).find('br').replaceWith(document.createTextNode('\n')).end().text() || '').toBe(text);
 };
-window.expectMarkupToError = function(markup) {
-	expect(runPassage(markup).find('tw-error:not(.javascript)').length).toBe(1);
+window.expectMarkupToError = function(markup, number) {
+	if (typeof number !== "number") {
+		number = 1;
+	}
+	expect(runPassage(markup).find('tw-error:not(.javascript)').length).toBe(number);
 };
-window.expectMarkupToJSError = function(markup) {
-	expect(runPassage(markup).find('tw-error.javascript').length).toBe(1);
+window.expectMarkupToJSError = function(markup, number) {
+	if (typeof number !== "number") {
+		number = 1;
+	}
+	expect(runPassage(markup).find('tw-error.javascript').length).toBe(number);
 };
 window.expectMarkupNotToError = window.expectMarkupToNotError = function(markup) {
 	expect(runPassage(markup).find('tw-error').length).toBe(0);

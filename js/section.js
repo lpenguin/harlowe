@@ -64,7 +64,7 @@ define([
 				).render(expr.attr('title')));
 			}
 			else {
-				this.renderInto(
+				const enabled = this.renderInto(
 					/*
 						The use of popAttr prevents the hook from executing normally
 						if it wasn't actually the eventual target of the changer function.
@@ -78,6 +78,13 @@ define([
 					nextHook,
 					result
 				);
+				/*
+					The 'false' class is used solely by debug mode to visually denote
+					that a macro such as (if:) suppressed a hook.
+				*/
+				if (!enabled) {
+					expr.addClass("false");
+				}
 			}
 		}
 		/*
@@ -596,6 +603,8 @@ define([
 			@param {String} code The TwineMarkup code to render into the target.
 			@param target The render destination. Usually a HookSet, PseudoHookSet or jQuery.
 			@param {Function|Array} [changers] The changer function(s) to run.
+			@return {Boolean} Whether the ChangeDescriptors enabled the rendering
+				(i.e. no (if:false) macros or such were present).
 		*/
 		renderInto(source, target, changers) {
 			/*
@@ -650,7 +659,7 @@ define([
 			if (!desc.target) {
 				Utils.impossible("Section.renderInto",
 					"ChangeDescriptor has source but not a target!");
-				return;
+				return false;
 			}
 			
 			/*
@@ -767,6 +776,12 @@ define([
 			if (this.stack.length === 0) {
 				this.updateEnchantments();
 			}
+
+			/*
+				This return value is solely used by debug mode to colour <tw-expression>
+				macros for (if:) in cases where it suppressed a hook.
+			*/
+			return desc.enabled;
 		},
 		
 		/**
