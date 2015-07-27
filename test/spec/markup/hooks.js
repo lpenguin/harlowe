@@ -24,10 +24,10 @@ describe("hooks", function () {
 			expectMarkupToPrint("(if:true)[foo]","foo");
 		});
 		it("may not have a mirrored nametag on the other side", function (){
-			expectMarkupToError("(if:true)[foo]<hook|","foo");
+			expectMarkupToError("(if:true)[foo]<hook|", 2);
 		});
 		it("will error if the hook has no closing bracket", function (){
-			expectMarkupToError("(if:true)[(if:true)[Good golly]");
+			expectMarkupToError("(if:true)[(if:true)[Good golly]", 2);
 		});
 	});
 });

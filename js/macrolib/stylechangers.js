@@ -8,11 +8,154 @@ define(['jquery','macros', 'utils', 'utils/selectors', 'datatypes/colour', 'data
 		
 		This module modifies the Macros module only, and exports nothing.
 	*/
-	var
-		either = Macros.TypeSignature.either;
-	
+	const
+		{either, wrapped} = Macros.TypeSignature,
+		IfTypeSignature = [wrapped(Boolean, "If you gave a number, you may instead want to check that the number is not 0. "
+			+ "If you gave a string, you may instead want to check that the string is not \"\".")];
+
 	Macros.addChanger
-	
+		/*d:
+			(if: Boolean) -> Command
+			
+			This macro accepts only booleans, and produces a command that can be attached to hooks
+			to hide them "if" the value was false.
+			
+			Example usage:
+			`(if: $legs is 8)[You're a spider!]` will show the `You're a spider!` hook if `$legs` is `8`.
+			Otherwise, it is not run.
+			
+			Rationale:
+			In any story with multiple paths or threads, where certain events could occur or not occur,
+			it's common to want to run a slightly modified version of a passage reflecting the current
+			state of the world. The (if:), (unless:), (else-if:) and (else:) macros let these modifications be
+			switched on or off depending on variables, comparisons or calculations of your choosing.
+			
+			Alternatives:
+			The (if:) macro is not the only attachment that can hide or show hooks! In fact,
+			any variable that contains a boolean can be used in its place. For example:
+			
+			```
+			(set: $isAWizard to $foundWand and $foundHat and $foundBeard)
+			
+			$isAWizard[You wring out your beard with a quick twisting spell.]
+			You step into the ruined library.
+			$isAWizard[The familiar scent of stale parchment comforts you.]
+			```
+			By storing a boolean inside `$isAWizard`, it can be used repeatedly throughout the story to
+			hide or show hooks as you please.
+			
+			See also:
+			(unless:), (else-if:), (else:)
+		*/
+		("if",
+			(_, expr) => ChangerCommand.create("if", [expr]),
+			(d, expr) => d.enabled = d.enabled && expr,
+		IfTypeSignature)
+		
+		/*d:
+			(unless: Boolean) -> Command
+			
+			This macro is the negated form of (if:): it accepts only booleans, and returns
+			a command that can be attached hooks to hide them "if" the value was true.
+			
+			For more information, see the documentation of (if:).
+		*/
+		("unless",
+			(_, expr) => ChangerCommand.create("unless", [!expr]),
+			(d, expr) => d.enabled = d.enabled && expr,
+		IfTypeSignature)
+		
+		/*d:
+			(else-if: Boolean) -> Command
+			
+			This macro's result changes depending on whether the previous hook in the passage
+			was shown or hidden. If the previous hook was shown, then this command hides the attached
+			hook. Otherwise, it acts like (if:), showing the attached hook if it's true, and hiding it
+			if it's false. If there was no preceding hook before this, then an error message will be printed.
+
+			Example usage:
+			```
+			Your stomach makes {
+			(if: $size is 'giant')[
+			    an intimidating rumble!
+			](else-if: $size is 'big')[
+			    a loud growl
+			](else:​)[
+			    a faint gurgle
+			]}.
+			```
+			
+			Rationale:
+			If you use the (if:) macro, you may find you commonly use it in forked branches of
+			source: places where only one of a set of hooks should be displayed. In order to
+			make this so, you would have to phrase your (if:) expressions as "if A happened",
+			"if A didn't happen and B happened", "if A and B didn't happen and C happened", and so forth,
+			in that order.
+			
+			The (else-if:) and (else:) macros are convenient variants of (if:) designed to make this easier: you
+			can merely say "if A happened", "else, if B happened", "else, if C happened" in your code.
+			
+			Note:
+			You may be familiar with the `if` keyword in other programming languages. Do heed this, then:
+			the (else-if:) and (else:) macros need *not* be paired with (if:)! You can use (else-if:) and (else:)
+			in conjunction with variable attachments, like so:
+			```
+			$married[You hope this warrior will someday find the sort of love you know.]
+			(else-if: not $date)[You hope this warrior isn't doing anything this Sunday (because
+			you've got overtime on Saturday.)]
+			```
+			
+			See also:
+			(if:), (unless:), (else:)
+		*/
+		("elseif", (section, expr) => {
+			/*
+				This and (else:) check the lastHookShown expando
+				property, if present.
+			*/
+			if (!("lastHookShown" in section.stack[0])) {
+				return TwineError.create("macrocall", "There's no (if:) or something else before this to do (else-if:) with.");
+			}
+			return ChangerCommand.create("elseif", [section.stack[0].lastHookShown === false && !!expr]);
+		},
+		(d, expr) => d.enabled = d.enabled && expr,
+		IfTypeSignature)
+		
+		/*d:
+			(else:) -> Command
+			
+			This is a convenient limited variant of the (else-if:) macro. It will simply show
+			the attached hook if the preceding hook was hidden, and hide it otherwise.
+			If there was no preceding hook before this, then an error message will be printed.
+			
+			Rationale:
+			After you've written a series of hooks guarded by (if:) and (else-if:), you'll often have one final
+			branch to show, when none of the above have been shown. (else:) is the "none of the above" variant
+			of (else-if:), which needs no boolean expression to be provided. It's essentially the same as
+			`(else-if: true)`, but shorter and more readable.
+			
+			For more information, see the documentation of (else-if:).
+			
+			Note:
+			Due to a mysterious quirk, it's possible to use multiple (else:) macro calls in succession:
+			```
+			$isUtterlyEvil[You suddenly grip their ankles and spread your warm smile into a searing smirk.]
+			(else:​)[In silence, you gently, reverently rub their soles.]
+			(else:​)[Before they can react, you unleash a typhoon of tickles!]
+			(else:​)[They sigh contentedly, filling your pious heart with joy.]
+			```
+			This usage can result in a somewhat puzzling passage source structure, where each (else:) hook
+			alternates between visible and hidden depending on the first such hook. So, it is best avoided.
+		*/
+		("else", (section) => {
+			if (!("lastHookShown" in section.stack[0])) {
+				return TwineError.create("macrocall", "There's nothing before this to do (else:) with.");
+			}
+			return ChangerCommand.create("else", [section.stack[0].lastHookShown === false]);
+		},
+		(d, expr) => d.enabled = d.enabled && expr,
+		null)
+
 		/*d:
 			(hook: String) -> Command
 			Allows the author to give a hook a computed tag name.
