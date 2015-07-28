@@ -94,4 +94,7 @@ describe("control flow macros", function() {
 			expectMarkupToPrint("(either:true)[(either:true)[Wow](else:)[Gee]](else:)[Gosh]", 'Wow');
 		});
 	});
+	it("in debug mode, the <tw-expression> has the 'false' class when the hook is hidden", function() {
+		expect(runPassage("(if:false)[Gosh]").find('tw-expression').attr('class')).toMatch(/\bfalse\b/);
+	});
 });
