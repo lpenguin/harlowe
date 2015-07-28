@@ -2,6 +2,21 @@
 
 Rough documentation is at http://twine2.neocities.org/
 
+###2.0.0 changes (unreleased):
+
+####Alterations
+
+ * Fixed a bug where the "Story stylesheet" `<style>` element was attached between `<head>` and `<body>`. This should have had no obvious effects in any browser, but was untidy anyway.
+ * Altered the CSS of `<tw-story>` to use vertical padding instead of vertical margins.
+ * It is now an error to use `(set:)` or `(put:)` macros, as well as `to` constructs, in expression position: `(set: $a to (set: $b to 1))` is now an error, as is `(set: $a to ($b to 1))`.
+ * `(if:)`/`(unless:)`/`(elseif:)`/`(else:)` now evaluate to changer commands, rather than booleans. This means, among other things, that you can now compose them with other changers: `(set: $a to (text-style:"bold") + (if:$audible is true))`, for instance, will create a style that is bold, and also only appears if the $audible variable had been true. (Note: Changing the $audible variable afterward will not change the effect of the $a style.)
+
+####Additions
+
+ * `(link-reveal:)` is similar to `(link:)` except that the link text remains in the passage after it's been clicked - a desirable use-case which is now available. The code `(link-reveal:"Sin")[cerity]` features a link that, when clicked, makes the text become `Sincerity`. Note that this currently necessitates that the attached hook always appear after the link element in the text, due to how the attaching syntax works.
+ * `(link-repeat:)` is similar to the above as well, but allows the link to be clicked multiple times, rerunning the markup and code within.
+ * Also added `(link-replace:)` as an identical alias of the current `(link:)` macro, indicating how it differs from the others.
+
 ###1.1.1 changes:
 
 ####Bugfixes
@@ -100,13 +115,6 @@ Rough documentation is at http://twine2.neocities.org/
  * Added `(datanames:)`, which takes a single datamap, and returns an array containing all of the datamap's names, alphabetised.
  * Added `(datavalues:)`, which takes a single datamap, and returns an array containing all of the datamap's values, alphabetised by their names were.
  * It is now an error to begin a tagged hook (such as `(if:$a)[`) and not have a matching closing `]`.
-
-####Deferred until 2.0.0
-
-The following fixes are not present in 1.1.0 due to compatibility concerns, but will appear in the next major version.
-
- * Fixed a bug where the "Story stylesheet" element was attached between `<head>` and `<body>`. This should have had no obvious effects in any browser, but was untidy anyway.
- * Altered the CSS of `<tw-story>` to use vertical padding instead of vertical margins.
 
 ###1.0.1 changes:
 
