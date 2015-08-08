@@ -12,8 +12,8 @@ describe("twinescript variables", function() {
 			expectMarkupToError("(set: $a to 1, 2)");
 		});
 		it("runs on evaluation, but can't be assigned or used as a value", function() {
-			expectMarkupToError("(print: (set: $a to 1))", "true");
-			expectMarkupToError("(print: (a:(set: $b to 2)))", ",1");
+			expectMarkupToError("(print: (set: $a to 1))");
+			expectMarkupToError("(print: (a:(set: $b to 2)))");
 			expectMarkupToPrint("(print: $a + $b)","3");
 		});
 		it("when given a variable assignment request, sets the variable to a value", function() {

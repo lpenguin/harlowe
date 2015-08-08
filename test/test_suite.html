@@ -47,10 +47,13 @@ window.expectMarkupToPrint = function(markup, text) {
 	expect(runPassage(markup).find('br').replaceWith(document.createTextNode('\n')).end().text() || '').toBe(text);
 };
 window.expectMarkupToError = function(markup, number) {
-	if (typeof number !== "number") {
+	if (number === undefined) {
 		number = 1;
 	}
-	expect(runPassage(markup).find('tw-error:not(.javascript)').length).toBe(number);
+	else if (typeof number !== "number") {
+		throw TypeError("Wrong 2nd argument to expectMarkupToError");
+	}
+	expect(runPassage(markup).find('tw-error:not(.javascript)').filter(function(){ return !$(this).text().match(/\[object \w+\]/)}).length).toBe(number);
 };
 window.expectMarkupToJSError = function(markup, number) {
 	if (typeof number !== "number") {
