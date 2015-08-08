@@ -477,7 +477,11 @@
 				property: {
 					fn: textTokenFn("name"),
 					canFollow: ["variable", "hookRef", "property",
-						"itsProperty", "belongingItProperty", "macro", "grouping", "string"],
+						"itsProperty", "belongingItProperty", "macro", "grouping", "string",
+						/*
+							These must also be included so that the correct error can be reported.
+						*/
+						"boolean", "number"],
 				},
 				
 				possessiveOperator: { fn: emptyFn },

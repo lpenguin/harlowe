@@ -464,17 +464,45 @@ define([
 		},
 		[Any, Any, rest(Any)])
 		
-		/*
-			(datanames:)
-			This takes a datamap, and returns an array of its key names, sorted
+		/*d:
+			(datanames: Datamap) -> Array
+			
+			This takes a datamap, and returns a sorted array of its data names, sorted
 			alphabetically.
+			
+			Example usage:
+			`(datanames: (datamap:'B','Y', 'A','X'))` produces the array `(a: 'A','B')`
+			
+			Rationale:
+			Sometimes, you may wish to obtain some information about a datamap. You may want
+			to list all of its data names, or determine how many entries it has. You can use
+			the (datanames:) macro to do these things: if you give it a datamap, it produces
+			a sorted array of all of its names. You can then (print:) them, check the length
+			of the array, obtain a subarray, and other things you can do to arrays.
+			
+			See also:
+			(datavalues:)
 		*/
 		("datanames", (_, map) =>  Array.from(map.keys()).sort(NaturalSort("en")),
 		[Map])
 		/*
 			(datavalues:)
 			This takes a datamap, and returns an array of its values, sorted
-			alphabetically by their keys.
+			alphabetically by their name.
+			
+			Example usage:
+			`(datavalues: (datamap:'B',24, 'A',25))` produces the array `(a: 25,24)`
+			
+			Rationale:
+			Sometimes, you may wish to examine the values stored in a datamap without
+			referencing every name - for instance, determining if 0 is one of the values.
+			(This can't be determined using the `contains` keyword, because that only checks
+			the map's data names.) You can extract all of the datamap's values into an array
+			to compare and analyse them using (datavalues:). The values will be sorted by
+			their associated names.
+			
+			See also:
+			(datanames:)
 		*/
 		("datavalues", (_, map) =>
 			Array.from(map.entries()).sort(

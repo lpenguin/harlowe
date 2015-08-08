@@ -15,9 +15,9 @@ define(['state', 'internaltypes/twineerror', 'utils/operationutils', 'datatypes/
 		and variables, is 0.
 	*/
 	const defaultValue = 0;
-	
+
 	/*
-		This converts a TwineScript property index into a JavaScript property indexing
+		This converts a single TwineScript property index into a JavaScript property indexing
 		operation.
 		
 		While doing so, it checks if a property name is valid, and returns
@@ -26,23 +26,16 @@ define(['state', 'internaltypes/twineerror', 'utils/operationutils', 'datatypes/
 	*/
 	function compilePropertyIndex(obj, prop) {
 		/*
-			First, check for and propagate earlier errors.
-		*/
-		let error;
-		if((error = TwineError.containsError(obj, prop))) {
-			return error;
-		}
-		
-		/*
 			Check if it's a valid property name.
 		*/
+		let error;
 		if (obj instanceof Map &&
 				(error = TwineError.containsError(isValidDatamapName(obj,prop)))) {
 			return error;
 		}
 		
 		/*
-			Sequentials have special sugar property indices:
+			Sequentials have special sugar string property indices:
 			
 			length: this falls back to JS's length property for Arrays and Strings.
 			1st, 2nd etc.: indices.
@@ -67,7 +60,7 @@ define(['state', 'internaltypes/twineerror', 'utils/operationutils', 'datatypes/
 				Note that this glibly allows "1rd" or "2st".
 				There's no real problem with this.
 			*/
-			else if ((match = /(\d+)(?:st|[nr]d|th)last/i.exec(prop))) {
+			else if (typeof prop === "string" && (match = /(\d+)(?:st|[nr]d|th)last/i.exec(prop))) {
 				/*
 					obj.length cannot be trusted here: if it's an astral-plane
 					string, then it will be incorrect. So, just pass a negative index
@@ -76,7 +69,7 @@ define(['state', 'internaltypes/twineerror', 'utils/operationutils', 'datatypes/
 				*/
 				prop = -match[1] + "";
 			}
-			else if ((match = /(\d+)(?:st|[nr]d|th)/i.exec(prop))) {
+			else if (typeof prop === "string" && (match = /(\d+)(?:st|[nr]d|th)/i.exec(prop))) {
 				prop = match[1] - 1 + "";
 			}
 			else if (prop === "last") {
@@ -84,8 +77,8 @@ define(['state', 'internaltypes/twineerror', 'utils/operationutils', 'datatypes/
 			}
 			else if (prop !== "length") {
 				return TwineError.create("property",
-					"You can only use positions ('4th', 'last', '2ndlast', (2), etc.) and 'length' with "
-					+ objectName(obj) + ", not '" + prop + "'.");
+					"You can only access position strings/numbers ('4th', 'last', '2ndlast', (2), etc.) and 'length' of "
+					+ objectName(obj) + ", not " + objectName(prop) + ".");
 			}
 		}
 		/*
@@ -105,7 +98,59 @@ define(['state', 'internaltypes/twineerror', 'utils/operationutils', 'datatypes/
 			*/
 			prop = "size";
 		}
+		/*
+			Numbers and booleans cannot have properties accessed.
+		*/
+		else if (typeof obj === "number" || typeof obj === "boolean") {
+			return TwineError.create("property", "You can't get data values from "
+				+ objectName(obj) + ".");
+		}
 		return prop;
+	}
+
+	function compilePropertyChain(object, propertyChain) {
+		const compiledPropertyChain = propertyChain.reduce((arr, prop,i) => {
+			/*
+				If the property is computed, just compile its value.
+			*/
+			if (prop.computed) {
+				prop = prop.value;
+			}
+			/*
+				Properties can be single values, or arrays.
+				[].concat() converts both to an array.
+			*/
+			if (Array.isArray(prop)) {
+				prop = prop.map(prop => compilePropertyIndex(object, prop));
+			}
+			else {
+				prop = compilePropertyIndex(object, prop);
+			}
+
+			/*
+				Either the current compiled property contains an error, or a previous
+				property resulted in an error. Due to the inability of .reduce to early-exit,
+				we must check on every loop.
+			*/
+			let error;
+			if ((error = TwineError.containsError(arr, prop))) {
+				return error;
+			}
+			/*
+				Obtain the object to use in the next iteration
+				(if this isn't the last iteration)
+			*/
+			if (i < propertyChain.length-1) {
+				object = get(object, prop);
+			}
+			arr.push(prop);
+			return arr;
+		},[]);
+
+		return {
+			compiledPropertyChain,
+			deepestObject: object,
+		};
 	}
 
 	/*
@@ -114,19 +159,23 @@ define(['state', 'internaltypes/twineerror', 'utils/operationutils', 'datatypes/
 		They have the slight bonus that they can fit into some .reduce() calls
 		below, which potentially offsets the cost of being re-created for each varRef.
 		
-		Note: strings cannot be passed in here because of their UCS-2 .length:
+		Note: strings cannot be passed in here as obj because of their UCS-2 .length:
 		you must pass Array.from(str) instead.
 	*/
 	function objectOrMapGet(obj, prop) {
-		if (obj instanceof Map) {
+		if (obj === undefined) {
+			return obj;
+		} else if (obj instanceof Map) {
 			return obj.get(prop);
 		} else {
 			/*
 				As mentioned in compilePropertyIndex, obj.length
 				cannot be accurately determined until here and now.
+				Recall that unary + converts negative to positive, so
+				"-0" must be used in its place.
 			*/
-			if (isSequential(obj) && +prop < 0) {
-				prop = obj.length + (+prop);
+			if (isSequential(obj) && prop-0 < 0) {
+				prop = obj.length + (prop-0);
 			}
 			return obj[prop];
 		}
@@ -149,7 +198,14 @@ define(['state', 'internaltypes/twineerror', 'utils/operationutils', 'datatypes/
 		set this property will work. If not, create a TwineError.
 	*/
 	function canSet(obj, prop) {
-		var
+		/*
+			As with get() below, array properties allow multiple property keys to be set at once.
+		*/
+		if (Array.isArray(prop)) {
+			return prop.map(prop => canSet(obj, prop));
+		}
+
+		const
 			// Error messages which must be identical in both cases where they are used.
 			specialCollectionErrorMsg = "I won't add " + propertyDebugName(prop)
 				+ " to " + objectName(obj)
@@ -205,6 +261,13 @@ define(['state', 'internaltypes/twineerror', 'utils/operationutils', 'datatypes/
 				obj.TwineScript_Writeproof.indexOf(prop) > -1) {
 			return TwineError.create("operation", writeproofErrorMsg);
 		}
+		/*
+			Numbers and booleans cannot have properties altered.
+		*/
+		if (typeof obj === "number" || typeof obj === "boolean") {
+			return TwineError.create("operation", "You can't alter the data values of "
+				+ objectName(obj) + ".");
+		}
 		return true;
 	}
 	
@@ -218,9 +281,11 @@ define(['state', 'internaltypes/twineerror', 'utils/operationutils', 'datatypes/
 			/*
 				As mentioned in compilePropertyIndex, obj.length
 				cannot be accurately determined until here and now.
+				Recall that unary + converts negative to positive, so
+				"-0" must be used in its place.
 			*/
-			if (isSequential(obj) && (+prop < 0)) {
-				prop = obj.length + (+prop);
+			if (isSequential(obj) && prop-0 < 0) {
+				prop = obj.length + (prop-0);
 			}
 			obj[prop] = value;
 		}
@@ -246,72 +311,87 @@ define(['state', 'internaltypes/twineerror', 'utils/operationutils', 'datatypes/
 			delete: self
 		};
 	}
-	
+
+	/*
+		A wrapper around Javascript's [[get]], which
+		returns an error if a property is absent rather than
+		returning undefined. (Or, in the case of State.variables,
+		uses a default value instead of returning the error.)
+		
+		@method get
+		@return {Error|Anything}
+	*/
+	function get(obj, prop, originalProp) {
+		/*
+			If prop is an array (that is, a slice), retrieve every value for each
+			property key. This allows, for instance, getting a subarray by passing a range.
+		*/
+		if (Array.isArray(prop)) {
+			return (prop.map(e => get(obj, e,
+					/*
+						This is incorrect, but I don't have access to the "original"
+						version of this property name contained in the array.
+					*/
+					e
+				)))
+				/*
+					Strings are the only collection which, when sliced, produce a string
+					rather than an array. This is a complexity trade-off which is, I feel,
+					justified.
+				*/
+				[typeof obj === "string" ? "join" : "valueOf"]("");
+		}
+		/*
+			Due to Javascript's regrettable use of UCS-2 for string access,
+			astral plane glyphs won't be correctly regarded as single characters,
+			unless the following kludge is employed.
+		*/
+		if (typeof obj === "string") {
+			obj = [...obj];
+		}
+
+		const result =  objectOrMapGet(obj, prop);
+		/*
+			An additional error condition exists for get(): if the property
+			doesn't exist, don't just return undefined.
+			
+			I wanted to use hasOwnProperty here, but it didn't work
+			with the State.variables object, which, as you know, uses
+			differential properties on the prototype chain. Oh well,
+			it's probably not that good an idea anyway.
+		*/
+		if (result === undefined) {
+			/*
+				If the property is actually a State.variables access,
+				then it's a variable, and uses the defaultValue in place
+				of undefined.
+			*/
+			if (obj === State.variables) {
+				return defaultValue;
+			}
+			return TwineError.create("property", "I can't find a "
+				// Use the original non-compiled property key in the error message.
+				+ propertyDebugName(originalProp)
+				+ " data name in "
+				+ objectName(obj));
+		}
+		return result;
+	}
+
 	/*
 		The prototype object for VarRefs.
 	*/
 	const VarRefProto = Object.freeze({
 		varref: true,
 		
-		/*
-			A wrapper around Javascript's [[get]], which
-			returns an error if a property is absent rather than
-			returning undefined. (Or, in the case of State.variables,
-			uses a default value instead of returning the error.)
-			
-			@method get
-			@return {Error|Anything}
-		*/
 		get() {
-			let obj = this.deepestObject,
-				prop = this.deepestProperty;
-			
-			/*
-				Due to Javascript's regrettable use of UCS-2 for string access,
-				astral plane glyphs won't be correctly regarded as single characters,
-				unless the following kludge is employed, using ES6 methods.
-			*/
-			if (typeof obj === "string") {
-				obj = Array.from(obj);
-			}
-			/*
-				From this point on, after doing that conversion, obj's JS length can be trusted.
-				So, negative indices passed into here can now be converted to proper JS indices.
-			*/
-			if (isSequential(obj) && +prop < 0) {
-				prop = obj.length + (+prop);
-			}
-			/*
-				An additional error condition exists for get(): if the property
-				doesn't exist, don't just return undefined.
-				
-				I wanted to use hasOwnProperty here, but it didn't work
-				with the State.variables object, which, as you know, uses
-				differential properties on the prototype chain. Oh well,
-				it's probably not that good an idea anyway.
-			*/
-			if ((obj instanceof Map)
-					? !obj.has(prop)
-					/*
-						Notice that the 'in' operator fails on primitives, so
-						Object(obj) must be used.
-					*/
-					: !(prop in Object(obj))) {
+			return get(this.deepestObject, this.compiledPropertyChain.slice(-1)[0],
 				/*
-					If the property is actually a State.variables access,
-					then it's a variable, and uses the defaultValue in place
-					of undefined.
+					This is the original non-computed property. It is used only for
+					the error message when no property is found.
 				*/
-				if (obj === State.variables) {
-					return defaultValue;
-				}
-				return TwineError.create("property", "I can't find a "
-					// Use the original non-compiled property key in the error message.
-					+ propertyDebugName(this.propertyChain.slice(-1)[0])
-					+ " data name in "
-					+ objectName(obj));
-			}
-			return objectOrMapGet(obj, prop);
+				this.propertyChain.slice(-1)[0]
+			);
 		},
 		
 		/*
@@ -327,99 +407,142 @@ define(['state', 'internaltypes/twineerror', 'utils/operationutils', 'datatypes/
 			if (value && value.TwineScript_AssignValue) {
 				value = value.TwineScript_AssignValue();
 			}
-			/*
-				Because the following transformations modify the referenced objects
-				in preparation for the set operation, this check must be done now.
-			*/
-			let error;
-			if ((error = TwineError.containsError(
-					canSet(this.deepestObject, this.deepestProperty)
-				))) {
-				return error;
-			}
-			
-			/*
-				HookSets have a special restriction: only strings can be assigned to it.
-				As of July 2015, nothing else has an assignee restriction.
-			*/
-			if (HookSet.isPrototypeOf(this.deepestObject) && typeof value !== "string") {
-				return TwineError.create(
-					"datatype",
-					"You can only set hook references to strings, not " + objectName(value) + "."
-				);
-			}
 
 			/*
-				Since Twine has undos and State.variables, in-place mutation of collection
-				objects is unallowable. Each (set:) must create a new entry in State.variables.
-				
-				So, for each element in the property chain, the object it references, if
-				existant, must be cloned and reassigned to its home object.
+				For each *object*:
+				- Set the *property* inside the *object* to the *preceding value*
+				- Make the *object* be the *preceding value*
 			*/
-			let obj = this.object;
-			/*
-				(this.object will almost always be State.variables, by the way).
-			*/
-			this.compiledPropertyChain.slice(0,-1).every((prop) => {
-				let newObj,
-					oldObj = objectOrMapGet(obj, prop);
-				
-				if (isObject(oldObj)) {
-					newObj = clone(oldObj);
+			let result = this.compiledPropertyChain
+				/*
+					This somewhat complicated operation changes compiledPropertyChain
+					into an array of [object, prop] pairs, where each pair,
+					when referenced, is the next pair's object, and the final
+					prop is this.deepestProperty.
+				*/
+				.reduce((arr, prop) => {
+					let object;
 					/*
-						This assumes that this.object will never have locked
-						properties, and that this assignment will always succeed.
+						The current pair consists of the object referenced
+						by the previous pair (or this.object on the first
+						iteration), and the current property.
 					*/
-					obj instanceof Map ? obj.set(prop, newObj) : obj[prop] = newObj;
-					obj = newObj;
-					return true;
-				}
-				return false;
-			});
-			this.deepestObject = obj;
-			
-			/*
-				Most all objects in TwineScript are passed by value.
-				Hence, setting to an object duplicates it.
-			*/
-			if (isObject(value)) {
-				value = clone(value);
-			}
-			objectOrMapSet(this.deepestObject, this.deepestProperty, value);
-		},
-		
-		/*
-			A wrapper around Javascript's delete operation, which
-			returns an error if the deletion failed, and also removes holes in
-			arrays caused by the deletion.
-		*/
-		'delete'() {
-			const obj = this.deepestObject,
-				prop = this.deepestProperty;
-			/*
-				If it's an array, and the prop is an index,
-				we should remove the item in-place without creating a hole.
-			*/
-			if (Array.isArray(obj) && numericIndex.exec(prop)) {
-				obj.splice(prop, 1);
-				return;
-			}
-			/*
-				If it's a Map or Set, use the delete() method.
-			*/
-			if (obj instanceof Map || obj instanceof Set) {
-				obj.delete(prop);
-				return;
-			}
-			if (!delete obj[prop]) {
-				return TwineError.create("property",
-					"I couldn't delete '"
-					+ prop
-					+ "' from "
-					+ objectName(obj)
-					+ "."
-				);
-			}
+					if (arr.length === 0) {
+						object = this.object;
+					}
+					else {
+						object = get(...arr[arr.length-1]);
+					}
+					/*
+						HookSets have a special restriction: only strings can be assigned to it.
+						As of July 2015, nothing else has an assignee restriction.
+					*/
+					if (HookSet.isPrototypeOf(object) && typeof value !== "string") {
+						return arr.push([TwineError.create(
+							"datatype",
+							"You can only set hook references to strings, not " + objectName(value) + "."
+						)]) && arr;
+					}
+					return arr.push([object, prop]) && arr;
+				}, [])
+				/*
+					This is a reduceRight because the rightmost object-property pair
+					must be dealt with first, and then advancing further left.
+				*/
+				.reduceRight((value, [object, property], i, arr) => {
+					/*
+						First, propagate errors from the preceding iteration, or from
+						compilePropertyChain() itself.
+					*/
+					let error;
+					if ((error = TwineError.containsError(value, object, property) || TwineError.containsError(
+							isObject(object) && canSet(object, property)
+						))) {
+						return error;
+					}
+
+					/*
+						Certain types of objects require special means of assigning
+						their values than just objectOrMapSet().
+
+						Strings are immutable, so modifications to them must be done
+						by splicing them.
+					*/
+					if (typeof object === "string") {
+						if (typeof value !== "string" || value.length !== (Array.isArray(property) ? property.length : 1)) {
+							return TwineError.create("datatype", "I can't put this non-string value, " + objectName(value) + ", in a string.");
+						}
+						/*
+							Convert strings to an array of code points, to ensure that the indexes are correct.
+						*/
+						object = [...object];
+						/*
+							Insert each character into the string, one by one,
+							using this loop.
+						*/
+						const valArray = [...value];
+						/*
+							If property is a single index, convert it into an array
+							now through the usual method.
+						*/
+						[].concat(property).forEach(index => {
+							/*
+								Because .slice treats negative indices differently than we'd
+								like right now, negatives must be normalised.
+							*/
+							if (0+index < 0) {
+								index = object.length + (0+index);
+							}
+							/*
+								Note that the string's length is preserved during each iteration, so
+								the index doesn't need to be adjusted to account for a shift.
+							*/
+							object = [...object.slice(0, index), valArray.shift(), ...object.slice(index+1)];
+						});
+						object = object.join('');
+					}
+					/*
+						Other types of objects simply call objectOrMapSet, once or multiple times
+						depending on if the property is a slice.
+					*/
+					else if (isObject(object)) {
+						/*
+							If the property is an array of properties, and the value is an array also,
+							set each value to its matching property.
+							e.g. (set: $a's (a:2,1) to (a:2,3)) will set position 1 to 3, and position 2 to 1.
+						*/
+						if (Array.isArray(property) && isSequential(value)) {
+							/*
+								Due to Javascript's regrettable use of UCS-2 for string access,
+								astral plane glyphs won't be correctly regarded as single characters,
+								unless the following kludge is employed.
+							*/
+							if (typeof value === "string") {
+								value = [...value];
+							}
+							/*
+								Iterate over each property, and zip it with the value
+								to set at that property position. For example:
+								(a: 1) to (a: "wow")
+								would set "wow" to the position "1"
+							*/
+							property.map((prop,i) => [prop, value[i]])
+								.forEach(([e, value]) => objectOrMapSet(object, e, value));
+						}
+						else {
+							objectOrMapSet(object, property, value);
+						}
+					}
+					/*
+						Only attempt to clone the object if it's not the final iteration.
+					*/
+					if (i < arr.length-1) {
+						object = clone(object);
+					}
+					return object;
+				}, value);
+
+			return (TwineError.containsError(result) ? result : undefined);
 		},
 		
 		/*
@@ -449,52 +572,17 @@ define(['state', 'internaltypes/twineerror', 'utils/operationutils', 'datatypes/
 				propertyChain = object.propertyChain.concat(propertyChain);
 				object = object.object;
 			}
-			let deepestObject = object;
-			/*
-				Compile the property chain, converting "2ndlast" etc. into proper indices,
-				converting computed property objects into single indices,
-				and determining the deepestObject.
-			*/
-			const compiledPropertyChain = propertyChain.reduce((arr, prop, i) => {
-				/*
-					If the property is computed, just compile its value.
-				*/
-				if (prop.computed) {
-					prop = prop.value;
-				}
-				prop = compilePropertyIndex(deepestObject, prop);
-				/*
-					Either the current compiled property contains an error, or a previous
-					property resulted in an error. Due to the inability of .reduce to early-exit,
-					we must check on every loop.
-				*/
-				let error;
-				if ((error = TwineError.containsError([arr].concat(prop)))) {
-					return error;
-				}
-				if (i < propertyChain.length-1) {
-					deepestObject = objectOrMapGet(deepestObject, prop);
-				}
-				return arr.concat(prop);
-			},[]);
-			/*
-				If one of those resulted in an error, report it now.
-			*/
-			if ((error = TwineError.containsError(compiledPropertyChain))) {
+
+			const {compiledPropertyChain, deepestObject} = compilePropertyChain(object, propertyChain);
+			if ((error = TwineError.containsError(compiledPropertyChain, deepestObject))) {
 				return wrapError(error);
 			}
+
 			/*
 				Create the VarRefProto instance.
 			*/
 			return Object.assign(Object.create(VarRefProto), {
-				object: object,
-				propertyChain: propertyChain,
-				compiledPropertyChain: compiledPropertyChain,
-				/*
-					Shortcut to the final property from the chain.
-				*/
-				deepestProperty: compiledPropertyChain.slice(-1)[0],
-				deepestObject: deepestObject,
+				object, propertyChain, compiledPropertyChain, deepestObject
 			});
 		},
 		

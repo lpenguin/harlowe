@@ -3,50 +3,48 @@ describe("property indexing", function() {
 	describe("sequential indices", function() {
 		describe("for strings", function() {
 			it("'1st', '2nd', etc. access the indexed characters", function() {
-				expectMarkupToPrint('(print: "Red"\'s 1st)', "R");
-				expectMarkupToPrint('(print: "Red"\'s 2nd)', "e");
-				expectMarkupToPrint('(print: "Red"\'s 3rd)', "d");
+				expectMarkupToPrint('(print: "𐌎ed"\'s 1st)', "𐌎");
+				expectMarkupToPrint('(print: "𐌎ed"\'s 2nd)', "e");
+				expectMarkupToPrint('(print: "𐌎ed"\'s 3rd)', "d");
 			});
 			it("are case-insensitive", function() {
-				expectMarkupToPrint('(print: "Red"\'s 1sT)', "R");
-				expectMarkupToPrint('(print: "Red"\'s 2Nd)', "e");
-				expectMarkupToPrint('(print: "Red"\'s 3RD)', "d");
+				expectMarkupToPrint('(print: "𐌎ed"\'s 1sT)', "𐌎");
+				expectMarkupToPrint('(print: "𐌎ed"\'s 2Nd)', "e");
+				expectMarkupToPrint('(print: "𐌎ed"\'s 3RD)', "d");
 			});
 			it("ignores the exact ordinal used", function() {
-				expectMarkupToPrint('(print: "Red"\'s 1th)', "R");
-				expectMarkupToPrint('(print: "Red"\'s 2rd)', "e");
-				expectMarkupToPrint('(print: "Red"\'s 3st)', "d");
+				expectMarkupToPrint('(print: "𐌎ed"\'s 1th)', "𐌎");
+				expectMarkupToPrint('(print: "𐌎ed"\'s 2rd)', "e");
+				expectMarkupToPrint('(print: "𐌎ed"\'s 3st)', "d");
 			});
 			it("'last', '2ndlast', etc. accesses the right-indexed characters", function() {
-				expectMarkupToPrint('(print: "Red"\'s 3rdlast)', "R");
-				expectMarkupToPrint('(print: "Red"\'s 2ndlast)', "e");
-				expectMarkupToPrint('(print: "Red"\'s last)', "d");
+				expectMarkupToPrint('(print: "𐌎ed"\'s 3rdlast)', "𐌎");
+				expectMarkupToPrint('(print: "𐌎ed"\'s 2ndlast)', "e");
+				expectMarkupToPrint('(print: "𐌎ed"\'s last)', "d");
 			});
 			it("'length' accesses the string's length", function() {
-				expectMarkupToPrint('(print: "Red"\'s length)', "3");
+				expectMarkupToPrint('(print: "𐌎ed"\'s length)', "3");
 				expectMarkupToPrint('(print: ""\'s length)', "0");
-				expectMarkupToPrint('(print: "abcdefghijklmnopqrstuvwxyz"\'s length)', "26");
-			});
-			it("correctly indexes astral plane characters", function() {
-				expectMarkupToPrint('(print: "a𐀠c"\'s 2nd)', "𐀠");
-				expectMarkupToPrint('(print: "d𐀠f"\'s 2ndlast)', "𐀠");
-				expectMarkupToPrint('(print: "g𐀠i"\'s length)', "3");
+				expectMarkupToPrint('(print: "𐌎bcdefghijklmnopqrstuvwxyz"\'s length)', "26");
 			});
 			it("can be used as a right-hand-side of (set:)", function() {
-				expectMarkupToPrint('(set: $a to "abc"\'s 1st)$a', "a");
-				expectMarkupToPrint('(set: $a to "abc"\'s last)$a', "c");
+				expectMarkupToPrint('(set: $a to "𐌎bc"\'s 1st)$a', "𐌎");
+				expectMarkupToPrint('(set: $a to "𐌎bc"\'s last)$a', "c");
 				expectMarkupToPrint('(set: $a to "abc"\'s length)$a', "3");
 			});
 			it("prints an error if the index is out of bounds", function() {
-				expectMarkupToError('(print: "A"\'s 2nd)');
-				expectMarkupToError('(print: "Red"\'s 4th)');
+				expectMarkupToError('(print: "𐌎"\'s 2nd)');
+				expectMarkupToError('(print: "𐌎ed"\'s 4th)');
 			});
 			it("can be used with 'it', as 'its'", function() {
-				expectMarkupToPrint('(set:$s to "R")(set: $s to its 1st)$s','R');
-				expectMarkupToPrint('(set:$s to "Red")(set: $s to its length)$s','3');
+				expectMarkupToPrint('(set:$s to "𐌎")(set: $s to its 1st)$s','𐌎');
+				expectMarkupToPrint('(set:$s to "𐌎ed")(set: $s to its length)$s','3');
 			});
 			it("can be chained (worthlessly)", function() {
-				expectMarkupToPrint('(print: "Gold"\'s last\'s 1st)','d');
+				expectMarkupToPrint('(print: "𐌎old"\'s last\'s 1st)','d');
+			});
+			it("can be assigned to", function() {
+				expectMarkupToPrint('(set: $a to "𐌎old")(set: $a\'s last to "A")$a','𐌎olA');
 			});
 		});
 		describe("for arrays", function() {
@@ -95,14 +93,33 @@ describe("property indexing", function() {
 			it("can be chained", function() {
 				expectMarkupToPrint('(print: (a:(a:"W"))\'s 1st\'s 1st)', "W");
 			});
+			it("can be assigned to", function() {
+				expectMarkupToPrint('(set:$a to (a:1,2))(set: $a\'s last to "A")$a','1,A');
+			});
 		});
-		it("cannot be used with datamaps", function() {
+		it("cannot be used with booleans", function() {
+			expectMarkupToError('(print: false\'s 1st)');
+			expectMarkupToError('(print: true\'s last)');
+			expectMarkupToError('(set:$a to false)(set: $a\'s 1st to 1)');
+			expectMarkupToError('(set:$a to true)(set: $a\'s last to 1)');
+		});
+		it("cannot be used with numbers", function() {
+			expectMarkupToError('(print: 2\'s 1st)');
+			expectMarkupToError('(print: -0.1\'s last)');
+			expectMarkupToError('(set:$a to 2)(set: $a\'s 1st to 1)');
+			expectMarkupToError('(set:$a to -0.1)(set: $a\'s last to 1)');
+		});
+		it("can be used as names in datamaps", function() {
 			expectMarkupToError('(print: (datamap: "Sword", "Steel")\'s 1st)');
 			expectMarkupToError('(print: (datamap: "Sword", "Steel")\'s last)');
+			expectMarkupToNotError('(set:$a to (datamap: "Sword", "Steel"))(set: $a\'s 1st to 1)');
+			expectMarkupToNotError('(set:$a to (datamap: "Sword", "Steel"))(set: $a\'s last to 1)');
 		});
 		it("cannot be used with datasets", function() {
 			expectMarkupToError('(print: (dataset: 2,3)\'s 1st)');
 			expectMarkupToError('(print: (dataset: 2,3)\'s last)');
+			expectMarkupToError('(set:$a to (dataset: 2,3))(set: $a\'s 1st to 1)');
+			expectMarkupToError('(set:$a to (dataset: 2,3))(set: $a\'s last to 1)');
 		});
 	});
 	describe("string indices", function() {
@@ -147,11 +164,23 @@ describe("property indexing", function() {
 			expectMarkupToPrint('(set: $s to (dataset: 2,3))(print: $s\'s length)', '2');
 			expectMarkupToError('(set: $s to (dataset: 2,3))(set: $s\'s thing to 4)');
 		});
+		it("cannot be used with booleans", function() {
+			expectMarkupToError('(print: false\'s "1")');
+			expectMarkupToError('(print: true\'s "1")');
+			expectMarkupToError('(set:$a to false)(set: $a\'s "1" to 1)');
+			expectMarkupToError('(set:$a to true)(set: $a\'s "1" to 1)');
+		});
+		it("cannot be used with numbers", function() {
+			expectMarkupToError('(print: 2\'s "1")');
+			expectMarkupToError('(print: -0.1\'s "1")');
+			expectMarkupToError('(set:$a to 2)(set: $a\'s "1" to 1)');
+			expectMarkupToError('(set:$a to -0.1)(set: $a\'s "1" to 1)');
+		});
 	});
 	describe("belonging indices", function() {
 		it("can be used with strings", function() {
-			expectMarkupToPrint('(print: 1st of "Red")', "R");
-			expectMarkupToPrint('(print: length of 1st of "Red")', "1");
+			expectMarkupToPrint('(print: 1st of "𐌎ed")', "𐌎");
+			expectMarkupToPrint('(print: length of 1st of "𐌎ed")', "1");
 		});
 		it("can be used with arrays", function() {
 			expectMarkupToPrint('(print: 1st of (a:"R",2))', "R");
@@ -192,6 +221,12 @@ describe("property indexing", function() {
 		it("can have other 'it' accesses nested in it", function (){
 			expectMarkupToPrint("(set: $a to (a:3,4))(set: $a to (its (2)) of 'Blue')$a","e");
 		});
+		it("produces an error when given a boolean, datamap, or other invalid type", function (){
+			expectMarkupToError("(print: (a:6,12)'s false)");
+			expectMarkupToError("(print: (a:6,12)'s (datamap:'A','1'))");
+			expectMarkupToError("(print: (a:6,12)'s (dataset:'A'))");
+			expectMarkupToError("(print: (a:6,12)'s (text-style:'bold'))");
+		});
 		describe("for datamaps", function() {
 			it("access the keyed properties", function() {
 				expectMarkupToPrint('(print: (datamap:"A",1)\'s ("A"))','1');
@@ -205,6 +240,17 @@ describe("property indexing", function() {
 			it("allows numeric keys", function() {
 				expectMarkupToPrint('(print: (datamap:1,7)\'s (1))', '7');
 			});
+			describe("with an array key", function() {
+				it("evaluates to an array of keyed properties", function() {
+					expectMarkupToPrint('(print: (datamap:"A",1,"B",2)\'s (a:"A","B"))','1,2');
+				});
+				it("can be chained", function() {
+					expectMarkupToPrint('(print: (datamap:"A",1,"B",2)\'s (a:"A","B")\'s 1st)','1');
+				});
+				it("can be used in assignments", function() {
+					expectMarkupToPrint('(set: $a to (datamap:"A",1,"B",2))(set: $a\'s (a:"A","B") to (a:"C","D"))(print:$a\'s "A" + $a\'s "B")','CD');
+				});
+			});
 		});
 		describe("for arrays", function() {
 			it("can be used in assignments", function (){
@@ -215,16 +261,54 @@ describe("property indexing", function() {
 				expectMarkupToError("(print: (a:'Red','Blue')\'s '1')");
 				expectMarkupToError("(print: (a:'Red')\'s ('13'\'s 1st))");
 			});
+			describe("with an array key", function() {
+				it("evaluates to an array of positional properties", function() {
+					expectMarkupToPrint('(print: (a:"Red","Blue")\'s (a:1,2))','Red,Blue');
+				});
+				it("can be chained", function() {
+					expectMarkupToPrint('(print: (a:"Red","Blue")\'s (a:1,2)\'s 1st)','Red');
+					expectMarkupToPrint('(print: (a:"Red","Blue")\'s (a:1,2)\'s (a:1,2))','Red,Blue');
+				});
+				it("can be used in assignments", function() {
+					expectMarkupToPrint('(set: $a to (a:7,8))(set: $a\'s (a:1,2) to (a:3,9))$a','3,9');
+				});
+				it("can also be chained in assignments", function() {
+					expectMarkupToPrint('(set: $a to (a:7,8))(set: $a\'s (a:1,2)\'s (a:1,2) to (a:3,9))$a','3,9');
+				});
+			});
 		});
 		describe("for strings", function() {
 			it("must have numbers on the right side, or 'length'", function (){
-				expectMarkupToPrint("(print: \"Red\"'s (1))","R");
-				expectMarkupToPrint("(print: \"Red\"'s 'length')","3");
-				expectMarkupToError("(print: 'Red'\'s '1')");
-				expectMarkupToError("(print: 'Blue'\'s ('13'\'s 1st))");
+				expectMarkupToPrint("(print: \"𐌎ed\"'s (1))","𐌎");
+				expectMarkupToPrint("(print: \"𐌎ed\"'s 'length')","3");
+				expectMarkupToError("(print: '𐌎ed''s '1')");
+				expectMarkupToError("(print: '𐌎lue''s ('13''s 1st))");
 			});
 			it("can be used with single-quoted strings", function (){
-				expectMarkupToPrint("(print: 'Red'\'s (1))","R");
+				expectMarkupToPrint("(print: '𐌎ed''s (1))","𐌎");
+			});
+			it("can be used in assignments", function (){
+				expectMarkupToPrint("(set: $a to '𐌎ed''s (1))$a","𐌎");
+			});
+			describe("with an array key", function() {
+				it("evaluates to a substring", function() {
+					expectMarkupToPrint('(print: "𐌎ed"\'s (a:1,2))','𐌎e');
+					expectMarkupToPrint('(print: "𐌎ed"\'s (a:3,1))','d𐌎');
+				});
+				it("can be chained", function() {
+					expectMarkupToPrint('(print: "Red"\'s (a:1,2)\'s 1st)','R');
+					expectMarkupToPrint('(print: "Red"\'s (a:1,2)\'s (a:1,2))','Re');
+					expectMarkupToPrint('(print: "Gardyloo"\'s (a:6,5,4)\'s (a:3,1))','dl');
+				});
+				it("can be used in assignments", function() {
+					expectMarkupToPrint('(set: $a to "𐌎old")(set: $a\'s (a:2,3) to "ar")$a','𐌎ard');
+					expectMarkupToPrint('(set: $a to "𐌎old")(set: $a\'s (a:3,2) to "ar")$a','𐌎rad');
+					expectMarkupToPrint('(set: $a to "o𐌎o")(set: $a\'s (a:3,1,3,1) to "abcd")$a','d𐌎c');
+				});
+				it("can also be chained in assignments", function() {
+					expectMarkupToPrint('(set: $a to "𐌎old")(set: $a\'s (a:2,3)\'s (a:1,2) to "ar")$a','𐌎ard');
+					expectMarkupToPrint('(set: $a to "𐌎old")(set: $a\'s (a:3,2)\'s (a:1,2) to "ar")$a','𐌎rad');
+				});
 			});
 		});
 	});
@@ -278,10 +362,10 @@ describe("property indexing", function() {
 		});
 		describe("for strings", function() {
 			it("must have numbers on the left side, or 'length'", function (){
-				expectMarkupToPrint("(print: (1) of 'Red')","R");
-				expectMarkupToPrint("(print: 'length' of \"Red\")","3");
-				expectMarkupToError("(print: '1' of 'Red')");
-				expectMarkupToError("(print: (1st of '13') of 'Blue')");
+				expectMarkupToPrint("(print: (1) of '𐌎ed')","𐌎");
+				expectMarkupToPrint("(print: 'length' of \"𐌎ed\")","3");
+				expectMarkupToError("(print: '1' of '𐌎ed')");
+				expectMarkupToError("(print: (1st of '13') of '𐌎lue')");
 			});
 		});
 	});
