@@ -10,14 +10,15 @@ describe("twinescript variables", function() {
 			expectMarkupToNotError("(set: $a to 1)");
 			expectMarkupToNotError("(set: $a to 1, $b to 2)");
 			expectMarkupToError("(set: $a to 1, 2)");
+			expectMarkupToError("(set: $a into $b)");
+		});
+		it("when given a variable assignment request, sets the variable to a value", function() {
+			expectMarkupToPrint("(set: $a to 1)(print: $a)","1");
 		});
 		it("runs on evaluation, but can't be assigned or used as a value", function() {
 			expectMarkupToError("(print: (set: $a to 1))");
 			expectMarkupToError("(print: (a:(set: $b to 2)))");
 			expectMarkupToPrint("(print: $a + $b)","3");
-		});
-		it("when given a variable assignment request, sets the variable to a value", function() {
-			expectMarkupToPrint("(set: $a to 1)(print: $a)","1");
 		});
 		it("when given a hook/string assignment request, fills the hook with the contents, as twinemarkup", function() {
 			expectMarkupToPrint("|a>[Gee] |a>[Wow](set: ?a to '//Golly//')","Golly Golly");
