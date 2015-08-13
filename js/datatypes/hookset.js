@@ -105,11 +105,18 @@ define(['jquery', 'utils/hookutils'], ($, {hookToSelector}) => {
 		/**
 			TwineScript_Assignee is used when this object is an lvalue
 			in an AssignmentRequest. It's an accessor because it's
-			accessed by Operation.get(), I think.
+			accessed by Operations.get().
 		*/
-		get TwineScript_Assignee() {},
 		set TwineScript_Assignee(value) {
 			this.section.renderInto(value, hooks.call(this), { append: "replace"});
+		},
+		/*
+			Note that the value is also retrieved when a bi-directional assignment
+			occurs. In that instance, it should return itself. This is rather
+			#awkward, though, as it betrays the meaning of "assignee"...
+		*/
+		get TwineScript_Assignee() {
+			return this;
 		},
 		/**
 			TwineScript_AssignValue is used when this object is an rvalue
@@ -122,6 +129,24 @@ define(['jquery', 'utils/hookutils'], ($, {hookToSelector}) => {
 		*/
 		TwineScript_AssignValue() {
 			return jQueryCall.call(this, "text");
+		},
+
+		/**
+			TwineScript_DeleteValue is called by VarRef.delete() whenever
+			a property is deleted. In this case, the act of "deleting"
+			a HookRef is akin to blanking it. Consider (move: ?a to $a),
+			which one would expect to remove the value of ?a and put it in
+			$a without otherwise clearing the ?a hooks from the DOM.
+		*/
+		TwineScript_DeleteValue(prop) {
+			/*
+				The property will be "TwineScript_Assignee" when
+				a (move:) macro has caused this to be deleted.
+				This is rather #awkward.
+			*/
+			if (prop === "TwineScript_Assignee") {
+				jQueryCall.call(this, "text", "");
+			}
 		},
 		
 		/**

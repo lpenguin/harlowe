@@ -290,6 +290,38 @@ define(['state', 'internaltypes/twineerror', 'utils/operationutils', 'datatypes/
 			obj[prop] = value;
 		}
 	}
+
+	/*
+		As with the two above, delete() has this helper method
+		which performs the actual deletoon based on object type.
+	*/
+	function objectOrMapDelete(obj, prop) {
+		/*
+			If it's an array, and the prop is an index,
+			we should remove the item in-place without creating a hole.
+		*/
+		if (Array.isArray(obj) && numericIndex.exec(prop)) {
+			obj.splice(prop, 1);
+		}
+		/*
+			If it's a Map or Set, use the delete() method.
+		*/
+		else if (obj instanceof Map || obj instanceof Set) {
+			obj.delete(prop);
+		}
+		/*
+			If it has a TwineScript_DeleteValue method, call that.
+			This will usually be a hook reference.
+		*/
+		else if (obj.TwineScript_DeleteValue) {
+			obj.TwineScript_DeleteValue(prop);
+		}
+		/*
+			Note: The only plain object anticipated to be provided here is the
+			state variables object.
+		*/
+		else delete obj[prop];
+	}
 	
 	/*
 		This helper function wraps a TwineError so that it can be a valid return
@@ -379,6 +411,43 @@ define(['state', 'internaltypes/twineerror', 'utils/operationutils', 'datatypes/
 	}
 
 	/*
+		This is a helper function for set() and delete(), which simplifies the act of
+		modifying TwineScript objects' properties and properly applying those changes
+		up the property chain.
+		It lets the caller provide a reduceRight callback and initial value, which is called on
+		an array of [object, prop] pairs, where each pair, when referenced, is the next pair's
+		object, and the final prop is this.deepestProperty.
+	*/
+	function mutateRight(fn, value) {
+		const result = this.compiledPropertyChain
+			/*
+				This somewhat complicated operation changes compiledPropertyChain
+				into an array of [object, prop] pairs
+			*/
+			.reduce((arr, prop) => {
+				let object;
+				/*
+					The current pair consists of the object referenced
+					by the previous pair (or this.object on the first
+					iteration), and the current property.
+				*/
+				if (arr.length === 0) {
+					object = this.object;
+				}
+				else {
+					object = get(...arr[arr.length-1]);
+				}
+				return arr.push([object, prop]) && arr;
+			}, [])
+			/*
+				This is a reduceRight because the rightmost object-property pair
+				must be dealt with first, followed by those further left.
+			*/
+			.reduceRight(fn, value);
+		return (TwineError.containsError(result) ? result : undefined);
+	}
+
+	/*
 		The prototype object for VarRefs.
 	*/
 	const VarRefProto = Object.freeze({
@@ -413,138 +482,168 @@ define(['state', 'internaltypes/twineerror', 'utils/operationutils', 'datatypes/
 				- Set the *property* inside the *object* to the *preceding value*
 				- Make the *object* be the *preceding value*
 			*/
-			let result = this.compiledPropertyChain
+			return mutateRight.call(this, (value, [object, property], i, arr) => {
 				/*
-					This somewhat complicated operation changes compiledPropertyChain
-					into an array of [object, prop] pairs, where each pair,
-					when referenced, is the next pair's object, and the final
-					prop is this.deepestProperty.
+					First, propagate errors from the preceding iteration, or from
+					compilePropertyChain() itself.
 				*/
-				.reduce((arr, prop) => {
-					let object;
-					/*
-						The current pair consists of the object referenced
-						by the previous pair (or this.object on the first
-						iteration), and the current property.
-					*/
-					if (arr.length === 0) {
-						object = this.object;
-					}
-					else {
-						object = get(...arr[arr.length-1]);
-					}
-					/*
-						HookSets have a special restriction: only strings can be assigned to it.
-						As of July 2015, nothing else has an assignee restriction.
-					*/
-					if (HookSet.isPrototypeOf(object) && typeof value !== "string") {
-						return arr.push([TwineError.create(
-							"datatype",
-							"You can only set hook references to strings, not " + objectName(value) + "."
-						)]) && arr;
-					}
-					return arr.push([object, prop]) && arr;
-				}, [])
+				let error;
+				if ((error = TwineError.containsError(value, object, property) || TwineError.containsError(
+						isObject(object) && canSet(object, property)
+					))) {
+					return error;
+				}
+
 				/*
-					This is a reduceRight because the rightmost object-property pair
-					must be dealt with first, and then advancing further left.
+					HookSets have a special restriction: only strings can be assigned to it.
+					As of July 2015, nothing else has an assignee restriction.
 				*/
-				.reduceRight((value, [object, property], i, arr) => {
-					/*
-						First, propagate errors from the preceding iteration, or from
-						compilePropertyChain() itself.
-					*/
-					let error;
-					if ((error = TwineError.containsError(value, object, property) || TwineError.containsError(
-							isObject(object) && canSet(object, property)
-						))) {
-						return error;
+				if (HookSet.isPrototypeOf(object) && typeof value !== "string") {
+					return TwineError.create(
+						"datatype",
+						"You can only set hook references to strings, not " + objectName(value) + "."
+					);
+				}
+
+				/*
+					Certain types of objects require special means of assigning
+					their values than just objectOrMapSet().
+
+					Strings are immutable, so modifications to them must be done
+					by splicing them.
+				*/
+				if (typeof object === "string") {
+					if (typeof value !== "string" || value.length !== (Array.isArray(property) ? property.length : 1)) {
+						return TwineError.create("datatype", "I can't put this non-string value, " + objectName(value) + ", in a string.");
 					}
-
 					/*
-						Certain types of objects require special means of assigning
-						their values than just objectOrMapSet().
-
-						Strings are immutable, so modifications to them must be done
-						by splicing them.
+						Convert strings to an array of code points, to ensure that the indexes are correct.
 					*/
-					if (typeof object === "string") {
-						if (typeof value !== "string" || value.length !== (Array.isArray(property) ? property.length : 1)) {
-							return TwineError.create("datatype", "I can't put this non-string value, " + objectName(value) + ", in a string.");
+					object = [...object];
+					/*
+						Insert each character into the string, one by one,
+						using this loop.
+					*/
+					const valArray = [...value];
+					/*
+						If property is a single index, convert it into an array
+						now through the usual method.
+					*/
+					[].concat(property).forEach(index => {
+						/*
+							Because .slice treats negative indices differently than we'd
+							like right now, negatives must be normalised.
+						*/
+						if (0+index < 0) {
+							index = object.length + (0+index);
 						}
 						/*
-							Convert strings to an array of code points, to ensure that the indexes are correct.
+							Note that the string's length is preserved during each iteration, so
+							the index doesn't need to be adjusted to account for a shift.
 						*/
-						object = [...object];
-						/*
-							Insert each character into the string, one by one,
-							using this loop.
-						*/
-						const valArray = [...value];
-						/*
-							If property is a single index, convert it into an array
-							now through the usual method.
-						*/
-						[].concat(property).forEach(index => {
-							/*
-								Because .slice treats negative indices differently than we'd
-								like right now, negatives must be normalised.
-							*/
-							if (0+index < 0) {
-								index = object.length + (0+index);
-							}
-							/*
-								Note that the string's length is preserved during each iteration, so
-								the index doesn't need to be adjusted to account for a shift.
-							*/
-							object = [...object.slice(0, index), valArray.shift(), ...object.slice(index+1)];
-						});
-						object = object.join('');
-					}
+						object = [...object.slice(0, index), valArray.shift(), ...object.slice(index+1)];
+					});
+					object = object.join('');
+				}
+				/*
+					Other types of objects simply call objectOrMapSet, once or multiple times
+					depending on if the property is a slice.
+				*/
+				else if (isObject(object)) {
 					/*
-						Other types of objects simply call objectOrMapSet, once or multiple times
-						depending on if the property is a slice.
+						If the property is an array of properties, and the value is an array also,
+						set each value to its matching property.
+						e.g. (set: $a's (a:2,1) to (a:2,3)) will set position 1 to 3, and position 2 to 1.
 					*/
-					else if (isObject(object)) {
+					if (Array.isArray(property) && isSequential(value)) {
 						/*
-							If the property is an array of properties, and the value is an array also,
-							set each value to its matching property.
-							e.g. (set: $a's (a:2,1) to (a:2,3)) will set position 1 to 3, and position 2 to 1.
+							Due to Javascript's regrettable use of UCS-2 for string access,
+							astral plane glyphs won't be correctly regarded as single characters,
+							unless the following kludge is employed.
 						*/
-						if (Array.isArray(property) && isSequential(value)) {
-							/*
-								Due to Javascript's regrettable use of UCS-2 for string access,
-								astral plane glyphs won't be correctly regarded as single characters,
-								unless the following kludge is employed.
-							*/
-							if (typeof value === "string") {
-								value = [...value];
-							}
+						if (typeof value === "string") {
+							value = [...value];
+						}
+						/*
+							Iterate over each property, and zip it with the value
+							to set at that property position. For example:
+							(a: 1) to (a: "wow")
+							would set "wow" to the position "1"
+						*/
+						property.map((prop,i) => [prop, value[i]])
+							.forEach(([e, value]) => objectOrMapSet(object, e, value));
+					}
+					else {
+						objectOrMapSet(object, property, value);
+					}
+				}
+				/*
+					Only attempt to clone the object if it's not the final iteration.
+				*/
+				if (i < arr.length-1) {
+					object = clone(object);
+				}
+				return object;
+			}, value);
+		},
+
+		/*
+			A wrapper around Javascript's delete operation, which
+			returns an error if the deletion failed, and also removes holes in
+			arrays caused by the deletion.
+			This is only used by the (move:) macro.
+		*/
+		'delete'() {
+			return mutateRight.call(this, (value, [object, property], i, arr) => {
+				/*
+					First, propagate errors from the preceding iteration, or from
+					compilePropertyChain() itself.
+				*/
+				let error;
+				if ((error = TwineError.containsError(value, object, property) || TwineError.containsError(
+						isObject(object) && canSet(object, property)
+					))) {
+					return error;
+				}
+				/*
+					If this is the first iteration, then delete the property.
+				*/
+				if (value === null) {
+					if (isObject(object)) {
+						/*
+							If the property is an array of properties, delete each property.
+						*/
+						if (Array.isArray(property)) {
 							/*
 								Iterate over each property, and zip it with the value
 								to set at that property position. For example:
 								(a: 1) to (a: "wow")
 								would set "wow" to the position "1"
 							*/
-							property.map((prop,i) => [prop, value[i]])
-								.forEach(([e, value]) => objectOrMapSet(object, e, value));
+							property.forEach(prop => objectOrMapDelete(object, prop));
 						}
 						else {
-							objectOrMapSet(object, property, value);
+							objectOrMapDelete(object, property);
 						}
 					}
-					/*
-						Only attempt to clone the object if it's not the final iteration.
-					*/
-					if (i < arr.length-1) {
-						object = clone(object);
-					}
-					return object;
-				}, value);
-
-			return (TwineError.containsError(result) ? result : undefined);
+				}
+				/*
+					Otherwise, perform a set of the previous iteration's object,
+					updating this object-property pair.
+				*/
+				else {
+					objectOrMapSet(object, property, value);
+				}
+				/*
+					Only attempt to clone the object if it's not the final iteration.
+				*/
+				if (i < arr.length-1) {
+					object = clone(object);
+				}
+				return object;
+			}, null);
 		},
-		
+
 		/*
 			This creator function accepts an object and a property chain.
 			But, it can also expand another VarRef that's passed into it.

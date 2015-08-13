@@ -130,7 +130,7 @@ define([
 			for(let i = 0; i < assignmentRequests.length; i+=1) {
 				const ar = assignmentRequests[i];
 				
-				if (ar.operator === "to") {
+				if (ar.operator !== "into") {
 					return TwineError.create("macrocall", "Please say 'into' when using the (put:) macro.");
 				}
 				let result = ar.dest.set(ar.src);
@@ -162,6 +162,13 @@ define([
 			to use them, you can remove it from the structure and retrieve it in one go.
 		*/
 		("move", (_, ar) => {
+			if (ar.operator !== "into") {
+				return TwineError.create("macrocall", "Please say 'into' when using the (move:) macro.");
+			}
+			/*
+				If ar.src is a VarRef, then it's a variable, and its value
+				should be deleted when the assignment is completed.
+			*/
 			if (ar.src && ar.src.varref) {
 				const get = ar.src.get();
 				let error;
@@ -173,12 +180,21 @@ define([
 			}
 			else {
 				/*
-					Fallback behaviour: when phrased as
-					(move: 2 into $red)
+					Otherwise, it's either a plain value (such as seen in
+					(move: 2 into $red)) or something which has a TwineScript_DeleteValue
+					method that should be called.
 				*/
 				ar.dest.set(ar.src);
+				if (ar.src.TwineScript_DeleteValue) {
+					ar.src.TwineScript_DeleteValue();
+				}
 			}
-			return "";
+			return {
+				TwineScript_TypeName:     "a (move:) operation",
+				TwineScript_ObjectName:   "a (move:) operation",
+				TwineScript_Unobservable: true,
+				TwineScript_Print:        "",
+			};
 		},
 		[rest(AssignmentRequest)])
 
