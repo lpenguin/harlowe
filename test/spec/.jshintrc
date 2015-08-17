@@ -1,0 +1,27 @@
+{
+	"globals" : {
+		"describe"              : true,
+		"expect"                : true,
+		"it"                    : true,
+		"afterEach"             : true,
+		"beforeEach"            : true,
+		"Engine"                : true,
+		"createPassage"         : true,
+		"runPassage"            : true,
+		"goToPassage"           : true,
+		"htmlOfPassage"         : true,
+		"expectMarkupToBecome"  : true,
+		"expectMarkupToPrint"   : true,
+		"expectMarkupToError"   : true,
+		"expectMarkupToJSError" : true,
+		"expectMarkupNotToError": true,
+		"expectMarkupToNotError": true,
+		"$"                     : true
+	},
+	"evil"     : true,
+	"laxbreak" : true,
+	"newcap"   : false,
+
+	"globalstrict"          : true,
+	"browser"               : true
+}
