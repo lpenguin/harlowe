@@ -1,46 +1,38 @@
 {
-	"name": "twine-harlowe",
-	"version": "1.1.0",
-	"author": "Leon Arnott",
-	"description": "The default runtime for Twine 2 stories",
-	"license": "GPL v3",
-	"repository":
-	{
-		"type": "hg",
-		"url": "https://bitbucket.org/_L_/harlowe"
-	},
-	"contributors":
-	[
-		{
-			"name": "Leon Arnott",
-			"email": null
-		},
-		{
-			"name": "Chris Klimas",
-			"email": "klimas@gmail.com"
-		}
-	],
-	"engines":
-	{
-		"npm": ">=3.0"
-	},
-	"dependencies":
-	{
-		"grunt": "*",
-		"grunt-contrib-clean": "*",
-		"grunt-contrib-jshint": "*",
-		"grunt-contrib-uglify": "*",
-		"grunt-contrib-yuidoc": "*",
-		"grunt-contrib-requirejs": "*",
-		"grunt-contrib-cssmin": "*",
-		"grunt-text-replace": "*",
-		"grunt-sass": "0.15.0",
-		"grunt-babel": "*",
-		"espree": "*",
-		
-		"es6-shim": "*",
-		"requestanimationframe": "*",
-		"jquery": ">=2.1.1",
-		"almond": "*"
-	}
+  "name": "twine-harlowe",
+  "version": "1.1.0",
+  "author": "Leon Arnott",
+  "description": "The default runtime for Twine 2 stories",
+  "license": "GPL v3",
+  "repository": {
+    "type": "hg",
+    "url": "https://bitbucket.org/_L_/harlowe"
+  },
+  "contributors": [
+    {
+      "name": "Leon Arnott",
+      "email": null
+    },
+    {
+      "name": "Chris Klimas",
+      "email": "klimas@gmail.com"
+    }
+  ],
+  "engines": {
+    "npm": ">=3.0"
+  },
+  "dependencies": {
+    "almond": "latest",
+    "es6-shim": "latest",
+    "jquery": "latest",
+    "requestanimationframe": "*"
+  },
+  "devDependencies": {
+    "babel": "latest",
+    "jshint": "latest",
+    "node-sass": "latest",
+    "replacestream": "latest",
+    "requirejs": "latest",
+    "uglifyjs": "latest"
+  }
 }
