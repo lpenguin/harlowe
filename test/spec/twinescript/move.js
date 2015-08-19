@@ -23,4 +23,29 @@ describe("the (move:) macro", function() {
 	it("when given a hook assignment request, fills the hook with the contents, as twinemarkup", function() {
 		expectMarkupToPrint("|a>[Gee] |b>[Wow](move: ?a into ?b)"," Gee");
 	});
+	it("can replace array properties", function() {
+		runPassage("(set: $a to (a:3,1))(set: $b to 2)(move: $b into $a's last)");
+		expectMarkupToPrint("$b", "0");
+		expectMarkupToPrint("(print:$a)","3,2");
+	});
+	it("can remove array properties", function() {
+		runPassage("(set: $a to (a:3,2))(move: $a's last into $b)");
+		expectMarkupToPrint("$b", "2");
+		expectMarkupToPrint("(print:$a's last)","3");
+	});
+	it("can insert datamap properties", function() {
+		runPassage("(set: $d to (datamap:))(set: $b to 3)(move: $b into $d's A)");
+		expectMarkupToPrint("$b", "0");
+		expectMarkupToPrint("(print:$d's A)","3");
+	});
+	it("can replace datamap properties", function() {
+		runPassage("(set: $d to (datamap:'B',2))(set: $b to 3)(move: $b into $d's B)");
+		expectMarkupToPrint("$b", "0");
+		expectMarkupToPrint("(print:$d's B)","3");
+	});
+	it("can remove datamap properties", function() {
+		runPassage("(set: $d to (datamap:'A',2,'B',3))(move: $d's A into $b)");
+		expectMarkupToPrint("$b", "2");
+		expectMarkupToError("(print:$d's A)");
+	});
 });

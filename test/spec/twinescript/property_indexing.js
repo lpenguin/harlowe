@@ -30,7 +30,7 @@ describe("property indexing", function() {
 			it("can be used as a right-hand-side of (set:)", function() {
 				expectMarkupToPrint('(set: $a to "𐌎bc"\'s 1st)$a', "𐌎");
 				expectMarkupToPrint('(set: $a to "𐌎bc"\'s last)$a', "c");
-				expectMarkupToPrint('(set: $a to "abc"\'s length)$a', "3");
+				expectMarkupToPrint('(set: $a to "𐌎bc"\'s length)$a', "3");
 			});
 			it("prints an error if the index is out of bounds", function() {
 				expectMarkupToError('(print: "𐌎"\'s 2nd)');
