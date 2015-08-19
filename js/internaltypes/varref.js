@@ -297,6 +297,12 @@ define(['state', 'internaltypes/twineerror', 'utils/operationutils', 'datatypes/
 	*/
 	function objectOrMapDelete(obj, prop) {
 		/*
+			As mentioned previously, conversion of negative props must occur now.
+		*/
+		if (isSequential(obj) && prop-0 < 0) {
+			prop = obj.length + (prop-0);
+		}
+		/*
 			If it's an array, and the prop is an index,
 			we should remove the item in-place without creating a hole.
 		*/
@@ -482,7 +488,7 @@ define(['state', 'internaltypes/twineerror', 'utils/operationutils', 'datatypes/
 				- Set the *property* inside the *object* to the *preceding value*
 				- Make the *object* be the *preceding value*
 			*/
-			return mutateRight.call(this, (value, [object, property], i, arr) => {
+			return mutateRight.call(this, (value, [object, property], i) => {
 				/*
 					First, propagate errors from the preceding iteration, or from
 					compilePropertyChain() itself.
@@ -580,7 +586,7 @@ define(['state', 'internaltypes/twineerror', 'utils/operationutils', 'datatypes/
 				/*
 					Only attempt to clone the object if it's not the final iteration.
 				*/
-				if (i < arr.length-1) {
+				if (i > 0) {
 					object = clone(object);
 				}
 				return object;
@@ -593,8 +599,8 @@ define(['state', 'internaltypes/twineerror', 'utils/operationutils', 'datatypes/
 			arrays caused by the deletion.
 			This is only used by the (move:) macro.
 		*/
-		'delete'() {
-			return mutateRight.call(this, (value, [object, property], i, arr) => {
+		delete() {
+			return mutateRight.call(this, (value, [object, property], i) => {
 				/*
 					First, propagate errors from the preceding iteration, or from
 					compilePropertyChain() itself.
@@ -636,8 +642,9 @@ define(['state', 'internaltypes/twineerror', 'utils/operationutils', 'datatypes/
 				}
 				/*
 					Only attempt to clone the object if it's not the final iteration.
+					(Remember that reverseRight reverses the progression of the i parameter.)
 				*/
-				if (i < arr.length-1) {
+				if (i > 0) {
 					object = clone(object);
 				}
 				return object;

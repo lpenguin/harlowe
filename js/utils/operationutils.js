@@ -124,7 +124,7 @@ define(['utils', 'internaltypes/twineerror'], ({assert, impossible, toJSLiteral}
 		/*
 			If we've gotten here, something unusual has been passed in.
 		*/
-		impossible("OperationUtils.clone", "The value " + value + " cannot be cloned!");
+		impossible("OperationUtils.clone", "The value " + (value.toSource ? value.toSource() : value) + " cannot be cloned!");
 		return value;
 	}
 
