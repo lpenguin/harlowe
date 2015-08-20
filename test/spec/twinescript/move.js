@@ -48,4 +48,41 @@ describe("the (move:) macro", function() {
 		expectMarkupToPrint("$b", "2");
 		expectMarkupToError("(print:$d's A)");
 	});
+	describe("doesn't pollute past turns", function() {
+		it("when replacing array properties", function() {
+			runPassage("(set: $a to (a:3,1))(set: $b to 2)","one");
+			runPassage("(move: $b into $a's last)","two");
+			Engine.goBack();
+			expectMarkupToPrint("$b", "2");
+			expectMarkupToPrint("(print:$a)","3,1");
+		});
+		it("when removing array properties", function() {
+			runPassage("(set: $a to (a:3,2))","one");
+			runPassage("(move: $a's last into $b)","two");
+			Engine.goBack();
+			expectMarkupToPrint("$b", "0");
+			expectMarkupToPrint("(print:$a's last)","2");
+		});
+		it("when inserting datamap properties", function() {
+			runPassage("(set: $d to (datamap:))(set: $b to 3)","one");
+			runPassage("(move: $b into $d's A)","two");
+			Engine.goBack();
+			expectMarkupToPrint("$b", "3");
+			expectMarkupToError("(print:$d's A)");
+		});
+		it("when replacing datamap properties", function() {
+			runPassage("(set: $d to (datamap:'B',2))(set: $b to 3)","one");
+			runPassage("(move: $b into $d's B)","two");
+			Engine.goBack();
+			expectMarkupToPrint("$b", "3");
+			expectMarkupToPrint("(print:$d's B)","2");
+		});
+		it("when removing datamap properties", function() {
+			runPassage("(set: $d to (datamap:'A',2,'B',3))","one");
+			runPassage("(move: $d's A into $b)","two");
+			Engine.goBack();
+			expectMarkupToPrint("$b", "0");
+			expectMarkupToPrint("(print:$d's A)","2");
+		});
+	});
 });
