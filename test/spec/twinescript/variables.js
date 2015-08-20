@@ -31,6 +31,12 @@ describe("twinescript variables", function() {
 			expectMarkupToError("(set: $wordy to ($wordy to 2)) ");
 			expectMarkupToError("(set: $wordy to (a: $wordy to 2)) ");
 		});
+		it("doesn't pollute past turns", function() {
+			runPassage("(set: $a to 1)","one");
+			runPassage("(set: $a to 2)","two");
+			Engine.goBack();
+			expectMarkupToPrint("(print: $a)","1");
+		});
 	});
 	describe("bare variables in passage text", function() {
 		it("for numbers, prints the number", function() {
