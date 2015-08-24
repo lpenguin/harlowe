@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<title>Jasmine Spec Runner v2.2.1</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jasmine/2.2.1/jasmine.css">
+<link rel="stylesheet" href="../build/harlowe-css.css"/>
+<script src="../node_modules/es6-shim/es6-shim.min.js"></script>
+<script src="../node_modules/requirejs/require.js"></script>
+<script>
+/*
+	Firefox (my primary test environment) supports most native ES6, so it can test the uncompiled ES6 source.
+	Other browsers test the compiled ES5 source.
+*/
+if(0..toSource) {
+	require.config({baseUrl: "../js/", scriptType: "application/javascript;version=1.8"});
+	require(["markup/lexer","markup/patterns","markup/markup","harlowe"]);
+}
+else {
+	document.write("<script src='../build/harlowe-min.js'><\/script>");
+}
+</script>
+<script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/jasmine/2.2.1/jasmine.js"></script>
+<script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/jasmine/2.2.1/jasmine-html.js"></script>
+<script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/jasmine/2.2.1/boot.js"></script>
+<script role="script" type="text/twine-javascript">
+window.createPassage = function(text, name, tags) {
+	Passages.set(name, new Map([
+		["source", text],
+		["name", name],
+		["tags", tags],
+	]));
+};
+window.goToPassage = function(text, name) {
+	Engine.goToPassage(text, name);
+	return $('tw-passage > tw-transition-container, tw-passage > tw-hook');
+};
+window.runPassage = function(text, name) {
+	name = name || "test";
+	createPassage(text, name);
+	Engine.goToPassage(name);
+	
+	return $('tw-passage:last-of-type > tw-transition-container, tw-passage > tw-hook');
+};
+window.expectMarkupToBecome = function(markup, html) {
+	expect(runPassage(markup).html() || '').toBe(html);
+};
+window.expectMarkupToPrint = function(markup, text) {
+	expect(runPassage(markup).find('br').replaceWith(document.createTextNode('\n')).end().text() || '').toBe(text);
+};
+window.expectMarkupToError = function(markup, number) {
+	if (number === undefined) {
+		number = 1;
+	}
+	else if (typeof number !== "number") {
+		throw TypeError("Wrong 2nd argument to expectMarkupToError");
+	}
+	expect(runPassage(markup).find('tw-error:not(.javascript)').filter(function(){ return !$(this).text().match(/\[object \w+\]/)}).length).toBe(number);
+};
+window.expectMarkupToJSError = function(markup, number) {
+	if (typeof number !== "number") {
+		number = 1;
+	}
+	expect(runPassage(markup).find('tw-error.javascript').length).toBe(number);
+};
+window.expectMarkupNotToError = window.expectMarkupToNotError = function(markup) {
+	expect(runPassage(markup).find('tw-error').length).toBe(0);
+};
+window.clearState = function() {
+	State.reset();
+	Passages.clear();
+};
+window.Engine = Engine;
+</script>
+<script>
+jasmine.DEFAULT_TIMEOUT_INTERVAL = 10000;
+beforeEach(function f(done) {
+	if (window.$ && window.clearState) {
+		$('tw-story').empty();
+		clearState();
+		localStorage.clear();
+		done();
+		return;
+	}
+	setTimeout(f.bind(0, done), 1);
+});
+afterAll(function() {
+	$('tw-story').removeAttr('style');
+});
+</script>
+<body>
+<tw-story style='visibility:hidden'></tw-story>
+
+<!-- include spec files here... -->
+<script src="spec/markup/text_styles.js"></script>
+<script src="spec/markup/links.js"></script>
+<script src="spec/markup/hooks.js"></script>
+<script src="spec/markup/line_breaks.js"></script>
+<script src="spec/markup/headers.js"></script>
+<script src="spec/markup/lists.js"></script>
+<script src="spec/markup/aligners.js"></script>
+<script src="spec/markup/verbatim_syntax.js"></script>
+<script src="spec/markup/collapsing_syntax.js"></script>
+<script src="spec/markup/html.js"></script>
+<script src="spec/markup/restricted_syntax.js"></script>
+
+<script src="spec/tags/setup_passages.js"></script>
+
+<script src="spec/twinescript/literals.js"></script>
+<script src="spec/twinescript/macro_calls.js"></script>
+<script src="spec/twinescript/operators.js"></script>
+<script src="spec/twinescript/identifiers.js"></script>
+<script src="spec/twinescript/variables.js"></script>
+<script src="spec/twinescript/property_indexing.js"></script>
+<script src="spec/twinescript/move.js"></script>
+
+<script src="spec/value_macros/primitives.js"></script>
+<script src="spec/value_macros/data_structures.js"></script>
+<script src="spec/value_macros/game_state.js"></script>
+
+<script src="spec/changer_macros/control_flow.js"></script>
+<script src="spec/changer_macros/style.js"></script>
+<script src="spec/changer_macros/links.js"></script>
+<script src="spec/changer_macros/hooks.js"></script>
+<script src="spec/changer_macros/enchantment.js"></script>
+<script src="spec/changer_macros/interaction.js"></script>
+<script src="spec/changer_macros/revision.js"></script>
+
+<script src="spec/command_macros/basics.js"></script>
+<script src="spec/command_macros/saving.js"></script>
+
+<tw-storydata options="debug" ifid="107370AE-1D5A-4A33-A52C-D1180BA69750" startnode="1">
+<tw-passagedata pid="1" name="1">
