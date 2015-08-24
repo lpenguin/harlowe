@@ -38,7 +38,7 @@ window.runPassage = function(text, name) {
 	createPassage(text, name);
 	Engine.goToPassage(name);
 	
-	return $('tw-passage > tw-transition-container, tw-passage > tw-hook');
+	return $('tw-passage:last-of-type > tw-transition-container, tw-passage > tw-hook');
 };
 window.expectMarkupToBecome = function(markup, html) {
 	expect(runPassage(markup).html() || '').toBe(html);

@@ -27,6 +27,8 @@ css = "{{CSS}}", JSON.stringify("<style title=\"Twine CSS\">" + read("build/harl
 
 default: jshint build/harlowe-css.css
 
+css: build/harlowe-css.css
+
 all: jshint dist/format.js dist/exampleOutput.html
 
 clean:
@@ -79,4 +81,4 @@ dist/exampleOutput.html: build/harlowe-min.js build/harlowe-css.css
 	| $(call node_replace, $(examplename)) \
 	> dist/exampleOutput.html
 
-.PHONY : all default jshint clean
+.PHONY : all default jshint clean css

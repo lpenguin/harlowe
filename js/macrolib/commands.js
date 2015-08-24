@@ -259,7 +259,7 @@ define(['requestAnimationFrame', 'macros', 'utils', 'state', 'passages', 'engine
 						So, the change of passage must be deferred until just after
 						the passage has ceased rendering.
 					*/
-					requestAnimationFrame(Engine.goToPassage.bind(Engine,name, false /* stretchtext value */));
+					requestAnimationFrame(Engine.goToPassage.bind(Engine,name));
 					/*
 						But how do you immediately cease rendering the passage?
 						
@@ -272,6 +272,32 @@ define(['requestAnimationFrame', 'macros', 'utils', 'state', 'passages', 'engine
 				},
 			}),
 		[String])
+
+		/*
+			This is an experimental variant of the above, which isn't yet confirmed for public release.
+		*/
+		("goto-transition", (_, passageName, transitionName) => ({
+				TwineScript_ObjectName: "a (goto-transition: " + toJSLiteral(passageName) + "," + toJSLiteral(transitionName) + ") command",
+				TwineScript_TypeName:   "a (goto-transition:) command",
+				TwineScript_Print() {
+					/*
+						First, of course, check for the passage's existence.
+					*/
+					if (!Passages.has(passageName)) {
+						return TwineError.create("macrocall",
+							"I can't (goto-transition:) the passage '"
+							+ transitionName
+							+ "' because it doesn't exist."
+						);
+					}
+					requestAnimationFrame(Engine.goToPassage.bind(Engine,passageName, {
+						transitionIn: transitionName,
+						transitionOut: transitionName,
+					}));
+					return { earlyExit: 1 };
+				},
+			}),
+		[String, String])
 		
 		/*d:
 			(live: [Number]) -> Command
