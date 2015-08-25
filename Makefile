@@ -25,6 +25,8 @@ css = "{{CSS}}", JSON.stringify("<style title=\"Twine CSS\">" + read("build/harl
 
 # Now, the rules.
 
+# Since I can test in Firefox without compiling the ES6 files, default only compiles the CSS.
+
 default: jshint build/harlowe-css.css
 
 css: build/harlowe-css.css

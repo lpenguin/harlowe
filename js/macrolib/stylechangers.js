@@ -13,6 +13,11 @@ define(['jquery','macros', 'utils', 'utils/selectors', 'datatypes/colour', 'data
 		IfTypeSignature = [wrapped(Boolean, "If you gave a number, you may instead want to check that the number is not 0. "
 			+ "If you gave a string, you may instead want to check that the string is not \"\".")];
 
+	/*
+		A list of valid transition names. Used by (transition:).
+	*/
+	const validT8ns = ["dissolve", "shudder", "pulse"];
+
 	Macros.addChanger
 		/*d:
 			(if: Boolean) -> Command
@@ -203,7 +208,6 @@ define(['jquery','macros', 'utils', 'utils/selectors', 'datatypes/colour', 'data
 		*/
 		(["transition", "t8n"],
 			(_, name) => {
-				const validT8ns = ["dissolve", "shudder", "pulse"];
 				name = insensitiveName(name);
 				if (validT8ns.indexOf(name) === -1) {
 					return TwineError.create(
@@ -219,6 +223,21 @@ define(['jquery','macros', 'utils', 'utils/selectors', 'datatypes/colour', 'data
 				return d;
 			},
 			[String]
+		)
+
+		/*
+			(transition-time: Number) -> Command
+			Also known as: (t8n-time:)
+			
+			Alter the time of a transition.
+		*/
+		(["transition-time", "t8n-time"],
+			(_, time) => ChangerCommand.create("transition-time", [time]),
+			(d, time) => {
+				d.transitionTime     = time;
+				return d;
+			},
+			[Number]
 		)
 		
 		// (font:)
