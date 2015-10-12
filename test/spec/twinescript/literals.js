@@ -22,6 +22,20 @@ describe("twinescript literals", function() {
 			expectMarkupToPrint("(print: 1.1e03)","1100");
 			expectMarkupToPrint("(print: 1.1e-03)","0.0011");
 		});
+		it("can consist of CSS time values", function() {
+			expectMarkupToPrint("(print: 0s)","0");
+			expectMarkupToPrint("(print: 0ms)","0");
+			expectMarkupToPrint("(print: 1ms)","1");
+			expectMarkupToPrint("(print: 1s)","1000");
+			expectMarkupToPrint("(print: 10ms)","10");
+			expectMarkupToPrint("(print: 10s)","10000");
+			expectMarkupToPrint("(print: 1.7ms)","1.7");
+			expectMarkupToPrint("(print: 1.7s)","1700");
+			expectMarkupToPrint("(print: -5ms)","-5");
+			expectMarkupToPrint("(print: -5s)","-5000");
+			expectMarkupToJSError("(print: 5 ms)");
+			expectMarkupToJSError("(print: 5 s)");
+		});
 	});
 	describe("booleans", function() {
 		it("consist of true or false, in lowercase", function() {

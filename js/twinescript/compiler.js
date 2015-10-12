@@ -495,7 +495,7 @@ define(['utils'], ({toJSLiteral, assert}) => {
 				This should default to a " " so that some separation lies between tokens.
 				Otherwise, some tokens like "contains" will break in certain (rare) circumstances.
 			*/
-			return ((token.value || token.text) + "").trim() || " ";
+			return (('value' in token ? token.value : token.text) + "").trim() || " ";
 		}
 		else {
 			return tokens.reduce((a, token) => a + compile(token, isVarRef), "");

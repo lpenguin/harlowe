@@ -12,6 +12,9 @@ describe("identifiers", function () {
 		it("also refers to the left side of a 'to' operation", function (){
 			expectMarkupToPrint("(set:$red to 'Bee')(set:$red to it + 's')$red","Bees");
 		});
+		it("can be used in sub-expressions", function (){
+			expectMarkupToPrint("(put:'Bee' into $red)(set: $red to (substring: it, 2, 3))$red","ee");
+		});
 		it("can't be used in an 'into' operation", function (){
 			expectMarkupToError("(put:'Bee' into $red)(put:$red + 's' into it)");
 		});

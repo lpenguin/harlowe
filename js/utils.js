@@ -468,7 +468,6 @@ define(['jquery', 'markup', 'utils/selectors', 'utils/customelements'],
 		*/
 
 		transitionIn(el, transIndex, transitionTime) {
-			console.info(transIndex,transitionTime);
 			const childrenInline = Utils.childrenProbablyInline(el),
 				/*
 					If the element is not a tw-hook or tw-passage, we must
