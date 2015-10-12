@@ -232,7 +232,14 @@ define(['jquery','macros', 'utils', 'utils/selectors', 'datatypes/colour', 'data
 			Alter the time of a transition.
 		*/
 		(["transition-time", "t8n-time"],
-			(_, time) => ChangerCommand.create("transition-time", [time]),
+			(_, time) => {
+				if (time <= 0) {
+					return TwineError.create(
+						"macrocall",
+						"(transition-time:) should be a positive number of (milli)seconds, not " + time);
+				}
+				return ChangerCommand.create("transition-time", [time]);
+			},
 			(d, time) => {
 				d.transitionTime     = time;
 				return d;

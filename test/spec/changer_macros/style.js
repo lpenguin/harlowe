@@ -78,6 +78,27 @@ describe("style changer macros", function() {
 		});
 		// TODO: Add .css() tests of output.
 	});
+	describe("the (transition-time:) macro", function() {
+		it("requires exactly 1 number argument", function() {
+			expectMarkupToError("(print:(transition:))");
+			expectMarkupToError("(print:(transition:'A'))");
+			expectMarkupToError("(print:(transition:2,2))");
+		});
+		it("errors unless given a positive number", function() {
+			expectMarkupToError("(print:(transition-time:0s))");
+			expectMarkupToError("(print:(transition-time:-50ms))");
+			expectMarkupToNotError("(print:(transition-time:50ms))");
+		});
+		it("errors when placed in passage prose while not attached to a hook", function() {
+			expectMarkupToError("(transition-time:2s)");
+			expectMarkupToNotError("(transition-time:2s)[]");
+		});
+		it("has structural equality", function() {
+			expectMarkupToPrint("(print: (transition-time:2s) is (transition-time:2s))","true");
+			expectMarkupToPrint("(print: (transition-time:2s) is (transition-time:2ms))","false");
+		});
+		// TODO: Add .css() tests of output.
+	});
 	describe("the (background:) macro", function() {
 		it("requires 1 string argument or 1 colour argument", function() {
 			expectMarkupToError("(print:(background:))");
