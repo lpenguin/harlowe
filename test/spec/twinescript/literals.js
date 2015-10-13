@@ -65,4 +65,73 @@ describe("twinescript literals", function() {
 			expectMarkupToPrint("(print: 'A\\'B')","A'B");
 		});
 	});
+	function hexToRGB(str) {
+		// Trim off the "#".
+		str = str.replace("#", '');
+		return {
+			r: parseInt(str.slice(0,2), 16),
+			g: parseInt(str.slice(2,4), 16),
+			b: parseInt(str.slice(4,6), 16),
+		};
+	}
+	function expectColourToBe(str, colour) {
+		var rgb = hexToRGB(colour);
+
+		expect(runPassage("(print:" + str + ")").find('tw-colour').attr('style'))
+			.toMatch(new RegExp(
+				"background-color:\\s*(?:" + colour.toUpperCase() + "|rgb\\(\\s*"
+				+ (rgb.r || 0) + ",\\s*"
+				+ (rgb.g || 0) + ",\\s*"
+				+ (rgb.b || 0) + "\\s*\\))"
+			));
+	}
+	describe("RGB colours", function() {
+		it("can consist of three case-insensitive hexadecimal digits preceded by #", function() {
+			expectColourToBe("#000", "#000000");
+			expectColourToBe("#103", "#110033");
+			expectColourToBe("#fAb", "#FFAABB");
+			expectMarkupToJSError("(print: #g00)");
+		});
+		it("can consist of six case-insensitive hexadecimal digits preceded by #", function() {
+			expectColourToBe("#000000", "#000000");
+			expectColourToBe("#100009", "#100009");
+			expectColourToBe("#abcDEf", "#ABCDEF");
+			expectMarkupToJSError("(print: #bcdefg)");
+		});
+		it("can only be six or three digits long", function() {
+			expectMarkupToJSError("(print: #12)");
+			expectMarkupToJSError("(print: #1234)");
+			expectMarkupToJSError("(print: #12345)");
+			expectMarkupToJSError("(print: #1234567)");
+		});
+	});
+	describe("Harlowe colours", function() {
+		it("consist of special case-insensitive keywords", function() {
+			/*
+				This should be the same mapping as in markup/markup.js
+			*/
+			var mapping = {
+				"red"    : "e61919",
+				"orange" : "e68019",
+				"yellow" : "e5e619",
+				"lime"   : "80e619",
+				"green"  : "19e619",
+				"cyan"   : "19e5e6",
+				"aqua"   : "19e5e6",
+				"blue"   : "197fe6",
+				"navy"   : "1919e6",
+				"purple" : "7f19e6",
+				"fuchsia": "e619e5",
+				"magenta": "e619e5",
+				"white"  : "ffffff",
+				"black"  : "000000",
+				"gray"   : "888888",
+				"grey"   : "888888",
+			};
+			Object.keys(mapping).forEach(function(colour) {
+				expectColourToBe(colour, "#" + mapping[colour]);
+				expectColourToBe(colour.toUpperCase(), "#" + mapping[colour]);
+			});
+		});
+	});
 });
