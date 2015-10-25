@@ -201,7 +201,7 @@ define(['utils'], ({toJSLiteral, assert}) => {
 			We must check these in reverse, so that the least-precedent
 			is associated last.
 		*/
-		let i, macroNameToken,
+		let i,
 			/*
 				These hold the returned compilations of the tokens
 				surrounding a currently matched token, as part of this function's
@@ -391,11 +391,27 @@ define(['utils'], ({toJSLiteral, assert}) => {
 			}
 			possessive = "possessive";
 		}
+		else if ((i = indexOfType(tokens, "lambda")) >-1) {
+			/*
+				The first child token in a function is always the parameters.
+			*/
+			const paramsToken = tokens[i].children[0];
+			assert(paramsToken.type === "lambdaParams");
+
+			midString = 'Lambda.create(['
+				/*
+					Convert all of the params into trimmed JS string literals.
+					This assumes that params are defined as separated by commas in Patterns.
+				*/
+				+ paramsToken.params.split(',').filter(Boolean).map(e => toJSLiteral(e.trim())).join()
+				+ "]," + toJSLiteral(compile(tokens[i].children.slice(1))) + ")";
+			needsLeft = needsRight = false;
+		}
 		else if ((i = indexOfType(tokens, "macro")) >-1) {
 			/*
 				The first child token in a macro is always the method name.
 			*/
-			macroNameToken = tokens[i].children[0];
+			const macroNameToken = tokens[i].children[0];
 			assert(macroNameToken.type === "macroName");
 			
 			midString = 'Macros.run('
@@ -473,7 +489,7 @@ define(['utils'], ({toJSLiteral, assert}) => {
 			else if (assignment) {
 				return "Operations.makeAssignmentRequest("
 					+ [left, right, toJSLiteral(assignment)]
-					+")";
+					+ ")";
 			}
 			else if (possessive) {
 				return "VarRef.create("
