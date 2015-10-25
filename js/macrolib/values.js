@@ -310,13 +310,13 @@ define(['macros', 'utils/operationutils', 'internaltypes/twineerror'],
 		*/
 
 		// Keep "undefined" from being the default text.
-		alert: [(text) => window.alert(text || ""),
+		alert: [(text) => window.alert(text),
 			String],
-		prompt: [(text, value) => window.prompt(text || "", value || "") || "",
+		prompt: [(text, value) => window.prompt(text, value) || "",
 			String, String],
-		confirm: [(text) => window.confirm(text || ""),
+		confirm: [(text) => window.confirm(text),
 			String],
-		openURL: [window.open, String],
+		openURL: [(text) => window.open(text, ""), String],
 		reload: [window.location.reload.bind(window.location), null],
 		gotoURL: [window.location.assign.bind(window.location), String],
 		pageURL: [() => window.location.href, null],

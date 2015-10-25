@@ -144,11 +144,12 @@ define([
 			This must of course run after the sensor/changer function was run,
 			in case that provided an error.
 		*/
-		if (TwineError.containsError(result)) {
-			if (result instanceof Error) {
-				result = TwineError.fromError(result);
+		let error;
+		if ((error = TwineError.containsError(result))) {
+			if (error instanceof Error) {
+				error = TwineError.fromError(error);
 			}
-			expr.replaceWith(result.render(expr.attr('title'), expr));
+			expr.replaceWith(error.render(expr.attr('title'), expr));
 		}
 		/*
 			If we're in debug mode, a TwineNotifier may have been sent.

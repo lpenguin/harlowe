@@ -180,12 +180,14 @@
 		hookTagFront =  "\\|(" + anyLetter.replace("]", "_]") + "*)>",
 		hookTagBack  =  "<("   + anyLetter.replace("]", "_]") + "*)\\|",
 		
+		lambdaParams = "(" + validPropertyName + "(?:" + ws + "," + ws + validPropertyName + ")*" + ws + ",?" + ws + ")" + wb + "to" + wb,
+		
 		/*
 			This includes NaN, but I wonder if it should.
 			This doesn't include the - sign because arithmetic's pattern will trump it.
 			Negative numerals are handled in TwineScript as unary uses of arithmetic.
 		*/
-		number = '\\b(\\d+(?:\\.\\d+)?(?:[eE][+\\-]?\\d+)?|NaN)' + notBefore("m?s") + '\\b'
+		number = '\\b(\\d+(?:\\.\\d+)?(?:[eE][+\\-]?\\d+)?|NaN)' + notBefore("m?s") + wb
 		;
 	
 	passageLink.main =
@@ -335,9 +337,16 @@
 		macroName: macro.name,
 		
 		/*
-			This must be differentiated from macroFront.
+			Lambdas
 		*/
-		groupingFront: "\\(" + notBefore(macro.name),
+		
+		lambdaFront: "\\(" + before(lambdaParams),
+		lambdaParams,
+		
+		/*
+			This must be differentiated from macroFront and lambdaFront.
+		*/
+		groupingFront: "\\(" + notBefore(macro.name, lambdaParams),
 		groupingFrontPeek: "(",
 		
 		groupingBack:  "\\)",
@@ -346,7 +355,7 @@
 		twine1MacroPeek: "<<",
 		
 		/*
-			Macro code
+			Property accesses
 		*/
 		
 		property,
@@ -374,7 +383,7 @@
 		hookRefPeek: "?",
 		
 		/*
-			Artificial types (non-JS primitives)
+			Artificial types (non-JS primitives, semantic sugar)
 		*/
 		
 		cssTime: "(\\d+\\.?\\d*|\\d*\\.?\\d+)(m?s)" + wb,
@@ -436,6 +445,8 @@
 		to:         either("to" + wb, "="),
 		into:       "into" + wb,
 		augmentedAssign: either("\\+", "\\-", "\\*", "\\\/", "%") + "=",
+
+		bareword: validPropertyName + wb,
 	};
 	
 	if (typeof module === 'object') {

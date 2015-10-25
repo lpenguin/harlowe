@@ -6,10 +6,11 @@ define([
 	'state',
 	'engine',
 	'passages',
+	'datatypes/lambda',
 	'internaltypes/assignmentrequest',
 	'internaltypes/twineerror',
 	'internaltypes/twinenotifier'],
-($, NaturalSort, Macros, {objectName, subset, collectionType, isValidDatamapName}, State, Engine, Passages, AssignmentRequest, TwineError) => {
+($, NaturalSort, Macros, {objectName, subset, collectionType, isValidDatamapName}, State, Engine, Passages, Lambda, AssignmentRequest, TwineError) => {
 	"use strict";
 	
 	const {optional, rest, zeroOrMore, Any}   = Macros.TypeSignature;
@@ -341,7 +342,7 @@ define([
 		[Array, Number, Number])
 		
 		/*d:
-			(shuffled: Any, Any, [...Any])
+			(shuffled: Any, Any, [...Any]) -> Array
 			
 			Identical to (array:), except that it randomly rearranges the elements
 			instead of placing them in the given order.
@@ -387,7 +388,7 @@ define([
 		[Any, rest(Any)])
 		
 		/*d:
-			(sorted: String, String, [...String])
+			(sorted: String, String, [...String]) -> Array
 			
 			Similar to (array:), except that it requires string elements, and orders the
 			strings in English alphanumeric sort order, rather than the order in which they were provided.
@@ -478,7 +479,22 @@ define([
 			}
 			return array.slice(number).concat(array.slice(0, number));
 		},
-		[Any, Any, rest(Any)])
+		[Number, Any, rest(Any)])
+
+		/*
+			(converted: Lambda, Any, [...Any])
+		*/
+		("converted", (section, lambda, ...args) => {
+			/*
+				Enforce the lambda's arity as a secondary type-check.
+			*/
+			let error;
+			if ((error = lambda.checkArity(1))) {
+				return error;
+			}
+			return args.map(e => lambda.apply(section, e),[]);
+		},
+		[Lambda, rest(Any)])
 		
 		/*d:
 			(datanames: Datamap) -> Array
@@ -539,8 +555,7 @@ define([
 		
 		/*
 			(passage:)
-			Returns the array of past passage names, directly from State.
-			This is used to implement the visited() function from Twine 1.
+			Returns a passage datamap for the given name (or, if none is present, the current passage)
 		*/
 		("passage", (_, passageName) =>
 			Passages.get(passageName || State.passage)

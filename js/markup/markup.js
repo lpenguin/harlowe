@@ -415,6 +415,8 @@
 					matches: {
 						groupingFront:
 							"grouping",
+						lambdaFront:
+							"lambda",
 						macroFront:
 							"macro",
 					},
@@ -461,6 +463,19 @@
 						}
 						return { isMethodCall:   false };
 					},
+				},
+
+				lambdaFront: {
+					fn: () => ({
+						isFront: true,
+					}),
+				},
+
+				lambdaParams: {
+					canFollow: ['lambdaFront'],
+					fn: (match) => ({
+						params: match[1],
+					}),
 				},
 				
 				groupingFront: {
@@ -637,7 +652,12 @@
 			"multiplication", "division"].reduce(function(a, e) {
 				a[e] = { fn: emptyFn };
 				return a;
-			},{})
+			},{}),
+			// Bareword must come after all of the operators, for obvious
+			// reasons.
+			{
+				bareword:            { fn: textTokenFn("name") },
+			}
 		));
 		/*
 			Now that all of the rule categories have been defined, the modes can be
