@@ -495,6 +495,46 @@ define([
 			return args.map(e => lambda.apply(section, e),[]);
 		},
 		[Lambda, rest(Any)])
+
+		/*
+			(filtered: Lambda, Any, [...Any])
+		*/
+		("filtered", (section, lambda, ...args) => {
+			/*
+				Enforce the lambda's arity as a secondary type-check.
+			*/
+			let error;
+			if ((error = lambda.checkArity(1))) {
+				return error;
+			}
+			return args.reduce((result, arg) => {
+				/*
+					If an earlier iteration produced an error, don't run any more
+					computations and just return.
+				*/
+				let error;
+				if ((error = TwineError.containsError(result))) {
+					return error;
+				}
+				/*
+					Run the lambda, to determine whether to filter out this element.
+				*/
+				const passedFilter = lambda.apply(section, arg);
+				/*
+					As an additional type-check, compare the result of the lambda to boolean.
+				*/
+				if (typeof passedFilter !== "boolean") {
+					return TwineError.create("macrocall",
+						"The lambda given to (filtered:) must always produce booleans, but it produced '"
+						+ objectName(passedFilter)
+						+ "' when given '"
+						+ objectName(arg)
+						+ "'.");
+				}
+				return result.concat(passedFilter ? [arg] : []);
+			}, []);
+		},
+		[Lambda, rest(Any)])
 		
 		/*d:
 			(datanames: Datamap) -> Array

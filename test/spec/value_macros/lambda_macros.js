@@ -48,4 +48,25 @@ describe("lambda macros", function() {
 			expectMarkupToError("(converted:(a to a*2), 1, 2, true, 4)");
 		});
 	});
+	describe("the (filtered:) macro", function() {
+		it("accepts a one-parameter lambda returning a boolean, plus one or more other values", function() {
+			expectMarkupToError("(filtered:)");
+			expectMarkupToError("(filtered:1)");
+			expectMarkupToError("(filtered:(a to a*2))");
+			for(var i = 2; i < 10; i += 1) {
+				expectMarkupToNotError("(filtered:(a to true)," + "2,".repeat(i) + ")");
+			}
+			expectMarkupToError("(filtered:(a,b to a is b),2)");
+			expectMarkupToError("(filtered:(a,b,c to a is b and b is c),2)");
+			expectMarkupToError("(filtered:(a to 2),2)");
+		});
+		it("applies the lambda to each of its additional arguments, producing an array of those which produced true", function() {
+			expectMarkupToPrint("(print: (filtered:(a to a>2), 1,3)'s 1st + 1)","4");
+			expectMarkupToPrint("(filtered:(a to a>2), 1,2,3,4,5)","3,4,5");
+			expectMarkupToPrint("(set: $a to 3)(filtered:(a to a < $a), 1,2,3)","1,2");
+		});
+		it("if one iteration errors, the result is an error", function() {
+			expectMarkupToError("(filtered:(a to not a), true, true, 6, true)");
+		});
+	});
 });
