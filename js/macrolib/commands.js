@@ -1,5 +1,5 @@
 define(['requestAnimationFrame', 'macros', 'utils', 'state', 'passages', 'engine', 'internaltypes/twineerror', 'utils/operationutils'],
-(requestAnimationFrame, Macros, {toJSLiteral, unescape}, State, Passages, Engine, TwineError, {isObject}) => {
+(requestAnimationFrame, Macros, {toJSLiteral, unescape}, State, Passages, Engine, TwineError, {printBuiltinValue}) => {
 	"use strict";
 	
 	/*d:
@@ -130,62 +130,7 @@ define(['requestAnimationFrame', 'macros', 'utils', 'state', 'passages', 'engine
 		*/
 		("print", (_, expr) => {
 			
-			/*
-				If an error was passed in, return the error now.
-			*/
-			if (TwineError.containsError(expr)) {
-				return expr;
-			}
-			if (expr && typeof expr.TwineScript_Print === "function") {
-				expr = expr.TwineScript_Print();
-			}
-			else if (expr instanceof Map) {
-				/*
-					In accordance with arrays being "pretty-printed" to something
-					vaguely readable, let's pretty-print datamaps into HTML tables.
-					
-					First, convert the map into an array of key-value pairs.
-				*/
-				expr = Array.from(expr.entries());
-				if (TwineError.containsError(expr)) {
-					return expr;
-				}
-				expr = expr.reduce((html, pair) =>
-					/*
-						Print each value, recursively running (print:) on
-						each of them. Notice that the above conversion means
-						that none of these pairs contain error.
-					*/
-					html + "<tr><td>" +
-						print(_, pair[0]).TwineScript_Print() +
-						"</td><td>" +
-						print(_, pair[1]).TwineScript_Print() +
-						"</td></tr>",
-					"<table class=datamap>") + "</table>";
-			}
-			else if (expr instanceof Set) {
-				/*
-					Sets are close enough to arrays that we might as well
-					just pretty-print them identically.
-				*/
-				expr = Array.from(expr.values());
-			}
-			else if (Array.isArray(expr)) {
-				expr += "";
-			}
-			/*
-				If it's an object we don't know how to print, emit a JS error
-				instead of [object Object].
-			*/
-			else if (isObject(expr)) {
-				throw new TypeError("I don't know how to print this value yet.");
-			}
-			/*
-				At this point, primitives have safely fallen through.
-			*/
-			else {
-				expr += "";
-			}
+			expr = printBuiltinValue(expr);
 			
 			return {
 				TwineScript_ObjectName:

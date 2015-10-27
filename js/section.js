@@ -6,13 +6,14 @@ define([
 	'twinescript/environ',
 	'state',
 	'utils/hookutils',
+	'utils/operationutils',
 	'datatypes/hookset',
 	'internaltypes/pseudohookset',
 	'internaltypes/changedescriptor',
 	'internaltypes/twineerror',
 	'internaltypes/twinenotifier',
 ],
-($, Utils, Selectors, Renderer, Environ, State, HookUtils, HookSet, PseudoHookSet, ChangeDescriptor, TwineError, TwineNotifier) => {
+($, Utils, Selectors, Renderer, Environ, State, {selectorType}, {printBuiltinValue}, HookSet, PseudoHookSet, ChangeDescriptor, TwineError, TwineNotifier) => {
 	"use strict";
 
 	let Section;
@@ -159,14 +160,19 @@ define([
 			expr.append(result.render());
 		}
 		/*
-			If the expression had a TwineScript_Print method, do that.
+			Print the expression if it's a string, number, or has a TwineScript_Print method.
 		*/
-		else if (result && result.TwineScript_Print && !result.changer) {
+		else if (typeof result === "string"
+				|| typeof result === "number"
+				|| result instanceof Map
+				|| result instanceof Set
+				|| Array.isArray(result)
+				|| (result && result.TwineScript_Print && !result.changer)) {
 			/*
-				TwineScript_Print() typically emits side-effects. These
-				will occur... now.
+				TwineScript_Print(), when called by printBuiltinValue(), typically emits
+				side-effects. These will occur... now.
 			*/
-			result = result.TwineScript_Print();
+			result = printBuiltinValue(result);
 			
 			/*
 				If TwineScript_Print returns an object of the form { earlyExit },
@@ -178,10 +184,10 @@ define([
 			}
 			/*
 				On rare occasions (specifically, when the passage component
-				of the link syntax produces an error) TwineScript_Print
+				of the link syntax produces an error) TwineScript_Print()
 				returns a jQuery of the <tw-error>.
 			*/
-			if (result instanceof $) {
+			else if (result instanceof $) {
 				expr.append(result);
 			}
 			/*
@@ -195,19 +201,11 @@ define([
 				expr.replaceWith(result.render(expr.attr('title'), expr));
 			}
 			else {
+				/*
+					Transition the resulting Twine code into the expression's element.
+				*/
 				this.renderInto(result, expr);
 			}
-		}
-		/*
-			This prints an object if it's a string, number, or has a custom toString method
-			and isn't a function.
-		*/
-		else if (typeof result === "string"  || typeof result === "number"
-			|| (typeof result === "object" && result && result.toString !== Object.prototype.toString)) {
-			/*
-				Transition the resulting Twine code into the expression's element.
-			*/
-			this.renderInto(result + '', expr);
 		}
 		else {
 			applyExpressionToHook.call(this, expr, result);
@@ -561,7 +559,7 @@ define([
 				|| PseudoHookSet.isPrototypeOf(selectorString)) {
 				return selectorString;
 			}
-			switch(HookUtils.selectorType(selectorString)) {
+			switch(selectorType(selectorString)) {
 				case "hookRef": {
 					return HookSet.create(this, selectorString);
 				}

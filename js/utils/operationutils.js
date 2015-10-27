@@ -366,6 +366,69 @@ define(['utils', 'internaltypes/twineerror'], ({assert, impossible, toJSLiteral}
 		}
 		return ret;
 	}
+
+	/*
+		This provides a safe means of serialising Arrays, Maps, Sets, and primitives into user-presented HTML.
+		This is usually called by such a value appearing in passage prose, or within a (print:) command.
+	*/
+	function printBuiltinValue(value) {
+		/*
+			If an error was passed in, return the error now.
+		*/
+		if (TwineError.containsError(value)) {
+			return value;
+		}
+		if (value && typeof value.TwineScript_Print === "function") {
+			return value.TwineScript_Print();
+		}
+		else if (value instanceof Map) {
+			/*
+				In accordance with arrays being "pretty-printed" to something
+				vaguely readable, let's pretty-print datamaps into HTML tables.
+				
+				First, convert the map into an array of key-value pairs.
+			*/
+			value = Array.from(value.entries());
+			if (TwineError.containsError(value)) {
+				return value;
+			}
+			return value.reduce((html, [pair1, pair2]) =>
+				/*
+					Print each value, displaying the objectName() of
+					each of them,. Notice that the above conversion means
+					that none of these pairs contain error.
+				*/
+				html + "<tr><td>`" +
+					pair1 +
+					"`</td><td>`" +
+					objectName(pair2) +
+					"`</td></tr>",
+				"<table class=datamap>") + "</table>";
+		}
+		else if (value instanceof Set) {
+			/*
+				Sets are close enough to arrays that we might as well
+				just pretty-print them identically.
+			*/
+			return Array.from(value.values());
+		}
+		else if (Array.isArray(value)) {
+			return value.map(printBuiltinValue) + "";
+		}
+		/*
+			If it's an object we don't know how to print, emit a JS error
+			instead of [object Object].
+		*/
+		else if (isObject(value)) {
+			throw new TypeError("I don't know how to print this value yet.");
+		}
+		/*
+			At this point, primitives have safely fallen through.
+		*/
+		else {
+			return value + "";
+		}
+	}
 	
 	const OperationUtils = Object.freeze({
 		isObject,
@@ -379,6 +442,7 @@ define(['utils', 'internaltypes/twineerror'], ({assert, impossible, toJSLiteral}
 		is,
 		contains,
 		subset,
+		printBuiltinValue,
 		/*
 			Used to determine if a property name is an array index.
 			If negative indexing sugar is ever added, this could
