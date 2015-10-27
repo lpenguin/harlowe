@@ -4,7 +4,7 @@ define(['jquery', 'utils', 'utils/selectors'], ($, {unescape}, Selectors) => {
 		Passages
 		A userland registry of Passage objects.
 		Passage objects are simple Maps exposing passage data to public scripts.
-		They have the string content (the "source"), the tags in an array, and its name.
+		They have their string content (the "source"), their tags in an array, and their name.
 		
 		@class Passages
 		@static
@@ -24,7 +24,7 @@ define(['jquery', 'utils', 'utils/selectors'], ($, {unescape}, Selectors) => {
 			/*
 				tags: an array of its tags, as strings.
 			*/
-			["tags", (elem.attr('tags') || "").split(/\s/)],
+			["tags", (elem.attr('tags') || "").split(/\s/) || []],
 			/*
 				name: its name, which can be altered to change how
 				passage links can refer to this.
