@@ -1,11 +1,5 @@
 define(['utils', 'internaltypes/twineerror'], ({toJSLiteral, insensitiveName}, TwineError) => {
 	"use strict";
-
-	/*
-		Sadly, this list of TwineScript keywords needs to be kept in check manually.
-	*/
-	const keywords = ['it', 'its', 'time', 'and', 'or', 'not', 'contains', 'in', 'true', 'false', 'into', 'of', 'NaN'];
-
 	/*
 		Lambdas are user-created TwineScript functions. Their only purpose is to be passed to functional macros
 		like (converted:), (filtered:) and (combined:), which serve as TwineScript's map/filter/reduce equivalents.
@@ -53,17 +47,6 @@ define(['utils', 'internaltypes/twineerror'], ({toJSLiteral, insensitiveName}, T
 				For the following comparisons, the params' insensitive names are used.
 			*/
 			const insensitiveParams = params.map(insensitiveName);
-
-			/*
-				Check if the params collide with known TwineScript keywords.
-			*/
-			const keywordCollision = params.filter(e => keywords.indexOf(e) >-1);
-			if (keywordCollision.length) {
-				// TODO: Make this report multiple collisions at once.
-				return TwineError.create('syntax', 'This lambda has a parameter named \''
-						+ keywordCollision[0]
-						+ '\', which is already a special syntax word.');
-			}
 			/*
 				Check if all of the params are unique or not.
 			*/
@@ -85,11 +68,10 @@ define(['utils', 'internaltypes/twineerror'], ({toJSLiteral, insensitiveName}, T
 		*/
 		apply(section, ...args) {
 			/*
-				We run the JS code of this lambda, inserting the arguments by adding several "var" statements
-				to the front of the code. The barenames in the JS code should match the parameters.
-				TODO: Produce an error when they do not???
+				We run the JS code of this lambda, inserting the arguments by adding them to a "tempVariables"
+				object. The tempVariable references in the code are compiled to VarRefs for tempVariables.
 			*/
-			return section.eval(this.params.map((name, i) => "var " + name + " = " + toJSLiteral(args[i]) + ";").join('') + this.jscode || '');
+			return section.eval("var tempVariables={" + this.params.map((name, i) => name + " : " + toJSLiteral(args[i])) + "};" + this.jscode || '');
 		},
 	});
 	return Lambda;

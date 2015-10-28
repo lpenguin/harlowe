@@ -1,30 +1,25 @@
 describe("lambdas", function() {
 	'use strict';
-	it("consist of params, 'to', and a deferred computation, all in parentheses", function() {
-		expectMarkupToNotError("(print: (a to 2))");
+	it("consist of params, '==>', and a deferred computation, all in parentheses", function() {
+		expectMarkupToNotError("(print: (_a ==> 2))");
 	});
 	it("can have many params separated by commas", function() {
-		expectMarkupToNotError("(print: (a,b,c,d,e,f,g,h,i,j,k to a+b+c+d+e+f+g+h+i+j+k))");
+		expectMarkupToNotError("(print: (_a,_b,_c,_d,_e,_f,_g,_h,_i,_j,_k ==> _a+_b+_c+_d+_e+_f+_g+h+i+j+k))");
 	});
 	it("can have one trailing comma in the params list", function() {
-		expectMarkupToNotError("(print: (a,b, to a+b))");
+		expectMarkupToNotError("(print: (_a,_b, ==> _a+_b))");
 	});
 	it("can be nested", function() {
-		expectMarkupToNotError("(print: (a to (b to a+b)))");
+		expectMarkupToNotError("(print: (_a ==> (_b ==> _a+_b)))");
 	});
 	it("cannot have duplicate params", function() {
-		expectMarkupToError("(print: (a,a, to a+b))");
+		expectMarkupToError("(print: (_a,_a, ==> _a+_b))");
 	});
 	/*
 	it("cannot have unused params", function() {
-		expectMarkupToError("(print: (a,b to a*2))");
+		expectMarkupToError("(print: (a,b ==> a*2))");
 	});
 	*/
-	it("cannot have params shadowing keywords", function() {
-		['it', 'its', 'time', 'and', 'or', 'not', 'contains', 'in', 'true', 'false', 'into', 'of', 'NaN'].forEach(function(e) {
-			expectMarkupToError("(print: (" + e + " to " + e + " + 1))");
-		});
-	});
 });
 describe("lambda macros", function() {
 	'use strict';
@@ -32,41 +27,41 @@ describe("lambda macros", function() {
 		it("accepts a one-parameter lambda, plus one or more other values", function() {
 			expectMarkupToError("(converted:)");
 			expectMarkupToError("(converted:1)");
-			expectMarkupToError("(converted:(a to a*2))");
+			expectMarkupToError("(converted:(_a ==> _a*2))");
 			for(var i = 2; i < 10; i += 1) {
-				expectMarkupToNotError("(converted:(a to a*2)," + "2,".repeat(i) + ")");
+				expectMarkupToNotError("(converted:(_a ==> _a*2)," + "2,".repeat(i) + ")");
 			}
-			expectMarkupToError("(converted:(a,b to a*b*2),2)");
-			expectMarkupToError("(converted:(a,b,c to a*b*c*2),2)");
+			expectMarkupToError("(converted:(_a,_b ==> _a*_b*2),2)");
+			expectMarkupToError("(converted:(_a,_b,_c ==> _a*_b*_c*2),2)");
 		});
 		it("applies the lambda to each of its additional arguments, producing an array", function() {
-			expectMarkupToPrint("(print: (converted:(a to a*2), 1)'s 1st + 1)","3");
-			expectMarkupToPrint("(converted:(a to a*2), 1,2,3)","2,4,6");
-			expectMarkupToPrint("(set: $a to 3)(converted:(a to a*$a), 1,2,3)","3,6,9");
+			expectMarkupToPrint("(print: (converted:(_a ==> _a*2), 1)'s 1st + 1)","3");
+			expectMarkupToPrint("(converted:(_a ==> _a*2), 1,2,3)","2,4,6");
+			expectMarkupToPrint("(set: $a to 3)(converted:(_a ==> _a*$a), 1,2,3)","3,6,9");
 		});
 		it("if one iteration errors, the result is an error", function() {
-			expectMarkupToError("(converted:(a to a*2), 1, 2, true, 4)");
+			expectMarkupToError("(converted:(_a ==> _a*2), 1, 2, true, 4)");
 		});
 	});
 	describe("the (filtered:) macro", function() {
 		it("accepts a one-parameter lambda returning a boolean, plus one or more other values", function() {
 			expectMarkupToError("(filtered:)");
 			expectMarkupToError("(filtered:1)");
-			expectMarkupToError("(filtered:(a to a*2))");
+			expectMarkupToError("(filtered:(_a ==> _a*2))");
 			for(var i = 2; i < 10; i += 1) {
-				expectMarkupToNotError("(filtered:(a to true)," + "2,".repeat(i) + ")");
+				expectMarkupToNotError("(filtered:(_a ==> true)," + "2,".repeat(i) + ")");
 			}
-			expectMarkupToError("(filtered:(a,b to a is b),2)");
-			expectMarkupToError("(filtered:(a,b,c to a is b and b is c),2)");
-			expectMarkupToError("(filtered:(a to 2),2)");
+			expectMarkupToError("(filtered:(_a,_b ==> _a is _b),2)");
+			expectMarkupToError("(filtered:(_a,_b,_c ==> _a is _b and _b is _c),2)");
+			expectMarkupToError("(filtered:(_a ==> 2),2)");
 		});
 		it("applies the lambda to each of its additional arguments, producing an array of those which produced true", function() {
-			expectMarkupToPrint("(print: (filtered:(a to a>2), 1,3)'s 1st + 1)","4");
-			expectMarkupToPrint("(filtered:(a to a>2), 1,2,3,4,5)","3,4,5");
-			expectMarkupToPrint("(set: $a to 3)(filtered:(a to a < $a), 1,2,3)","1,2");
+			expectMarkupToPrint("(print: (filtered:(_a ==> _a>2), 1,3)'s 1st + 1)","4");
+			expectMarkupToPrint("(filtered:(_a ==> _a>2), 1,2,3,4,5)","3,4,5");
+			expectMarkupToPrint("(set: $a to 3)(filtered:(_a ==> _a < $a), 1,2,3)","1,2");
 		});
 		it("if one iteration errors, the result is an error", function() {
-			expectMarkupToError("(filtered:(a to not a), true, true, 6, true)");
+			expectMarkupToError("(filtered:(_a ==> not _a), true, true, 6, true)");
 		});
 	});
 });

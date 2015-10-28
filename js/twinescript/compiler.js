@@ -130,6 +130,11 @@ define(['utils'], ({toJSLiteral, assert}) => {
 					+ toJSLiteral(token.name)
 					+ ")" + (isVarRef ? "" : ".get()");
 			}
+			else if (token.type === "tempVariable") {
+				return "VarRef.create(tempVariables,"
+					+ toJSLiteral(token.name)
+					+ ")" + (isVarRef ? "" : ".get()");
+			}
 			else if (token.type === "hookRef") {
 				/*
 					Some remarks:
@@ -403,7 +408,12 @@ define(['utils'], ({toJSLiteral, assert}) => {
 					Convert all of the params into trimmed JS string literals.
 					This assumes that params are defined as separated by commas in Patterns.
 				*/
-				+ paramsToken.params.split(',').filter(Boolean).map(e => toJSLiteral(e.trim())).join()
+				+ paramsToken.params.split(',').filter(Boolean).map(e => toJSLiteral(
+					/*
+						This .slice() call removes the _ sigil from the params.
+					*/
+					e.slice(1)
+					.trim())).join()
 				+ "]," + toJSLiteral(compile(tokens[i].children.slice(1))) + ")";
 			needsLeft = needsRight = false;
 		}
