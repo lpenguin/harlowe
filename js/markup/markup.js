@@ -478,6 +478,11 @@
 					}),
 				},
 				
+				/*
+					This, of course, must come after lambdaParams.
+				*/
+				tempVariable: { fn: textTokenFn("name") },
+
 				groupingFront: {
 					fn: () => ({
 						isFront: true,
@@ -652,12 +657,7 @@
 			"multiplication", "division"].reduce(function(a, e) {
 				a[e] = { fn: emptyFn };
 				return a;
-			},{}),
-			// Bareword must come after all of the operators, for obvious
-			// reasons.
-			{
-				bareword:            { fn: textTokenFn("name") },
-			}
+			},{})
 		));
 		/*
 			Now that all of the rule categories have been defined, the modes can be

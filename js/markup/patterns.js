@@ -180,7 +180,8 @@
 		hookTagFront =  "\\|(" + anyLetter.replace("]", "_]") + "*)>",
 		hookTagBack  =  "<("   + anyLetter.replace("]", "_]") + "*)\\|",
 		
-		lambdaParams = "(" + validPropertyName + "(?:" + ws + "," + ws + validPropertyName + ")*" + ws + ",?" + ws + ")" + wb + "to" + wb,
+		tempVariable = "_(" + validPropertyName + ")" + wb,
+		lambdaParams = "(" + tempVariable + "(?:" + ws + "," + ws + tempVariable + ")*" + ws + ",?" + ws + ")" + "==>",
 		
 		/*
 			This includes NaN, but I wonder if it should.
@@ -377,6 +378,9 @@
 		
 		variable,
 		variablePeek: "$",
+
+		tempVariable,
+		tempVariablePeek: "_",
 		
 		hookRef:
 			"\\?(" + anyLetter + "+)\\b",
@@ -445,8 +449,6 @@
 		to:         either("to" + wb, "="),
 		into:       "into" + wb,
 		augmentedAssign: either("\\+", "\\-", "\\*", "\\\/", "%") + "=",
-
-		bareword: validPropertyName + wb,
 	};
 	
 	if (typeof module === 'object') {
