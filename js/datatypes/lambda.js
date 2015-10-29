@@ -1,4 +1,4 @@
-define(['utils', 'internaltypes/twineerror'], ({toJSLiteral, insensitiveName}, TwineError) => {
+define(['utils', 'internaltypes/varscope', 'internaltypes/twineerror'], ({toJSLiteral, insensitiveName, plural}, VarScope, TwineError) => {
 	"use strict";
 	/*
 		Lambdas are user-created TwineScript functions. Their only purpose is to be passed to functional macros
@@ -31,8 +31,7 @@ define(['utils', 'internaltypes/twineerror'], ({toJSLiteral, insensitiveName}, T
 			if (this.params.length !== arity) {
 				return TwineError.create('macrocall', 'This lambda should have '
 					+ arity
-					+ ' parameter'
-					+ (arity > 1 ? 's' : '')
+					+ plural(arity, ' parameter')
 					+ ', not '
 					+ this.params.length
 					+ '.');
@@ -71,7 +70,8 @@ define(['utils', 'internaltypes/twineerror'], ({toJSLiteral, insensitiveName}, T
 				We run the JS code of this lambda, inserting the arguments by adding them to a "tempVariables"
 				object. The tempVariable references in the code are compiled to VarRefs for tempVariables.
 			*/
-			return section.eval("var tempVariables={" + this.params.map((name, i) => name + " : " + toJSLiteral(args[i])) + "};" + this.jscode || '');
+			section.stack.unshift(Object.assign(Object.create(null), {tempVariables: Object.create(VarScope)}));
+			return section.eval(this.params.map((name, i) => "section.stack[0].tempVariables['" + name + "'] = " + toJSLiteral(args[i])).join(";") + ";" + this.jscode || '');
 		},
 	});
 	return Lambda;

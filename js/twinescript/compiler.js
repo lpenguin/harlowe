@@ -131,7 +131,7 @@ define(['utils'], ({toJSLiteral, assert}) => {
 					+ ")" + (isVarRef ? "" : ".get()");
 			}
 			else if (token.type === "tempVariable") {
-				return "VarRef.create(tempVariables,"
+				return "VarRef.create(section.stack[0].tempVariables,"
 					+ toJSLiteral(token.name)
 					+ ")" + (isVarRef ? "" : ".get()");
 			}

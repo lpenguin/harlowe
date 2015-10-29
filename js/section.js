@@ -10,10 +10,11 @@ define([
 	'datatypes/hookset',
 	'internaltypes/pseudohookset',
 	'internaltypes/changedescriptor',
+	'internaltypes/varscope',
 	'internaltypes/twineerror',
 	'internaltypes/twinenotifier',
 ],
-($, Utils, Selectors, Renderer, Environ, State, {selectorType}, {printBuiltinValue}, HookSet, PseudoHookSet, ChangeDescriptor, TwineError, TwineNotifier) => {
+($, Utils, Selectors, Renderer, Environ, State, {selectorType}, {printBuiltinValue}, HookSet, PseudoHookSet, ChangeDescriptor, VarScope, TwineError, TwineNotifier) => {
 	"use strict";
 
 	let Section;
@@ -462,14 +463,19 @@ define([
 					The expression stack is an array of plain objects,
 					each housing runtime data that is local to the expression being
 					evaluated. It is used by macros such as "display" and "if" to
-					keep track of prior evaluations - e.g. display loops, else().
+					keep track of prior evaluations - e.g. display loops, (else:).
+					Its objects currently are allowed to possess:
+					- lastHookShown: Boolean
+					- tempVariables: VarScope
 					
 					render() pushes a new object to this stack before
 					running expressions, and pops it off again afterward.
 				*/
 				stack: [],
 				/*
-					This is an enchantments stack. I'll explain later.
+					This is an enchantments stack. Enchantment objects (created by macros
+					such as (click:)) are tracked here to ensure that post-hoc permutations
+					of this enchantment's DOM are also enchanted correctly.
 				*/
 				enchantments: []
 			});
@@ -705,7 +711,7 @@ define([
 				Before executing the expressions, put a fresh object on the
 				expression data stack.
 			*/
-			this.stack.unshift(Object.create(null));
+			this.stack.unshift(Object.assign(Object.create(null), {tempVariables: Object.create(VarScope)}));
 			
 			/*
 				This provides (sigh) a reference to this object usable by the
