@@ -180,8 +180,9 @@
 		hookTagFront =  "\\|(" + anyLetter.replace("]", "_]") + "*)>",
 		hookTagBack  =  "<("   + anyLetter.replace("]", "_]") + "*)\\|",
 		
+		lambdaParams = "\\((_" + validPropertyName + "(?:" + ws + "," + ws + "_" + validPropertyName + ")*)" + ws + ",?" + ws + "==>",
+
 		tempVariable = "_(" + validPropertyName + ")" + wb,
-		lambdaParams = "(" + tempVariable + "(?:" + ws + "," + ws + tempVariable + ")*" + ws + ",?" + ws + ")" + "==>",
 		
 		/*
 			This includes NaN, but I wonder if it should.

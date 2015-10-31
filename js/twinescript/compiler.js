@@ -397,18 +397,12 @@ define(['utils'], ({toJSLiteral, assert}) => {
 			possessive = "possessive";
 		}
 		else if ((i = indexOfType(tokens, "lambda")) >-1) {
-			/*
-				The first child token in a function is always the parameters.
-			*/
-			const paramsToken = tokens[i].children[0];
-			assert(paramsToken.type === "lambdaParams");
-
 			midString = 'Lambda.create(['
 				/*
 					Convert all of the params into trimmed JS string literals.
 					This assumes that params are defined as separated by commas in Patterns.
 				*/
-				+ paramsToken.params.split(',').filter(Boolean).map(e => toJSLiteral(
+				+ tokens[i].params.split(',').filter(Boolean).map(e => toJSLiteral(
 					/*
 						This .slice() call removes the _ sigil from the params.
 					*/

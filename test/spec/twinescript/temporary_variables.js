@@ -21,10 +21,12 @@ describe("twinescript temporary variables", function() {
 		createPassage("(set: _a to 1)(print:_a)", "grault");
 		expectMarkupToPrint("(set: _a to 2)(display:'grault') (print:_a)","1 2");
 	});
-	/*
 	it("can be used bare in passage text", function() {
 		expectMarkupToPrint("(set: _a to 1)_a", "1");
 		expectMarkupToPrint("(set: _a to 2)|a>[(set: _a to 1)_a] _a","1 2");
 	});
-	*/
+	it("can be attached to hooks in passage text", function() {
+		expectMarkupToPrint("(set: _a to false)_a[Don't show]", "");
+		expectMarkupToPrint("(set: _a to (font:'Skia'))_a[Show]","Show");
+	});
 });

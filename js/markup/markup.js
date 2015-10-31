@@ -326,7 +326,7 @@
 						this.error("This tagged hook doesn't have a matching ].");
 					},
 				}),
-				canFollow: ["macro", "variable"],
+				canFollow: ["macro", "variable", "tempVariable"],
 			},
 			
 			hookAppendedFront: {
@@ -415,7 +415,7 @@
 					matches: {
 						groupingFront:
 							"grouping",
-						lambdaFront:
+						lambdaParams:
 							"lambda",
 						macroFront:
 							"macro",
@@ -426,6 +426,8 @@
 			hookRef:  { fn: textTokenFn("name") },
 			
 			variable:   { fn: textTokenFn("name") },
+			
+			tempVariable: { fn: textTokenFn("name") },
 			
 			whitespace: {
 				fn: emptyFn,
@@ -465,23 +467,12 @@
 					},
 				},
 
-				lambdaFront: {
-					fn: () => ({
+				lambdaParams: {
+					fn: (match) => ({
+						params: match[1],
 						isFront: true,
 					}),
 				},
-
-				lambdaParams: {
-					canFollow: ['lambdaFront'],
-					fn: (match) => ({
-						params: match[1],
-					}),
-				},
-				
-				/*
-					This, of course, must come after lambdaParams.
-				*/
-				tempVariable: { fn: textTokenFn("name") },
 
 				groupingFront: {
 					fn: () => ({
