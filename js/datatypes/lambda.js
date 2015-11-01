@@ -1,4 +1,4 @@
-define(['utils', 'internaltypes/varscope', 'internaltypes/twineerror'], ({toJSLiteral, insensitiveName, plural}, VarScope, TwineError) => {
+define(['utils', 'utils/operationutils', 'internaltypes/varscope', 'internaltypes/twineerror'], ({toJSLiteral, insensitiveName, plural}, {typeName, objectName, singleTypeCheck}, VarScope, TwineError) => {
 	"use strict";
 	/*
 		Lambdas are user-created TwineScript functions. Their only purpose is to be passed to functional macros
@@ -24,17 +24,22 @@ define(['utils', 'internaltypes/varscope', 'internaltypes/twineerror'], ({toJSLi
 		},
 
 		/*
-			This checks if the lambda does not have the given arity, and, if so, returns a TwineError to the effect.
-			This localises all type-checking of that effect.
+			This static method is used exclusively to produce type signature objects for use by
+			macro definitions in macrolib. Specifically, it lets us specify which arity a macro
+			expects its lambda to have.
 		*/
-		checkArity(arity) {
-			if (this.params.length !== arity) {
-				return TwineError.create('macrocall', 'This lambda should have '
-					+ arity
-					+ plural(arity, ' parameter')
-					+ ', not '
-					+ this.params.length
-					+ '.');
+		ArityType(arity) {
+			return { pattern: "arity", innerType: Lambda, arity };
+		},
+
+		checkResult(given, result, type) {
+			if (!singleTypeCheck(result, type)) {
+				return TwineError.create("macrocall",
+					"This lambda must always produce " + typeName(type) + ", but it produced '"
+					+ objectName(result)
+					+ "' when given '"
+					+ objectName(given)
+					+ "'.");
 			}
 		},
 

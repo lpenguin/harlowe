@@ -10,6 +10,12 @@ describe("hooks", function () {
 		it("names may not contain whitespace", function (){
 			expectMarkupToPrint("|hook >[foo]","|hook >[foo]");
 		});
+		it("can be nested", function (){
+			expectMarkupToPrint("[[Hello!]<b|]<a|","Hello!");
+			expectMarkupToPrint("[|b>[Hello!]]<a|","Hello!");
+			expectMarkupToPrint("|a>[|b>[Hello!]]","Hello!");
+			expectMarkupToPrint("|a>[[Hello!]<b|]","Hello!");
+		});
 		it("become <tw-hook> elements", function (){
 			runPassage("[foo]<hook|");
 			expect($('tw-passage').find('tw-hook').text()).toBe('foo');

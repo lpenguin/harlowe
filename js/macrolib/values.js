@@ -174,14 +174,13 @@ define(['macros', 'utils/operationutils', 'internaltypes/twineerror'],
 			the natural numbers. In computer science, they are both called **Booleans**, after the 19th century mathematician
 			George Boole.
 			
-			`is` is a logical operator that's short for 'equals.' Just as + adds the two numbers on each side of it, `is`
-			compares two values on each side and evaluates to `true` or `false` depending on whether they're identical. It
-			works equally well with strings, numbers, arrays, and anything else, but beware - the string `"2"` is not equal
-			to the number 2.
+			`is` is a logical operator. Just as + adds the two numbers on each side of it, `is` compares two values on each
+			side and evaluates to `true` or `false` depending on whether they're identical. It works equally well with strings,
+			numbers, arrays, and anything else, but beware - the string `"2"` is not equal to the number 2.
 			
 			There are several other logical operators available:
 			
-			| Operator | Function | Example
+			| Operator | Purpose | Example
 			|---
 			| `is` | Evaluates to `true` if both sides are equal. | `$bullets is 5`
 			| `is not` | Evaluates to `true` if both sides are not equal. | `$friends is not $enemies`
