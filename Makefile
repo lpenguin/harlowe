@@ -31,6 +31,9 @@ default: jshint build/harlowe-css.css
 
 css: build/harlowe-css.css
 
+docs: dist/harloweDocs.md
+	node scripts/harlowedocs.js
+
 all: jshint dist/format.js dist/exampleOutput.html
 
 clean:

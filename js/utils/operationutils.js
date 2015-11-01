@@ -70,7 +70,96 @@ define(['utils', 'internaltypes/twineerror'], ({assert, impossible, toJSLiteral}
 	}
 	
 	/*
-		Next, a shortcut to determine whether a given value should have
+		This function checks the type of a single macro argument. It's run
+		for every argument passed into a type-signed macro.
+		
+		@param {Anything}     arg  The plain JS argument value to check.
+		@param {Array|Object} type A type description to compare the argument with.
+		@return {Boolean} True if the argument passes the check, false otherwise.
+	*/
+	function singleTypeCheck(arg, type) {
+		/*
+			First, check if it's a None type.
+		*/
+		if (type === null) {
+			return arg === undefined;
+		}
+
+		/*
+			Now, check if the signature is an Optional, Either, or Wrapped.
+		*/
+		if (type.innerType) {
+			
+			/*
+				Optional signatures can exit early if the arg is absent.
+			*/
+			if (type.pattern === "optional" || type.pattern === "zero or more") {
+				if (arg === undefined) {
+					return true;
+				}
+				return singleTypeCheck(arg, type.innerType);
+			}
+			/*
+				Either signatures must check every available type.
+			*/
+			if (type.pattern === "either") {
+				/*
+					The arg passes the test if it matches some of the types.
+				*/
+				return type.innerType.some(type => singleTypeCheck(arg, type));
+			}
+			/*
+				If the type expects a given arity (i.e. arg is a lambda) then check that arity.
+			*/
+			if (type.pattern === "arity" && singleTypeCheck(arg, type.innerType)) {
+				assert(typeof type.arity === 'number');
+				return arg.params.length === type.arity;
+			}
+			/*
+				Otherwise, if this is a Wrapped signature, ignore the included
+				message and continue.
+			*/
+			if (type.pattern === "wrapped") {
+				return singleTypeCheck(arg, type.innerType);
+			}
+		}
+
+		// If Type but no Arg, then return an error.
+		if(type !== undefined && arg === undefined) {
+			return false;
+		}
+		
+		// The Any type permits any accessible argument, as long as it's present.
+		if (type.TwineScript_TypeName === "anything" && arg !== undefined && !arg.TwineScript_Unobservable) {
+			return true;
+		}
+		/*
+			The built-in types. Let's not get tricky here.
+		*/
+		if (type === String) {
+			return typeof arg === "string";
+		}
+		if (type === Boolean) {
+			return typeof arg === "boolean";
+		}
+		if (type === Number) {
+			return typeof arg === "number";
+		}
+		if (type === Array) {
+			return Array.isArray(arg);
+		}
+		if (type === Map || type === Set) {
+			return arg instanceof type;
+		}
+		/*
+			For TwineScript-specific types, this check should mostly suffice.
+			TODO: I really need to replace those duck-typing properties.
+		*/
+		return Object.isPrototypeOf.call(type,arg);
+	}
+
+	/*
+		A shortcut to determine whether a given value should have
 		sequential collection functionality (e.g. Array, String, other stuff).
 	*/
 	function isSequential(value) {
@@ -432,6 +521,7 @@ define(['utils', 'internaltypes/twineerror'], ({assert, impossible, toJSLiteral}
 	
 	const OperationUtils = Object.freeze({
 		isObject,
+		singleTypeCheck,
 		isValidDatamapName,
 		collectionType,
 		isSequential,

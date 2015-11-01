@@ -480,62 +480,74 @@ define([
 			return array.slice(number).concat(array.slice(0, number));
 		},
 		[Number, Any, rest(Any)])
+		;
 
+	/*
+		This convenience function is used to run reduce() on macro args using a passed-in lambda,
+		which is an operation common to (filtered:), (all-pass:) and (some-pass:).
+	*/
+	function lambdaBooleanReduce(section, lambda, args) {
+		return args.reduce((result, arg) => {
+			/*
+				If an earlier iteration produced an error, don't run any more
+				computations and just return.
+			*/
+			let error;
+			if ((error = TwineError.containsError(result))) {
+				return error;
+			}
+			/*
+				Run the lambda, to determine whether to filter out this element.
+			*/
+			const passedFilter = lambda.apply(section, arg);
+			/*
+				As an additional type-check, compare the result of the lambda to boolean.
+			*/
+			if ((error = TwineError.containsError(lambda.checkResult(arg, passedFilter, Boolean)))) {
+				return error;
+			}
+			return result.concat(passedFilter ? [arg] : []);
+		}, []);
+	}
+
+	Macros.add
 		/*
 			(converted: Lambda, Any, [...Any])
 		*/
-		("converted", (section, lambda, ...args) => {
-			/*
-				Enforce the lambda's arity as a secondary type-check.
-			*/
-			let error;
-			if ((error = lambda.checkArity(1))) {
-				return error;
-			}
-			return args.map(e => lambda.apply(section, e),[]);
-		},
-		[Lambda, rest(Any)])
-
+		("converted", (section, lambda, ...args) => args.map(e => lambda.apply(section, e),[]),
+		[Lambda.ArityType(1), rest(Any)])
 		/*
-			(filtered: Lambda, Any, [...Any])
+			(find-all: Lambda, Any, [...Any])
 		*/
-		("filtered", (section, lambda, ...args) => {
-			/*
-				Enforce the lambda's arity as a secondary type-check.
-			*/
-			let error;
-			if ((error = lambda.checkArity(1))) {
-				return error;
-			}
-			return args.reduce((result, arg) => {
-				/*
-					If an earlier iteration produced an error, don't run any more
-					computations and just return.
-				*/
-				let error;
-				if ((error = TwineError.containsError(result))) {
-					return error;
-				}
-				/*
-					Run the lambda, to determine whether to filter out this element.
-				*/
-				const passedFilter = lambda.apply(section, arg);
-				/*
-					As an additional type-check, compare the result of the lambda to boolean.
-				*/
-				if (typeof passedFilter !== "boolean") {
-					return TwineError.create("macrocall",
-						"The lambda given to (filtered:) must always produce booleans, but it produced '"
-						+ objectName(passedFilter)
-						+ "' when given '"
-						+ objectName(arg)
-						+ "'.");
-				}
-				return result.concat(passedFilter ? [arg] : []);
-			}, []);
+		("find-all", (section, lambda, ...args) => lambdaBooleanReduce(section, lambda, args),
+		[Lambda.ArityType(1), rest(Any)])
+		/*
+			(all-pass: Lambda, Any, [...Any])
+		*/
+		("all-pass", (section, lambda, ...args) => {
+			const ret = lambdaBooleanReduce(section, lambda, args);
+			return TwineError.containsError(ret) || ret.length === args.length;
 		},
-		[Lambda, rest(Any)])
+		[Lambda.ArityType(1), rest(Any)])
+		/*
+			(some-pass: Lambda, Any, [...Any])
+		*/
+		("some-pass", (section, lambda, ...args) => {
+			const ret = lambdaBooleanReduce(section, lambda, args);
+			return TwineError.containsError(ret) || ret.length > 0;
+		},
+		[Lambda.ArityType(1), rest(Any)])
+		/*
+			(none-pass: Lambda, Any, [...Any])
+		*/
+		("none-pass", (section, lambda, ...args) => {
+			const ret = lambdaBooleanReduce(section, lambda, args);
+			return TwineError.containsError(ret) || ret.length === 0;
+		},
+		[Lambda.ArityType(1), rest(Any)])
+		;
 		
+	Macros.add
 		/*d:
 			(datanames: Datamap) -> Array
 			
