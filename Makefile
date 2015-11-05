@@ -32,25 +32,24 @@ default: jshint build/harlowe-css.css
 css: build/harlowe-css.css
 
 docs: dist/harloweDocs.md
-	node scripts/harlowedocs.js
 
-all: jshint dist/format.js dist/exampleOutput.html
+all: jshint dist/format.js docs dist/exampleOutput.html
 
 clean:
 	-rm -f build/*
 	-rm -f dist/*
 
 jshint:
-	jshint js --config js/.jshintrc $(jshint_flags)
-	jshint test/spec --config test/spec/.jshintrc $(jshint_flags)
+	@jshint js --config js/.jshintrc $(jshint_flags)
+	@jshint test/spec --config test/spec/.jshintrc $(jshint_flags)
 
 build/harlowe-css.css: scss/*.scss
-	cat scss/*.scss \
+	@cat scss/*.scss \
 	| sass --stdin --style compressed --scss \
 	> build/harlowe-css.css
 
 build/harlowe-min.js: js/*.js js/*/*.js js/*/*/*.js
-	node_modules/.bin/r.js -o $(requirejs_harlowe_flags) \
+	@node_modules/.bin/r.js -o $(requirejs_harlowe_flags) \
 	| babel \
 	| uglifyjs - \
 	> build/harlowe-min.js
@@ -59,14 +58,14 @@ build/harlowe-min.js: js/*.js js/*/*.js js/*/*/*.js
 unwrap = /(?:,|\n)define\([^\;]+\;/g, ""
 
 build/twinemarkup-min.js: js/markup/*.js js/markup/*/*.js
-	node_modules/.bin/r.js -o $(requirejs_twinemarkup_flags) \
+	@node_modules/.bin/r.js -o $(requirejs_twinemarkup_flags) \
 	| $(call node_replace, $(unwrap)) \
 	| babel \
 	| uglifyjs - \
 	> build/twinemarkup-min.js
 
 dist/format.js : build/harlowe-min.js build/twinemarkup-min.js build/harlowe-css.css
-	cat format.js \
+	@cat format.js \
 	| $(call node_replace, $(source)) \
 	| $(call node_replace, $(setup)) \
 	| $(call node_replace, $(engine)) \
@@ -79,11 +78,14 @@ engine_raw = "{{HARLOWE}}", "<script title=\"Twine engine code\" data-main=\"har
 css_raw = "{{CSS}}", "<style title=\"Twine CSS\">" + read("build/harlowe-css.css") + "</style>"
 
 dist/exampleOutput.html: build/harlowe-min.js build/harlowe-css.css
-	cat template.html \
+	@cat template.html \
 	| $(call node_replace, $(engine_raw)) \
 	| $(call node_replace, $(css_raw)) \
 	| $(call node_replace, $(examplestory)) \
 	| $(call node_replace, $(examplename)) \
 	> dist/exampleOutput.html
+
+dist/harloweDocs.md:
+	node scripts/harlowedocs.js
 
 .PHONY : all default jshint clean css

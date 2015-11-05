@@ -2,12 +2,12 @@ describe("revision macros", function() {
 	'use strict';
 	describe("(append:)", function() {
 		it("accepts either 1 hookset or 1 string", function() {
-			expectMarkupToNotError("(print:(append:?foo))");
-			expectMarkupToNotError("(print:(append:'baz'))");
+			expect("(print:(append:?foo))").not.markupToError();
+			expect("(print:(append:'baz'))").not.markupToError();
 
-			expectMarkupToError("(print:(append:?foo, ?bar))");
-			expectMarkupToError("(print:(append:?foo, 'baz'))");
-			expectMarkupToError("(print:(append:'baz', 'baz'))");
+			expect("(print:(append:?foo, ?bar))").markupToError();
+			expect("(print:(append:?foo, 'baz'))").markupToError();
+			expect("(print:(append:'baz', 'baz'))").markupToError();
 		});
 		describe("given a single hook", function() {
 			it("appends the attached hook's contents with that of the target hook", function() {
@@ -61,12 +61,12 @@ describe("revision macros", function() {
 	});
 	describe("(replace:)", function() {
 		it("accepts either 1 hookset or 1 string", function() {
-			expectMarkupToNotError("(print:(replace:?foo))");
-			expectMarkupToNotError("(print:(replace:'baz'))");
+			expect("(print:(replace:?foo))").not.markupToError();
+			expect("(print:(replace:'baz'))").not.markupToError();
 
-			expectMarkupToError("(print:(replace:?foo, ?bar))");
-			expectMarkupToError("(print:(replace:?foo, 'baz'))");
-			expectMarkupToError("(print:(replace:'baz', 'baz'))");
+			expect("(print:(replace:?foo, ?bar))").markupToError();
+			expect("(print:(replace:?foo, 'baz'))").markupToError();
+			expect("(print:(replace:'baz', 'baz'))").markupToError();
 		});
 		describe("given a single hook", function() {
 			it("replaces the attached hook's contents with that of the target hook", function() {
