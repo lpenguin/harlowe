@@ -2,13 +2,13 @@ describe("enchantment macros", function () {
 	'use strict';
 	describe("(enchant:)", function() {
 		it("accepts a changer command, followed by either a string or a hook", function() {
-			expectMarkupToNotError("(print:(enchant:(font:'Skia'),?foo))");
-			expectMarkupToNotError("(print:(enchant:(font:'Skia'),'baz'))");
+			expect("(print:(enchant:(font:'Skia'),?foo))").not.markupToError();
+			expect("(print:(enchant:(font:'Skia'),'baz'))").not.markupToError();
 
-			expectMarkupToError("(print:(enchant:?foo))");
-			expectMarkupToError("(print:(enchant:(font:'Skia')))");
-			expectMarkupToError("(print:(enchant:'baz'))");
-			expectMarkupToError("(print:(enchant:'baz',(font:'Skia')))");
+			expect("(print:(enchant:?foo))").markupToError();
+			expect("(print:(enchant:(font:'Skia')))").markupToError();
+			expect("(print:(enchant:'baz'))").markupToError();
+			expect("(print:(enchant:'baz',(font:'Skia')))").markupToError();
 		});
 	});
 	describe("enchanting <tw-story>", function() {

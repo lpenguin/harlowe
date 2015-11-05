@@ -2,66 +2,66 @@ describe("twinescript variables", function() {
 	'use strict';
 	describe("the (set:) macro", function() {
 		it("requires one or more assignment requests", function() {
-			expectMarkupToError("(set: 1)");
-			expectMarkupToError("(set: 'A')");
-			expectMarkupToError("(set: false)");
-			expectMarkupToError("(set: $a)");
-			expectMarkupToError("(set:)");
-			expectMarkupToNotError("(set: $a to 1)");
-			expectMarkupToNotError("(set: $a to 1, $b to 2)");
-			expectMarkupToError("(set: $a to 1, 2)");
-			expectMarkupToError("(set: $a into $b)");
+			expect("(set: 1)").markupToError();
+			expect("(set: 'A')").markupToError();
+			expect("(set: false)").markupToError();
+			expect("(set: $a)").markupToError();
+			expect("(set:)").markupToError();
+			expect("(set: $a to 1)").not.markupToError();
+			expect("(set: $a to 1, $b to 2)").not.markupToError();
+			expect("(set: $a to 1, 2)").markupToError();
+			expect("(set: $a into $b)").markupToError();
 		});
 		it("when given a variable assignment request, sets the variable to a value", function() {
-			expectMarkupToPrint("(set: $a to 1)(print: $a)","1");
+			expect("(set: $a to 1)(print: $a)").markupToPrint("1");
 		});
 		it("runs on evaluation, but can't be assigned or used as a value", function() {
-			expectMarkupToError("(print: (set: $a to 1))");
-			expectMarkupToError("(print: (a:(set: $b to 2)))");
-			expectMarkupToPrint("(print: $a + $b)","3");
+			expect("(print: (set: $a to 1))").markupToError();
+			expect("(print: (a:(set: $b to 2)))").markupToError();
+			expect("(print: $a + $b)").markupToPrint("3");
 		});
 		it("when given a hook/string assignment request, fills the hook with the contents, as twinemarkup", function() {
-			expectMarkupToPrint("|a>[Gee] |a>[Wow](set: ?a to '//Golly//')","Golly Golly");
+			expect("|a>[Gee] |a>[Wow](set: ?a to '//Golly//')").markupToPrint("Golly Golly");
 		});
 		it("errors when a hook is assigned a non-string value", function() {
-			expectMarkupToError("|a>[Gee] |a>[Wow](set: ?a to false)");
-			expectMarkupToError("|a>[Gee] |a>[Wow](set: ?a to (a:1,2,3))");
+			expect("|a>[Gee] |a>[Wow](set: ?a to false)").markupToError();
+			expect("|a>[Gee] |a>[Wow](set: ?a to (a:1,2,3))").markupToError();
 		});
 		it("assignment requests can't be assigned", function() {
-			expectMarkupToError("(set: $wordy to ($wordy to 2)) ");
-			expectMarkupToError("(set: $wordy to (a: $wordy to 2)) ");
+			expect("(set: $wordy to ($wordy to 2)) ").markupToError();
+			expect("(set: $wordy to (a: $wordy to 2)) ").markupToError();
 		});
 		it("doesn't pollute past turns", function() {
 			runPassage("(set: $a to 1)","one");
 			runPassage("(set: $a to 2)","two");
 			Engine.goBack();
-			expectMarkupToPrint("(print: $a)","1");
+			expect("(print: $a)").markupToPrint("1");
 		});
 	});
 	describe("bare variables in passage text", function() {
 		it("for numbers, prints the number", function() {
 			runPassage("(set:$x to 0.125)");
-			expectMarkupToPrint("$x", "0.125");
+			expect("$x").markupToPrint("0.125");
 			runPassage("(set:$y to 0)");
-			expectMarkupToPrint("$y", "0");
+			expect("$y").markupToPrint("0");
 		});
 		it("for strings, renders the string", function() {
 			runPassage("(set:$x to '//italic//')");
-			expectMarkupToPrint("$x", "italic");
+			expect("$x").markupToPrint("italic");
 			runPassage("(set:$y to '')");
-			expectMarkupToPrint("$y", "");
+			expect("$y").markupToPrint("");
 		});
 		it("for booleans, renders nothing", function() {
 			runPassage("(set:$x to true)");
-			expectMarkupToPrint("$x", "");
+			expect("$x").markupToPrint("");
 			runPassage("(set:$y to false)");
-			expectMarkupToPrint("$y", "");
+			expect("$y").markupToPrint("");
 		});
 		it("for arrays, prints the array", function() {
 			runPassage("(set:$x to (a:1,2))");
-			expectMarkupToPrint("$x", "1,2");
+			expect("$x").markupToPrint("1,2");
 			runPassage("(set:$y to (a:))");
-			expectMarkupToPrint("$y", "");
+			expect("$y").markupToPrint("");
 		});
 	});
 });

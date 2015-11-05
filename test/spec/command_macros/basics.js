@@ -3,14 +3,14 @@ describe("basic command macros", function() {
 	
 	describe("the (print:) macro", function() {
 		it("requires exactly 1 argument of any type", function() {
-			expectMarkupToError("(print:)");
-			expectMarkupToError("(print:1,2)");
+			expect("(print:)").markupToError();
+			expect("(print:1,2)").markupToError();
 		});
 		it("prints the text equivalent of number expressions", function() {
-			expectMarkupToPrint("(print:2+0)", "2");
+			expect("(print:2+0)").markupToPrint("2");
 		});
 		it("prints the text equivalent of string expressions", function() {
-			expectMarkupToPrint("(print: 'gar' + 'ply')", "garply");
+			expect("(print: 'gar' + 'ply')").markupToPrint("garply");
 		});
 		it("prints twinemarkup in strings", function() {
 			var expr = runPassage("(print: '//gar' + 'ply//')").find('tw-expression');
@@ -19,13 +19,13 @@ describe("basic command macros", function() {
 			expect(expr.children().is('i')).toBe(true);
 		});
 		it("prints the text equivalent of boolean expressions", function() {
-			expectMarkupToPrint("(print: true)", "true");
+			expect("(print: true)").markupToPrint("true");
 		});
 		it("prints the text equivalent of arrays", function() {
-			expectMarkupToPrint("(print: (a: 2))", "2");
+			expect("(print: (a: 2))").markupToPrint("2");
 		});
 		it("evaluates to a command object that can't be +'d", function() {
-			expectMarkupToError("(print: (print:1) + (print:1))");
+			expect("(print: (print:1) + (print:1))").markupToError();
 		});
 		it("can be (set:) into a variable", function() {
 			var expr = runPassage("(set: $x to (print:'//grault//'))$x").find('tw-expression:last-child');
@@ -34,21 +34,21 @@ describe("basic command macros", function() {
 			expect(expr.children().is('i')).toBe(true);
 		});
 		it("stores its expression in its PrintCommand", function() {
-			expectMarkupToPrint('(set: $name to "Dracula")'
+			expect('(set: $name to "Dracula")'
 				+ '(set: $p to (print: "Count " + $name))'
 				+ '(set: $name to "Alucard")'
-				+ '$p',
-				"Count Dracula");
+				+ '$p'
+			).markupToPrint("Count Dracula");
 		});
 		it("will error if an infinite regress is created", function() {
-			expectMarkupToError("(set: $x to '$x')(print: $x)");
+			expect("(set: $x to '$x')(print: $x)").markupToError();
 		});
 	});
 	describe("the (display:) macro", function() {
 		it("requires exactly 1 string argument", function() {
-			expectMarkupToError("(display:)");
-			expectMarkupToError("(display: 1)");
-			expectMarkupToError("(display:'A','B')");
+			expect("(display:)").markupToError();
+			expect("(display: 1)").markupToError();
+			expect("(display:'A','B')").markupToError();
 		});
 		it("when placed in a passage, prints out the markup of another passage", function() {
 			createPassage("''Red''", "grault");
@@ -64,7 +64,7 @@ describe("basic command macros", function() {
 			expect(expr.text()).toBe("Small");
 		});
 		it("evaluates to a command object that can't be +'d", function() {
-			expectMarkupToError("(print: (display:'grault') + (display:'grault'))");
+			expect("(print: (display:'grault') + (display:'grault'))").markupToError();
 		});
 		it("can be (set:) into a variable", function() {
 			createPassage("''Red''", "grault");
@@ -74,11 +74,11 @@ describe("basic command macros", function() {
 			expect(expr.children().is('b')).toBe(true);
 		});
 		it("produces an error if the passage doesn't exist", function() {
-			expectMarkupToError("(display: 'grault')");
+			expect("(display: 'grault')").markupToError();
 		});
 		it("will error if an infinite regress is created", function() {
 			createPassage("(display: 'grault')", "grault");
-			expectMarkupToError("(display: 'grault')");
+			expect("(display: 'grault')").markupToError();
 		});
 	});
 	describe("the (go-to:) macro", function() {
@@ -93,9 +93,9 @@ describe("basic command macros", function() {
 		}
 		
 		it("requires exactly 1 string argument", function() {
-			expectMarkupToError("(go-to:)");
-			expectMarkupToError("(go-to: 1)");
-			expectMarkupToError("(go-to:'A','B')");
+			expect("(go-to:)").markupToError();
+			expect("(go-to: 1)").markupToError();
+			expect("(go-to:'A','B')").markupToError();
 		});
 		it("when placed in a passage, navigates the player to another passage", function(done) {
 			createPassage("''Red''", "croak");
@@ -110,18 +110,18 @@ describe("basic command macros", function() {
 			createPassage("", "grault");
 			runPassage("(go-to: 'grault')","garply");
 			waitForGoto(function() {
-				expectMarkupToPrint('(print:(history:))','garply,grault');
+				expect('(print:(history:))').markupToPrint('garply,grault');
 				done();
 			});
 		});
 		it("prevents macros after it from running", function(done) {
 			createPassage("", "flunk");
 			runPassage("(set:$a to 1)(go-to:'flunk')(set:$a to 2)");
-			expectMarkupToPrint("$a","1");
+			expect("$a").markupToPrint("1");
 			waitForGoto(done);
 		});
 		it("evaluates to a command object that can't be +'d", function() {
-			expectMarkupToError("(print: (go-to:'crepax') + (go-to:'crepax'))");
+			expect("(print: (go-to:'crepax') + (go-to:'crepax'))").markupToError();
 		});
 		it("can be (set:) into a variable", function(done) {
 			createPassage("''Red''", "waldo");
@@ -133,7 +133,7 @@ describe("basic command macros", function() {
 			});
 		});
 		it("produces an error if the passage doesn't exist", function() {
-			expectMarkupToError("(go-to: 'freek')");
+			expect("(go-to: 'freek')").markupToError();
 		});
 		it("transitions out the preceding <tw-passage> when stretchtext is off", function(done) {
 			createPassage("''Red''", "waldo");

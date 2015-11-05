@@ -3,43 +3,50 @@ describe("headers and rules", function() {
 	describe("header markup", function() {
 		[1,2,3,4,5,6].forEach(function(i) {
 			it("wraps a line starting with " + "#".repeat(i) + " with a <h" + i + "> element", function() {
-				expectMarkupToBecome(
-					"#".repeat(i) + "A",
+				expect(
+					"#".repeat(i) + "A"
+				).markupToBecome(
 					"<h" + i + ">A</h" + i + ">"
 				);
-				expectMarkupToBecome(
-					"#".repeat(i) + "A\n",
+				expect(
+					"#".repeat(i) + "A\n"
+				).markupToBecome(
 					"<h" + i + ">A</h" + i + ">"
 				);
 			});
 		});
 		it("won't work if it's preceded by text", function() {
-			expectMarkupToBecome(
-				"A B #C",
+			expect(
+				"A B #C"
+			).markupToBecome(
 				"A B #C"
 			);
-			expectMarkupToBecome(
-				"\nA B #C",
+			expect(
+				"\nA B #C"
+			).markupToBecome(
 				"<br>A B #C"
 			);
 		});
 		it("does not consume preceding line breaks", function() {
 			[1,2,3,4].forEach(function(i) {
-				expectMarkupToBecome(
-					"A" + "\n".repeat(i) + "#A",
+				expect(
+					"A" + "\n".repeat(i) + "#A"
+				).markupToBecome(
 					"A" + "<br>".repeat(i) + "<h1>A</h1>"
 				);
 			});
 		});
 		it("does not create a <br> afterward", function() {
-			expectMarkupToBecome(
-				"#A\nB",
+			expect(
+				"#A\nB"
+			).markupToBecome(
 				"<h1>A</h1>B"
 			);
 		});
 		it("(unlike Markdown) permits whitespace between the start of the line and #", function() {
-			expectMarkupToBecome(
-				" \f\v\t#A",
+			expect(
+				" \f\v\t#A"
+			).markupToBecome(
 				"<h1>A</h1>"
 			);
 		});
@@ -48,51 +55,59 @@ describe("headers and rules", function() {
 	describe("horizontal rules", function() {
 		it("turns 3 or more hyphens solely occupying a single line into a <hr>", function() {
 			[3,4,5,8,16].forEach(function(i) {
-				expectMarkupToBecome(
-					"-".repeat(i),
+				expect(
+					"-".repeat(i)
+				).markupToBecome(
 					"<hr>"
 				);
 			});
 		});
 		it("works consecutively", function() {
-			expectMarkupToBecome(
-				"---\n".repeat(3),
+			expect(
+				"---\n".repeat(3)
+			).markupToBecome(
 				"<hr><hr><hr>"
 			);
 		});
 		it("won't work if it's preceded by text", function() {
-			expectMarkupToBecome(
-				"A ---",
+			expect(
+				"A ---"
+			).markupToBecome(
 				"A ---"
 			);
-			expectMarkupToBecome(
-				"\nA B ---",
+			expect(
+				"\nA B ---"
+			).markupToBecome(
 				"<br>A B ---"
 			);
 		});
 		it("ignores preceding and trailing whitespace", function() {
-			expectMarkupToBecome(
-				"   ---   \ngarply",
+			expect(
+				"   ---   \ngarply"
+			).markupToBecome(
 				"<hr>garply"
 			);
 		});
 		it("does not consume preceding line breaks", function() {
 			[1,2,3,4].forEach(function(i) {
-				expectMarkupToBecome(
-					"A" + "\n".repeat(i) + "---",
+				expect(
+					"A" + "\n".repeat(i) + "---"
+				).markupToBecome(
 					"A" + "<br>".repeat(i) + "<hr>"
 				);
 			});
 		});
 		it("won't create <br> elements afterward", function() {
-			expectMarkupToBecome(
-				"---\ngarply",
+			expect(
+				"---\ngarply"
+			).markupToBecome(
 				"<hr>garply"
 			);
 		});
 		it("(unlike Markdown) permits whitespace between the start of the line and ---", function() {
-			expectMarkupToBecome(
-				" \t---",
+			expect(
+				" \t---"
+			).markupToBecome(
 				"<hr>"
 			);
 		});

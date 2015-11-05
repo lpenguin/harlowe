@@ -1,14 +1,14 @@
 describe("the (hook:) macro", function () {
 	'use strict';
 	it("requires exactly 1 string argument", function() {
-		expectMarkupToError("(print:(hook:))");
-		expectMarkupToError("(print:(hook:1))");
-		expectMarkupToError("(print:(hook:'A','B'))");
-		expectMarkupToNotError("(print:(hook:'A'))");
+		expect("(print:(hook:))").markupToError();
+		expect("(print:(hook:1))").markupToError();
+		expect("(print:(hook:'A','B'))").markupToError();
+		expect("(print:(hook:'A'))").not.markupToError();
 	});
 	it("errors when placed in passage prose while not attached to a hook", function() {
-		expectMarkupToError("(hook:'A')");
-		expectMarkupToNotError("(hook:'A')[]");
+		expect("(hook:'A')").markupToError();
+		expect("(hook:'A')[]").not.markupToError();
 	});
 	it("gives a name to the hook", function (){
 		runPassage("(hook:'grault')[foo]");
