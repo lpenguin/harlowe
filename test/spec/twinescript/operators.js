@@ -196,6 +196,12 @@ describe("twinescript operators", function () {
 		});
 	});
 	describe("the 'contains' operator", function () {
+		it("errors when used on non-string primitives", function() {
+			expect("(print: 1 contains 1)").markupToError();
+			expect("(print: true contains true)").markupToError();
+			expect("(set: $a to 0)(print: $a contains 1)").markupToError();
+			expect("(set: $a to true)(print: $a contains true)").markupToError();
+		});
 		it("checks for substrings in strings", function (){
 			expect("(print: 'Bee' contains 'Be')").markupToPrint("true");
 			expect("(print: 'Bee' contains 'Bee')").markupToPrint("true");
@@ -213,10 +219,6 @@ describe("twinescript operators", function () {
 		it("checks for elements in datasets", function (){
 			expect("(print: (dataset:'Bee','Boo') contains 'Bee')").markupToPrint("true");
 			expect("(print: (dataset:'Bee','Boo') contains 'ooB')").markupToPrint("false");
-		});
-		it("reverts to 'is' comparison for non-string primitives", function (){
-			expect("(print: 2 contains 2)").markupToPrint("true");
-			expect("(print: true contains true)").markupToPrint("true");
 		});
 		it("can be used as an expression", function (){
 			expect("(print: 'Bee' contains 'Be' is true)").markupToPrint("true");
@@ -239,6 +241,12 @@ describe("twinescript operators", function () {
 		});
 	});
 	describe("the 'is in' operator", function () {
+		it("errors when used on non-string primitives", function() {
+			expect("(print: 1 is in 1)").markupToError();
+			expect("(print: true is in true)").markupToError();
+			expect("(set: $a to 0)(print: $a is in 1)").markupToError();
+			expect("(set: $a to true)(print: $a is in true)").markupToError();
+		});
 		it("checks for substrings in strings", function (){
 			expect("(print: 'Be' is in 'Bee')").markupToPrint("true");
 			expect("(print: 'Bee' is in 'Bee')").markupToPrint("true");
@@ -256,10 +264,6 @@ describe("twinescript operators", function () {
 		it("checks for elements in datasets", function (){
 			expect("(print: 'Bee' is in (dataset:'Bee','Boo'))").markupToPrint("true");
 			expect("(print: 'ooB' is in (dataset:'Bee','Boo'))").markupToPrint("false");
-		});
-		it("reverts to 'is' comparison for non-string primitives", function (){
-			expect("(print: 2 is in 2)").markupToPrint("true");
-			expect("(print: true is in true)").markupToPrint("true");
 		});
 		it("can be used as an expression", function (){
 			expect("(print: true is 'Be' is in 'Bee')").markupToPrint("true");

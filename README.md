@@ -10,6 +10,7 @@ Rough documentation is at http://twine2.neocities.org/
  * Altered the CSS of `<tw-story>` to use vertical padding instead of vertical margins.
  * It is now an error to use `(set:)` or `(put:)` macros, as well as `to` constructs, in expression position: `(set: $a to (set: $b to 1))` is now an error, as is `(set: $a to ($b to 1))`.
  * `(if:)`/`(unless:)`/`(elseif:)`/`(else:)` now evaluate to changer commands, rather than booleans. This means, among other things, that you can now compose them with other changers: `(set: $a to (text-style:"bold") + (if:$audible is true))`, for instance, will create a style that is bold, and also only appears if the $audible variable had been true. (Note: Changing the $audible variable afterward will not change the effect of the $a style.)
+ * Using `contains` and `is in` on numbers and booleans (such as `12 contains "a"`) will now produce an error. Formerly, doing so would test whether the number equalled the other value. (The rationale for this was that, since the statement `"a" contains "a"` is the same as `"a" is "a"`, then so should it be for numbers and booleans, which arguably "contain" only themselves. However, this seems to be masking certain kinds of errors when incorrect or uninitialised variables or properties were used).
 
 ####Additions
 
