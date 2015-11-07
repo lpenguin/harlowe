@@ -398,9 +398,9 @@ define(['utils', 'internaltypes/twineerror'], ({assert, impossible, toJSLiteral}
 			}
 		}
 		/*
-			Default: since "'r' is in 'r'" is true, so is "false is in false".
+			Default: produce an error.
 		*/
-		return is(container, obj);
+		return TwineError.create("operation", objectName(container) + " cannot contain any values, let alone " + objectName(obj));
 	}
 	
 	/*
