@@ -1,4 +1,9 @@
 /*
+	This toggles compatibility with 1.x.x Harlowe.
+*/
+$version: 1;
+
+/*
 	<html> controls the background of the page.
 	Given that the text colour is intimately connected to the background,
 	this also controls the text colour.
@@ -30,8 +35,10 @@ html {
 body {
 	margin: 0;
 	background-color: transparent;
-	// This allows <tw-story> to cover the entire page
-	height:100%;
+	@if $version == 2 {
+		// This allows <tw-story> to cover the entire page
+		height:100%;
+	}
 }
 
 /*
@@ -49,14 +56,20 @@ tw-story {
 	@include flexbox;
 	@include flex-direction(column);
 	
-	width: 100%;
-	height: 100%;
-	
+	width: 60%;
+	@if $version == 2 {
+		width: 100%;
+		height: 100%;
+	}
 	/*
 		This is the base font size, which is
 		permuted below.
 	*/
+	//TODO: Change to rem for 2.0.0
 	$font-size: 1.5em;
+	@if $version == 2 {
+		$font-size: 1.5rem;
+	}
 	
 	font-size:   $font-size;
 	line-height: $font-size;
@@ -78,8 +91,11 @@ tw-story {
 	/*
 		The <tw-story>'s default distance from the top and bottom of the page is 5%.
 	*/
-	padding: 5% 20%;
-	margin: 0;
+	margin: 5% auto;
+	@if $version == 2 {
+		padding: 5% 20%;
+		margin: 0;
+	}
 }
 
 /*
