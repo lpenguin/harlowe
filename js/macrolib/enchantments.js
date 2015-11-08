@@ -9,26 +9,6 @@ define(['jquery', 'utils', 'macros', 'datatypes/hookset', 'datatypes/changercomm
 	*/
 
 	/*
-		This experimental (enchant:) macro is currently just for testing purposes.
-	*/
-	Macros.add("enchant",
-		(section, changer, scope) => ({
-			TwineScript_ObjectName: "an (enchant:) command",
-			TwineScript_TypeName:   "an (enchant:) command",
-			TwineScript_Print() {
-				const enchantment = Enchantment.create({
-					scope: section.selectHook(scope),
-					changer,
-				});
-				section.enchantments.push(enchantment);
-				enchantment.enchantScope();
-				return "";
-			},
-		}),
-		[ChangerCommand, either(HookSet,String)]
-	);
-
-	/*
 		Revision macros produce ChangerCommands that redirect where the attached hook's
 		text is rendered - usually rendering inside an entirely different hook.
 	*/
