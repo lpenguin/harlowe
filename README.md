@@ -2,21 +2,30 @@
 
 Rough documentation is at http://twine2.neocities.org/
 
-###2.0.0 changes (unreleased):
+###1.2.0 changes (unreleased):
+
+####Bugfixes
+
+ * Fixed a bug where links created by `(click:)` not having a tabindex, and thus not being selectable with the tab key (a big issue for players who can't use the mouse).
+ * Fixed a bug where `(align: "<==")` couldn't be used at all, even inside another aligned hook.
+ * Fixed a bug where errors for using changer macros (such as `(link:)`) detached from a hook were not appearing.
+ * Fixed a bug where `(align:)` commands didn't have structural equality with each other - `(align:"==>")` didn't equal another `(align:"==>")`.
+ * Fixed `(move:)`'s inability to delete items from arrays.
+ * `(move: ?a into $a)` will now, after copying their text into `$a`, clear the contents of all `?a` hooks.
 
 ####Alterations
 
- * Fixed a bug where the "Story stylesheet" `<style>` element was attached between `<head>` and `<body>`. This should have had no obvious effects in any browser, but was untidy anyway.
- * Altered the CSS of `<tw-story>` to use vertical padding instead of vertical margins.
  * It is now an error to use `(set:)` or `(put:)` macros, as well as `to` constructs, in expression position: `(set: $a to (set: $b to 1))` is now an error, as is `(set: $a to ($b to 1))`.
- * `(if:)`/`(unless:)`/`(elseif:)`/`(else:)` now evaluate to changer commands, rather than booleans. This means, among other things, that you can now compose them with other changers: `(set: $a to (text-style:"bold") + (if:$audible is true))`, for instance, will create a style that is bold, and also only appears if the $audible variable had been true. (Note: Changing the $audible variable afterward will not change the effect of the $a style.)
+ * Now, setting a markup string to a `?hookSet` will cause that markup to be rendered in the hookset, instead of being used as raw text. For instance, `(set: ?hookSet to "//Golly//")` will put "*Golly*" into the hookset, instead of "//Golly//".
+    * Also, it is now an error to set a `?hookSet` to a non-string.
+ * `(if:)`/`(unless:)`/`(elseif:)`/`(else:)` now evaluate to changer commands, rather than booleans. This means, among other things, that you can now compose them with other changers: `(set: $a to (text-style: "bold") + (if: $audible is true))`, for instance, will create a style that is bold, and also only appears if the $audible variable had, at that time, been true. (Note: Changing the $audible variable afterward will not change the effect of the `$a` style.)
 
 ####Additions
 
  * Now, authors can supply an array of property names to the "'s" and "of" property syntax to obtain a "slice" of the container. For instance, `(a: 'A','B','C')'s (a: 1,2)` will evaluate to a subarray of the first array, containing just 'A' and 'B'.
     * As well as creating subarrays, you can also get a slice of the values in a datamap - in effect, a subarray of the datamap's datavalues. You can do `(datamap:'Hat','Beret','Shoe','Clog','Sock','Long')'s (a: 'Hat','Sock')` to obtain an array `(a: 'Beret','Long')`.
     * Additionally, you can obtain characters from a string - "abcde"'s (a: 2,4) becomes the string "bd". Note that for convenience, slices of strings are also strings, not arrays of characters.
-    * Combined this with the `(range:)` macro, this essentially obsoletes the `(subarray:)` and `(substring:)` macros. However, those will remain for compatibility reasons for now.
+    * Combined with the `(range:)` macro, this essentially obsoletes the `(subarray:)` and `(substring:)` macros. However, those will remain for compatibility reasons for now.
  * `(link-reveal:)` is similar to `(link:)` except that the link text remains in the passage after it's been clicked - a desirable use-case which is now available. The code `(link-reveal:"Sin")[cerity]` features a link that, when clicked, makes the text become `Sincerity`. Note that this currently necessitates that the attached hook always appear after the link element in the text, due to how the attaching syntax works.
  * `(link-repeat:)` is similar to the above as well, but allows the link to be clicked multiple times, rerunning the markup and code within.
  * Also added `(link-replace:)` as an identical alias of the current `(link:)` macro, indicating how it differs from the others.
