@@ -11,6 +11,7 @@ describe("property indexing", function() {
 				expect('(print: "𐌎ed"\'s 1sT)').markupToPrint("𐌎");
 				expect('(print: "𐌎ed"\'s 2Nd)').markupToPrint("e");
 				expect('(print: "𐌎ed"\'s 3RD)').markupToPrint("d");
+				expect('(print: "𐌎ed"\'S 2nd)').markupToPrint("e");
 			});
 			it("ignores the exact ordinal used", function() {
 				expect('(print: "𐌎ed"\'s 1th)').markupToPrint("𐌎");
@@ -127,6 +128,9 @@ describe("property indexing", function() {
 			it("access the keyed properties", function() {
 				expect('(print: (datamap:"A",1)\'s A)').markupToPrint('1');
 			});
+			it("is case-insensitive", function() {
+				expect('(print: (datamap:"A",1)\'s a + (datamap:"b",2)\'s B)').markupToPrint('3');
+			});
 			it("prints an error if the key is not present", function() {
 				expect('(print: (datamap:"A",1)\'s B)').markupToError();
 			});
@@ -217,6 +221,9 @@ describe("property indexing", function() {
 		});
 		it("has low precedence", function (){
 			expect("(print: (a:6,12)'s (1) + 1)").markupToPrint("7");
+		});
+		it("are case-insensitive", function (){
+			expect("(print: (a:6,12)'S (1))").markupToPrint("6");
 		});
 		it("can have other 'it' accesses nested in it", function (){
 			expect("(set: $a to (a:3,4))(set: $a to (its (2)) of 'Blue')$a").markupToPrint("e");
@@ -323,6 +330,9 @@ describe("property indexing", function() {
 		});
 		it("has low precedence", function (){
 			expect("(print: 1 + (1) of (a:6,12))").markupToPrint("7");
+		});
+		it("is case-insensitive", function (){
+			expect("(print: (1) OF (a:6,12))").markupToPrint("6");
 		});
 		it("does not require numbers to be bracketed", function (){
 			expect("(print: 1 of (a:6,12))").markupToPrint("6");

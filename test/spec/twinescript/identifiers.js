@@ -33,6 +33,9 @@ describe("identifiers", function () {
 		it("accesses properties from the left side of a recent comparison", function (){
 			expect("(set:$red to 'egg')(print: $red is 'egg' and its length is 3)").markupToPrint("true");
 		});
+		it("is case-insensitive", function (){
+			expect("(set:$red to 'egg')(print: $red is 'egg' and iTS length is 3)").markupToPrint("true");
+		});
 		it("also accesses properties from the left side of a 'to' operation", function (){
 			expect("(set:$red to 'Bee')(set:$red to its 1st)$red").markupToPrint("B");
 		});
