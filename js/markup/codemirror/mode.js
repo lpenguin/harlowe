@@ -18,7 +18,8 @@
 		"text-rotate,background,text-style,css,replace,append,prepend,click,mouseover,mouseout,click-replace," +
 		"mouseover-replace,mouseout-replace,click-append,mouseover-append,mouseout-append,click-prepend," +
 		"mouseover-prepend,mouseout-prepend,set,put,move,a,array,range,subarray,shuffled,sorted,rotated," +
-		"datanames,datavalues,history,datamap,dataset,count,display,print,goto,live,stop,savegame,savedgames,loadgame,link,link-goto"
+		"datanames,datavalues,history,datamap,dataset,count,display,print,goto,live,stop,savegame,savedgames,loadgame,link,link-goto," +
+		"link-replace,link-repeat,link-reveal"
 	).split(',').map(insensitiveName);
 	
 	/*
