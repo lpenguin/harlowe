@@ -10,7 +10,7 @@ define([
 	'internaltypes/assignmentrequest',
 	'internaltypes/twineerror',
 	'internaltypes/twinenotifier'],
-($, NaturalSort, Macros, {objectName, subset, collectionType, isValidDatamapName}, State, Engine, Passages, Lambda, AssignmentRequest, TwineError) => {
+($, NaturalSort, Macros, {objectName, subset, collectionType, isValidDatamapName}, State, Engine, Passages, Lambda, AssignmentRequest, TwineError, TwineNotifier) => {
 	"use strict";
 	
 	const {optional, rest, zeroOrMore, Any}   = Macros.TypeSignature;
@@ -64,6 +64,7 @@ define([
 			(push:)
 		*/
 		("set", (_, ...assignmentRequests) => {
+			let debugMessage = "";
 			/*
 				This has to be a plain for-loop so that an early return
 				is possible.
@@ -81,6 +82,13 @@ define([
 				if (TwineError.isPrototypeOf(result)) {
 					return result;
 				}
+				if (Engine.options.debug) {
+					// Add a semicolon only if a previous iteration appended a message.
+					debugMessage += (debugMessage ? "; " : "")
+						+ objectName(ar.dest)
+						+ " is now "
+						+ objectName(ar.src);
+				}
 			}
 
 			/*
@@ -92,7 +100,7 @@ define([
 				TwineScript_TypeName:     "a (set:) operation",
 				TwineScript_ObjectName:   "a (set:) operation",
 				TwineScript_Unobservable: true,
-				TwineScript_Print:        "",
+				TwineScript_Print:        () => debugMessage && TwineNotifier.create(debugMessage).render(),
 			};
 		},
 		[rest(AssignmentRequest)])
@@ -124,6 +132,7 @@ define([
 			Once again, this evaluates to an empty string.
 		*/
 		("put", (_, ...assignmentRequests) => {
+			let debugMessage = "";
 			/*
 				This has to be a plain for-loop so that an early return
 				is possible.
@@ -141,12 +150,19 @@ define([
 				if (TwineError.isPrototypeOf(result)) {
 					return result;
 				}
+				if (Engine.options.debug) {
+					// Add a semicolon only if a previous iteration appended a message.
+					debugMessage += (debugMessage ? "; " : "")
+						+ objectName(ar.dest)
+						+ " is now "
+						+ objectName(ar.src);
+				}
 			}
 			return {
 				TwineScript_TypeName:     "a (put:) operation",
 				TwineScript_ObjectName:   "a (put:) operation",
 				TwineScript_Unobservable: true,
-				TwineScript_Print:        "",
+				TwineScript_Print:        () => debugMessage && TwineNotifier.create(debugMessage).render(),
 			};
 		},
 		[rest(AssignmentRequest)])

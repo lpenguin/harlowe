@@ -199,11 +199,17 @@ define(['jquery', 'utils', 'macros', 'datatypes/hookset', 'datatypes/changercomm
 					selector are added or removed from the DOM).
 				*/
 				const enchantData = Enchantment.create({
-					attr: {
-						'class': enchantDesc.classList,
-					},
+					attr: Object.assign({
+							class: enchantDesc.classList,
+						},
+						/*
+							Include the tabIndex for link-type enchantments, so that they
+							can also be clicked using the keyboard.
+						*/
+						enchantDesc.classList.includes("link") ? { tabIndex: '0' } : {}
+					),
 					data: {
-						'enchantmentEvent'() {
+						enchantmentEvent() {
 							if (enchantDesc.once) {
 								/*
 									Remove this enchantment from the Section's list.
