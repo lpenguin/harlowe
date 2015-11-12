@@ -180,7 +180,7 @@
 		hookTagFront =  "\\|(" + anyLetter.replace("]", "_]") + "*)>",
 		hookTagBack  =  "<("   + anyLetter.replace("]", "_]") + "*)\\|",
 		
-		lambdaParams = "\\((_" + validPropertyName + "(?:" + ws + "," + ws + "_" + validPropertyName + ")*)" + ws + ",?" + ws + "==>",
+		lambda       = "each" + ws + "(_" + validPropertyName + "(?:" + ws + "," + ws + "_" + validPropertyName + ")*)" + ws + ",?" + ws + "(to|where)" + wb,
 
 		tempVariable = "_(" + validPropertyName + ")" + wb,
 		
@@ -341,14 +341,12 @@
 		/*
 			Lambdas
 		*/
-		
-		lambdaFront: "\\(" + before(lambdaParams),
-		lambdaParams,
+		lambda,
 		
 		/*
-			This must be differentiated from macroFront and lambdaFront.
+			This must be differentiated from macroFront
 		*/
-		groupingFront: "\\(" + notBefore(macro.name, lambdaParams),
+		groupingFront: "\\(" + notBefore(macro.name),
 		groupingFrontPeek: "(",
 		
 		groupingBack:  "\\)",

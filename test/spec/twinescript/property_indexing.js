@@ -128,9 +128,7 @@ describe("property indexing", function() {
 			it("access the keyed properties", function() {
 				expect('(print: (datamap:"A",1)\'s A)').markupToPrint('1');
 			});
-			it("is case-insensitive", function() {
-				expect('(print: (datamap:"A",1)\'s a + (datamap:"b",2)\'s B)').markupToPrint('3');
-			});
+			// TODO: Case-insensitive?
 			it("prints an error if the key is not present", function() {
 				expect('(print: (datamap:"A",1)\'s B)').markupToError();
 			});

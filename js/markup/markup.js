@@ -415,8 +415,6 @@
 					matches: {
 						groupingFront:
 							"grouping",
-						lambdaParams:
-							"lambda",
 						macroFront:
 							"macro",
 					},
@@ -467,10 +465,9 @@
 					},
 				},
 
-				lambdaParams: {
+				lambda: {
 					fn: (match) => ({
 						params: match[1],
-						isFront: true,
 					}),
 				},
 

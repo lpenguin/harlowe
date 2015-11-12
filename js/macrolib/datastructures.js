@@ -533,9 +533,9 @@ define([
 		("converted", (section, lambda, ...args) => args.map(e => lambda.apply(section, e),[]),
 		[Lambda.ArityType(1), rest(Any)])
 		/*
-			(find-all: Lambda, Any, [...Any])
+			(find: Lambda, Any, [...Any])
 		*/
-		("find-all", (section, lambda, ...args) => lambdaBooleanReduce(section, lambda, args),
+		("find", (section, lambda, ...args) => lambdaBooleanReduce(section, lambda, args),
 		[Lambda.ArityType(1), rest(Any)])
 		/*
 			(all-pass: Lambda, Any, [...Any])

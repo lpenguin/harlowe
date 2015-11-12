@@ -140,9 +140,9 @@ describe("data structure macros", function () {
 			expect("(datanames: (datamap:'1','1'))").not.markupToError();
 			expect("(datanames: (datamap:'1','1'), (datamap:'2','1'))").markupToError();
 		});
-		it("returns an array containing the names in the datamap", function() {
-			runPassage("(set: $a to (datamap:'A',1,'B',2,'C',3))");
-			expect("(print: (datanames:$a))").markupToPrint("A,B,C");
+		it("returns an array containing the names in the datamap, in original case", function() {
+			runPassage("(set: $a to (datamap:'A',1,'b',2,'C',3))");
+			expect("(print: (datanames:$a))").markupToPrint("A,b,C");
 			expect("(print: (datanames:(datamap:)))").markupToPrint("");
 		});
 		it("returns the names in natural-sort order", function() {

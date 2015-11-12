@@ -76,7 +76,8 @@ define(['utils', 'utils/operationutils', 'internaltypes/varscope', 'internaltype
 				object. The tempVariable references in the code are compiled to VarRefs for tempVariables.
 			*/
 			section.stack.unshift(Object.assign(Object.create(null), {tempVariables: Object.create(VarScope)}));
-			return section.eval(this.params.map((name, i) => "section.stack[0].tempVariables['" + name + "'] = " + toJSLiteral(args[i])).join(";") + ";" + this.jscode || '');
+			return section.eval(this.params.map((name, i) => "section.stack[0].tempVariables['" + name + "'] = " + toJSLiteral(args[i])).join(";")
+				+ ";" + this.jscode || '');
 		},
 	});
 	return Lambda;
