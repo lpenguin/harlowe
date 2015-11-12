@@ -246,6 +246,22 @@ define(['utils'], ({toJSLiteral, assert}) => {
 			*/
 			needsRight = false;
 		}
+		else if ((i = indexOfType(tokens, "lambda")) >-1) {
+			midString = " ";
+			right = 'Lambda.create(['
+				/*
+					Convert all of the params into trimmed JS string literals.
+					This assumes that params are defined as separated by commas in Patterns.
+				*/
+				+ tokens[i].params.split(',').filter(Boolean).map(e => toJSLiteral(
+					/*
+						This .slice() call removes the _ sigil from the params.
+					*/
+					e.slice(1)
+					.trim())).join()
+				+ "]," + toJSLiteral(compile(tokens.splice(i + 1))) + ")";
+			needsLeft = false;
+		}
 		else if ((i = indexOfType(tokens, "spread")) >-1) {
 			/*
 				Whether or not this actually makes sense as a "mid"string
@@ -321,9 +337,9 @@ define(['utils'], ({toJSLiteral, assert}) => {
 			operation = tokens[i].text;
 		}
 		else if ((i = indexOfType(tokens, "not")) >-1) {
-			midString = "Operations.not(";
-			right =
-				compile(tokens.splice(i + 1))
+			midString = " ";
+			right = "Operations.not("
+				+ compile(tokens.splice(i + 1))
 				+ ")";
 			needsLeft = false;
 		}
@@ -395,21 +411,6 @@ define(['utils'], ({toJSLiteral, assert}) => {
 				needsLeft = false;
 			}
 			possessive = "possessive";
-		}
-		else if ((i = indexOfType(tokens, "lambda")) >-1) {
-			midString = 'Lambda.create(['
-				/*
-					Convert all of the params into trimmed JS string literals.
-					This assumes that params are defined as separated by commas in Patterns.
-				*/
-				+ tokens[i].params.split(',').filter(Boolean).map(e => toJSLiteral(
-					/*
-						This .slice() call removes the _ sigil from the params.
-					*/
-					e.slice(1)
-					.trim())).join()
-				+ "]," + toJSLiteral(compile(tokens[i].children.slice(1))) + ")";
-			needsLeft = needsRight = false;
 		}
 		else if ((i = indexOfType(tokens, "macro")) >-1) {
 			/*

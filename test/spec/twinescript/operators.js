@@ -224,15 +224,15 @@ describe("twinescript operators", function () {
 			expect("(print: 'Bee' contains 'Be' is true)").markupToPrint("true");
 			expect("(print: 'Bee' contains 'eeB' is false)").markupToPrint("true");
 		});
-		it("compares arrays by value", function (){
+		it("compares nested arrays by value", function (){
 			expect("(print: (a:(a:)) contains (a:))").markupToPrint("true");
 			expect("(print: (a:(a:2,3,4)) contains (a:2,3,4))").markupToPrint("true");
 		});
-		it("compares datamaps by value", function (){
+		it("compares nested datamaps by value", function (){
 			expect("(print: (a:(datamap:)) contains (datamap:))").markupToPrint("true");
 			expect("(print: (a:(datamap:'a',2,'b',4)) contains (datamap:'b',4,'a',2))").markupToPrint("true");
 		});
-		it("compares datasets by value", function (){
+		it("compares nested datasets by value", function (){
 			expect("(print: (a:(dataset:)) contains (dataset:))").markupToPrint("true");
 			expect("(print: (a:(dataset:2,3,4)) contains (dataset:2,3,4))").markupToPrint("true");
 		});
@@ -269,15 +269,15 @@ describe("twinescript operators", function () {
 			expect("(print: true is 'Be' is in 'Bee')").markupToPrint("true");
 			expect("(print: false is 'Bee' is in 'eeB')").markupToPrint("true");
 		});
-		it("compares arrays by value", function (){
+		it("compares nested arrays by value", function (){
 			expect("(print: (a:) is in (a:(a:)))").markupToPrint("true");
 			expect("(print: (a:2,3,4) is in (a:(a:2,3,4)))").markupToPrint("true");
 		});
-		it("compares datamaps by value", function (){
+		it("compares nested datamaps by value", function (){
 			expect("(print: (datamap:) is in (a:(datamap:)))").markupToPrint("true");
 			expect("(print: (datamap:'b',4,'a',2) is in (a:(datamap:'a',2,'b',4)))").markupToPrint("true");
 		});
-		it("compares datasets by value", function (){
+		it("compares nested datasets by value", function (){
 			expect("(print: (dataset:) is in (a:(dataset:)))").markupToPrint("true");
 			expect("(print: (dataset:2,3,4) is in (a:(dataset:2,3,4)))").markupToPrint("true");
 		});
