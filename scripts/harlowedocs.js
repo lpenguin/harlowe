@@ -1,12 +1,11 @@
 'use strict';
 
-var fs = require('fs');
-
+let fs = require('fs');
 /*
 	This generates end-user Harlowe macro and syntax documentation (in Markup) by reading
 	/*d: delimited comments from the source file.
 */
-var
+let
 	macroEmpty = /\(([\w\-\d]+):\)(?!`)/g,
 	macroWithTypeSignature = /\(([\w\-\d]+):([\s\w\.\,\[\]]*)\) -> ([\w]+)/,
 	/*
@@ -73,7 +72,7 @@ function processTextTerms(text, match) {
 		A record of which type names were hyperlinked.
 		As a rule, only hyperlink type names once each per definition.
 	*/
-	var typeNamesLinked = [],
+	let typeNamesLinked = [],
 		title = match[1];
 	
 	text = text
@@ -97,7 +96,7 @@ function processTextTerms(text, match) {
 		/*
 			Convert other macro definitions into hyperlinks.
 		*/
-		.replace(macroEmpty, function(text, $1) {
+		.replace(macroEmpty, (text, $1) => {
 			/*
 				...but don't hyperlink references to this own macro.
 				(e.g. don't hyperlink (goto:) in the (goto:) article.)
@@ -115,8 +114,8 @@ function processTextTerms(text, match) {
 }
 
 function processMacroDefinition(match) {
-	var title = match[0];
-	var text = match.input.trim()
+	let title = match[0];
+	let text = match.input.trim()
 		/*
 			Convert the title signature into an anchor and an augmented parameter signature.
 		*/
@@ -127,8 +126,7 @@ function processMacroDefinition(match) {
 	/*
 		Now, do it! Output the text!
 	*/
-	macroDefs[title] = text;
-	console.log('Macro: ' + title);
+	macroDefs[title] = { text, anchor: "macro_" + match[1].toLowerCase(), name: match[1] };
 }
 
 function processTypeDefinition(match) {
@@ -137,25 +135,22 @@ function processTypeDefinition(match) {
 			match.input.trim().replace(match[0], "\n<h2 id=type_" + match[1].toLowerCase() + ">" + match[0] + "</h2>\n"),
 			match
 		);
-	typeDefs[title] = text;
-	console.log('Datatype: ' + title.trim());
+	typeDefs[title] = { text, anchor: "type_" + match[1].toLowerCase(), name: match[1] };
 }
 
 /*
 	Read the definitions from every JS file.
 */
 require('fs-readdir-recursive')('js/').forEach(function(path) {
-	var defs = fs.readFileSync('js/' + path, {encoding:'utf8'}).match(/\/\*d:[^]*?\*\//g);
+	let defs = fs.readFileSync('js/' + path, {encoding:'utf8'}).match(/\/\*d:[^]*?\*\//g);
 	if (!defs) {
 		return;
 	}
-	defs.map(function(e) {
-		
+	defs.map((e) =>
 		// Remove the /*d: and */ markers, whitespace, and tabs.
-		return e.replace(/\t/g,'').slice(4,-2).trim();
-		
-	}).forEach(function(defText) {
-		var match;
+		e.replace(/\t/g,'').slice(4,-2).trim()
+	).forEach((defText) => {
+		let match;
 		/*
 			Is it a macro definition?
 		*/
@@ -173,17 +168,66 @@ require('fs-readdir-recursive')('js/').forEach(function(path) {
 /*
 	Now, output the file.
 */
-var outputFile = "";
+let outputFile = "";
+let navElement = "<nav>";
 /*
 	Output macro definitions.
 */
 outputFile += "\n<h1 id=section_types>Types of data</h1>\n";
-Object.keys(typeDefs).sort().forEach(function(e) {
-	outputFile += typeDefs[e];
+/*
+	Type definitions
+*/
+navElement += "<h5>Data types</h5><ul>";
+
+Object.keys(typeDefs).sort().forEach((e) => {
+	const typeDef = typeDefs[e];
+	outputFile += typeDef.text;
+	navElement += `<li><a href="#${typeDef.anchor}">${typeDef.name}</a></li>`;
 });
+navElement += "</ul><h5>Macros</h5><ul>";
+
 outputFile += "\n<h1 id=section_macros>List of macros</h1>\n";
-Object.keys(macroDefs).sort().forEach(function(e) {
-	outputFile += macroDefs[e];
+Object.keys(macroDefs).sort().forEach((e) => {
+	const macroDef = macroDefs[e];
+	outputFile += macroDef.text;
+	navElement += `<li><a href="#${macroDef.anchor}">(${macroDef.name}:)</a></li>`;
 });
-fs.writeFileSync("dist/harloweDocs.md", outputFile);
+/*
+	Convert to HTML with Marked
+*/
+outputFile = require('marked')(outputFile);
+/*
+	Append CSS and HTML header tags
+*/
+outputFile = `<!doctype html><meta charset=utf8><style>
+html { font-size:110%; font-weight:lighter; }
+body { font-family:Georgia, "Times New Roman", Times, serif; line-height:1.5; margin:0 auto; width:50%; }
+p { margin-top:1em; }
+a { color:#3B8BBA; }
+a:hover, a:focus, a:active { color:#22516d; }
+table { background:#fafafa; border-bottom:1px solid #ccc; border-collapse:collapse; border-right:1px solid #ccc; border-spacing:0; font-size:1em; width:100%; }
+table tr { border-top:1px solid #ccc; }
+table th,table td { border-left:1px solid #ccc; padding:4px; text-align:left; }
+tfoot { background:#e3e3e3; }
+h1,h2,h3,h4,h5,h6 { border-bottom:solid 1px #ddd; color:#000; font-weight:400; line-height:1em; margin:0; padding-top:1rem; }
+h4,h5,h6 { font-weight:700; }
+h1, h2 { background:linear-gradient(180deg,white,white 70%,silver); }
+h1 { font-size:2.5em; }
+h2 { border-bottom:1px solid silver; font-size:2em; padding-bottom:5px; }
+h3 { font-size:1.5em; }
+h4 { font-size:1.2em; }
+h5 { font-size:1em; }
+h6 { font-size:.9em; }
+h1,h2 { padding-top:2rem; }
+pre { display:inline; }
+nav { position:fixed; top:5vh;left:5vh; bottom:5vh; overflow-y:scroll; border:1px solid #888; padding:1rem; font-size:90% }
+nav ul { list-style-type: none; margin: 0em; padding: 0em; }
+code { background:#FFF; border:1px solid #888; color:#000; display:block; padding:12px; }
+:not(pre) > code { background:hsla(0,0%,100%,0.75); border:1px dotted #888; display:inline; padding:1px; }
+table tr:nth-child(2n),thead { background:#eee; }
+</style>` + navElement + "</ul></nav>" + outputFile;
+/*
+	Done
+*/
+fs.writeFileSync("dist/harloweDocs.html", outputFile);
 

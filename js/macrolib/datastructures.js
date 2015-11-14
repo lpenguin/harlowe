@@ -531,12 +531,12 @@ define([
 			(converted: Lambda, Any, [...Any])
 		*/
 		("converted", (section, lambda, ...args) => args.map(e => lambda.apply(section, e),[]),
-		[Lambda.ArityType(1), rest(Any)])
+		[Lambda.TypeSignature(1,'to'), rest(Any)])
 		/*
 			(find: Lambda, Any, [...Any])
 		*/
 		("find", (section, lambda, ...args) => lambdaBooleanReduce(section, lambda, args),
-		[Lambda.ArityType(1), rest(Any)])
+		[Lambda.TypeSignature(1,'where'), rest(Any)])
 		/*
 			(all-pass: Lambda, Any, [...Any])
 		*/
@@ -544,7 +544,7 @@ define([
 			const ret = lambdaBooleanReduce(section, lambda, args);
 			return TwineError.containsError(ret) || ret.length === args.length;
 		},
-		[Lambda.ArityType(1), rest(Any)])
+		[Lambda.TypeSignature(1,'where'), rest(Any)])
 		/*
 			(some-pass: Lambda, Any, [...Any])
 		*/
@@ -552,7 +552,7 @@ define([
 			const ret = lambdaBooleanReduce(section, lambda, args);
 			return TwineError.containsError(ret) || ret.length > 0;
 		},
-		[Lambda.ArityType(1), rest(Any)])
+		[Lambda.TypeSignature(1,'where'), rest(Any)])
 		/*
 			(none-pass: Lambda, Any, [...Any])
 		*/
@@ -560,7 +560,7 @@ define([
 			const ret = lambdaBooleanReduce(section, lambda, args);
 			return TwineError.containsError(ret) || ret.length === 0;
 		},
-		[Lambda.ArityType(1), rest(Any)])
+		[Lambda.TypeSignature(1,'where'), rest(Any)])
 		;
 		
 	Macros.add
@@ -612,18 +612,57 @@ define([
 			),
 		[Map])
 		
-		/*
-			(history:)
-			Returns the array of past passage names, directly from State.
-			(It should be changed to return Passage datamaps, but, it is what it is.)
-			This is used to implement the visited() function from Twine 1.
+		/*d:
+			(history:) -> Array
+
+			This returns an array containing the string names of all of the passages
+			the player has visited up to now.
+
+			Example usage:
+			`(history:) contains "Cellar"` is true if the player has visited a passage called
+			"Cellar" at some point.
+
+			Rationale:
+			Often, you may find yourself using "flag" variables to keep track of whether
+			the player has visited a certain passage in the past. You can use (history:), along with
+			data structure operators such as the `contains` operator, to obviate this necessity.
+
+			See also:
+			(passage:), (savedgames:)
 		*/
 		("history", () => State.pastPassageNames(),
 		[])
 		
-		/*
-			(passage:)
-			Returns a passage datamap for the given name (or, if none is present, the current passage)
+		/*d:
+			(passage: [String]) -> Datamap
+			
+			When given a passage string name, this provides a datamap containing information about that passage. If no
+			name was provided, then it provides information about the current passage.
+			
+			Example usage:
+			`(passage:"Cellar")`
+
+			Rationale:
+			There are times when you wish to examine the data of the story as it is running - for instance, checking what
+			tag a certain passage has, and performing some special behaviour as a result. This macro provides that functionality.
+
+			Details:
+			The datamap contains the following names and values.
+
+			| Name | Value |
+			|---
+			| source | The source markup of the passage, exactly as you entered it in the Twine editor |
+			| name | The string name of this passage. |
+			| tags | An array of strings, which are the tags you gave to this passage. |
+
+			The "source" value, like all strings, can be printed using (print:). Be warned that printing the source of
+			the current passage, while inside of it, may lead to an infinite regress.
+
+			Interestingly, the construction `(print: (passage: "Cellar")'s source)` is essentially identical in function (albeit longer to write)
+			than `(display: "Cellar")`.
+
+			See also:
+			(history:), (savedgames:)
 		*/
 		("passage", (_, passageName) =>
 			Passages.get(passageName || State.passage)
@@ -671,11 +710,17 @@ define([
 		/*
 			DATAMAP MACROS
 		*/
-		/*
-			(datamap:)
-			Similar to (a:), these create standard JS Maps and Sets.
-			But, instead of supplying an iterator, you supply keys and values
-			interleaved: (datamap: key, value, key, value).
+		/*d:
+			Datamap data
+
+			TBC
+		*/
+		/*d:
+			(datamap: [...Any]) -> Datamap
+
+			Creates a datamap, which is a data structure that pairs string names with data values.
+			You should provide a string name, followed by the value paired with it, and then another
+			string name, another value, and so on, for as many as you'd like.
 
 			Example usage:
 			```
@@ -686,11 +731,33 @@ define([
 			)
 			```
 			
-			One concern about maps: even though they are a Map,
-			inserting a non-primitive in key position is problematic because
-			retrieving the key uses compare-by-reference, and most
-			of Twine 2's unique object types are immutable (hence, can't be
-			used in by-reference comparisons).
+			Rationale:
+			For an explanation of what datamaps are, see the Datamap article.
+			This macro is the primary means of creating datamaps - simply supply a name,
+			followed by a value, and so on.
+
+			In addition to creating datamaps for long-term use, this is also used to
+			create "momentary" datamaps which are used only in some operation. For instance,
+			to add several values to a datamap at once, you can do something like this:
+			```
+			(set: $map to it + (datamap: "Name 1", "Value 1", "Name 2", "Value 2"))
+			```
+
+			You can also use (datamap:) as a kind of "multiple choice" structure, if you combine it with
+			the `'s` syntax. For instance...
+			```
+			(set: $element to (datamap:
+				"Chilltoad", "Ice",
+				"Rimeswan", "Ice",
+				"Brisketoid", "Fire",
+				"Slime", "Water"
+			)'s $monsterName)
+			```
+			...will set $element to one of those elements if $monsterName matches the correct name. But, be warned: if
+			none of those names matches $monsterName, an error will result.
+
+			See also:
+			(a:), (dataset:)
 		*/
 		("datamap", (_, ...args) => {
 			let key;
@@ -757,6 +824,11 @@ define([
 		
 		/*
 			DATASET MACROS
+		*/
+		/*d:
+			Dataset data
+
+			TBC
 		*/
 		/*
 			(dataset:)

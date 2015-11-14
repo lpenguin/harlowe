@@ -193,11 +193,25 @@ define(['jquery', 'utils', 'utils/operationutils', 'datatypes/lambda', 'internal
 					}
 
 					/*
-						If the data type is a lambda, and its arity is wrong, produce a special error message.
+						If the data type is a lambda, produce special error messages.
 					*/
-					if (arg && Lambda.isPrototypeOf(arg) && type.pattern === "arity") {
+					if (arg && Lambda.isPrototypeOf(arg) && type.pattern === "lambda") {
+						/*
+							If the kind differs, produce an error for that.
+						*/
+						if (arg.kind !== type.lambdaKind) {
+							return TwineError.create('typesignature',
+								name + "'s " + nth(ind + 1) + " value (a lambda) should be a '"
+								+ type.lambdaKind
+								+ "', not '"
+								+ arg.kind
+								+ "'.");
+						}
+						/*
+							Otherwise, its arity was wrong.
+						*/
 						return TwineError.create('typesignature',
-							name + "'s " + nth(ind + 1) + " value is a lambda, but the lambda should have "
+							name + "'s " + nth(ind + 1) + " value (a lambda) should have "
 							+ type.arity
 							+ plural(type.arity, ' parameter')
 							+ ', not '

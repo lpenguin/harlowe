@@ -105,7 +105,7 @@ define(['requestAnimationFrame', 'macros', 'utils', 'state', 'passages', 'engine
 			This command prints out any single argument provided to it, as text.
 			
 			Example usage:
-			`(print: $var)`
+			`(print: $var + "s")`
 			
 			Details:
 			It is capable of printing things which (text:) cannot convert to a string,
@@ -284,7 +284,7 @@ define(['requestAnimationFrame', 'macros', 'utils', 'state', 'passages', 'engine
 			[optional(Number)]
 		)
 		
-		/*d
+		/*d:
 			(stop:) -> Command
 			This macro, which accepts no arguments, creates a (stop:) command, which is not configurable.
 			

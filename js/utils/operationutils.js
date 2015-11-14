@@ -109,11 +109,11 @@ define(['utils', 'internaltypes/twineerror'], ({assert, impossible, toJSLiteral}
 				return type.innerType.some(type => singleTypeCheck(arg, type));
 			}
 			/*
-				If the type expects a given arity (i.e. arg is a lambda) then check that arity.
+				If the type expects a lambda, then check the arity and kind.
 			*/
-			if (type.pattern === "arity" && singleTypeCheck(arg, type.innerType)) {
+			if (type.pattern === "lambda" && singleTypeCheck(arg, type.innerType)) {
 				assert(typeof type.arity === 'number');
-				return arg.params.length === type.arity;
+				return arg.params.length === type.arity && arg.kind === type.lambdaKind;
 			}
 			/*
 				Otherwise, if this is a Wrapped signature, ignore the included
