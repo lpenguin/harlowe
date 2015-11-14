@@ -24,11 +24,11 @@ describe("lambda macros", function() {
 		it("accepts a one-parameter transformer lambda, plus one or more other values", function() {
 			expect("(converted:)").markupToError();
 			expect("(converted:1)").markupToError();
-			//TODO: errors when given a predicate lambda
 			expect("(converted:each _a to _a*2)").markupToError();
 			for(var i = 2; i < 10; i += 1) {
 				expect("(converted:each _a to _a*2," + "2,".repeat(i) + ")").not.markupToError();
 			}
+			expect("(converted:each _a where _a*2,2)").markupToError();
 			expect("(converted:each _a,_b to _a*_b*2,2)").markupToError();
 			expect("(converted:each _a,_b,_c to _a*_b*_c*2,2)").markupToError();
 		});
@@ -45,11 +45,11 @@ describe("lambda macros", function() {
 		it("accepts a one-parameter predicate lambda returning a boolean, plus one or more other values", function() {
 			expect("(find:)").markupToError();
 			expect("(find:1)").markupToError();
-			//TODO: errors when given a transformer lambda
 			expect("(find:each _a where _a*2)").markupToError();
 			for(var i = 2; i < 10; i += 1) {
 				expect("(find:each _a where true," + "2,".repeat(i) + ")").not.markupToError();
 			}
+			expect("(find:each _a to true,2)").markupToError();
 			expect("(find:each _a,_b where _a is _b,2)").markupToError();
 			expect("(find:each _a,_b,_c where _a is _b and _b is _c,2)").markupToError();
 			expect("(find:each _a where 2,2)").markupToError();
@@ -68,10 +68,10 @@ describe("lambda macros", function() {
 			expect("(all-pass:)").markupToError();
 			expect("(all-pass:1)").markupToError();
 			expect("(all-pass:each _a where _a*2)").markupToError();
-			//TODO: errors when given a transformer lambda
 			for(var i = 2; i < 10; i += 1) {
 				expect("(all-pass:each _a where true," + "2,".repeat(i) + ")").not.markupToError();
 			}
+			expect("(all-pass:each _a to true,2)").markupToError();
 			expect("(all-pass:each _a,_b where _a is _b,2)").markupToError();
 			expect("(all-pass:each _a,_b,_c where _a is _b and _b is _c,2)").markupToError();
 			expect("(all-pass:each _a where 2,2)").markupToError();
@@ -93,10 +93,10 @@ describe("lambda macros", function() {
 			expect("(some-pass:)").markupToError();
 			expect("(some-pass:1)").markupToError();
 			expect("(some-pass:each _a where _a*2)").markupToError();
-			//TODO: errors when given a transformer lambda
 			for(var i = 2; i < 10; i += 1) {
 				expect("(some-pass:each _a where true," + "2,".repeat(i) + ")").not.markupToError();
 			}
+			expect("(some-pass:each _a to true,2)").markupToError();
 			expect("(some-pass:each _a,_b where _a is _b,2)").markupToError();
 			expect("(some-pass:each _a,_b,_c where _a is _b and _b is _c,2)").markupToError();
 			expect("(some-pass:each _a where 2,2)").markupToError();
@@ -118,16 +118,15 @@ describe("lambda macros", function() {
 			expect("(none-pass:)").markupToError();
 			expect("(none-pass:1)").markupToError();
 			expect("(none-pass:each _a where _a*2)").markupToError();
-			//TODO: errors when given a transformer lambda
 			for(var i = 2; i < 10; i += 1) {
 				expect("(none-pass:each _a where true," + "2,".repeat(i) + ")").not.markupToError();
 			}
+			expect("(none-pass:each _a to true,2)").markupToError();
 			expect("(none-pass:each _a,_b where _a is _b,2)").markupToError();
 			expect("(none-pass:each _a,_b,_c where _a is _b and _b is _c,2)").markupToError();
 			expect("(none-pass:each _a where 2,2)").markupToError();
 		});
 		it("applies the lambda to each of its additional arguments, producing true if all produced false", function() {
-			//TODO: errors when given a transformer lambda
 			expect("(print: (none-pass:each _a where _a>12, 3,5,7))").markupToPrint("true");
 			expect("(print: (none-pass:each _a where _a>2, 1,2,3,4,5))").markupToPrint("false");
 			expect("(set: $a to 3)(print: (none-pass:each _a where _a < $a, 6,2))").markupToPrint("false");

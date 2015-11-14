@@ -26,10 +26,10 @@ define(['utils', 'utils/operationutils', 'internaltypes/varscope', 'internaltype
 		/*
 			This static method is used exclusively to produce type signature objects for use by
 			macro definitions in macrolib. Specifically, it lets us specify which arity a macro
-			expects its lambda to have.
+			expects its lambda to have, and what type of lambda it is.
 		*/
-		ArityType(arity) {
-			return { pattern: "arity", innerType: Lambda, arity };
+		TypeSignature(arity, lambdaKind) {
+			return { pattern: "lambda", innerType: Lambda, arity, lambdaKind };
 		},
 
 		checkResult(given, result, type) {
@@ -46,7 +46,7 @@ define(['utils', 'utils/operationutils', 'internaltypes/varscope', 'internaltype
 		/*
 			Lambdas consist of a parameters list (an array of names) and compiled JS code comprising its body.
 		*/
-		create(params, jscode) {
+		create(params, kind, jscode) {
 			/*
 				For the following comparisons, the params' insensitive names are used.
 			*/
@@ -62,7 +62,7 @@ define(['utils', 'utils/operationutils', 'internaltypes/varscope', 'internaltype
 			/*
 				All checks have now succeeded.
 			*/
-			return Object.assign(Object.create(this), { params, jscode });
+			return Object.assign(Object.create(this), { params, kind, jscode });
 		},
 
 		/*

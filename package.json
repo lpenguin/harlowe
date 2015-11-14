@@ -31,7 +31,7 @@
     "babel": "latest",
     "jshint": "latest",
     "node-sass": "latest",
-    "replacestream": "latest",
+    "marked": "v3.0.0",
     "requirejs": "latest",
     "uglifyjs": "latest"
   }

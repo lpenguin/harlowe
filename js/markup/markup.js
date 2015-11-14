@@ -468,6 +468,7 @@
 				lambda: {
 					fn: (match) => ({
 						params: match[1],
+						conjunction: match[2],
 					}),
 				},
 

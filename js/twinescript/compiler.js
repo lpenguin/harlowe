@@ -259,7 +259,9 @@ define(['utils'], ({toJSLiteral, assert}) => {
 					*/
 					e.slice(1)
 					.trim())).join()
-				+ "]," + toJSLiteral(compile(tokens.splice(i + 1))) + ")";
+				+ "],"
+				+ toJSLiteral(tokens[i].conjunction) + ","
+				+ toJSLiteral(compile(tokens.splice(i + 1))) + ")";
 			needsLeft = false;
 		}
 		else if ((i = indexOfType(tokens, "spread")) >-1) {
