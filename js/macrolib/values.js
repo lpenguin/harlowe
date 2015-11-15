@@ -30,8 +30,20 @@ define(['macros', 'utils/operationutils', 'internaltypes/twineerror'],
 			Also, notice that you can only add strings together. You can't subtract them, much less multiply or divide them.
 			
 			Strings are similar to arrays, in that their individual characters can be accessed: `"ABC"'s 1st` evaluates to "A",
-			and `"Exeunt"'s last` evaluates to "t". They, too, have a "length": `"Marathon"'s length` is 8. The (substring:)
-			macro may be used to retrieve subsections of a string.
+			and `"Exeunt"'s last` evaluates to "t". They, too, have a "length": `"Marathon"'s length` is 8. Also, you can use
+			the `contains` and `is in` operators to see if a certain string is contained within another.
+
+			To summarise, here are the operations you can perform on strings.
+
+			| Operator | Function | Example
+			|---
+			| `+` | Joining. | `"A" + "Z"` (is "AZ")
+			| `is` | Evaluates to boolean `true` if both sides are equal, otherwise `false`. | `$name is "Frederika"`
+			| `is not` | Evaluates to boolean `true` if both sides are not equal, otherwise `false`. | `$friends is not $enemies`
+			| `contains` | Evaluates to boolean `true` if the left side contains the right side, otherwise `false`. | `"Fear" contains "ear"`
+			| `is in` | Checking if the right string contains the left string, otherwise `false`. | `"ugh" is in "Through"`
+			| `'s` | Obtaining the character at the right numeric position. | `"YO"'s 1st` (is "Y")<br>`"PS"'s (2)` (is "S")
+			| `of` | Obtaining the character at the left numeric position. | `1st of "YO"` (is "Y")<br>`(2) of "PS"` (is "S")
 		*/
 		/*d:
 			(text: [Number or String or Boolean or Array]...) -> String
@@ -113,7 +125,7 @@ define(['macros', 'utils/operationutils', 'internaltypes/twineerror'],
 			operations in mathematics: first multiplying and dividing, then adding and subtracting. You can group
 			subexpressions together and force them to be evaluated first with parentheses.
 			
-			If you're not familiar with some of those symbols, here's a review:
+			If you're not familiar with some of those symbols, here's a review, along with various other operations you can perform.
 			
 			| Operator | Function | Example
 			|---
@@ -122,8 +134,12 @@ define(['macros', 'utils/operationutils', 'internaltypes/twineerror'],
 			| `*` | Multiplication. | `5 * 5` (is 25)
 			| `/` | Division. | `5 / 5` (is 1)
 			| `%` | Modulo (remainder of a division). | `5 % 26` (is 1)
+			| `>` | Evaluates to boolean `true` if the left side is greater than the right side, otherwise `false`. | `$money > 3.75`
+			| `>=` | Evaluates to boolean `true` if the left side is greater than or equal to the right side, otherwise `false`. | `$apples >= $carrots + 5`
+			| `<` | Evaluates to boolean `true` if the left side is less than the right side, otherwise `false`. | `$shoes < $people * 2`
+			| `<=` | Evaluates to boolean `true` if the left side is less than or equal to the right side, otherwise `false`. | `65 <= $age`
 			
-			You can only perform these operations on two pieces of data if they're both numbers. Adding the
+			You can only perform these operations (apart from `is`) on two pieces of data if they're both numbers. Adding the
 			string "5" to the number 2 would produce an error, and not the number 7 nor the string "52". You must
 			convert one side or the other using the (num:) or (text:) macros.
 		*/
@@ -178,14 +194,14 @@ define(['macros', 'utils/operationutils', 'internaltypes/twineerror'],
 			side and evaluates to `true` or `false` depending on whether they're identical. It works equally well with strings,
 			numbers, arrays, and anything else, but beware - the string `"2"` is not equal to the number 2.
 			
-			There are several other logical operators available:
+			There are several other logical operators available.
 			
 			| Operator | Purpose | Example
 			|---
-			| `is` | Evaluates to `true` if both sides are equal. | `$bullets is 5`
+			| `is` | Evaluates to `true` if both sides are equal, otherwise `false`. | `$bullets is 5`
 			| `is not` | Evaluates to `true` if both sides are not equal. | `$friends is not $enemies`
-			| `contains` | Evaluates to `true` if the left side equals or contains the right side | `"Fear" contains "ear"`
-			| `is in` | Evaluates to `true` if the right side equals or contains the left side | `"ugh" is in "Through"`
+			| `contains` | Evaluates to `true` if the left side contains the right side. | `"Fear" contains "ear"`
+			| `is in` | Evaluates to `true` if the right side contains the left side. | `"ugh" is in "Through"`
 			| `>` | Evaluates to `true` if the left side is greater than the right side. | `$money > 3.75`
 			| `>=` | Evaluates to `true` if the left side is greater than or equal to the right side. | `$apples >= $carrots + 5`
 			| `<` | Evaluates to `true` if the left side is less than the right side. | `$shoes < $people * 2`

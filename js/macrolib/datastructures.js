@@ -242,12 +242,29 @@ define([
 			You can only join arrays to other arrays. To add a bare value to the front or back of an array, you must
 			put it into an otherwise empty array using the (a:) macro: `$myArray + (a:5)` will make an array that's just
 			$myArray with 5 added on the end, and `(a:0) + $myArray` is $myArray with 0 at the start.
+
+			You can make a subarray by either using (subarray:), or, more simply, providing a range (an array of numbers, such as
+			those created with (range:)) as a reference - `$arr's (a:1,2)` produces an array with only the first 2 values of $arr.
+			Additionally, you can subtract items from arrays (that is, create a copy of an array with certain values removed) using
+			the `-` operator: `(a:"B","C") - (a:"B")` produces `(a:"C")`. Note that multiple copies of a value in an array will all
+			be removed by doing this: `(a:"B","B","B","C") - (a:"B")` also produces `(a:"C")`.
 			
 			You may note that certain macros, like (either:), accept sequences of values. A special operator, `...`, exists which
 			can "spread out" the values inside an array, as if they were individually placed inside the macro call.
 			`(either: ...$array)` is a shorthand for `(either: $array's 1st, $array's 2nd, $array's 3rd)`, and so forth for as many
 			values as there are inside the $array. Note that you can still include values after the spread: `(either: 1, ...$array, 5)`
 			is valid and works as expected.
+
+			To summarise, the following operators work on arrays.
+			
+			| Operator | Purpose | Example
+			|---
+			| `is` | Evaluates to boolean `true` if both sides contain equal items in an equal order, otherwise `false`. | `(a:1,2) is (a:1,2)` (is true)
+			| `is not` | Evaluates to `true` if both sides differ in items or ordering. | `(a:4,5) is not (a:5,4)` (is true)
+			| `contains` | Evaluates to `true` if the left side contains the right side's items. | `(a:97,98,99) contains (a:99)`
+			| `is in` | Evaluates to `true` if the right side contains the left side. | `(a:"Ape","Dog") is in (a:"Ape","Dog","Duck")`
+			| `+` | Joins arrays. | `(a:1,2) + (a:1,2)` (is `(a:1,2,1,2)`)
+			| `-` | Subtracts arrays. | `(a:1,1,2,3,4,5) - (a:1,2)` (is `(a:3,4,5)`)
 		*/
 		/*d:
 			(a: [...Any]) -> Array
@@ -500,7 +517,7 @@ define([
 
 	/*
 		This convenience function is used to run reduce() on macro args using a passed-in lambda,
-		which is an operation common to (filtered:), (all-pass:) and (some-pass:).
+		which is an operation common to (find:), (all-pass:) and (some-pass:).
 	*/
 	function lambdaBooleanReduce(section, lambda, args) {
 		return args.reduce((result, arg) => {
@@ -712,8 +729,33 @@ define([
 		*/
 		/*d:
 			Datamap data
+			
+			There are occasions when you may need to work with collections of values that "belong" to a
+			specific object or entity in your story - for example, a table of numeric "statistics" for
+			a monster - or that associate a certain kind of value with another kind, such as a combination of
+			adjectives ("slash", "thump") that change depending on the player's weapon name ("claw", "mallet") etc.
+			You can create datamaps to keep these values together, move them around en masse, and organise them.
+			
+			Datamaps are one of the two major "data structures" you can use in Harlowe. The other, arrays,
+			are created with (a:). You'll want to use datamaps if you want to store values that directly correspond to *strings*,
+			and whose *order* and *position* do not matter. If you need to preserve the order of the values, then an array
+			may be better suited.
+			
+			Datamaps consist of several string names, each of which maps to a specific value. `$animals's frog` and `frog of $animals`
+			refers to the value associated with the name 'frog'. You can add new names or change existing values by using (set:) -
+			`(set: $animals's wolf to "howl")`.
 
-			TBC
+			You can express the name as a bare word if it doesn't have a space or other punctuation in it - `$animals's frog` is OK, but
+			`$animals's komodo dragon` is not. In that case, you'll need to always supply it as a string - `$animals's "komodo dragon"`.
+			
+			Datamaps may be joined by adding them together: `(datamap: "goose", "honk") + (datamap: "robot", "whirr")` is the same as
+			`(datamap: "goose", "honk", "robot", "whirr")`. In the event that the second datamap has the same name as the first one,
+			it will override the first one's value - `(datamap: "dog", "woof") + (datamap: "dog", "bark")` will act as
+			`(datamap: "dog", "bark")`.
+			
+			You may notice that you usually need to know the names a datamap contains in order to access its values. There are certain
+			macros which provide other ways of examining a datamap's contents: (datanames:) provides a sorted array of its names, and
+			(datavalues:) provides a sorted array of its values.
 		*/
 		/*d:
 			(datamap: [...Any]) -> Datamap
@@ -744,14 +786,14 @@ define([
 			```
 
 			You can also use (datamap:) as a kind of "multiple choice" structure, if you combine it with
-			the `'s` syntax. For instance...
+			the `'s` or `of` syntax. For instance...
 			```
-			(set: $element to (datamap:
+			(set: $element to $monsterName of (datamap:
 				"Chilltoad", "Ice",
 				"Rimeswan", "Ice",
 				"Brisketoid", "Fire",
 				"Slime", "Water"
-			)'s $monsterName)
+			))
 			```
 			...will set $element to one of those elements if $monsterName matches the correct name. But, be warned: if
 			none of those names matches $monsterName, an error will result.
