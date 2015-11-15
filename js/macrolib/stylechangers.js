@@ -596,7 +596,7 @@ define(['jquery','macros', 'utils', 'utils/selectors', 'datatypes/colour', 'data
 			extended styling, using inline CSS, to be applied to hooks.
 			
 			This is, however, intended solely as a "macro of last resort" - as it requires
-			basic knowledge of CSS - a separate language distinct from TwineScript - to use,
+			basic knowledge of CSS - a separate language distinct from Harlowe - to use,
 			and requires it be provided a single inert string, it's not as accommodating as
 			the other such macros.
 			

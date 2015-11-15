@@ -64,7 +64,7 @@ define(['requestAnimationFrame', 'macros', 'utils', 'state', 'passages', 'engine
 			Text-targeting macros (such as (replace:)) inside the
 			displayed passage will affect the text and hooks in the outer passage
 			that occur earlier than the (display:) command. For instance,
-			if passage A contains `(replace:Prince)[Frog]`, then another passage
+			if passage A contains `(replace:"Prince")[Frog]`, then another passage
 			containing `Princes(display:'A')` will result in the text `Frogs`.
 			
 			Like all commands, this can be set into a variable. It's not particularly

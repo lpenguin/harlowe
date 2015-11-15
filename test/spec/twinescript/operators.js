@@ -136,10 +136,11 @@ describe("twinescript operators", function () {
 			expect("(print: 2 is '2' is true)").markupToPrint("false");
 			expect("(print: 1 is true is false)").markupToPrint("false");
 		});
-		it("compares arrays by value", function (){
+		it("compares arrays by value and order", function (){
 			expect("(print: (a:) is (a:))").markupToPrint("true");
 			expect("(print: (a:2,3,4) is (a:2,3,4))").markupToPrint("true");
 			expect("(print: (a:2,3,4) is (a:2,3,5))").markupToPrint("false");
+			expect("(print: (a:2,3,4) is (a:2,4,3))").markupToPrint("false");
 			expect("(print: (a:(a:)) is (a:(a:)))").markupToPrint("true");
 		});
 		it("compares datamaps by value", function (){
@@ -174,10 +175,11 @@ describe("twinescript operators", function () {
 			expect("(print: 2 is not '2' is not true)").markupToPrint("true");
 			expect("(print: true is not true is not false)").markupToPrint("false");
 		});
-		it("compares arrays by value", function (){
+		it("compares arrays by value and order", function (){
 			expect("(print: (a:) is not (a:))").markupToPrint("false");
 			expect("(print: (a:2,3,4) is not (a:2,3,4))").markupToPrint("false");
 			expect("(print: (a:2,3,4) is not (a:2,3,5))").markupToPrint("true");
+			expect("(print: (a:2,3,4) is not (a:2,4,3))").markupToPrint("true");
 			expect("(print: (a:(a:)) is not (a:(a:)))").markupToPrint("false");
 		});
 		it("compares datamaps by value", function (){
