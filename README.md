@@ -2,7 +2,13 @@
 
 Rough documentation is at http://twine2.neocities.org/
 
-###1.2.0 changes (unreleased):
+###1.2.1 changes:
+
+####Bugfix
+
+ * Fixed a bug where `(if:)`, `(unless:)` and `(else-if:)` wouldn't correctly interact with subsequent `(else-if:)` and `(else:)` macro calls, breaking them. (Usage with boolean-valued macros such as `(either:)` was not affected.)
+
+###1.2.0 changes:
 
 ####Bugfixes
 
