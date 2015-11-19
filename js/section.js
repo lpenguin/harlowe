@@ -78,12 +78,21 @@ define([
 					nextHook,
 					result
 				);
-				/*
-					The 'false' class is used solely by debug mode to visually denote
-					that a macro such as (if:) suppressed a hook.
-				*/
+
 				if (!enabled) {
+					/*
+						The 'false' class is used solely by debug mode to visually denote
+						that a macro such as (if:) suppressed a hook.
+					*/
 					expr.addClass("false");
+					/*
+						Unfortunately, (else-if:) must be special-cased, so that it doesn't affect
+						lastHookShown, instead preserving the value of the original (if:).
+					*/
+					if (Utils.insensitiveName(expr.attr('name')) !== "elseif") {
+						this.stack[0].lastHookShown = false;
+					}
+					return;
 				}
 			}
 		}
@@ -105,13 +114,7 @@ define([
 			expr.addClass("false");
 			
 			if (nextHook.length) {
-				/*
-					Unfortunately, (else-if:) must be special-cased, so that it doesn't affect
-					lastHookShown, instead preserving the value of the original (if:).
-				*/
-				if (Utils.insensitiveName(expr.attr('name')) !== "elseif") {
-					this.stack[0].lastHookShown = false;
-				}
+				this.stack[0].lastHookShown = false;
 				return;
 			}
 		}
