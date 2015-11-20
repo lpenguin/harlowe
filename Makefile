@@ -50,7 +50,7 @@ build/harlowe-css.css: scss/*.scss
 
 build/harlowe-min.js: js/*.js js/*/*.js js/*/*/*.js
 	@node_modules/.bin/r.js -o $(requirejs_harlowe_flags) \
-	| babel \
+	| babel --presets es2015 \
 	| uglifyjs - \
 	> build/harlowe-min.js
 
@@ -60,7 +60,7 @@ unwrap = /(?:,|\n)define\([^\;]+\;/g, ""
 build/twinemarkup-min.js: js/markup/*.js js/markup/*/*.js
 	@node_modules/.bin/r.js -o $(requirejs_twinemarkup_flags) \
 	| $(call node_replace, $(unwrap)) \
-	| babel \
+	| babel --presets es2015 \
 	| uglifyjs - \
 	> build/twinemarkup-min.js
 

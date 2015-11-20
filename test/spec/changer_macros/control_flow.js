@@ -66,6 +66,9 @@ describe("control flow macros", function() {
 			expect("(either:false)[Wow](else-if:true)[Gee]").markupToPrint('Gee');
 			expect("(either:false)[Wow](else-if:false)[Gee]").markupToPrint('');
 			expect("(either:true)[Wow](else-if:true)[Gee]").markupToPrint('Wow');
+			expect("(if:false)[Wow](else-if:true)[Gee]").markupToPrint('Gee');
+			expect("(if:false)[Wow](else-if:false)[Gee]").markupToPrint('');
+			expect("(if:true)[Wow](else-if:true)[Gee]").markupToPrint('Wow');
 		});
 		it("works even when nested", function() {
 			expect("(either:true)[(either:false)[Wow](else-if:true)[Gee]](else-if:true)[Gosh]").markupToPrint('Gee');
@@ -88,6 +91,11 @@ describe("control flow macros", function() {
 		it("hides the hook if the preceding hook was displayed, otherwise shows it", function() {
 			expect("(either:false)[Wow](else:)[Gee]").markupToPrint('Gee');
 			expect("(either:true)[Wow](else:)[Gee]").markupToPrint('Wow');
+			expect("(if:false)[Wow](else:)[Gee]").markupToPrint('Gee');
+			expect("(if:true)[Wow](else:)[Gee]").markupToPrint('Wow');
+			expect("(if:false)[Wow](else-if:true)[Gee](else:)[Aww]").markupToPrint('Gee');
+			expect("(if:false)[Wow](else-if:false)[Gee](else:)[Aww]").markupToPrint('Aww');
+			expect("(if:true)[Wow](else-if:true)[Gee](else:)[Aww]").markupToPrint('Wow');
 		});
 		it("works even when nested", function() {
 			expect("(either:true)[(either:false)[Wow](else:)[Gee]](else:)[Gosh]").markupToPrint('Gee');
