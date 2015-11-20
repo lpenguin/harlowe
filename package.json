@@ -1,6 +1,6 @@
 {
   "name": "twine-harlowe",
-  "version": "1.2",
+  "version": "1.2.1",
   "author": "Leon Arnott",
   "description": "The default runtime for Twine 2 stories",
   "license": "GPL v3",
@@ -28,9 +28,10 @@
     "requestanimationframe": "*"
   },
   "devDependencies": {
-    "babel": "latest",
+    "babel-cli": "latest",
+    "babel-preset-es2015": "latest",
+    "chalk": "latest",
     "jshint": "latest",
-    "node-sass": "latest",
     "marked": "v3.0.0",
     "requirejs": "latest",
     "uglifyjs": "latest"

@@ -15,6 +15,6 @@
 	"laxbreak" : true,
 	"newcap"   : false,
 
-	"globalstrict"          : true,
+	"strict"                : true,
 	"browser"               : true
 }
