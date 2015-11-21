@@ -197,5 +197,28 @@ describe("data structure macros", function () {
 			});
 		});
 	});
+	describe("the (count:) macro", function() {
+		it("accepts 1 string or array argument, then an argument of any valid value", function() {
+			expect("(count:)").markupToError();
+			expect("(count: (a:'1'))").markupToError();
+			expect("(count: 2, 2)").markupToError();
+			expect("(count: '2', 2)").markupToError();
+			expect("(count: '2', 'a')").not.markupToError();
+			expect("(count: (a:6,7), 1)").not.markupToError();
+			expect("(count: (datamap:6,7), 1)").markupToError();
+			expect("(count: (dataset:6,7), 1)").markupToError();
+		});
+		it("returns the number of occurrences of the value in the container", function() {
+			expect("(count: 'AAAA', 'B')").markupToPrint('0');
+			expect("(count: 'AAAA', 'A')").markupToPrint('4');
+
+			expect("(count: (a:6,7), 1)").markupToPrint('0');
+			expect("(count: (a:6,7,6,6), 6)").markupToPrint('3');
+		});
+		it("compares values by structural equality", function() {
+			expect("(count: (a:(font:'Skia')), (font:'Skia'))").markupToPrint('1');
+			expect("(count: (a:(a:2,3),(a:2,3)), (a:2,3))").markupToPrint('2');
+		});
+	});
 });
 

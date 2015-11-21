@@ -361,7 +361,7 @@ define(['requestAnimationFrame', 'macros', 'utils', 'state', 'passages', 'engine
 			to display an apology message in the event that it returns false (as seen above).
 			
 			See also:
-			(load-game:)
+			(load-game:), (saved-games:)
 		*/
 		("savegame",
 			(_, slotName, fileName) => {
@@ -441,7 +441,7 @@ define(['requestAnimationFrame', 'macros', 'utils', 'state', 'passages', 'engine
 			`$Saves contains` the slot name before running (load-game:).
 			
 			See also:
-			(save-game:)
+			(save-game:), (saved-games:)
 		*/
 		("loadgame",
 			(_, slotName) => {

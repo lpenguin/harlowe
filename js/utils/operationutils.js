@@ -18,6 +18,7 @@ define(['utils', 'internaltypes/twineerror'], ({assert, impossible, toJSLiteral}
 		return Array.isArray(value) ? "array" :
 			value instanceof Map ? "datamap" :
 			value instanceof Set ? "dataset" :
+			typeof value === "string" ? "string" :
 			value && typeof value === "object" ? "object" :
 			/*
 				If it's not an object, then it's not a collection. Return

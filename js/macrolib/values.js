@@ -274,15 +274,97 @@ define(['macros', 'utils/operationutils', 'internaltypes/twineerror'],
 			(includes ES6 polyfills)
 		*/
 
+		/*d:
+			(min: ...Number) -> Number
+
+			This maths macro accepts numbers, and evaluates to the lowest valued number.
+
+			Example usage:
+			`(min: 2, -5, 2, 7, 0.1)` produces -5.
+		*/
 		min: [Math.min, rest(Number)],
+		/*d:
+			(max: ...Number) -> Number
+
+			This maths macro accepts numbers, and evaluates to the highest valued number.
+
+			Example usage:
+			`(max: 2, -5, 2, 7, 0.1)` produces 7.
+		*/
 		max: [Math.max, rest(Number)],
+		/*d:
+			(abs: Number) -> Number
+
+			This maths macro finds the absolute value of a number (without the sign).
+
+			Example usage:
+			`(abs: -4)` produces 4.
+		*/
 		abs: [Math.abs, Number],
+		/*d:
+			(sign: Number) -> Number
+
+			This maths macro produces -1 when given a negative number, 0 when given 0, and 1
+			when given a positive number.
+
+			Example usage:
+			`(sign: -4)` produces -1.
+		*/
 		sign: [Math.sign, Number],
+		/*d:
+			(sin: Number) -> Number
+
+			This maths macro computes the sine of the given number of radians.
+
+			Example usage:
+			`(sin: 3.14159265 / 2)` produces 1.
+		*/
 		sin:    [Math.sin, Number],
+		/*d:
+			(cos: Number) -> Number
+
+			This maths macro computes the cosine of the given number of radians.
+
+			Example usage:
+			`(cos: 3.14159265)` produces -1.
+		*/
 		cos:    [Math.cos, Number],
+		/*d:
+			(tan: Number) -> Number
+
+			This maths macro computes the tangent of the given number of radians.
+
+			Example usage:
+			`(tan: 3.14159265 / 4)` produces approximately 1.
+		*/
 		tan:    [Math.tan, Number],
+		/*d:
+			(floor: Number) -> Number
+
+			This maths macro rounds the given number downward.
+
+			Example usage:
+			`(floor: 1.99)` produces 1.
+		*/
 		floor:  [Math.floor, Number],
+		/*d:
+			(round: Number) -> Number
+
+			This maths macro rounds the given number - downward if its decimals are smaller
+			than 0.5, and upward otherwise.
+
+			Example usage:
+			`(round: 1.5)` produces 2.
+		*/
 		round:  [Math.round, Number],
+		/*d:
+			(ceil: Number) -> Number
+
+			This maths macro rounds the given number upward.
+
+			Example usage:
+			`(ceil: 1.1)` produces 2.
+		*/
 		ceil:   [Math.ceil, Number],
 		pow:    [Math.pow, Number],
 		exp:    [Math.exp, Number],
