@@ -33,14 +33,20 @@ define(['jquery', 'utils', 'macros', 'datatypes/hookset', 'datatypes/changercomm
 		text is rendered - usually rendering inside an entirely different hook.
 	*/
 	const revisionTypes = [
-			// (replace:)
-			// A macro that replaces the scope element(s) with its contents.
+			/*
+				(replace: [Hook or String]) -> ChangerCommand
+				A macro that replaces the scope element(s) with its contents.
+			*/
 			"replace",
-			// (append:)
-			// Similar to replace, but appends the contents to the scope(s).
+			/*
+				(append: [Hook or String]) -> ChangerCommand
+				Similar to replace, but appends the contents to the scope(s).
+			*/
 			"append",
-			// (prepend:)
-			// Similar to replace, but prepends the contents to the scope(s).
+			/*
+				(prepend: [Hook or String]) -> ChangerCommand
+				Similar to replace, but prepends the contents to the scope(s).
+			*/
 			"prepend"
 		];
 	
@@ -294,8 +300,6 @@ define(['jquery', 'utils', 'macros', 'datatypes/hookset', 'datatypes/changercomm
 			}
 		}
 	];
-	
-	//TODO: (hover:)
 	
 	interactionTypes.forEach((e) => Macros.addChanger(e.name, ...newEnchantmentMacroFns(e.enchantDesc, e.name)));
 	

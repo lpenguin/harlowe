@@ -31,7 +31,8 @@ default: jshint build/harlowe-css.css
 
 css: build/harlowe-css.css
 
-docs: dist/harloweDocs.html
+docs:
+	node scripts/harlowedocs.js
 
 all: jshint dist/format.js docs dist/exampleOutput.html
 
@@ -85,7 +86,4 @@ dist/exampleOutput.html: build/harlowe-min.js build/harlowe-css.css
 	| $(call node_replace, $(examplename)) \
 	> dist/exampleOutput.html
 
-dist/harloweDocs.html:
-	node scripts/harlowedocs.js
-
-.PHONY : all default jshint clean css
+.PHONY : all default jshint clean css docs

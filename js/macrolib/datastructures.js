@@ -10,7 +10,7 @@ define([
 	'internaltypes/assignmentrequest',
 	'internaltypes/twineerror',
 	'internaltypes/twinenotifier'],
-($, NaturalSort, Macros, {objectName, subset, collectionType, isValidDatamapName}, State, Engine, Passages, Lambda, AssignmentRequest, TwineError, TwineNotifier) => {
+($, NaturalSort, Macros, {objectName, subset, collectionType, isValidDatamapName, is}, State, Engine, Passages, Lambda, AssignmentRequest, TwineError, TwineNotifier) => {
 	"use strict";
 	
 	const {optional, rest, zeroOrMore, Any}   = Macros.TypeSignature;
@@ -261,10 +261,11 @@ define([
 			|---
 			| `is` | Evaluates to boolean `true` if both sides contain equal items in an equal order, otherwise `false`. | `(a:1,2) is (a:1,2)` (is true)
 			| `is not` | Evaluates to `true` if both sides differ in items or ordering. | `(a:4,5) is not (a:5,4)` (is true)
-			| `contains` | Evaluates to `true` if the left side contains the right side's items. | `(a:97,98,99) contains (a:99)`
-			| `is in` | Evaluates to `true` if the right side contains the left side. | `(a:"Ape","Dog") is in (a:"Ape","Dog","Duck")`
+			| `contains` | Evaluates to `true` if the left side contains the right side. | `(a:"Ape") contains "Ape"`<br>`(a:(a:99)) contains (a:99)`
+			| `is in` | Evaluates to `true` if the right side contains the left side. | `"Ape" is in (a:"Ape")`
 			| `+` | Joins arrays. | `(a:1,2) + (a:1,2)` (is `(a:1,2,1,2)`)
 			| `-` | Subtracts arrays. | `(a:1,1,2,3,4,5) - (a:1,2)` (is `(a:3,4,5)`)
+			| `...` | When used in a macro call, it separates each value in the right side. | `(a: 0, ...(a:1,2,3,4), 5)` (is `(a:0,1,2,3,4,5)`)
 		*/
 		/*d:
 			(a: [...Any]) -> Array
@@ -686,9 +687,29 @@ define([
 				|| TwineError.create('macrocall', "There's no passage named '" + passageName + "' in this story."),
 		[optional(String)])
 		
-		/*
-			(savedgames:)
-			Returns a datamap of currently saved games.
+		/*d:
+			(saved-games:) -> Datamap
+			
+			This returns a datamap containing the names of currently occupied save game slots.
+
+			Example usage:
+			`(print (saved-games:)'s "File A")` prints the name of the save file in the slot "File A".
+			`(if: (saved-games:) contains "File A")` checks if the slot "File A" is occupied.
+
+			Rationale:
+			For a more thorough description of the save file system, see the (save-game:) article.
+			This macro provides a means to examine the current save files in the user's browser storage, so
+			you can decide to print "Load game" links if a slot is occupied, or display a list of
+			all of the occupied slots.
+
+			Details:
+			Each name in the datamap corresponds to an occupied slot name. The values are the file names of
+			the files occupying the slot.
+
+			Changing the datamap does not affect the save files - it is simply information.
+
+			See also:
+			(save-game:), (load-game:)
 		*/
 		("savedgames", () => {
 			/*
@@ -741,7 +762,7 @@ define([
 			and whose *order* and *position* do not matter. If you need to preserve the order of the values, then an array
 			may be better suited.
 			
-			Datamaps consist of several string names, each of which maps to a specific value. `$animals's frog` and `frog of $animals`
+			Datamaps consist of several string *name**s, each of which maps to a specific **value**. `$animals's frog` and `frog of $animals`
 			refers to the value associated with the name 'frog'. You can add new names or change existing values by using (set:) -
 			`(set: $animals's wolf to "howl")`.
 
@@ -756,6 +777,16 @@ define([
 			You may notice that you usually need to know the names a datamap contains in order to access its values. There are certain
 			macros which provide other ways of examining a datamap's contents: (datanames:) provides a sorted array of its names, and
 			(datavalues:) provides a sorted array of its values.
+
+			To summarise, the following operators work on datamaps.
+			
+			| Operator | Purpose | Example
+			|---
+			| `is` | Evaluates to boolean `true` if both sides contain equal names and values, otherwise `false`. | `(datamap:"HP",5) is (datamap:"HP",5)` (is true)
+			| `is not` | Evaluates to `true` if both sides differ in items or ordering. | `(datamap:"HP",5) is not (datamap:"HP",4)` (is true)<br>`(datamap:"HP",5) is not (datamap:"MP",5)` (is true)
+			| `contains` | Evaluates to `true` if the left side contains the name on the right.<br>(To check that a datamap contains a value, try using `contains` with (datavalues:)) | `(datamap:"HP",5) contains "HP"` (is true)<br>`(datamap:"HP",5) contains 5` (is false)
+			| `is in` | Evaluates to `true` if the right side contains the name on the left. | `"HP" is in (datamap:"HP",5)` (is true)
+			| `+` | Joins datamaps, using the right side's value whenever both sides contain the same name. | `(datamap:"HP",5) + (datamap:"MP",5)`)
 		*/
 		/*d:
 			(datamap: [...Any]) -> Datamap
@@ -809,10 +840,6 @@ define([
 				map.set() with every two values.
 				During each odd iteration, the element is the key.
 				Then, the element is the value.
-			*/
-			/*
-				Note that, as is with most macro functions in this file,
-				the slice(1) eliminates the implicit first Section argument.
 			*/
 			const status = args.reduce((status, element) => {
 				let error;
@@ -870,10 +897,43 @@ define([
 		/*d:
 			Dataset data
 
-			TBC
+			Arrays are useful for dealing with a sequence of related data values, especially if
+			they have a particular order. There are occasions, however, where you don't really
+			care about the order, and instead would simply use the array as a storage place for
+			values - using `contains` and `is in` to check which values are inside.
+
+			Think of datasets as being like arrays, but with specific restrictions:
+
+			* You can't access any positions within the dataset (so, for instance, the `1st`, `2ndlast`
+			and `last` aren't available, although the `length` still is) and can only use `contains`
+			and `is in` to see whether a value is inside.
+
+			* Datasets only contain unique values: adding the string "Go" to a dataset already
+			containing "Go" will do nothing.
+
+			* Datasets are considered equal (by the `is` operator) if they have the same items, regardless
+			of order (as they have no order).
+
+			These restrictions can be helpful in that they can stop programming mistakes from
+			occurring - you might accidentally try to modify a position in an array, but type the name of
+			a different array that should not be modified as such. Using a dataset for the second
+			array, if that is what best suits it, will cause an error to occur instead of allowing
+			this unintended operation to continue.
+
+
+			| Operator | Purpose | Example
+			|---
+			| `is` | Evaluates to boolean `true` if both sides contain equal items, otherwise `false`. | `(dataset:1,2) is (dataset 2,1)` (is true)
+			| `is not` | Evaluates to `true` if both sides differ in items. | `(dataset:5,4) is not (dataset:5)` (is true)
+			| `contains` | Evaluates to `true` if the left side contains the right side. | `(dataset:"Ape") contains "Ape"`<br>`(dataset:(dataset:99)) contains (dataset:99)`
+			| `is in` | Evaluates to `true` if the right side contains the left side. | `"Ape" is in (dataset:"Ape")`
+			| `+` | Joins datasets. | `(dataset:1,2,3) + (dataset:1,2,4)` (is `(dataset:1,2,3,4)`)
+			| `-` | Subtracts datasets. | `(dataset:1,2,3) - (dataset:1,3)` (is `(dataset:2)`)
+			| `...` | When used in a macro call, it separates each value in the right side. | `(a: 0, ...(dataset:1,2,3,4), 5)` (is `(a:0,1,2,3,4,5)`)
 		*/
 		/*
-			(dataset:)
+			(dataset: [...Any]) -> Dataset
+
 			Sets are more straightforward - their JS constructors can accept
 			arrays straight off.
 		*/
@@ -882,34 +942,67 @@ define([
 		/*
 			COLLECTION OPERATIONS
 		*/
-		/*
-			(count:)
-			Accepts 2 arguments - a collection and a value - and returns the number
-			of occurrences of the value in the collection, using the same semantics
-			as the "contains" operator.
+		/*d:
+			(count: Any, Any) -> Number
+
+			Accepts two values, and produces the number of times the second value is inside
+			the first value.
+
+			Example usage:
+			`(count: (a:1,2,3,2,1), 1)` produces 2.
+
+			Rationale:
+			You can think of this macro as being like the `contains` operator, but more powerful.
+			While `contains` produces `true` or `false` if one or more occurrences of the right side
+			appear in the left side, (count:) produces the actual number of occurrences.
+
+			Details:
+			If you use this with a datamap or dataset (which can't have duplicates) then an error will result.
+
+			See also:
+			(datanames:), (datavalues:)
 		*/
 		("count", (_, collection, value) => {
 			switch(collectionType(collection)) {
 				case "dataset":
 				case "datamap": {
-					return +collection.has(name);
+					return TwineError.create("macrocall",
+						"(count:) shouldn't be given a datamap or dataset.",
+						"You should use the 'contains' operator instead. For instance, write: $variable contains 'value'."
+					);
 				}
 				case "string": {
 					if (typeof value !== "string") {
-						return new TypeError(
+						return TwineError.create("macrocall",
 							objectName(collection)
 							+ " can't contain  "
 							+ objectName(value)
 							+ " because it isn't a string."
 						);
 					}
+					/*
+						Since String#split() always produces an array of length 1 or more,
+						this will always produce 0 or higher.
+					*/
 					return collection.split(value).length-1;
 				}
 				case "array": {
-					return collection.reduce((count, e) => count + (e === value), 0);
+					return collection.reduce((count, e) => count + is(e,value), 0);
+				}
+				default: {
+					return TwineError.create("macrocall",
+						objectName(collection)
+						+ " can't contain values, let alone "
+						+ objectName(value)
+						+ "."
+					);
 				}
 			}
 		},
+		/*
+			This currently has "Any" instead of "either(Array,String)" as its signature's first argument, so
+			that the above special error messages can appear for certain wrong argument types.
+		*/
 		[Any, Any])
 		
 		// End of macros
