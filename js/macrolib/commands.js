@@ -70,6 +70,8 @@ define(['requestAnimationFrame', 'macros', 'utils', 'state', 'passages', 'engine
 			Like all commands, this can be set into a variable. It's not particularly
 			useful in that state, but you can use that variable in place of that command,
 			such as writing `$var` in place of `(display: "Yggdrasil")`.
+
+			#basics
 		*/
 		("display",
 			/*
@@ -127,6 +129,8 @@ define(['requestAnimationFrame', 'macros', 'utils', 'state', 'passages', 'engine
 			
 			See also:
 			(text:), (display:)
+
+			#basics
 		*/
 		("print", (_, expr) => {
 			
@@ -182,6 +186,8 @@ define(['requestAnimationFrame', 'macros', 'utils', 'state', 'passages', 'engine
 			
 			See also:
 			(loadgame:)
+
+			#links
 		*/
 		("goto", (_, name) => ({
 				TwineScript_ObjectName: "a (go-to: " + toJSLiteral(name) + ") command",
@@ -270,6 +276,8 @@ define(['requestAnimationFrame', 'macros', 'utils', 'state', 'passages', 'engine
 			
 			Details:
 			Live hooks will continue to re-render themselves until they encounter and print a (stop:) macro.
+
+			#live
 		*/
 		/*
 			Yes, the actual implementation of this is in Section, not here.
@@ -303,6 +311,8 @@ define(['requestAnimationFrame', 'macros', 'utils', 'state', 'passages', 'engine
 			
 			See also:
 			(live:)
+
+			#live
 		*/
 		("stop",
 			() => ({
@@ -362,6 +372,8 @@ define(['requestAnimationFrame', 'macros', 'utils', 'state', 'passages', 'engine
 			
 			See also:
 			(load-game:), (saved-games:)
+
+			#saving
 		*/
 		("savegame",
 			(_, slotName, fileName) => {
@@ -442,6 +454,8 @@ define(['requestAnimationFrame', 'macros', 'utils', 'state', 'passages', 'engine
 			
 			See also:
 			(save-game:), (saved-games:)
+			
+			#saving
 		*/
 		("loadgame",
 			(_, slotName) => {

@@ -62,6 +62,8 @@ define([
 			
 			See also:
 			(push:)
+
+			#basics
 		*/
 		("set", (_, ...assignmentRequests) => {
 			let debugMessage = "";
@@ -130,6 +132,8 @@ define([
 			the expression: `(put: $eggs + 2 into it)`.
 			
 			Once again, this evaluates to an empty string.
+
+			#basics
 		*/
 		("put", (_, ...assignmentRequests) => {
 			let debugMessage = "";
@@ -177,6 +181,8 @@ define([
 			You'll often use data structures such as arrays or datamaps as storage for values
 			that you'll only use once, such as a list of names to print out. When it comes time
 			to use them, you can remove it from the structure and retrieve it in one go.
+
+			#basics
 		*/
 		("move", (_, ar) => {
 			if (ar.operator !== "into") {
@@ -243,7 +249,7 @@ define([
 			put it into an otherwise empty array using the (a:) macro: `$myArray + (a:5)` will make an array that's just
 			$myArray with 5 added on the end, and `(a:0) + $myArray` is $myArray with 0 at the start.
 
-			You can make a subarray by either using (subarray:), or, more simply, providing a range (an array of numbers, such as
+			You can make a subarray by providing a range (an array of numbers, such as
 			those created with (range:)) as a reference - `$arr's (a:1,2)` produces an array with only the first 2 values of $arr.
 			Additionally, you can subtract items from arrays (that is, create a copy of an array with certain values removed) using
 			the `-` operator: `(a:"B","C") - (a:"B")` produces `(a:"C")`. Note that multiple copies of a value in an array will all
@@ -295,6 +301,8 @@ define([
 			
 			See also:
 			(datamap:), (dataset:)
+			
+			#data structure
 		*/
 		(["a", "array"], (_, ...args) => args, zeroOrMore(Any))
 		
@@ -320,7 +328,9 @@ define([
 			`(either: ...(range:1,5))` is equivalent to `(random: 1,5)`.
 			
 			See also:
-			(a:), (subarray:)
+			(a:)
+
+			#data structure
 		*/
 		("range", function range(_, a, b) {
 			/*
@@ -351,26 +361,29 @@ define([
 			whose positions are between the two numbers, inclusively.
 			
 			Example usage:
-			```
-			(set: $a to (a: "Red","Gold","Blue","White"))
-			(print: (subarray: $a, 3, 4))
-			```
+			`(subarray: $a, 3, 4)` is the same as `$a's (a:3,4)`
 			
 			Rationale:
 			
-			One of the most basic things you can do with an array is split it into smaller
-			arrays. For instance, you may have a 'deck' of random string values that you wish
-			to divide into two decks and use independently of each other. This macro provides
-			a means of doing this - just specify the two positions in which to take values from.
+			You can obtain subarrays of arrays without this macro, by using the `'s` or `of` syntax along
+			with an array of positions. For instance, `$a's (range:4,12)` obtains a subarray of $a containing
+			its 4th through 12th values. But, for compatibility with previous Harlowe versions which did not
+			feature this syntax, this macro also exists.
 			
 			Details:
+
+			If you provide negative numbers, they will be treated as being offset from the end
+			of the array - `-2` will specify the `2ndlast` item, just as 2 will specify
+			the `2nd` item.
 			
-			You can, of course, obtain an array with just one value in it by supplying the same
-			position to (subarray:) - `(subarray: $a, 3,3)` produces an array containing just
-			the third value.
-			
+			If the last number given is larger than the first (for instance, in `(subarray: (a:1,2,3,4), 4, 2)`)
+			then the macro will still work - in that case returning (a:2,3,4) as if the numbers were in
+			the correct order.
+
 			See also:
 			(substring:), (rotated:)
+			
+			#data structure
 		*/
 		("subarray", (_, array, a, b) => subset(array, a, b),
 		[Array, Number, Number])
@@ -404,6 +417,8 @@ define([
 			
 			See also:
 			(array:), (either:), (rotated:)
+			
+			#data structure
 		*/
 		("shuffled", (_, ...args) =>
 			// The following is an in-place Fisher–Yates shuffle.
@@ -455,6 +470,8 @@ define([
 			
 			See also:
 			(array:), (shuffled:), (rotated:)
+			
+			#data structure
 		*/
 		("sorted", (_, ...args) => args.sort(NaturalSort("en")),
 		[String, rest(String)])
@@ -492,6 +509,8 @@ define([
 			
 			See also:
 			(subarray:), (sorted:)
+			
+			#data structure
 		*/
 		("rotated", (_, number, ...array) => {
 			/*
@@ -600,6 +619,8 @@ define([
 			
 			See also:
 			(datavalues:)
+			
+			#data structure
 		*/
 		("datanames", (_, map) =>  Array.from(map.keys()).sort(NaturalSort("en")),
 		[Map])
@@ -621,6 +642,8 @@ define([
 			
 			See also:
 			(datanames:)
+			
+			#data structure
 		*/
 		("datavalues", (_, map) =>
 			Array.from(map.entries()).sort(
@@ -647,6 +670,8 @@ define([
 
 			See also:
 			(passage:), (savedgames:)
+
+			#game state
 		*/
 		("history", () => State.pastPassageNames(),
 		[])
@@ -681,6 +706,8 @@ define([
 
 			See also:
 			(history:), (savedgames:)
+
+			#game state
 		*/
 		("passage", (_, passageName) =>
 			Passages.get(passageName || State.passage)
@@ -710,6 +737,8 @@ define([
 
 			See also:
 			(save-game:), (load-game:)
+
+			#saving
 		*/
 		("savedgames", () => {
 			/*
@@ -796,6 +825,9 @@ define([
 			string name, another value, and so on, for as many as you'd like.
 
 			Example usage:
+			`(datamap:)` creates an empty datamap.
+			`(datamap: "Cute", 4, "Wit", 7)` creates a datamap with two names and values.
+			The following code also creates a datamap, with the names and values laid out in a readable fashion:
 			```
 			(datamap:
 				"Susan", "A petite human in a yellow dress",
@@ -831,6 +863,8 @@ define([
 
 			See also:
 			(a:), (dataset:)
+
+			#data structure
 		*/
 		("datamap", (_, ...args) => {
 			let key;
@@ -929,13 +963,29 @@ define([
 			| `is in` | Evaluates to `true` if the right side contains the left side. | `"Ape" is in (dataset:"Ape")`
 			| `+` | Joins datasets. | `(dataset:1,2,3) + (dataset:1,2,4)` (is `(dataset:1,2,3,4)`)
 			| `-` | Subtracts datasets. | `(dataset:1,2,3) - (dataset:1,3)` (is `(dataset:2)`)
-			| `...` | When used in a macro call, it separates each value in the right side. | `(a: 0, ...(dataset:1,2,3,4), 5)` (is `(a:0,1,2,3,4,5)`)
+			| `...` | When used in a macro call, it separates each value in the right side.<br>The dataset's values are sorted before they are spread out.| `(a: 0, ...(dataset:1,2,3,4), 5)` (is `(a:0,1,2,3,4,5)`)
 		*/
-		/*
+		/*d:
 			(dataset: [...Any]) -> Dataset
-
-			Sets are more straightforward - their JS constructors can accept
-			arrays straight off.
+			
+			Creates a dataset, which is an unordered collection of unique values.
+			
+			Example usage:
+			`(dataset:)` creates an empty dataset, which could be filled with other values later.
+			`(dataset: "gold", "frankincense", "myrrh")` creates a dataset with three strings.
+			
+			Rationale:
+			For an explanation of what datasets are, see the Dataset article. This macro is the primary
+			means of creating datasets - simply supply the values to it, in any order you like.
+			
+			Details:
+			You can also use this macro to remove duplicate values from an array (though also eliminating the array's
+			order) by using the spread `...` operator like so: `(a: ...(dataset: ...$array))`.
+			
+			See also:
+			(datamap:), (a:)
+			
+			#data structure
 		*/
 		("dataset", (_, ...args) => new Set(args), zeroOrMore(Any))
 		
@@ -961,6 +1011,8 @@ define([
 
 			See also:
 			(datanames:), (datavalues:)
+
+			#data structure
 		*/
 		("count", (_, collection, value) => {
 			switch(collectionType(collection)) {
