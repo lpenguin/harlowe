@@ -8,6 +8,8 @@ let fs = require('fs');
 let
 	macroEmpty = /\(([\w\-\d]+):\)(?!`)/g,
 	macroWithTypeSignature = /\(([\w\-\d]+):([\s\w\.\,\[\]]*)\) -> ([\w]+)/,
+	categoryTag = /\s+#([a-z\d ]+)/g,
+
 	/*
 		This matches a mixed-case type name, optionally plural, but not whenever
 		it seems to be part of a macro name.
@@ -77,6 +79,10 @@ function processTextTerms(text, match) {
 	
 	text = text
 		/*
+			Remove the category tag
+		*/
+		.replace(categoryTag,'')
+		/*
 			Convert type names into hyperlinks.
 		*/
 		.replace(typeName, function(text, $1, $2){
@@ -102,7 +108,7 @@ function processTextTerms(text, match) {
 				(e.g. don't hyperlink (goto:) in the (goto:) article.)
 			*/
 			if ($1.toLowerCase() === match[1].toLowerCase()) {
-				return "<b>" + text + "</b>";
+				return text;
 			}
 			return "[(" + $1 + ":)](#macro_" + $1.toLowerCase() + ")";
 		})
@@ -110,23 +116,26 @@ function processTextTerms(text, match) {
 			Convert the minor headings into <h4> elements.
 		*/
 		.replace(/\n([A-Z][\w\s\d]+:)\n/g,"\n####$1\n");
+
 	return text;
 }
 
 function processMacroDefinition(match) {
-	let title = match[0];
+	const title = match[0];
 	let text = match.input.trim()
 		/*
 			Convert the title signature into an anchor and an augmented parameter signature.
 		*/
-		.replace(title,macroTitle(match[1]) + macroSignature(match[1], match[2], match[3]));
-	
+		.replace(title, macroTitle(match[1]) + macroSignature(match[1], match[2], match[3]));
+
+	const category = (categoryTag.exec(text) || {})[1];
+
 	text = processTextTerms(text, match);
 	
 	/*
 		Now, do it! Output the text!
 	*/
-	macroDefs[title] = { text, anchor: "macro_" + match[1].toLowerCase(), name: match[1] };
+	macroDefs[title] = { text, anchor: "macro_" + match[1].toLowerCase(), name: match[1], category };
 }
 
 function processTypeDefinition(match) {
@@ -184,11 +193,33 @@ Object.keys(typeDefs).sort().forEach((e) => {
 	outputFile += typeDef.text;
 	navElement += `<li><a href="#${typeDef.anchor}">${typeDef.name}</a></li>`;
 });
-navElement += "</ul><h5>Macros</h5><ul>";
+navElement += "</ul><h5>Macros</h5>";
+let currentCategory;
 
 outputFile += "\n<h1 id=section_macros>List of macros</h1>\n";
-Object.keys(macroDefs).sort().forEach((e) => {
+Object.keys(macroDefs).sort((left, right) => {
+	if (macroDefs[left].category !== macroDefs[right].category) {
+		return (macroDefs[left].category || "").localeCompare(macroDefs[right].category || "")
+	}
+	return left.localeCompare(right);
+}).forEach((e) => {
 	const macroDef = macroDefs[e];
+	/*
+		Add the category heading to the <nav> if we're in a new category.
+	*/
+	if (macroDef.category !== currentCategory) {
+		/*
+			Add the terminating </ul> if a category has just ended.
+		*/
+		if (currentCategory) {
+			navElement += "</ul>";
+		}
+		currentCategory = macroDef.category;
+		navElement += `<h6>${macroDef.category}</h6><ul>`;
+	}
+	/*
+		Output the definition to both the file and the <nav>
+	*/
 	outputFile += macroDef.text;
 	navElement += `<li><a href="#${macroDef.anchor}">(${macroDef.name}:)</a></li>`;
 });

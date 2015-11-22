@@ -73,6 +73,8 @@ define(['macros', 'utils/operationutils', 'internaltypes/twineerror'],
 			
 			See also:
 			(num:)
+
+			#string
 		*/
 		(["text", "string"],
 			/*
@@ -87,16 +89,16 @@ define(['macros', 'utils/operationutils', 'internaltypes/twineerror'],
 		/*d:
 			(substring: String, Number, Number) -> String
 			
-			This macro produces a substring of the given string, cut from two *inclusive* number positions.
+			This macro produces a substring of the given string, cut from two inclusive number positions.
 			
 			Example usage:
-			`(substring: "growl", 3, 5)` (results in the string "owl").
-			
+			`(substring: "growl", 3, 5)` is the same as `"growl"'s (a:3,4,5)`
+
 			Rationale:
-			If you need to examine a portion of a string between certain character positions, or
-			wanted to strip off a known number of characters from either end of a string,
-			this macro can be used. Simply provide it with the string itself, then the number position
-			of the leftmost character of the substring, then the position of the rightmost character.
+			You can obtain substrings of strings without this macro, by using the `'s` or `of` syntax along
+			with an array of positions. For instance, `$str's (range:4,12)` obtains a substring of $str containing
+			its 4th through 12th characters. But, for compatibility with previous Harlowe versions which did not
+			feature this syntax, this macro also exists.
 			
 			Details:
 			If you provide negative numbers, they will be treated as being offset from the end
@@ -109,6 +111,8 @@ define(['macros', 'utils/operationutils', 'internaltypes/twineerror'],
 			
 			See also:
 			(subarray:)
+
+			#string
 		*/
 		("substring", (_, string, a, b) => subset(string, a, b),
 		[String, Number, Number])
@@ -167,6 +171,8 @@ define(['macros', 'utils/operationutils', 'internaltypes/twineerror'],
 			
 			See also:
 			(text:)
+
+			#number
 		*/
 		(["num", "number"], (_, expr) => {
 			/*
@@ -233,8 +239,34 @@ define(['macros', 'utils/operationutils', 'internaltypes/twineerror'],
 		};
 	}
 	
-	/*
-		Choose one argument. Can be used as such: (either: "pantry", "larder", "cupboard" )
+	/*d:
+		(either: ...Any) -> Any
+		
+		Give this macro several values, separated by commas, and it will pick and return
+		one of them randomly.
+		
+		Example usage:
+		`A (either: "slimy", "goopy", "slippery") puddle` will randomly be "A slimy puddle", "A goopy puddle"
+		or "A slippery puddle".
+		
+		Rationale:
+		There are plenty of occasions where you might want random elements in your story: a few random adjectives
+		or flavour text lines to give repeated play-throughs variety, for instance, or a few random links for a "maze"
+		area. For these cases, you'll probably want to simply select from a few possibilities. The (either:)
+		macro provides this functionality.
+
+		Details:
+		As with many macros, you can use the spread `...` operator to place all of the values in an array or dataset
+		into (either:), and pick them randomly. `(either: ...$array)`, for instance, will choose one possibility from
+		all of the array contents.
+
+		If you want to pick two or more values randomly, you may want to use the (shuffled:) macro, and extract a subarray
+		from its result.
+		
+		See also:
+		(random:), (shuffled:)
+
+		#basics
 	*/
 	function either(...args) {
 		return args[~~(Math.random() * args.length)];
@@ -245,16 +277,46 @@ define(['macros', 'utils/operationutils', 'internaltypes/twineerror'],
 			Wrappers for Date
 		*/
 
-		// The current weekday, in full
+		/*d:
+			(weekday:) -> String
+
+			This date/time macro produces one of the strings "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday"
+			or "Saturday", based on the weekday on the current player's system clock.
+
+			Example usage:
+			`Today is a (weekday:).`
+
+			#date and time
+		*/
 		weekday: [() => ['Sun', 'Mon', 'Tues', 'Wednes', 'Thurs', 'Fri', 'Satur'][new Date().getDay()] + "day",
 		// 0 args
 		null],
 
-		// The current day number
+		/*d:
+			(monthday:) -> Number
+
+			This date/time macro produces a number corresponding to the day of the month on the current player's system clock.
+			This should be between 1 (on the 1st of the month) and 31, inclusive.
+
+			Example usage:
+			`Today is (weekday:) (monthday:).`
+			
+			#date and time
+		*/
 		monthday: [() => new Date().getDate(),
 		null],
 
-		// The current time in 12-hour hours:minutes format.
+		/*d:
+			(current-time:) -> String
+
+			This date/time macro produces a string of the current 12-hour time on the current player's system clock,
+			in the format "12:00 AM".
+
+			Example usage:
+			`The time is (current-time:).`
+			
+			#date and time
+		*/
 		currenttime: [() => {
 			const d = new Date(),
 				am = d.getHours() < 12;
@@ -263,7 +325,17 @@ define(['macros', 'utils/operationutils', 'internaltypes/twineerror'],
 		},
 		null],
 
-		// The current date in DateString format (eg. "Thu Jan 01 1970").
+		/*d:
+			(current-date:) -> String
+
+			This date/time macro produces a string of the current date the current player's system clock,
+			in the format "Thu Jan 01 1970".
+
+			Example usage:
+			`Right now, it's (current-date:).`
+			
+			#date and time
+		*/
 		currentdate: [() => {
 			return new Date().toDateString();
 		},
@@ -271,7 +343,6 @@ define(['macros', 'utils/operationutils', 'internaltypes/twineerror'],
 
 		/*
 			Wrappers for basic Math
-			(includes ES6 polyfills)
 		*/
 
 		/*d:
@@ -281,6 +352,8 @@ define(['macros', 'utils/operationutils', 'internaltypes/twineerror'],
 
 			Example usage:
 			`(min: 2, -5, 2, 7, 0.1)` produces -5.
+
+			#maths
 		*/
 		min: [Math.min, rest(Number)],
 		/*d:
@@ -290,6 +363,8 @@ define(['macros', 'utils/operationutils', 'internaltypes/twineerror'],
 
 			Example usage:
 			`(max: 2, -5, 2, 7, 0.1)` produces 7.
+
+			#maths
 		*/
 		max: [Math.max, rest(Number)],
 		/*d:
@@ -299,6 +374,8 @@ define(['macros', 'utils/operationutils', 'internaltypes/twineerror'],
 
 			Example usage:
 			`(abs: -4)` produces 4.
+
+			#maths
 		*/
 		abs: [Math.abs, Number],
 		/*d:
@@ -309,6 +386,8 @@ define(['macros', 'utils/operationutils', 'internaltypes/twineerror'],
 
 			Example usage:
 			`(sign: -4)` produces -1.
+
+			#maths
 		*/
 		sign: [Math.sign, Number],
 		/*d:
@@ -318,6 +397,8 @@ define(['macros', 'utils/operationutils', 'internaltypes/twineerror'],
 
 			Example usage:
 			`(sin: 3.14159265 / 2)` produces 1.
+
+			#maths
 		*/
 		sin:    [Math.sin, Number],
 		/*d:
@@ -327,6 +408,8 @@ define(['macros', 'utils/operationutils', 'internaltypes/twineerror'],
 
 			Example usage:
 			`(cos: 3.14159265)` produces -1.
+
+			#maths
 		*/
 		cos:    [Math.cos, Number],
 		/*d:
@@ -336,49 +419,133 @@ define(['macros', 'utils/operationutils', 'internaltypes/twineerror'],
 
 			Example usage:
 			`(tan: 3.14159265 / 4)` produces approximately 1.
+
+			#maths
 		*/
 		tan:    [Math.tan, Number],
 		/*d:
 			(floor: Number) -> Number
 
-			This maths macro rounds the given number downward.
+			This macro rounds the given number downward to a whole number. If a whole number is provided,
+			it returns the number as-is.
 
 			Example usage:
 			`(floor: 1.99)` produces 1.
+
+			#number
 		*/
 		floor:  [Math.floor, Number],
 		/*d:
 			(round: Number) -> Number
 
-			This maths macro rounds the given number - downward if its decimals are smaller
-			than 0.5, and upward otherwise.
+			This macro rounds the given number to the nearest whole number - downward if
+			its decimals are smaller than 0.5, and upward otherwise. If a whole number is provided,
+			it returns the number as-is.
 
 			Example usage:
 			`(round: 1.5)` produces 2.
+
+			#number
 		*/
 		round:  [Math.round, Number],
 		/*d:
 			(ceil: Number) -> Number
 
-			This maths macro rounds the given number upward.
+			This macro rounds the given number upward to a whole number. If a whole number is provided,
+			it returns the number as-is.
 
 			Example usage:
 			`(ceil: 1.1)` produces 2.
+
+			#number
 		*/
 		ceil:   [Math.ceil, Number],
-		pow:    [Math.pow, Number],
+		/*d:
+			(pow: Number, Number) -> Number
+
+			This maths macro raises the first number to the power of the second number, and
+			provides the result.
+
+			Example usage:
+			`(pow: 2, 8)` produces 256.
+
+			#maths
+		*/
+		pow:    [Math.pow, Number, Number],
+		/*d:
+			(exp: Number, Number) -> Number
+
+			This maths macro raises Euler's number to the power of the second number, and
+			provides the result.
+
+			Example usage:
+			`(exp: 6)` produces approximately 7.38905609893065.
+
+			#maths
+		*/
 		exp:    [Math.exp, Number],
+		/*d:
+			(sqrt: Number) -> Number
+
+			This maths macro produces the square root of the given number.
+
+			Example usage:
+			`(sqrt: 25)` produces 5.
+
+			#maths
+		*/
 		sqrt:   [mathFilter(Math.sqrt), Number],
+		/*d:
+			(log: Number) -> Number
+
+			This maths macro produces the natural logarithm (the base-e logarithm) of the given number.
+
+			Example usage:
+			`(log: (exp:5))` produces 5.
+
+			#maths
+		*/
 		log:    [mathFilter(Math.log), Number],
+		/*d:
+			(log10: Number) -> Number
+
+			This maths macro produces the base-10 logarithm of the given number.
+
+			Example usage:
+			`(log10: 100)` produces 2.
+
+			#maths
+		*/
 		log10:  [mathFilter(Math.log10), Number],
+		/*d:
+			(log2: Number) -> Number
+
+			This maths macro produces the base-2 logarithm of the given number.
+
+			Example usage:
+			`(log2: 256)` produces 8.
+
+			#maths
+		*/
 		log2:   [mathFilter(Math.log2), Number],
 		
 		/*
 			Basic randomness
 		*/
 
-		/*
-			This function returns a random integer from a to b inclusive.
+		/*d:
+			(random: Number, [Number]) -> Number
+
+			This macro produces a positive whole number randomly selected between the two numbers, inclusive
+			(or, if the second number is absent, then between 0 and the first number, inclusive).
+
+			Example usage:
+			`(random: 1,6)` simulates a six-sided die roll.
+
+			See also:
+			(either:), (shuffled:)
+
+			#number
 		*/
 		random: [(a, b) => {
 			/*

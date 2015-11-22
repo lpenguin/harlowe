@@ -51,6 +51,8 @@ define(['jquery','macros', 'utils', 'utils/selectors', 'datatypes/colour', 'data
 			
 			See also:
 			(unless:), (else-if:), (else:)
+
+			#basics
 		*/
 		("if",
 			(_, expr) => ChangerCommand.create("if", [expr]),
@@ -64,6 +66,8 @@ define(['jquery','macros', 'utils', 'utils/selectors', 'datatypes/colour', 'data
 			a command that can be attached hooks to hide them "if" the value was true.
 			
 			For more information, see the documentation of (if:).
+
+			#basics
 		*/
 		("unless",
 			(_, expr) => ChangerCommand.create("unless", [!expr]),
@@ -112,6 +116,8 @@ define(['jquery','macros', 'utils', 'utils/selectors', 'datatypes/colour', 'data
 			
 			See also:
 			(if:), (unless:), (else:)
+
+			#basics
 		*/
 		("elseif", (section, expr) => {
 			/*
@@ -151,6 +157,8 @@ define(['jquery','macros', 'utils', 'utils/selectors', 'datatypes/colour', 'data
 			```
 			This usage can result in a somewhat puzzling passage source structure, where each (else:) hook
 			alternates between visible and hidden depending on the first such hook. So, it is best avoided.
+
+			#basics
 		*/
 		("else", (section) => {
 			if (!("lastHookShown" in section.stack[0])) {
@@ -177,6 +185,8 @@ define(['jquery','macros', 'utils', 'utils/selectors', 'datatypes/colour', 'data
 			Furthermore, unlike the nametag syntax, (hook:) can be given any string expression:
 			`(hook: "eyes" + (string:$eyeCount))` is valid, and will, as you'd expect, give the hook
 			the name of `eyes1` if `$eyeCount` is 1.
+
+			#styling
 		*/
 		(["hook"],
 			(_, name) => ChangerCommand.create("hook", [name]),
@@ -205,6 +215,8 @@ define(['jquery','macros', 'utils', 'utils/selectors', 'datatypes/colour', 'data
 			
 			See also:
 			(textstyle:)
+
+			#styling
 		*/
 		(["transition", "t8n"],
 			(_, name) => {
@@ -450,6 +462,8 @@ define(['jquery','macros', 'utils', 'utils/selectors', 'datatypes/colour', 'data
 			
 			See also:
 			(css:)
+			
+			#styling
 		*/
 		/*
 			For encapsulation, the helpers that these two methods use are stored inside
@@ -602,6 +616,8 @@ define(['jquery','macros', 'utils', 'utils/selectors', 'datatypes/colour', 'data
 			
 			See also:
 			(text-style:)
+
+			#styling
 		*/
 		("css",
 			(_, text) => {
