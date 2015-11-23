@@ -234,6 +234,7 @@ outputFile = `<!doctype html><meta charset=utf8><style>
 html { font-size:110%; font-weight:lighter; }
 body { font-family:Georgia, "Times New Roman", Times, serif; line-height:1.5; margin:0 auto; width:50%; }
 p { margin-top:1em; }
+strong { font-weight: bold; }
 a { color:#3B8BBA; }
 a:hover, a:focus, a:active { color:#22516d; }
 table { background:#fafafa; border-bottom:1px solid #ccc; border-collapse:collapse; border-right:1px solid #ccc; border-spacing:0; font-size:1em; width:100%; }
@@ -254,7 +255,7 @@ pre { display:inline; }
 nav { position:fixed; top:5vh;left:5vh; bottom:5vh; overflow-y:scroll; border:1px solid #888; padding:1rem; font-size:90% }
 nav ul { list-style-type: none; margin: 0em; padding: 0em; }
 code { background:#FFF; border:1px solid #888; color:#000; display:block; padding:12px; }
-:not(pre) > code { background:hsla(0,0%,100%,0.75); border:1px dotted #888; display:inline; padding:1px; }
+:not(pre) > code { background:hsla(0,0%,100%,0.75); border:1px dotted #888; display:inline; padding:1px; white-space:nowrap; }
 table tr:nth-child(2n),thead { background:#eee; }
 </style>` + navElement + "</ul></nav>" + outputFile;
 /*
