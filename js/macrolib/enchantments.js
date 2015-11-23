@@ -33,19 +33,94 @@ define(['jquery', 'utils', 'macros', 'datatypes/hookset', 'datatypes/changercomm
 		text is rendered - usually rendering inside an entirely different hook.
 	*/
 	const revisionTypes = [
-			/*
+			/*d:
 				(replace: [Hook or String]) -> ChangerCommand
-				A macro that replaces the scope element(s) with its contents.
+				
+				Creates a command which you can attach to a hook, and replace a target
+				destination with the hook's contents. The target is either a text string within
+				the current passage, or a hook reference.
+
+				Example usage:
+
+				This example changes the words "categorical catastrophe" to "**dog**egorical **dog**astrophe"
+				```
+				A categorical catastrophe!
+				(replace: "cat")[**dog**]
+				```
+
+				This example changes the `|face>` hook to read "smile":
+				```
+				A song in your heart, a |face>[song] on your face.
+				(replace: ?face)[smile]
+				```
+
+				Rationale:
+				A common way to make your stories feel dynamic is to cause their text to modify itself
+				before the player's eyes, in response to actions they perform. You can check for these actions
+				using macros such as (link:), (click:) or (live:), and you can make these changes using macros
+				such as (replace:).
+
+				Details:
+				(replace:) lets you specify a target, and a block of text to replace the target with. The attached hook
+				will not be rendered normally - thus, you can essentially place (replace:) commands anywhere in the passage
+				text without interfering much with the passage's visible text.
+
+				If the given target is a string, then every instance of the string in the current passage is replaced
+				with a copy of the hook's contents. If the given target is a hook reference, then only named hooks
+				with the same name as the reference will be replaced with the hook's contents. Use named hooks when
+				you want only specific places in the passage text to change.
+
+				If the target doesn't match any part of the passage, nothing will happen. This is to allow you to
+				place (replace:) commands in `header` tagged passages, if you want them to conditionally affect
+				certain named hooks throughout the entire game, without them interfering with other passages.
+
+				See also:
+				(append:), (prepend:)
+
+				#revision
 			*/
 			"replace",
-			/*
+			/*d:
 				(append: [Hook or String]) -> ChangerCommand
-				Similar to replace, but appends the contents to the scope(s).
+
+				A variation of (replace:) which adds the attached hook's contents to
+				the end of each target, rather than replacing it entirely.
+
+				Example usage:
+				`(append: "Emily")[, my maid] ` adds ", my maid " to the end of every occurrence of "Emily".
+				`(append: ?dress)[ from happier days]` adds " from happier days" to the end of the `|dress>` hook.
+
+				Rationale:
+				As this is a variation of (replace:), the rationale for this macro can be found in
+				that macro's description. This provides the ability to append content to a target, building up
+				text or amending it with an extra sentence or word, changing or revealing a deeper meaning.
+
+				See also:
+				(replace:), (prepend:)
+
+				#revision
 			*/
 			"append",
-			/*
+			/*d:
 				(prepend: [Hook or String]) -> ChangerCommand
-				Similar to replace, but prepends the contents to the scope(s).
+
+				A variation of (replace:) which adds the attached hook's contents to
+				the beginning of each target, rather than replacing it entirely.
+
+				Example usage:
+
+				`(prepend: "Emily")[Miss ] ` adds "Miss " to the start of every occurrence of "Emily".
+				`(prepend: ?dress)[my wedding ]` adds "my wedding " to the start of the `|dress>` hook.
+
+				Rationale:
+				As this is a variation of (replace:), the rationale for this macro can be found in
+				that macro's description. This provides the ability to prepend content to a target, adding
+				preceding sentences or words to a text to change or reveal a deeper meaning.
+
+				See also:
+				(replace:), (append:)
+
+				#revision
 			*/
 			"prepend"
 		];
