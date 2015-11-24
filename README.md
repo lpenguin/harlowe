@@ -2,6 +2,13 @@
 
 Rough documentation is at http://twine2.neocities.org/
 
+###1.2.2 changes (unreleased):
+
+####Bugfix
+
+ * Fixed a bug where the `(textstyle:)` options "shudder", "rumble" and "fade-in-out", as well as all of `(transition:)`'s options, didn't work at all.
+ * Fixed a long-standing bug where `(mouseover:)` affected elements didn't have a visual indicator that they could be moused-over (a dotted underline).
+
 ###1.2.1 changes:
 
 ####Bugfix
