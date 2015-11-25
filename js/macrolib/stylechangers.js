@@ -330,7 +330,7 @@ define(['jquery','macros', 'utils', 'utils/selectors', 'datatypes/colour', 'data
 			A shortcut for applying a CSS rotation to a span of text.
 		*/
 		("text-rotate",
-			(_, rotation) => ChangerCommand.create("rotate", [rotation]),
+			(_, rotation) => ChangerCommand.create("text-rotate", [rotation]),
 			(d, rotation) => {
 				d.styles.push({display: 'inline-block', 'transform'() {
 					let currentTransform = $(this).css('transform') || '';
