@@ -99,6 +99,21 @@ describe("style changer macros", function() {
 		});
 		// TODO: Add .css() tests of output.
 	});
+	describe("the (text-rotate:) macro", function() {
+		it("requires exactly 1 number argument", function() {
+			expect("(print:(text-rotate:))").markupToError();
+			expect("(print:(text-rotate:1))").not.markupToError();
+			expect("(print:(text-rotate:'A'))").markupToError();
+			expect("(print:(text-rotate:55,55))").markupToError();
+		});
+		it("rotates the attached hook by the given number of degrees", function(done) {
+			var hook = runPassage("(text-rotate:20)[Rotated.]").find('tw-hook');
+			setTimeout(function() {
+				expect(hook.attr('style')).toMatch(/rotate\(20deg\)/);
+				done();
+			});
+		});
+	});
 	describe("the (background:) macro", function() {
 		it("requires 1 string argument or 1 colour argument", function() {
 			expect("(print:(background:))").markupToError();
