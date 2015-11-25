@@ -391,7 +391,7 @@ define([
 		/*d:
 			(shuffled: Any, Any, [...Any]) -> Array
 			
-			Identical to (array:), except that it randomly rearranges the elements
+			Identical to (a:), except that it randomly rearranges the elements
 			instead of placing them in the given order.
 			
 			Example usage:
@@ -416,7 +416,7 @@ define([
 			providing just one (or none) will cause an error to be presented.
 			
 			See also:
-			(array:), (either:), (rotated:)
+			(a:), (either:), (rotated:)
 			
 			#data structure
 		*/
@@ -439,7 +439,7 @@ define([
 		/*d:
 			(sorted: String, String, [...String]) -> Array
 			
-			Similar to (array:), except that it requires string elements, and orders the
+			Similar to (a:), except that it requires string elements, and orders the
 			strings in English alphanumeric sort order, rather than the order in which they were provided.
 			
 			Example usage:
@@ -469,7 +469,7 @@ define([
 			providing just one (or none) will cause an error to be presented.
 			
 			See also:
-			(array:), (shuffled:), (rotated:)
+			(a:), (shuffled:), (rotated:)
 			
 			#data structure
 		*/
@@ -624,7 +624,7 @@ define([
 		*/
 		("datanames", (_, map) =>  Array.from(map.keys()).sort(NaturalSort("en")),
 		[Map])
-		/*
+		/*d:
 			(datavalues:)
 			This takes a datamap, and returns an array of its values, sorted
 			alphabetically by their name.

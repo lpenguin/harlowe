@@ -171,7 +171,7 @@ define(['jquery','macros', 'utils', 'utils/selectors', 'datatypes/colour', 'data
 
 		/*d:
 			(hook: String) -> Command
-			Allows the author to give a hook a computed tag name.
+			A command that allows the author to give a hook a computed tag name.
 			
 			Example usage:
 			`(hook: $hookName)[]`
@@ -198,7 +198,7 @@ define(['jquery','macros', 'utils', 'utils/selectors', 'datatypes/colour', 'data
 			(transition: String) -> Command
 			Also known as: (t8n:)
 			
-			Apply a built-in CSS transition to a hook as it appears.
+			A command that applies a built-in CSS transition to a hook as it appears.
 			
 			Example usage:
 			`(transition: "pulse")[Gleep!]` makes the hook `[Gleep!]` use the "pulse" transition
@@ -210,11 +210,11 @@ define(['jquery','macros', 'utils', 'utils/selectors', 'datatypes/colour', 'data
 			* "shudder" (causes the hook to instantly appear while shaking back and forth)
 			* "pulse" (causes the hook to instantly appear while pulsating rapidly)
 			
-			All transitions are 0.8 seconds long. A means of altering transition times may be available
-			in a distant future update.
+			All transitions are 0.8 seconds long, unless a (transition-time:) command is added
+			to the command.
 			
 			See also:
-			(textstyle:)
+			(text-style:), (transition-time:)
 
 			#styling
 		*/
@@ -237,11 +237,24 @@ define(['jquery','macros', 'utils', 'utils/selectors', 'datatypes/colour', 'data
 			[String]
 		)
 
-		/*
+		/*d:
 			(transition-time: Number) -> Command
 			Also known as: (t8n-time:)
 			
-			Alter the time of a transition.
+			A command that, when added to a (transition:) command, adjusts the time of the transition.
+
+			Example usage:
+			`(set: $slowTransition to (transition:"shudder") + (transition-time: 2s))` creates a transition
+			style which uses "shudder" and takes 2 seconds.
+
+			Details:
+			Much like (live:), this macro should be given a number of milliseconds (such as `50ms`) or seconds
+			(such as `10s`). Providing 0 or fewer seconds/milliseconds is not permitted and will result in an error.
+
+			See also:
+			(transition:)
+
+			#styling
 		*/
 		(["transition-time", "t8n-time"],
 			(_, time) => {
@@ -259,8 +272,27 @@ define(['jquery','macros', 'utils', 'utils/selectors', 'datatypes/colour', 'data
 			[Number]
 		)
 		
-		// (font:)
-		// A shortcut for applying a font to a span of text.
+		/*d:
+			(font: String) -> Command
+			
+			This styling command changes the font used to display the text of the attached hook. Provide
+			the font's family name (such as "Helvetica Neue" or "Courier") as a string.
+
+			Example usage:
+			`(font:"Skia")[And what have we here?]`
+
+			Details:
+			Currently, this command will only work if the font is available to the player's browser.
+			If font files are embedded in your story stylesheet using base64 (an explanation for which
+			is beyond the scope of this macro's description) then it can be uses instead.
+
+			No error will be reported if the provided font name is not available, invalid or misspelled.
+
+			See also:
+			(text-style:)
+
+			#styling
+		*/
 		("font",
 			(_, family) => ChangerCommand.create("font", [family]),
 			(d, family) => {
@@ -270,8 +302,22 @@ define(['jquery','macros', 'utils', 'utils/selectors', 'datatypes/colour', 'data
 			[String]
 		)
 		
-		// (align:)
-		// A composable shortcut for the ===><== aligner syntax.
+		/*d:
+			(align: String) -> Command
+			
+			This styling command changes the alignment of text in the attached hook, as if the
+			`===>` arrow syntax was used. In fact, these same arrows (`==>`, `=><=`, `<==>`, `====><=` etc.)
+			should be supplied as a string to specify the degree of alignment.
+
+			Example usage:
+			`(align: "=><==")[Hmm? Anything the matter?]`
+
+			Details:
+			Hooks affected by this command will take up their own lines in the passage, regardless of
+			their placement in the story prose. This allows them to be aligned in the specified manner.
+
+			#styling
+		*/
 		("align",
 			(_, arrow) => {
 				/*
@@ -338,12 +384,25 @@ define(['jquery','macros', 'utils', 'utils/selectors', 'datatypes/colour', 'data
 			[String]
 		)
 		
-		/*
-			(text-colour:)
-			A shortcut for applying a colour to a span of text.
-			The (colour:) alias is one I feel a smidge less comfortable with. It
-			should easily also refer to a value macro that coerces string to colour...
-			But, I suppose this is the more well-trod use-case for this keyword.
+		/*d:
+			(colour: String or Colour) -> Command
+
+			This styling command changes the colour used by the text in the attached hook.
+			You can supply either a string with a CSS-style colour (any colour name or
+			RGB number supported by CSS), or a built-in colour object.
+
+			Example usage:
+			`(colour: red + white)[Pink]` combines the built-in red and white colours to make pink.
+			`(colour: "#696969")[Gray]` uses a CSS-style colour to style the text gray.
+
+			Details:
+			This macro only affects the text colour. To change the text background, call upon
+			the (background:) macro.
+
+			See also:
+			(background:)
+
+			#styling
 		*/
 		(["text-colour", "text-color", "color", "colour"],
 			(_, CSScolour) => {
@@ -363,12 +422,31 @@ define(['jquery','macros', 'utils', 'utils/selectors', 'datatypes/colour', 'data
 			},
 			[either(String,Colour)]
 		)
-		/*
-			(text-rotate:)
-			A shortcut for applying a CSS rotation to a span of text.
+		/*d:
+			(text-rotate: Number) -> Command
+
+			This styling command visually rotates the attached hook clockwise by a given number of
+			degrees. The rotational axis is in the centre of the hook.
+
+			Example usage:
+			`(text-rotate:45)[Tilted]`
+			
+			Details:
+
+			The surrounding non-rotated text will behave as if the rotated text is still in its original position -
+			the horizontal space of its original length will be preserved, and text it overlaps with vertically will
+			ignore it.
+
+			A rotation of 180 degrees will, due to the rotational axis, flip the hook upside-down and back-to-front, as
+			if the (text-style:) styles "mirror" and "upside-down" were both applied.
+
+			See also:
+			(text-style:)
+
+			#styling
 		*/
 		("text-rotate",
-			(_, rotation) => ChangerCommand.create("rotate", [rotation]),
+			(_, rotation) => ChangerCommand.create("text-rotate", [rotation]),
 			(d, rotation) => {
 				d.styles.push({display: 'inline-block', 'transform'() {
 					let currentTransform = $(this).css('transform') || '';

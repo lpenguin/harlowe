@@ -39,6 +39,10 @@ describe("link syntax", function() {
 			expect(runPassage("|a>[[b]]").find('tw-expression, tw-error').length).toBe(0);
 			expect(runPassage("[[b]]<a|").find('tw-expression').length).toBe(1);
 		});
+		it("won't be confused with attached hooks", function() {
+			createPassage("","Hello");
+			expect(runPassage("(if:true)[[[Hello]]]").find('tw-hook tw-link').length).toBe(1);
+		});
 		it("works correctly with double-quotes", function() {
 			createPassage("",'"do it"');
 			var link = runPassage('[["do it"]]').find('tw-link');
