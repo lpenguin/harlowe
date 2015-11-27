@@ -459,10 +459,37 @@ define(['jquery','macros', 'utils', 'utils/selectors', 'datatypes/colour', 'data
 			},
 			[Number]
 		)
-		/*
-			(background:)
-			This sets the changer's background-color or background-image,
-			depending on what is supplied.
+		/*d:
+			(background: Colour or String) -> Command
+
+			This styling command alters the background colour or background image
+			of the attached hook. Supplying a colour, or a string contanining a CSS
+			hexadecimal colour (such as `#A6A612`) will set the background to a flat colour.
+			Other strings will be interpreted as an image URL, and the background will be
+			set to it.
+
+			Example usage:
+			* `(background: red + white)[Pink background]`
+			* `(background: "#663399")[Purple background]`
+			* `(background: "marble.png")[Marble texture background]`
+
+			Details:
+			
+			Combining two (background:) commands will do nothing if they both influence the
+			colour or the image. For instance `(background:red) + (background:white)` will simply
+			produce the equivalent `(background:white)`. However, `(background:red) + (background:"mottled.png")`
+			will work as intended if the background image contains transparency, allowing the background
+			colour to appear through it.
+
+			Currently, supplying other CSS colour names (such as `burlywood`) is not
+			permitted - they will be interpreted as image URLs regardless.
+
+			No error will be reported if the image at the given URL cannot be accessed.
+
+			See also:
+			(colour:)
+
+			#styling
 		*/
 		("background",
 			(_, value) => {

@@ -32,7 +32,7 @@ default: jshint build/harlowe-css.css
 css: build/harlowe-css.css
 
 docs:
-	node scripts/harlowedocs.js
+	@node --harmony_destructuring scripts/harlowedocs.js
 
 all: jshint dist/format.js docs dist/exampleOutput.html
 
