@@ -109,4 +109,20 @@ describe("HTML in twinemarkup", function() {
 			);
 		});
 	});
+	describe("HTML entities", function() {
+		it("(named) can be used", function() {
+			expect(
+				"&para;&sect;&hearts;"
+			).markupToBecome(
+				"¶§♥"
+			);
+		});
+		it("(numeric) can be used", function() {
+			expect(
+				"&#223;&#xDF;"
+			).markupToBecome(
+				"ßß"
+			);
+		});
+	});
 });

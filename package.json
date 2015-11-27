@@ -19,7 +19,8 @@
     }
   ],
   "engines": {
-    "npm": ">=3.0"
+    "npm": ">=3.0",
+    "node": ">=5.0"
   },
   "dependencies": {
     "almond": "latest",
