@@ -7,12 +7,12 @@ describe("HTML in twinemarkup", function() {
 	}
 	
 	it("due to the behaviour of jQuery.parseHTML(), orphaned end-tags are silently removed", function() {
-		expectMarkupToPrint("Bee</b>", "Bee");
+		expect("Bee</b>").markupToPrint("Bee");
 	});
 
 	it("doesn't recognise tags that begin with a non-ASCII-letter", function() {
-		expectMarkupToPrint("<3>Bee</3>", "<3>Bee");
-		expectMarkupToPrint("<é>Bee</é>", "<é>Bee");
+		expect("<3>Bee</3>").markupToPrint("<3>Bee");
+		expect("<é>Bee</é>").markupToPrint("<é>Bee");
 	});
 
 	describe("span-level tags", function() {
@@ -87,22 +87,41 @@ describe("HTML in twinemarkup", function() {
 	describe("HTML comments", function() {
 		it("are removed from the rendered HTML", function() {
 			[0,1,2].forEach(function(i) {
-				expectMarkupToBecome(
-					"A<!--" + "\n".repeat(i) + "-->B",
+				expect(
+					"A<!--" + "\n".repeat(i) + "-->B"
+				).markupToBecome(
 					"AB"
 				);
 			});
 		});
 		it("can handle partial syntax inside", function() {
-			expectMarkupToBecome(
-				"A<!--''-->B",
+			expect(
+				"A<!--''-->B"
+			).markupToBecome(
 				"AB"
 			);
 		});
 		it("can be nested", function() {
-			expectMarkupToBecome(
-				"A<!--Cool<!-- -->Cool-->B",
+			expect(
+				"A<!--Cool<!-- -->Cool-->B"
+			).markupToBecome(
 				"AB"
+			);
+		});
+	});
+	describe("HTML entities", function() {
+		it("(named) can be used", function() {
+			expect(
+				"&para;&sect;&hearts;"
+			).markupToBecome(
+				"¶§♥"
+			);
+		});
+		it("(numeric) can be used", function() {
+			expect(
+				"&#223;&#xDF;"
+			).markupToBecome(
+				"ßß"
 			);
 		});
 	});

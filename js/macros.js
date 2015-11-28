@@ -1,5 +1,5 @@
-define(['jquery', 'utils', 'utils/operationutils', 'internaltypes/twineerror'],
-($, {insensitiveName, nth, plural, assert, lockProperty}, {objectName, typeName}, TwineError) => {
+define(['jquery', 'utils', 'utils/operationutils', 'datatypes/lambda', 'internaltypes/twineerror'],
+($, {insensitiveName, nth, plural, assert, lockProperty}, {objectName, typeName, singleTypeCheck}, Lambda, TwineError) => {
 	"use strict";
 	/**
 		This contains a registry of macro definitions, and methods to add to that registry.
@@ -48,7 +48,7 @@ define(['jquery', 'utils', 'utils/operationutils', 'internaltypes/twineerror'],
 							TwineError.create("operation",
 								"I can't spread out "
 								+ objectName(el.value)
-								+ ", which is not a string, dataset or array."
+								+ ", because it is not a string, dataset or array."
 							)
 						);
 					}
@@ -67,85 +67,6 @@ define(['jquery', 'utils', 'utils/operationutils', 'internaltypes/twineerror'],
 			}
 			return fn(...args);
 		};
-	}
-	
-	/*
-		This function checks the type of a single argument. It's run
-		for every argument passed into a type-signed macro.
-		
-		@param {Anything}     arg  The plain JS argument value to check.
-		@param {Array|Object} type A type description to compare the argument with.
-		@return {Boolean} True if the argument passes the check, false otherwise.
-	*/
-	function singleTypeCheck(arg, type) {
-		/*
-			First, check if it's a None type.
-		*/
-		if (type === null) {
-			return arg === undefined;
-		}
-		/*
-			Now, check if the signature is an Optional, Either, or Wrapped.
-		*/
-		if (type.innerType) {
-			/*
-				Optional signatures can exit early if the arg is absent.
-			*/
-			if (type.pattern === "optional" || type.pattern === "zero or more") {
-				if (arg === undefined) {
-					return true;
-				}
-				return singleTypeCheck(arg, type.innerType);
-			}
-			/*
-				Either signatures must check every available type.
-			*/
-			if (type.pattern === "either") {
-				/*
-					The arg passes the test if it matches some of the types.
-				*/
-				return type.innerType.some(type => singleTypeCheck(arg, type));
-			}
-			/*
-				Otherwise, if this is a Wrapped signature, ignore the included
-				message and continue.
-			*/
-			if (type.pattern === "wrapped") {
-				return singleTypeCheck(arg, type.innerType);
-			}
-		}
-		// If Type but no Arg, then return an error.
-		if(type !== undefined && arg === undefined) {
-			return false;
-		}
-		
-		// The Any type permits any accessible argument, as long as it's present.
-		if (type === Macros.TypeSignature.Any && arg !== undefined && !arg.TwineScript_Unobservable) {
-			return true;
-		}
-		/*
-			The built-in types. Let's not get tricky here.
-		*/
-		if (type === String) {
-			return typeof arg === "string";
-		}
-		if (type === Boolean) {
-			return typeof arg === "boolean";
-		}
-		if (type === Number) {
-			return typeof arg === "number";
-		}
-		if (type === Array) {
-			return Array.isArray(arg);
-		}
-		if (type === Map || type === Set) {
-			return arg instanceof type;
-		}
-		/*
-			For TwineScript-specific types, this check should mostly suffice.
-			TODO: I really need to replace those duck-typing properties.
-		*/
-		return Object.isPrototypeOf.call(type,arg);
 	}
 	
 	/*
@@ -270,7 +191,34 @@ define(['jquery', 'utils', 'utils/operationutils', 'internaltypes/twineerror'],
 							signatureInfo
 						);
 					}
-					
+
+					/*
+						If the data type is a lambda, produce special error messages.
+					*/
+					if (arg && Lambda.isPrototypeOf(arg) && type.pattern === "lambda") {
+						/*
+							If the kind differs, produce an error for that.
+						*/
+						if (arg.kind !== type.lambdaKind) {
+							return TwineError.create('typesignature',
+								name + "'s " + nth(ind + 1) + " value (a lambda) should be a '"
+								+ type.lambdaKind
+								+ "', not '"
+								+ arg.kind
+								+ "'.");
+						}
+						/*
+							Otherwise, its arity was wrong.
+						*/
+						return TwineError.create('typesignature',
+							name + "'s " + nth(ind + 1) + " value (a lambda) should have "
+							+ type.arity
+							+ plural(type.arity, ' parameter')
+							+ ', not '
+							+ arg.params.length
+							+ '.');
+					}
+
 					/*
 						Otherwise, it was the most common case: an invalid data type.
 					*/
@@ -440,8 +388,7 @@ define(['jquery', 'utils', 'utils/operationutils', 'internaltypes/twineerror'],
 				Any data
 				
 				A macro that is said to accept "Any" will accept any kind of data
-				(except for Unobservable data) without complaint, as long as the data
-				does not contain any errors.
+				without complaint, as long as the data does not contain any errors.
 			*/
 			Any: {
 				TwineScript_TypeName: "anything",

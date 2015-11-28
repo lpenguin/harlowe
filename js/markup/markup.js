@@ -326,7 +326,7 @@
 						this.error("This tagged hook doesn't have a matching ].");
 					},
 				}),
-				canFollow: ["macro", "variable"],
+				canFollow: ["macro", "variable", "tempVariable"],
 			},
 			
 			hookAppendedFront: {
@@ -425,6 +425,8 @@
 			
 			variable:   { fn: textTokenFn("name") },
 			
+			tempVariable: { fn: textTokenFn("name") },
+			
 			whitespace: {
 				fn: emptyFn,
 				/*
@@ -462,7 +464,14 @@
 						return { isMethodCall:   false };
 					},
 				},
-				
+
+				lambda: {
+					fn: (match) => ({
+						params: match[1],
+						conjunction: match[2],
+					}),
+				},
+
 				groupingFront: {
 					fn: () => ({
 						isFront: true,

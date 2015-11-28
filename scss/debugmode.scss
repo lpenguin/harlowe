@@ -22,10 +22,17 @@
 		&[type=variable] {
 			background-color: hsla(30, 10%, 50%, 0.15);
 			
-			/* Show the IDs of hooks */
 			&::after {
 				@include tiny-annotation();
 				content: "$" attr(name)
+			}
+		}
+		&[type=tempVariable] {
+			background-color: hsla(30, 10%, 50%, 0.15);
+			
+			&::after {
+				@include tiny-annotation();
+				content: "_" attr(name)
 			}
 		}
 		&[type=macro] {

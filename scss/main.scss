@@ -1,7 +1,7 @@
 /*
 	This toggles compatibility with 1.x.x Harlowe.
 */
-$version: 1;
+$version: 2;
 
 /*
 	<html> controls the background of the page.
@@ -65,7 +65,6 @@ tw-story {
 		This is the base font size, which is
 		permuted below.
 	*/
-	//TODO: Change to rem for 2.0.0
 	$font-size: 1.5em;
 	@if $version == 2 {
 		$font-size: 1.5rem;

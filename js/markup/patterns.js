@@ -49,8 +49,19 @@
 		before = makeWrapper("?=");
 	
 	const
-		// This includes all forms of whitespace except \n and \r
-		ws                   = "[ \\f\\t\\v\u00a0\u1680\u180e\u2000-\u200a\u2028\u2029\u202f\u205f\u3000]*",
+		/*d:
+			Whitespace markup
+
+			"Whitespace" is a term that refers to "space" characters that you use to separate programming code tokens,
+			such as the spacebar space, and the tab character. They are considered interchangeable in type and quantity -
+			using two spaces usually has the same effect as using one space, one tab, and so forth.
+
+			Harlowe tries to also recognise most forms of Unicode-defined whitespace,
+			including the quads, the per-em and per-en spaces, but not the zero-width space characters (as they may
+			cause confusion and syntax errors if unnoticed in your code).
+		*/
+		// This includes all forms of Unicode 6 whitespace except \n, \r, and Ogham space mark.
+		ws                   = "[ \\f\\t\\v\u00a0\u2000-\u200a\u2028\u2029\u202f\u205f\u3000]*",
 		
 		// Mandatory whitespace
 		mws                  = ws.replace("*","+"),
@@ -73,34 +84,118 @@
 		
 		noUnescapedLineBreak = "(" + either(escapedLine,"[^\\n]") + "+)",
 		
-		/*
-			Markdown lists changes:
+		/*d:
+			Bulleted list markup
+
+			You can create bullet-point lists in your text by beginning lines with an asterisk `*`, followed by whitespace,
+			followed by the list item text. The asterisk will be replaced with an indented bullet-point. Consecutive lines
+			of bullet-point items will be joined into a single list, with appropriate vertical spacing.
+
+			Remember that there must be whitespace between the asterisk and the list item text! Otherwise, this markup
+			will conflict with the emphasis markup.
+
+			If you use multiple asterisks (`**`, `***` etc.) for the bullet, you will make a nested list, which is indented deeper than
+			a normal list. Use nested lists for "children" of normal list items.
 			
-			* Only the * can be used for bullets (to prevent ambiguity with printed numbers: -2 or +2)
-			* Multiples of the bullet must be used for nested lists: **, instead of whitespace.
-			* Numbered lists must use 0. instead of actual numbers.
-			
-			In the field, lists are structurally not that useful in Twine, except for pure
-			presentational purposes: putting a bullet-point before a line.
+			Example usage:
+			```
+			 * Bulleted item
+			    *    Bulleted item 2
+			  ** Indented bulleted item
+			```
 		*/
 		
 		bullet      = "\\*",
 		
 		bulleted    = ws + "(" + bullet + "+)" + mws + noUnescapedLineBreak + eol,
 		
+		/*d:
+			Numbered list markup
+
+			You can create numbered lists in your text, which are similar to bulleted lists, but feature numbers in place of bullets.
+			Simply begin single lines with `0.`, followed by whitespace, followed by the list item text. Consecutive items will be
+			joined into a single list, with appropriate vertical spacing. Each of the `0.`s will be replaced
+			with a number corresponding to the item's position in the list.
+
+			Remember that there must be whitespace between the `0.` and the list item text! Otherwise, it will be regarded as a plain
+			number.
+
+			If you use multiple `0.` tokens (`0.0.`, `0.0.0.` etc.) for the bullet, you will make a nested list, which uses different
+			numbering from outer lists, and are indented deeper. Use nested lists for "children" of normal list items.
+
+			Example usage:
+			```
+			0. Numbered item
+			   0. Numbered item 2
+			 0.0. Indented numbered item
+			```
+		*/
 		numberPoint = "(?:0\\.)",
 		
 		numbered    = ws + "(" + numberPoint + "+)" + mws + noUnescapedLineBreak + eol,
 		
+		/*d:
+			Horizontal rule markup
+
+			A hr (horizontal rule) is a thin horizontal line across the entire passage. In HTML, it is a `<hr>` element.
+			In Harlowe, it is an entire line consisting of 3 or more consecutive hyphens `-`.
+
+			Example usage:
+			```
+			        ---
+			  ----
+			     -----
+			```
+			Again, opening whitespace is permitted prior to the first `-` and after the final `-`.
+		*/
 		hr          = ws + "-{3,}" + ws + eol,
 		
-		/*
-			Markdown setext headers conflict with the hr syntax, and are thus gone.
+		/*d:
+			Heading markup
+
+			Heading markup is used to create large headings, such as in structured prose or title splash passages.
+			It is almost the same as the Markdown heading syntax: it starts on a fresh line,
+			has one to six consecutive #s, and ends at the line break.
+
+			Example usage:
+			```
+			#Level 1 heading renders as an enclosing <h1>
+			   ###Level 3 heading renders as an enclosing <h3>
+			 ######Level 6 heading renders as an enclosing <h6>
+			```
+
+			As you can see, unlike in Markdown, opening whitespace is permitted before the first #.
 		*/
 		heading = ws + "(#{1,6})" + ws + noUnescapedLineBreak + eol,
 		
-		/*
-			New text alignment syntax.
+		/*d:
+			Aligner markup
+
+			An aligner is a special single-line token which specifies the alignment of the subsequent text. It is essentially
+			'modal' - all text from the token onward (until another aligner is encountered) is wrapped in a `<tw-align>` element
+			(or unwrapped in the case of left-alignment, as that is the default).
+
+			 * Right-alignment, resembling `==>` is produced with 2 or more `=`s followed by a `>`.
+			 * Left-alignment, resembling `<==` is restored with a `<` followed by 2 or more `=`.
+			 * Justified alignment, resembling `<==>` is produced with `<`, 2 or more `=`, and a closing `>`.
+			 * Mixed alignment is 1 or more `=`, then `><`, then 1 or more `=`. The ratio of quantity of left `=`s and right `=`s determines
+			the alignment: for instance, one `=` to the left and three `=`s to the right produces 25% left alignment.
+			
+			Example usage:
+			```
+			==>
+			This is right-aligned
+			=><=
+			This is centered
+			<==>
+			This is justified
+			<==
+			This is left-aligned (undoes the above)
+			===><=
+			This has margins 3/4 left, 1/4 right
+			=><=====
+			This has margins 1/6 left, 5/6 right.
+			```
 		*/
 		align = ws + "(==+>|<=+|=+><=+|<==+>)" + ws + eol,
 		
@@ -180,12 +275,16 @@
 		hookTagFront =  "\\|(" + anyLetter.replace("]", "_]") + "*)>",
 		hookTagBack  =  "<("   + anyLetter.replace("]", "_]") + "*)\\|",
 		
+		lambda       = "each" + ws + "(_" + validPropertyName + "(?:" + ws + "," + ws + "_" + validPropertyName + ")*)" + ws + ",?" + ws + "(to|where)" + wb,
+
+		tempVariable = "_(" + validPropertyName + ")" + wb,
+		
 		/*
 			This includes NaN, but I wonder if it should.
 			This doesn't include the - sign because arithmetic's pattern will trump it.
 			Negative numerals are handled in TwineScript as unary uses of arithmetic.
 		*/
-		number = '\\b(\\d+(?:\\.\\d+)?(?:[eE][+\\-]?\\d+)?|NaN)' + notBefore("m?s") + '\\b'
+		number = '\\b(\\d+(?:\\.\\d+)?(?:[eE][+\\-]?\\d+)?|NaN)' + notBefore("m?s") + wb
 		;
 	
 	passageLink.main =
@@ -238,6 +337,33 @@
 		commentFront:         "<!--",
 		commentBack:          "-->",
 		
+		/*d:
+			HTML markup
+
+			If you are familiar with them, HTML tags (like `<img>`) and HTML elements (like `&sect;`) can be inserted
+			straight into your passage text. They are treated very naively - they essentially pass through Harlowe's
+			markup-to-HTML conversion process untouched.
+
+			Example usage:
+			```
+			<mark>This is marked text.
+
+			&para; So is this.
+
+			And this.</mark>
+			```
+
+			Details:
+
+			HTML elements included in this manner are given a `data-raw` attribute by Harlowe, to distinguish them
+			from elements created via markup.
+
+			You can include a `<script>` tag in your passage to run Javascript code. The code will run as soon as the
+			containing passage code is rendered.
+
+			You can also include a `<style>` tag containing CSS code. The CSS should affect the entire page
+			until the element is removed from the DOM.
+		*/
 		tag:         "<\\/?" + tag.name + tag.attrs + ">",
 		tagPeek:                                      "<",
 		
@@ -273,6 +399,20 @@
 		emFront:          escape("*"),
 		emBack:           escape("*"),
 		
+		/*d:
+			Verbatim markup
+
+			As plenty of symbols have special uses in Harlowe, you may wonder how you can use them normally, as mere symbols,
+			without invoking their special functionality. You can do this by placing them between a pair of `` ` `` marks.
+
+			If you want to escape a section of text which already contains single `` ` `` marks, simply increase the number
+			of `` ` `` marks used to enclose them.
+
+			Example usage:
+			```I want to include `[[double square brackets]]` in my story, so I use tilde ` marks.```
+
+			```I want to include ``single tildes ` in my story``, so I place them between two tilde marks.```
+		*/
 		/*
 			The verbatim syntax does not "nest", but terminals can be
 			differentiated by adding more ` marks to each pair.
@@ -335,7 +475,12 @@
 		macroName: macro.name,
 		
 		/*
-			This must be differentiated from macroFront.
+			Lambdas
+		*/
+		lambda,
+		
+		/*
+			This must be differentiated from macroFront
 		*/
 		groupingFront: "\\(" + notBefore(macro.name),
 		groupingFrontPeek: "(",
@@ -346,7 +491,7 @@
 		twine1MacroPeek: "<<",
 		
 		/*
-			Macro code
+			Property accesses
 		*/
 		
 		property,
@@ -368,13 +513,16 @@
 		
 		variable,
 		variablePeek: "$",
+
+		tempVariable,
+		tempVariablePeek: "_",
 		
 		hookRef:
 			"\\?(" + anyLetter + "+)\\b",
 		hookRefPeek: "?",
 		
 		/*
-			Artificial types (non-JS primitives)
+			Artificial types (non-JS primitives, semantic sugar)
 		*/
 		
 		cssTime: "(\\d+\\.?\\d*|\\d*\\.?\\d+)(m?s)" + wb,

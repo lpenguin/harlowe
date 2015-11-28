@@ -86,21 +86,34 @@ define(['jquery', 'utils', 'utils/selectors', 'state', 'section', 'passages'],
 		@param {String} name
 		@param {Boolean} stretch Is stretchtext
 	*/
-	function showPassage (name, stretch) {
+	function showPassage (name, displayOptions = {}) {
+		// Confirm that the options object only contains
+		// what this function recognises.
+		Utils.assertOnlyHas(displayOptions, ["stretch", "transitionIn", "transitionOut"]);
+
 		const
-			// Transition ID
-			// Temporary measure: must change when customisable links are implemented.
-			t8n = "instant",
 			// The passage
 			passageData = Passages.get(name),
 			// The <tw-story> element
 			story = Utils.storyElement;
+
 		let
 			/*
 				The <tw-story>'s parent is usually <body>, but if this game is embedded
 				in a larger HTML page, it could be different.
 			*/
-			parent = story.parent();
+			parent = story.parent(),
+			{
+				// Whether or not this should be a stretchtext transition
+				stretch,
+				// The transition to use to remove the passage. This is
+				// of course only used when stretchtext is false.
+				transitionOut: transitionOutName,
+
+				transitionIn: transitionInName,
+			} = displayOptions;
+
+		transitionOutName = transitionOutName || "instant";
 
 		/*
 			If the story has a <tw-enchantment> around it (which could have been placed)
@@ -134,8 +147,16 @@ define(['jquery', 'utils', 'utils/selectors', 'state', 'section', 'passages'],
 			If this isn't a stretchtext transition, send away all of the
 			old passage instances.
 		*/
-		if (!stretch && t8n) {
-			transitionOut(oldPassages, t8n);
+		if (!stretch && transitionOutName) {
+			transitionOut(oldPassages, transitionOutName);
+			/*
+				This extra adjustment is separate from the transitionOut method,
+				as it should only apply to the block-level elements that are
+				passages. It enables the new transitioning-in passage to be drawn
+				over the departing passage. Note: this may prove to be too restrictive
+				in the future and need to be made more subtle.
+			*/
+			oldPassages.css('position','absolute');
 		}
 		
 		const newPassage = createPassageElement().appendTo(story);
@@ -205,11 +226,10 @@ define(['jquery', 'utils', 'utils/selectors', 'state', 'section', 'passages'],
 				as well as this basic, default ChangeDescriptor-like object
 				supplying the transition.
 			*/
-			[{ transition: "dissolve" }]
+			[{ transition: transitionInName || "dissolve" }]
 		);
 		
-		// TODO: Change `$('html')` to `parent` for 2.0.0
-		$('html').append(story.parent().length ? story.parent() : story);
+		parent.append(story.parent().length ? story.parent() : story);
 		/*
 			In stretchtext, scroll the window to the top of the inserted element,
 			minus an offset of 5% of the viewport's height.
@@ -217,8 +237,7 @@ define(['jquery', 'utils', 'utils/selectors', 'state', 'section', 'passages'],
 		*/
 		scroll(
 			0,
-			// TODO: Change `parent` to `story` for 2.0.0
-			stretch ? newPassage.offset().top - ($(window).height() * 0.05) : parent.offset().top
+			stretch ? newPassage.offset().top - ($(window).height() * 0.05) : story.offset().top
 		);
 	}
 	

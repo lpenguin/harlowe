@@ -2,6 +2,21 @@
 
 Rough documentation is at http://twine2.neocities.org/
 
+###2.0.0 changes (unreleased, still unstable):
+
+####Alterations
+
+ * Fixed a bug where the "Story stylesheet" `<style>` element was attached between `<head>` and `<body>`. This should have had no obvious effects in any browser, but was untidy anyway.
+ * Altered the CSS of `<tw-story>` to use vertical padding instead of vertical margins.
+ * Using `contains` and `is in` on numbers and booleans (such as `12 contains "a"`) will now produce an error. Formerly, doing so would test whether the number equalled the other value. (The rationale for this was that, since the statement `"a" contains "a"` is the same as `"a" is "a"`, then so should it be for numbers and booleans, which arguably "contain" only themselves. However, this seems to be masking certain kinds of errors when incorrect or uninitialised variables or properties were used).
+
+####Additions
+
+ * Added temporary variables, a special kind of variable that only exists inside the passage or hook in which they're `(set:)`. Outside of the passage, they disappear. Simply use `_` instead of `$` as the sigil for variables - write `(set: _a to 2)`, `(if: _a > 1)`, etc. Their main purpose is to allow you to make "reusable" Twine code - code which can be pasted into any story, without accidentally overwriting any variables that the story has used. (For instance, suppose you had some code which uses the variable `$a` for some quick computation, but you pasted it into a story that already used `$a` for something else in another passage. If you use a temporary variable `_a` instead, this problem won't occur.)
+   * Also note that temp variables that are `(set:)` inside hooks won't affect same-named temp variables outside them: `(set: _a to 1) |hook>[(set: _a to 2)]` will make `_a` be 2 inside the hook, but remain as 1 outside of it.
+ * Lambdas (tentative name) are a new data type - they are, essentially, user-created functions. You can just think of them as "data converters" - reusable instructions to convert one or more values into different values. An example of their current (also tentative) syntax is `(_a, _b ==> _a *_b *2)` - this creates a lambda that takes two values, puts them in the temporary variables `_a` and `_b`, and produces the result of multiplying them with each other and 2. This can potentially be saved and reused multiple times, keeping you from needing to write that specific expression over and over.
+ * The only macro which uses lambdas, currently, is `(converted:)`. This takes a lambda as its first value, and any number of other values, and uses the lambda to convert the values, placing the results in an array. For instance, `(converted: (_material ==> _material + " Sword"), "Iron", "Wood", "Bronze", "Plastic")` will create an array of all those strings with " Sword" added to the end of each. (This macro is similar to Javascript's `map()` array method.)
+
 ###1.2.2 changes (unreleased):
 
 ####Bugfix

@@ -6,13 +6,15 @@ define([
 	'twinescript/environ',
 	'state',
 	'utils/hookutils',
+	'utils/operationutils',
 	'datatypes/hookset',
 	'internaltypes/pseudohookset',
 	'internaltypes/changedescriptor',
+	'internaltypes/varscope',
 	'internaltypes/twineerror',
 	'internaltypes/twinenotifier',
 ],
-($, Utils, Selectors, Renderer, Environ, State, HookUtils, HookSet, PseudoHookSet, ChangeDescriptor, TwineError, TwineNotifier) => {
+($, Utils, Selectors, Renderer, Environ, State, {selectorType}, {printBuiltinValue}, HookSet, PseudoHookSet, ChangeDescriptor, VarScope, TwineError, TwineNotifier) => {
 	"use strict";
 
 	let Section;
@@ -147,11 +149,12 @@ define([
 			This must of course run after the sensor/changer function was run,
 			in case that provided an error.
 		*/
-		if (TwineError.containsError(result)) {
-			if (result instanceof Error) {
-				result = TwineError.fromError(result);
+		let error;
+		if ((error = TwineError.containsError(result))) {
+			if (error instanceof Error) {
+				error = TwineError.fromError(error);
 			}
-			expr.replaceWith(result.render(expr.attr('title'), expr));
+			expr.replaceWith(error.render(expr.attr('title'), expr));
 		}
 		/*
 			If we're in debug mode, a TwineNotifier may have been sent.
@@ -161,14 +164,19 @@ define([
 			expr.append(result.render());
 		}
 		/*
-			If the expression had a TwineScript_Print method, do that.
+			Print the expression if it's a string, number, or has a TwineScript_Print method.
 		*/
-		else if (result && result.TwineScript_Print && !result.changer) {
+		else if (typeof result === "string"
+				|| typeof result === "number"
+				|| result instanceof Map
+				|| result instanceof Set
+				|| Array.isArray(result)
+				|| (result && result.TwineScript_Print && !result.changer)) {
 			/*
-				TwineScript_Print() typically emits side-effects. These
-				will occur... now.
+				TwineScript_Print(), when called by printBuiltinValue(), typically emits
+				side-effects. These will occur... now.
 			*/
-			result = result.TwineScript_Print();
+			result = printBuiltinValue(result);
 			
 			/*
 				If TwineScript_Print returns an object of the form { earlyExit },
@@ -180,10 +188,10 @@ define([
 			}
 			/*
 				On rare occasions (specifically, when the passage component
-				of the link syntax produces an error) TwineScript_Print
+				of the link syntax produces an error) TwineScript_Print()
 				returns a jQuery of the <tw-error>.
 			*/
-			if (result instanceof $) {
+			else if (result instanceof $) {
 				expr.append(result);
 			}
 			/*
@@ -197,19 +205,11 @@ define([
 				expr.replaceWith(result.render(expr.attr('title'), expr));
 			}
 			else {
+				/*
+					Transition the resulting Twine code into the expression's element.
+				*/
 				this.renderInto(result, expr);
 			}
-		}
-		/*
-			This prints an object if it's a string, number, or has a custom toString method
-			and isn't a function.
-		*/
-		else if (typeof result === "string"  || typeof result === "number"
-			|| (typeof result === "object" && result && result.toString !== Object.prototype.toString)) {
-			/*
-				Transition the resulting Twine code into the expression's element.
-			*/
-			this.renderInto(result + '', expr);
 		}
 		else {
 			applyExpressionToHook.call(this, expr, result);
@@ -466,14 +466,19 @@ define([
 					The expression stack is an array of plain objects,
 					each housing runtime data that is local to the expression being
 					evaluated. It is used by macros such as "display" and "if" to
-					keep track of prior evaluations - e.g. display loops, else().
+					keep track of prior evaluations - e.g. display loops, (else:).
+					Its objects currently are allowed to possess:
+					- lastHookShown: Boolean
+					- tempVariables: VarScope
 					
 					render() pushes a new object to this stack before
 					running expressions, and pops it off again afterward.
 				*/
 				stack: [],
 				/*
-					This is an enchantments stack. I'll explain later.
+					This is an enchantments stack. Enchantment objects (created by macros
+					such as (click:)) are tracked here to ensure that post-hoc permutations
+					of this enchantment's DOM are also enchanted correctly.
 				*/
 				enchantments: []
 			});
@@ -563,7 +568,7 @@ define([
 				|| PseudoHookSet.isPrototypeOf(selectorString)) {
 				return selectorString;
 			}
-			switch(HookUtils.selectorType(selectorString)) {
+			switch(selectorType(selectorString)) {
 				case "hookRef": {
 					return HookSet.create(this, selectorString);
 				}
@@ -709,7 +714,7 @@ define([
 				Before executing the expressions, put a fresh object on the
 				expression data stack.
 			*/
-			this.stack.unshift(Object.create(null));
+			this.stack.unshift(Object.assign(Object.create(null), {tempVariables: Object.create(VarScope)}));
 			
 			/*
 				This provides (sigh) a reference to this object usable by the

@@ -130,6 +130,11 @@ define(['utils'], ({toJSLiteral, assert}) => {
 					+ toJSLiteral(token.name)
 					+ ")" + (isVarRef ? "" : ".get()");
 			}
+			else if (token.type === "tempVariable") {
+				return "VarRef.create(section.stack[0].tempVariables,"
+					+ toJSLiteral(token.name)
+					+ ")" + (isVarRef ? "" : ".get()");
+			}
 			else if (token.type === "hookRef") {
 				/*
 					Some remarks:
@@ -201,7 +206,7 @@ define(['utils'], ({toJSLiteral, assert}) => {
 			We must check these in reverse, so that the least-precedent
 			is associated last.
 		*/
-		let i, macroNameToken,
+		let i,
 			/*
 				These hold the returned compilations of the tokens
 				surrounding a currently matched token, as part of this function's
@@ -240,6 +245,24 @@ define(['utils'], ({toJSLiteral, assert}) => {
 				Unlike Javascript, Twinescript allows trailing commas in calls.
 			*/
 			needsRight = false;
+		}
+		else if ((i = indexOfType(tokens, "lambda")) >-1) {
+			midString = " ";
+			right = 'Lambda.create(['
+				/*
+					Convert all of the params into trimmed JS string literals.
+					This assumes that params are defined as separated by commas in Patterns.
+				*/
+				+ tokens[i].params.split(',').filter(Boolean).map(e => toJSLiteral(
+					/*
+						This .slice() call removes the _ sigil from the params.
+					*/
+					e.slice(1)
+					.trim())).join()
+				+ "],"
+				+ toJSLiteral(tokens[i].conjunction) + ","
+				+ toJSLiteral(compile(tokens.splice(i + 1))) + ")";
+			needsLeft = false;
 		}
 		else if ((i = indexOfType(tokens, "spread")) >-1) {
 			/*
@@ -316,9 +339,9 @@ define(['utils'], ({toJSLiteral, assert}) => {
 			operation = tokens[i].text;
 		}
 		else if ((i = indexOfType(tokens, "not")) >-1) {
-			midString = "Operations.not(";
-			right =
-				compile(tokens.splice(i + 1))
+			midString = " ";
+			right = "Operations.not("
+				+ compile(tokens.splice(i + 1))
 				+ ")";
 			needsLeft = false;
 		}
@@ -395,7 +418,7 @@ define(['utils'], ({toJSLiteral, assert}) => {
 			/*
 				The first child token in a macro is always the method name.
 			*/
-			macroNameToken = tokens[i].children[0];
+			const macroNameToken = tokens[i].children[0];
 			assert(macroNameToken.type === "macroName");
 			
 			midString = 'Macros.run('
@@ -473,7 +496,7 @@ define(['utils'], ({toJSLiteral, assert}) => {
 			else if (assignment) {
 				return "Operations.makeAssignmentRequest("
 					+ [left, right, toJSLiteral(assignment)]
-					+")";
+					+ ")";
 			}
 			else if (possessive) {
 				return "VarRef.create("
@@ -495,7 +518,7 @@ define(['utils'], ({toJSLiteral, assert}) => {
 				This should default to a " " so that some separation lies between tokens.
 				Otherwise, some tokens like "contains" will break in certain (rare) circumstances.
 			*/
-			return ((token.value || token.text) + "").trim() || " ";
+			return (('value' in token ? token.value : token.text) + "").trim() || " ";
 		}
 		else {
 			return tokens.reduce((a, token) => a + compile(token, isVarRef), "");

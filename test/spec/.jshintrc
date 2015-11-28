@@ -9,13 +9,6 @@
 		"createPassage"         : true,
 		"runPassage"            : true,
 		"goToPassage"           : true,
-		"htmlOfPassage"         : true,
-		"expectMarkupToBecome"  : true,
-		"expectMarkupToPrint"   : true,
-		"expectMarkupToError"   : true,
-		"expectMarkupToJSError" : true,
-		"expectMarkupNotToError": true,
-		"expectMarkupToNotError": true,
 		"$"                     : true
 	},
 	"evil"     : true,

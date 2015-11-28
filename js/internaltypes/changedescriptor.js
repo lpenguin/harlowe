@@ -33,8 +33,8 @@ define(['jquery', 'utils', 'renderer'], ($, {assertOnlyHas, impossible, transiti
 		// {String} [transition]      Which built-in transition to use.
 		transition:       "instant",
 		
-		// {Number} [transitionTime]  The duration of the transition, in ms. CURRENTLY UNUSED.
-		transitionTime:   0,
+		// {Number|Null} [transitionTime]  The duration of the transition, in ms, or null if the default speed should be used.
+		transitionTime:   null,
 		
 		// {Array} styles             A set of CSS styles to apply inline to the hook's element.
 		//                            Used by (position-x:), etc.
@@ -123,7 +123,7 @@ define(['jquery', 'utils', 'renderer'], ($, {assertOnlyHas, impossible, transiti
 		*/
 		render() {
 			const
-				{target, source, transition, enabled} = this;
+				{target, source, transition, transitionTime, enabled} = this;
 			let
 				{append} = this;
 			
@@ -229,7 +229,8 @@ define(['jquery', 'utils', 'renderer'], ($, {assertOnlyHas, impossible, transiti
 						This is #awkward, I know...
 					*/
 					append === "replace" ? target : dom,
-					transition
+					transition,
+					transitionTime
 				);
 			}
 			
