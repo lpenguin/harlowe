@@ -39,7 +39,7 @@ jshint:
 
 build/harlowe-css.css: scss/*.scss
 	cat scss/*.scss \
-	| node-sass --output-style compressed \
+	| sass --stdin --style compressed --scss \
 	> build/harlowe-css.css
 
 build/harlowe-min.js: js/*.js js/*/*.js js/*/*/*.js

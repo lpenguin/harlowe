@@ -198,6 +198,18 @@ describe("data structure macros", function () {
 				}
 			});
 		});
+		it("produces a dataset containing all of the unique items", function() {
+			runPassage("(set: $set to (dataset:'s',true,(a:),1,(a:)))");
+			expectMarkupToPrint("(print: $set contains true)","true");
+			expectMarkupToPrint("(print: $set contains (a:))","true");
+			expectMarkupToPrint("(print: $set contains 1)","true");
+			expectMarkupToPrint("(print: $set contains 's')","true");
+			expectMarkupToPrint("(print: $set contains '1')","false");
+		});
+		it("when spread, returns the values in their natural-sort order", function() {
+			runPassage("(set: $set to (dataset:'D1','E','É','D11','D2','F','E'))");
+			expectMarkupToPrint("(print: (a:...$set))","D1,D2,D11,E,É,F");
+		});
 	});
 });
 
