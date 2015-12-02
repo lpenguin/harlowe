@@ -10,6 +10,7 @@ Rough documentation is at http://twine2.neocities.org/
  * Fixed a long-standing bug where `(mouseover:)` affected elements didn't have a visual indicator that they could be moused-over (a dotted underline).
  * Fixed the (move:) macro corrupting past turns (breaking the in-game undo functionality) when it deletes array or datamap items.
  * Fixed the `<===` (left-align) markup token erasing the next syntactic structure to follow it.
+ * Fixed a bug where attempting to print datamaps using `(print:)` produced a Javascript error.
 
 ###1.2.1 changes:
 
