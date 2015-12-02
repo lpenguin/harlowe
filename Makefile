@@ -45,7 +45,7 @@ build/harlowe-css.css: scss/*.scss
 build/harlowe-min.js: js/*.js js/*/*.js js/*/*/*.js
 	node_modules/.bin/r.js -o $(requirejs_harlowe_flags) \
 	| babel --presets es2015 \
-	| uglifyjs - \
+	| uglifyjs - -c --comments \
 	> build/harlowe-min.js
 
 # Crudely edit out the final define() call that's added for codemirror/mode.
@@ -55,7 +55,7 @@ build/twinemarkup-min.js: js/markup/*.js js/markup/*/*.js
 	node_modules/.bin/r.js -o $(requirejs_twinemarkup_flags) \
 	| $(call node_replace, $(unwrap)) \
 	| babel --presets es2015 \
-	| uglifyjs - \
+	| uglifyjs - -c --comments \
 	> build/twinemarkup-min.js
 
 dist/format.js : build/harlowe-min.js build/twinemarkup-min.js build/harlowe-css.css

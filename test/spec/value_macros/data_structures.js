@@ -185,6 +185,10 @@ describe("data structure macros", function () {
 			expectMarkupToError("(datamap:1,(a:),1,(a:))");
 			expectMarkupToError("(datamap:'A',(a:),'A',(a:))");
 		});
+		it("can be printed with (print:)", function() {
+			var td = Array.from(runPassage("(print:(datamap:'A',1,'B',2))").find('table td')).map(function(e) { return $(e).text(); });
+			expect(td.join(',')).toBe('A,1,B,2');
+		});
 	});
 	describe("the (dataset:) macro", function() {
 		it("accepts 0 or more arguments of any primitive type", function() {

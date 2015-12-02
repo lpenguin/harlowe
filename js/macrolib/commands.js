@@ -128,7 +128,7 @@ define(['requestAnimationFrame', 'macros', 'utils', 'state', 'passages', 'engine
 			See also:
 			(text:), (display:)
 		*/
-		("print", (_, expr) => {
+		("print", function print(_, expr) {
 			
 			/*
 				If an error was passed in, return the error now.
