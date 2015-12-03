@@ -25,6 +25,9 @@ describe("identifiers", function () {
 			expectMarkupToPrint("(set:$red to 'egg')(print: $red contains 'g' and contains 'e')","true");
 			expectMarkupToPrint("(set:$red to 'egg')(set:$blue to 'g')(print: $blue is in $red and is in 'go')","true");
 		});
+		it("isn't recognised inside text", function (){
+			expectMarkupToNotError("(set:$red to window.xit)(set:$red to window.itx)(set:$red to window.xitx)");
+		});
 	});
 	describe("the 'its' property access syntax", function () {
 		it("accesses properties from the left side of a recent comparison", function (){
@@ -35,6 +38,9 @@ describe("identifiers", function () {
 		});
 		it("can have properties accessed from it", function (){
 			expectMarkupToPrint("(set:$red to (a:'Bee'))(set:$red to its 1st's 1st)$red","B");
+		});
+		it("isn't recognised inside text", function (){
+			expectMarkupToNotError("(set:$red to window.xits)(set:$red to window.itsx)(set:$red to window.xitsx)");
 		});
 	});
 	describe("the computed 'its' property access syntax", function () {
@@ -49,4 +55,5 @@ describe("identifiers", function () {
 			expectMarkupToPrint("(set:$red to (a:'Bee'))(set:$red to its (1)'s (1))$red","B");
 		});
 	});
+	//TODO: the 'time' identifier
 });
