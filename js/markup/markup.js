@@ -486,9 +486,15 @@
 				
 				possessiveOperator: { fn: emptyFn },
 				
-				itsProperty:         { fn: textTokenFn("name") },
+				itsProperty: {
+					cannotFollow: ["text"],
+					fn: textTokenFn("name"),
+				},
 				
-				itsOperator: { fn: emptyFn },
+				itsOperator: {
+					cannotFollow: ["text"],
+					fn: emptyFn,
+				},
 				
 				/*
 					Since this is a superset of the belongingProperty rule,
@@ -496,7 +502,7 @@
 				*/
 				belongingItProperty: {
 					cannotFollow: ["text"],
-					fn: textTokenFn("name")
+					fn: textTokenFn("name"),
 				},
 				
 				belongingItOperator: {
@@ -623,7 +629,10 @@
 						operator: match[0][0],
 					}),
 				},
-				identifier:          { fn: textTokenFn("name") },
+				identifier: {
+					fn: textTokenFn("name"),
+					cannotFollow: ["text"],
+				},
 			},
 			["boolean", "is", "to", "into", "and", "or", "not",
 			"isNot", "contains", "isIn"].reduce(function(a, e) {
