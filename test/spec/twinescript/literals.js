@@ -50,5 +50,8 @@ describe("twinescript literals", function() {
 			expectMarkupToPrint('(print: "A\\"B")',"A\"B");
 			expectMarkupToPrint("(print: 'A\\'B')","A'B");
 		});
+		it("can contain close-brackets", function() {
+			expectMarkupToPrint('(print: ")")',")");
+		});
 	});
 });

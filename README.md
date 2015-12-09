@@ -12,6 +12,7 @@ Rough documentation is at http://twine2.neocities.org/
  * Fixed the `<===` (left-align) markup token erasing the next syntactic structure to follow it.
  * Fixed a bug where attempting to print datamaps using `(print:)` produced a Javascript error.
  * Fixed a long-standing bug where spreading `...` datasets did not, in fact, arrange their values in sort order, but instead in parameter order.
+ * Fixed a long-standing bug where a string containing an unmatched `)` inside a macro would abruptly terminate the macro.
 
 ###1.2.1 changes:
 
