@@ -418,6 +418,7 @@
 						macroFront:
 							"macro",
 					},
+					cannotCross: ["singleStringOpener", "doubleStringOpener"],
 				}),
 			},
 			
