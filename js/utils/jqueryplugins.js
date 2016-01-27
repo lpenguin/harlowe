@@ -11,7 +11,7 @@ define(['jquery'], ($) => {
 			return ret;
 		},
 		/*
-			popAttr: return data while removing it. Accepts only 1 argument.
+			popData: return data while removing it. Accepts only 1 argument.
 		*/
 		popData(name) {
 			const ret = this.data(name);

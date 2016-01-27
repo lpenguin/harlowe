@@ -1,5 +1,5 @@
 define(['requestAnimationFrame', 'macros', 'utils', 'state', 'passages', 'engine', 'internaltypes/twineerror', 'utils/operationutils'],
-(requestAnimationFrame, Macros, {toJSLiteral, unescape}, State, Passages, Engine, TwineError, {isObject}) => {
+(requestAnimationFrame, Macros, {toJSLiteral, unescape}, State, Passages, Engine, TwineError, {printBuiltinValue}) => {
 	"use strict";
 	
 	/*d:
@@ -11,10 +11,6 @@ define(['requestAnimationFrame', 'macros', 'utils', 'state', 'passages', 'engine
 		
 		Macros that produce commands include (display:), (print:), (go-to:), (save-game:), (load-game:),
 		(link-goto:), and more.
-		
-		Many commands only have an effect when they're attached to hooks, and modify the
-		hook in a certain manner. Macros that work like this include (text-style:), (font:), (transition:),
-		(rotate:), (position-x:), (position-y:), (hook:), (click:), (link:), and more.
 	*/
 	const
 		{Any, optional} = Macros.TypeSignature;
@@ -64,12 +60,14 @@ define(['requestAnimationFrame', 'macros', 'utils', 'state', 'passages', 'engine
 			Text-targeting macros (such as (replace:)) inside the
 			displayed passage will affect the text and hooks in the outer passage
 			that occur earlier than the (display:) command. For instance,
-			if passage A contains `(replace:Prince)[Frog]`, then another passage
+			if passage A contains `(replace:"Prince")[Frog]`, then another passage
 			containing `Princes(display:'A')` will result in the text `Frogs`.
 			
 			Like all commands, this can be set into a variable. It's not particularly
 			useful in that state, but you can use that variable in place of that command,
 			such as writing `$var` in place of `(display: "Yggdrasil")`.
+
+			#basics 5
 		*/
 		("display",
 			/*
@@ -105,7 +103,7 @@ define(['requestAnimationFrame', 'macros', 'utils', 'state', 'passages', 'engine
 			This command prints out any single argument provided to it, as text.
 			
 			Example usage:
-			`(print: $var)`
+			`(print: $var + "s")`
 			
 			Details:
 			It is capable of printing things which (text:) cannot convert to a string,
@@ -127,75 +125,24 @@ define(['requestAnimationFrame', 'macros', 'utils', 'state', 'passages', 'engine
 			
 			See also:
 			(text:), (display:)
+
+			#basics 4
 		*/
-		("print", function print(_, expr) {
-			
-			/*
-				If an error was passed in, return the error now.
-			*/
-			if (TwineError.containsError(expr)) {
-				return expr;
-			}
-			if (expr && typeof expr.TwineScript_Print === "function") {
-				expr = expr.TwineScript_Print();
-			}
-			else if (expr instanceof Map) {
-				/*
-					In accordance with arrays being "pretty-printed" to something
-					vaguely readable, let's pretty-print datamaps into HTML tables.
-					
-					First, convert the map into an array of key-value pairs.
-				*/
-				expr = Array.from(expr.entries());
-				if (TwineError.containsError(expr)) {
-					return expr;
-				}
-				expr = expr.reduce((html, pair) =>
-					/*
-						Print each value, recursively running (print:) on
-						each of them. Notice that the above conversion means
-						that none of these pairs contain error.
-					*/
-					html + "<tr><td>" +
-						print(_, pair[0]).TwineScript_Print() +
-						"</td><td>" +
-						print(_, pair[1]).TwineScript_Print() +
-						"</td></tr>",
-					"<table class=datamap>") + "</table>";
-			}
-			else if (expr instanceof Set) {
-				/*
-					Sets are close enough to arrays that we might as well
-					just pretty-print them identically.
-				*/
-				expr = Array.from(expr.values());
-			}
-			else if (Array.isArray(expr)) {
-				expr += "";
-			}
-			/*
-				If it's an object we don't know how to print, emit a JS error
-				instead of [object Object].
-			*/
-			else if (isObject(expr)) {
-				throw new TypeError("I don't know how to print this value yet.");
-			}
-			/*
-				At this point, primitives have safely fallen through.
-			*/
-			else {
-				expr += "";
-			}
-			
+		("print", (_, expr) => {
 			return {
 				TwineScript_ObjectName:
-					"a (print: " + toJSLiteral(expr) + ") command",
+					"a (print:) command",
 
 				TwineScript_TypeName:
 					"a (print:) command",
 				
 				TwineScript_Print() {
-					return expr;
+					/*
+						The printBuiltinValue() call can call commands' TwineScript_Print() method,
+						so it must be withheld until here, so that wordings like (set: $x to (print:(goto:'X')))
+						do not execute the command prematurely.
+					*/
+					return printBuiltinValue(expr);
 				},
 			};
 		},
@@ -237,6 +184,8 @@ define(['requestAnimationFrame', 'macros', 'utils', 'state', 'passages', 'engine
 			
 			See also:
 			(loadgame:)
+
+			#links
 		*/
 		("goto", (_, name) => ({
 				TwineScript_ObjectName: "a (go-to: " + toJSLiteral(name) + ") command",
@@ -259,7 +208,7 @@ define(['requestAnimationFrame', 'macros', 'utils', 'state', 'passages', 'engine
 						So, the change of passage must be deferred until just after
 						the passage has ceased rendering.
 					*/
-					requestAnimationFrame(Engine.goToPassage.bind(Engine,name, false /* stretchtext value */));
+					requestAnimationFrame(Engine.goToPassage.bind(Engine,name));
 					/*
 						But how do you immediately cease rendering the passage?
 						
@@ -272,9 +221,35 @@ define(['requestAnimationFrame', 'macros', 'utils', 'state', 'passages', 'engine
 				},
 			}),
 		[String])
+
+		/*
+			This is an experimental variant of the above, which isn't yet confirmed for public release.
+		*/
+		("goto-transition", (_, passageName, transitionName) => ({
+				TwineScript_ObjectName: "a (goto-transition: " + toJSLiteral(passageName) + "," + toJSLiteral(transitionName) + ") command",
+				TwineScript_TypeName:   "a (goto-transition:) command",
+				TwineScript_Print() {
+					/*
+						First, of course, check for the passage's existence.
+					*/
+					if (!Passages.has(passageName)) {
+						return TwineError.create("macrocall",
+							"I can't (goto-transition:) the passage '"
+							+ transitionName
+							+ "' because it doesn't exist."
+						);
+					}
+					requestAnimationFrame(Engine.goToPassage.bind(Engine,passageName, {
+						transitionIn: transitionName,
+						transitionOut: transitionName,
+					}));
+					return { earlyExit: 1 };
+				},
+			}),
+		[String, String])
 		
 		/*d:
-			(live: [Number]) -> Command
+			(live: [Number]) -> Changer
 			When you attach this macro to a hook, the hook becomes "live", which means that it's repeatedly re-run
 			every certain number of milliseconds, replacing the source inside of the hook with a newly computed version.
 			
@@ -299,6 +274,8 @@ define(['requestAnimationFrame', 'macros', 'utils', 'state', 'passages', 'engine
 			
 			Details:
 			Live hooks will continue to re-render themselves until they encounter and print a (stop:) macro.
+
+			#live
 		*/
 		/*
 			Yes, the actual implementation of this is in Section, not here.
@@ -313,7 +290,7 @@ define(['requestAnimationFrame', 'macros', 'utils', 'state', 'passages', 'engine
 			[optional(Number)]
 		)
 		
-		/*d
+		/*d:
 			(stop:) -> Command
 			This macro, which accepts no arguments, creates a (stop:) command, which is not configurable.
 			
@@ -332,6 +309,8 @@ define(['requestAnimationFrame', 'macros', 'utils', 'state', 'passages', 'engine
 			
 			See also:
 			(live:)
+
+			#live
 		*/
 		("stop",
 			() => ({
@@ -390,7 +369,9 @@ define(['requestAnimationFrame', 'macros', 'utils', 'state', 'passages', 'engine
 			to display an apology message in the event that it returns false (as seen above).
 			
 			See also:
-			(load-game:)
+			(load-game:), (saved-games:)
+
+			#saving
 		*/
 		("savegame",
 			(_, slotName, fileName) => {
@@ -467,10 +448,12 @@ define(['requestAnimationFrame', 'macros', 'utils', 'state', 'passages', 'engine
 			save, and going to the passage where that save was made.
 			
 			This macro assumes that the save slot exists and contains a game, which you can check by seeing if
-			`$Saves contains` the slot name before running (load-game:).
+			`(saved-games:) contains` the slot name before running (load-game:).
 			
 			See also:
-			(save-game:)
+			(save-game:), (saved-games:)
+			
+			#saving
 		*/
 		("loadgame",
 			(_, slotName) => {

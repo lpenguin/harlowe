@@ -3,14 +3,16 @@ describe("line break syntax", function() {
 
 	describe("line breaks", function() {
 		it("turn into <br> elements", function() {
-			expectMarkupToBecome(
-				"Hey\nhi\nhello",
+			expect(
+				"Hey\nhi\nhello"
+			).markupToBecome(
 				"Hey<br>hi<br>hello"
 			);
 		});
 		it("become <br> elements even in the absence of other text", function() {
-			expectMarkupToBecome(
-				"\n".repeat(4),
+			expect(
+				"\n".repeat(4)
+			).markupToBecome(
 				"<br>".repeat(4)
 			);
 		});
@@ -18,50 +20,59 @@ describe("line break syntax", function() {
 
 	describe("escaped line syntax", function() {
 		it("eliminates the following line break when a \\ ends a line", function() {
-			expectMarkupToPrint(
-				"A\\\nB",
+			expect(
+				"A\\\nB"
+			).markupToPrint(
 				"AB"
 			);
 		});
 		it("eliminates the preceding line break when a \\ starts a line", function() {
-			expectMarkupToPrint(
-				"A\n\\B",
+			expect(
+				"A\n\\B"
+			).markupToPrint(
 				"AB"
 			);
 		});
 		it("still works if both backslashes are used", function() {
-			expectMarkupToPrint(
-				"A\\\n\\B",
+			expect(
+				"A\\\n\\B"
+			).markupToPrint(
 				"AB"
 			);
 		});
 		it("works to extend the heading syntax", function() {
-			expectMarkupToBecome(
-				"#A\n\\B",
+			expect(
+				"#A\n\\B"
+			).markupToBecome(
 				"<h1>AB</h1>"
 			);
-			expectMarkupToBecome(
-				"#A\\\nB",
+			expect(
+				"#A\\\nB"
+			).markupToBecome(
 				"<h1>AB</h1>"
 			);
 		});
 		it("works to extend the bulleted list syntax", function() {
-			expectMarkupToBecome(
-				"* A\n\\B",
+			expect(
+				"* A\n\\B"
+			).markupToBecome(
 				"<ul><li>AB</li></ul>"
 			);
-			expectMarkupToBecome(
-				"* A\\\nB",
+			expect(
+				"* A\\\nB"
+			).markupToBecome(
 				"<ul><li>AB</li></ul>"
 			);
 		});
 		it("works to extend the numbered list syntax", function() {
-			expectMarkupToBecome(
-				"0. A\n\\B",
+			expect(
+				"0. A\n\\B"
+			).markupToBecome(
 				"<ol><li>AB</li></ol>"
 			);
-			expectMarkupToBecome(
-				"0. A\\\nB",
+			expect(
+				"0. A\\\nB"
+			).markupToBecome(
 				"<ol><li>AB</li></ol>"
 			);
 		});

@@ -311,7 +311,7 @@
 				If a peek is available, check that before running
 				the full match regexp.
 			*/
-			(!rule.peek || rule.peek === text.slice(0, rule.peek.length));
+			(!rule.peek || rule.peek.toLowerCase() === text.slice(0, rule.peek.length).toLowerCase());
 	}
 	
 	/*

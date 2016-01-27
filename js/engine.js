@@ -86,21 +86,34 @@ define(['jquery', 'utils', 'utils/selectors', 'state', 'section', 'passages'],
 		@param {String} name
 		@param {Boolean} stretch Is stretchtext
 	*/
-	function showPassage (name, stretch) {
+	function showPassage (name, displayOptions = {}) {
+		// Confirm that the options object only contains
+		// what this function recognises.
+		Utils.assertOnlyHas(displayOptions, ["stretch", "transitionIn", "transitionOut"]);
+
 		const
-			// Transition ID
-			// Temporary measure: must change when customisable links are implemented.
-			t8n = "instant",
 			// The passage
 			passageData = Passages.get(name),
 			// The <tw-story> element
 			story = Utils.storyElement;
+
 		let
 			/*
 				The <tw-story>'s parent is usually <body>, but if this game is embedded
 				in a larger HTML page, it could be different.
 			*/
-			parent = story.parent();
+			parent = story.parent(),
+			{
+				// Whether or not this should be a stretchtext transition
+				stretch,
+				// The transition to use to remove the passage. This is
+				// of course only used when stretchtext is false.
+				transitionOut: transitionOutName,
+
+				transitionIn: transitionInName,
+			} = displayOptions;
+
+		transitionOutName = transitionOutName || "instant";
 
 		/*
 			If the story has a <tw-enchantment> around it (which could have been placed)
@@ -134,8 +147,16 @@ define(['jquery', 'utils', 'utils/selectors', 'state', 'section', 'passages'],
 			If this isn't a stretchtext transition, send away all of the
 			old passage instances.
 		*/
-		if (!stretch && t8n) {
-			transitionOut(oldPassages, t8n);
+		if (!stretch && transitionOutName) {
+			transitionOut(oldPassages, transitionOutName);
+			/*
+				This extra adjustment is separate from the transitionOut method,
+				as it should only apply to the block-level elements that are
+				passages. It enables the new transitioning-in passage to be drawn
+				over the departing passage. Note: this may prove to be too restrictive
+				in the future and need to be made more subtle.
+			*/
+			oldPassages.css('position','absolute');
 		}
 		
 		const newPassage = createPassageElement().appendTo(story);
@@ -155,6 +176,55 @@ define(['jquery', 'utils', 'utils/selectors', 'state', 'section', 'passages'],
 			We explicitly include these passages inside <tw-header> elements
 			so that they're visible to the author when they're in debug mode, and can clearly
 			see the effect they have on the passage.
+		*/
+		/*d:
+			header tag
+
+			It is often very useful to want to reuse a certain set of macro calls in every passage,
+			or to reuse an opening block of text. You can do this by giving the passage the special
+			tag `header`, or `footer`. All passages with these tags will have their source text included at the top
+			(or, for `footer`, the bottom) of every passage in the story, as if by an invisible (display:) macro call.
+
+			If many passages have the `header` tag, they will all be displayed, ordered by their passage
+			name, sorted alphabetically, and by case (capitalised names appearing before lowercase names).
+
+			#transclusion 1
+		*/
+		/*d:
+			debug-header tag
+			
+			This special tag is similar to the `header` tag, but only causes the passage
+			to be included if you're running the story in debug mode.
+
+			This has a variety of uses: you can put special debug display code in this
+			passage, which can show the status of certain variables or provide links
+			to change the game state as you see fit, and have that code
+			be present in every passage in the story, but only during testing.
+
+			All passages tagged with `debug-header` will run before the passages tagged `header` will run,
+			ordered by their passage name, sorted alphabetically, and by case (capitalised names appearing
+			before lowercase names).
+
+			#transclusion 4
+		*/
+		/*d:
+			footer tag
+
+			This special tag is identical to the `header` tag, except that it places the passage
+			at the bottom of all visited passages, instead of the top.
+
+			#transclusion 2
+		*/
+		/*d:
+			debug-footer tag
+			
+			This special tag is identical to the `debug-header` tag, except that it places the passage
+			at the bottom of all visited passages, instead of the top.
+
+			All passages tagged with `debug-footer` will run, in alphabetical order
+			by their passage name, after the passages tagged `footer` have been run.
+
+			#transclusion 5
 		*/
 		source =
 			(options.debug
@@ -181,6 +251,37 @@ define(['jquery', 'utils', 'utils/selectors', 'state', 'section', 'passages'],
 			Note that the way in which source is modified means that startup code
 			runs before header code.
 		*/
+		/*d:
+			startup tag
+
+			This special tag is similar to `header`, but it will only cause the passage
+			to be included in the very first passage in the game.
+
+			This is intended to simplify the story testing process: if you have setup
+			code which creates variables used throughout the entire story, you should put it in
+			a passage with this tag, instead of the starting passage. This allows you to test your
+			story from any passage, and, furthermore, easily change the starting passage if you wish.
+
+			All passages tagged with `startup` will run, in alphabetical order
+			by their passage name, before the passages tagged `header` will run.
+
+			#transclusion 3
+		*/
+		/*d:
+			debug-startup tag
+			
+			This special tag is similar to the `startup` tag, but only causes the passage
+			to be included if you're running the story in debug mode.
+
+			This has a variety of uses: you can put special debugging code into this
+			passage, or set up a late game state to test, and have that code run
+			whenever you use debug mode, no matter which passage you choose to test.
+
+			All passages tagged with `debug-startup` will run, in alphabetical order
+			by their passage name, after the passages tagged `startup` will run.
+
+			#transclusion 6
+		*/
 		if (State.pastLength <= 0) {
 			if (options.debug) {
 				source = Passages.getTagged('debug-startup')
@@ -205,11 +306,10 @@ define(['jquery', 'utils', 'utils/selectors', 'state', 'section', 'passages'],
 				as well as this basic, default ChangeDescriptor-like object
 				supplying the transition.
 			*/
-			[{ transition: "dissolve" }]
+			{ transition: transitionInName || "dissolve" }
 		);
 		
-		// TODO: Change `$('html')` to `parent` for 2.0.0
-		$('html').append(story.parent().length ? story.parent() : story);
+		parent.append(story.parent().length ? story.parent() : story);
 		/*
 			In stretchtext, scroll the window to the top of the inserted element,
 			minus an offset of 5% of the viewport's height.
@@ -217,8 +317,7 @@ define(['jquery', 'utils', 'utils/selectors', 'state', 'section', 'passages'],
 		*/
 		scroll(
 			0,
-			// TODO: Change `parent` to `story` for 2.0.0
-			stretch ? newPassage.offset().top - ($(window).height() * 0.05) : parent.offset().top
+			stretch ? newPassage.offset().top - ($(window).height() * 0.05) : story.offset().top
 		);
 	}
 	

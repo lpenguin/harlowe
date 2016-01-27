@@ -10,25 +10,8 @@ define([
 function({log}) {
 	"use strict";
 	/*
-		Twine macro standard library.
-		Modifies the Macros module only. Exports nothing.
-		
-		Most of the built-in macros are in the categorised submodules.
-		The macros that remain in here are uncategorised at present.
-		
-		
-		MACRO NAMING CONVENTIONS:
-		
-		* Generally stick to single words as much as possible,
-			but take pains to make the word as relevant and precise as possible.
-		* "on"  prefix: Currently reserved.
-		* "at"  prefix: Currently reserved.
-		* "is"  prefix: Currently reserved.
-		* "can" prefix: Currently reserved.
-		* type name: Should denote a type constructor or converter.
-			Constructors include (colour:), (text:) and (num:)
-		* verbs:
-			Should be saved for commands only.
+		This file simply loads all of the macrolib modules, in lieu of requireJS
+		being able to do so for itself.
 	*/
 	log("Loaded the built-in macros.");
 });
