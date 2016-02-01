@@ -1,5 +1,5 @@
-define(['jquery', 'utils', 'macros', 'datatypes/hookset', 'datatypes/changercommand', 'internaltypes/enchantment'],
-($, Utils, Macros, HookSet, ChangerCommand, Enchantment) => {
+define(['jquery', 'utils', 'macros', 'datatypes/hookset', 'datatypes/changercommand', 'internaltypes/enchantment', 'internaltypes/twineerror'],
+($, Utils, Macros, HookSet, ChangerCommand, Enchantment, TwineError) => {
 	"use strict";
 
 	const {either} = Macros.TypeSignature;
@@ -26,7 +26,20 @@ define(['jquery', 'utils', 'macros', 'datatypes/hookset', 'datatypes/changercomm
 	
 	revisionTypes.forEach((e) => {
 		Macros.addChanger(e,
-			(_, scope) => ChangerCommand.create(e, [scope]),
+			(_, scope) => {
+				/*
+					If the selector is empty (which means it's the empty string) then throw an error,
+					because nothing can be selected.
+				*/
+				if (!scope) {
+					return TwineError.create("datatype",
+						"The string given to this ("
+						+ e
+						+ ":) macro was empty."
+					);
+				}
+				return ChangerCommand.create(e, [scope]);
+			},
 			(desc, scope) => {
 				/*
 					Now, if the source hook was outside the collapsing syntax,
@@ -137,6 +150,17 @@ define(['jquery', 'utils', 'macros', 'datatypes/hookset', 'datatypes/changercomm
 				*/
 				if (selector.selector) {
 					selector = selector.selector;
+				}
+				/*
+					If the selector is empty (which means it's the empty string) then throw an error,
+					because nothing can be selected.
+				*/
+				if (!selector) {
+					return TwineError.create("datatype",
+						"The string given to this ("
+						+ name
+						+ ":) macro was empty."
+					);
 				}
 				return ChangerCommand.create(name, [selector]);
 			},

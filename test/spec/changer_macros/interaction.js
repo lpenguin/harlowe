@@ -15,13 +15,14 @@ describe("interaction macros", function() {
 		eventMethod: 'mouseenter',
 	}].forEach(function(e) {
 		describe("(" + e.name + ":)", function() {
-			it("accepts either 1 hookset or 1 string", function() {
+			it("accepts either 1 hookset or 1 non-empty string", function() {
 				expectMarkupToNotError("(print:(" + e.name + ":?foo))");
 				expectMarkupToNotError("(print:(" + e.name + ":'baz'))");
 
 				expectMarkupToError("(print:(" + e.name + ":?foo, ?bar))");
 				expectMarkupToError("(print:(" + e.name + ":?foo, 'baz'))");
 				expectMarkupToError("(print:(" + e.name + ":'baz', 'baz'))");
+				expectMarkupToError("(print:(" + e.name + ":''))");
 			});
 			it("errors when placed in passage prose while not attached to a hook", function() {
 				expectMarkupToError("(" + e.name + ":?foo)");
