@@ -1,13 +1,14 @@
 describe("revision macros", function() {
 	'use strict';
 	describe("(append:)", function() {
-		it("accepts either 1 hookset or 1 string", function() {
+		it("accepts either 1 hookset or 1 non-empty string", function() {
 			expectMarkupToNotError("(print:(append:?foo))");
 			expectMarkupToNotError("(print:(append:'baz'))");
 
 			expectMarkupToError("(print:(append:?foo, ?bar))");
 			expectMarkupToError("(print:(append:?foo, 'baz'))");
 			expectMarkupToError("(print:(append:'baz', 'baz'))");
+			expectMarkupToError("(print:(append:''))");
 		});
 		describe("given a single hook", function() {
 			it("appends the attached hook's contents with that of the target hook", function() {
@@ -60,13 +61,14 @@ describe("revision macros", function() {
 		});
 	});
 	describe("(replace:)", function() {
-		it("accepts either 1 hookset or 1 string", function() {
+		it("accepts either 1 hookset or 1 non-empty string", function() {
 			expectMarkupToNotError("(print:(replace:?foo))");
 			expectMarkupToNotError("(print:(replace:'baz'))");
 
 			expectMarkupToError("(print:(replace:?foo, ?bar))");
 			expectMarkupToError("(print:(replace:?foo, 'baz'))");
 			expectMarkupToError("(print:(replace:'baz', 'baz'))");
+			expectMarkupToError("(print:(replace:''))");
 		});
 		describe("given a single hook", function() {
 			it("replaces the attached hook's contents with that of the target hook", function() {
