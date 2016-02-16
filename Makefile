@@ -25,13 +25,16 @@ css = "{{CSS}}", JSON.stringify("<style title=\"Twine CSS\">" + read("build/harl
 
 # Now, the rules.
 
-default: jshint build/harlowe-css.css
+default: dirs jshint build/harlowe-css.css
 
-all: jshint dist/format.js dist/exampleOutput.html
+all: dirs jshint dist/format.js dist/exampleOutput.html
 
 clean:
 	-rm -f build/*
 	-rm -f dist/*
+
+dirs:
+	-mkdir -p build dist
 
 jshint:
 	jshint js --config js/.jshintrc $(jshint_flags)
@@ -79,4 +82,4 @@ dist/exampleOutput.html: build/harlowe-min.js build/harlowe-css.css
 	| $(call node_replace, $(examplename)) \
 	> dist/exampleOutput.html
 
-.PHONY : all default jshint clean
+.PHONY : all dirs default jshint clean
