@@ -27,32 +27,37 @@ describe("basic text style markup", function() {
 		describe(e.name, function() {
 			it("wraps text enclosed in " + e.markup.join(" and ") +
 				" with " + e.html.join(" and ") + " tags.", function() {
-				expectMarkupToBecome(
-					"A " + e.markup.join(" B ") + " C",
+				expect(
+					"A " + e.markup.join(" B ") + " C"
+				).markupToBecome(
 					"A " + e.html  .join(" B ") + " C"
 				);
 			});
 			it("spans multiple lines", function() {
-				expectMarkupToBecome(
-					"A " + e.markup.join(" B\n ")   + " C",
+				expect(
+					"A " + e.markup.join(" B\n ")   + " C"
+				).markupToBecome(
 					"A " + e.html  .join(" B<br> ") + " C"
 				);
 			});
 			it("can't be nested", function() {
-				expectMarkupToBecome(
-					"A " + e.markup.join(e.markup.join(" B "))   + " C",
+				expect(
+					"A " + e.markup.join(e.markup.join(" B "))   + " C"
+				).markupToBecome(
 					"A  B  C"
 				);
 			});
 			it("is ignored if there's no closing pair", function() {
-				expectMarkupToBecome(
-					"A " + e.markup[0] + " B",
+				expect(
+					"A " + e.markup[0] + " B"
+				).markupToBecome(
 					"A " + e.markup[0] + " B"
 				);
 			});
 			it("works even when empty", function() {
-				expectMarkupToBecome(
-					"A" + e.markup.join("") + "B",
+				expect(
+					"A" + e.markup.join("") + "B"
+				).markupToBecome(
 					"AB"
 				);
 			});
@@ -62,20 +67,23 @@ describe("basic text style markup", function() {
 	describe("emphasis markup", function() {
 		it("wraps text enclosed in single * " +
 			" with <em> and </em> tags.", function() {
-			expectMarkupToBecome(
-				"A * B * C",
+			expect(
+				"A * B * C"
+			).markupToBecome(
 				"A <em> B </em> C"
 			);
 		});
 		it("spans multiple lines (in a way that doesn't conflict with bulleted lists)", function() {
-			expectMarkupToBecome(
-				"A * B\n C * D",
+			expect(
+				"A * B\n C * D"
+			).markupToBecome(
 				"A <em> B<br> C </em> D"
 			);
 		});
 		it("is ignored if there's no closing pair", function() {
-			expectMarkupToBecome(
-				"A * B",
+			expect(
+				"A * B"
+			).markupToBecome(
 				"A * B"
 			);
 		});
@@ -84,32 +92,37 @@ describe("basic text style markup", function() {
 	describe("strong emphasis markup", function() {
 		it("wraps text enclosed in double ** " +
 			" with <strong> and </strong> tags.", function() {
-			expectMarkupToBecome(
-				"A ** B ** C",
+			expect(
+				"A ** B ** C"
+			).markupToBecome(
 				"A <strong> B </strong> C"
 			);
 		});
 		it("spans multiple lines (in a way that doesn't conflict with bulleted lists)", function() {
-			expectMarkupToBecome(
-				"A ** B\n C ** D",
+			expect(
+				"A ** B\n C ** D"
+			).markupToBecome(
 				"A <strong> B<br> C </strong> D"
 			);
 		});
 		it("is ignored if there's no closing pair", function() {
-			expectMarkupToBecome(
-				"A ** B",
+			expect(
+				"A ** B"
+			).markupToBecome(
 				"A ** B"
 			);
 		});
 		it("works even when empty", function() {
-			expectMarkupToBecome(
-				"A****B",
+			expect(
+				"A****B"
+			).markupToBecome(
 				"AB"
 			);
 		});
 		it("can combine with emphasis markup", function() {
-			expectMarkupToBecome(
-				"A *** B *** C",
+			expect(
+				"A *** B *** C"
+			).markupToBecome(
 				"A <strong><em> B </em></strong> C"
 			);
 		});
@@ -117,14 +130,16 @@ describe("basic text style markup", function() {
 
 	describe("nested markup", function() {
 		it("exists", function() {
-			expectMarkupToBecome(
-				"''//bold italic//''.",
+			expect(
+				"''//bold italic//''."
+			).markupToBecome(
 				"<b><i>bold italic</i></b>."
 			);
 		});
 		it("won't work unless it's correctly nested", function() {
-			expectMarkupToBecome(
-				"//''error//''",
+			expect(
+				"//''error//''"
+			).markupToBecome(
 				"<i>''error</i>''"
 			);
 		});

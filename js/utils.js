@@ -176,7 +176,7 @@ define(['jquery', 'markup', 'utils/selectors', 'utils/customelements'],
 			@return {String}
 		*/
 		nth(num) {
-			const lastDigit = (num + '').slice(-1);
+			const lastDigit = (+num + '').slice(-1);
 			return num + (
 				lastDigit === "1" ? "st" :
 				lastDigit === "2" ? "nd" :
@@ -407,9 +407,10 @@ define(['jquery', 'markup', 'utils/selectors', 'utils/customelements'],
 			@method transitionOut
 			@param {jQuery} el            jQuery collection to transition out
 			@param (String) transIndex    transition to use
+			@param (Number) [transitionTime] Replacement animation-duration value.
 		*/
 
-		transitionOut(el, transIndex) {
+		transitionOut(el, transIndex, transitionTime) {
 			const childrenInline = Utils.childrenProbablyInline(el),
 				/*
 					If the element is not a tw-hook or tw-passage, we must
@@ -439,6 +440,12 @@ define(['jquery', 'markup', 'utils/selectors', 'utils/customelements'],
 			if (Utils.childrenProbablyInline(el)) {
 				el.css('display','inline-block');
 			}
+			/*
+				If an alternative transition time was supplied, use it.
+			*/
+			if (typeof transitionTime === "number") {
+				el.css('animation-duration', transitionTime + "ms");
+			}
 			
 			/*
 				Ideally I'd use this:
@@ -446,7 +453,7 @@ define(['jquery', 'markup', 'utils/selectors', 'utils/customelements'],
 				but in the event of CSS being off, these events won't trigger
 				- whereas the below method will simply occur immediately.
 			*/
-			const delay = Utils.transitionTime(transIndex, "transition-out");
+			const delay = transitionTime || Utils.transitionTime(transIndex, "transition-out");
 
 			!delay ? onComplete() : window.setTimeout(onComplete, delay);
 		},
@@ -457,9 +464,10 @@ define(['jquery', 'markup', 'utils/selectors', 'utils/customelements'],
 			@method transitionIn
 			@param {jQuery} el              jQuery collection to transition out
 			@param (String) transIndex      Transition to use
+			@param (Number) [transitionTime] Replacement animation-duration value.
 		*/
 
-		transitionIn(el, transIndex) {
+		transitionIn(el, transIndex, transitionTime) {
 			const childrenInline = Utils.childrenProbablyInline(el),
 				/*
 					If the element is not a tw-hook or tw-passage, we must
@@ -501,11 +509,17 @@ define(['jquery', 'markup', 'utils/selectors', 'utils/customelements'],
 				and letting the built-in CSS take over.
 			*/
 			el.attr("data-t8n", transIndex).addClass("transition-in");
+			/*
+				If an alternative transition time was supplied, use it.
+			*/
+			if (typeof transitionTime === "number") {
+				el.css('animation-duration', transitionTime + "ms");
+			}
 			
 			if (Utils.childrenProbablyInline(el)) {
 				el.css('display','inline-block');
 			}
-			const delay = Utils.transitionTime(transIndex, "transition-in");
+			const delay = transitionTime || Utils.transitionTime(transIndex, "transition-in");
 
 			!delay ? onComplete() : window.setTimeout(onComplete, delay);
 		},

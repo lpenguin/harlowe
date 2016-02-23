@@ -22,10 +22,17 @@
 		&[type=variable] {
 			background-color: hsla(30, 10%, 50%, 0.15);
 			
-			/* Show the IDs of hooks */
 			&::after {
 				@include tiny-annotation();
 				content: "$" attr(name)
+			}
+		}
+		&[type=tempVariable] {
+			background-color: hsla(30, 10%, 50%, 0.15);
+			
+			&::after {
+				@include tiny-annotation();
+				content: "_" attr(name)
 			}
 		}
 		&[type=macro] {
@@ -145,8 +152,8 @@
 			background: linear-gradient(to right, hsla(14,100%,87%, 0) 0%, hsla(14,100%,87%,0.25) 100%);
 		}
 	}
-	p {
-		background-color: hsla(50,100%,50%,0.1);
+	tw-column {
+		background-color: hsla(204, 99%, 87%, 0.2);
 	}
 	
 	tw-enchantment {

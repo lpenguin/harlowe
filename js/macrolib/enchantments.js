@@ -2,45 +2,146 @@ define(['jquery', 'utils', 'macros', 'datatypes/hookset', 'datatypes/changercomm
 ($, Utils, Macros, HookSet, ChangerCommand, Enchantment, TwineError) => {
 	"use strict";
 
-	const {either} = Macros.TypeSignature;
+	const {either,rest} = Macros.TypeSignature;
 	/*
 		Built-in Revision, Interaction and Enchantment macros.
 		This module modifies the Macros module only, and exports nothing.
 	*/
 
 	/*
+		This experimental (enchant:) macro is currently just for testing purposes.
+	*/
+	Macros.add("enchant",
+		(section, changer, scope) => ({
+			TwineScript_ObjectName: "an (enchant:) command",
+			TwineScript_TypeName:   "an (enchant:) command",
+			TwineScript_Print() {
+				const enchantment = Enchantment.create({
+					scope: section.selectHook(scope),
+					changer,
+				});
+				section.enchantments.push(enchantment);
+				enchantment.enchantScope();
+				return "";
+			},
+		}),
+		[ChangerCommand, either(HookSet,String)]
+	);
+
+	/*
 		Revision macros produce ChangerCommands that redirect where the attached hook's
 		text is rendered - usually rendering inside an entirely different hook.
 	*/
 	const revisionTypes = [
-			// (replace:)
-			// A macro that replaces the scope element(s) with its contents.
+			/*d:
+				(replace: ...HookName or String) -> Changer
+				
+				Creates a command which you can attach to a hook, and replace target
+				destinations with the hook's contents. The targets are either text strings within
+				the current passage, or hook references.
+
+				Example usage:
+
+				This example changes the words "categorical catastrophe" to "**dog**egorical **dog**astrophe"
+				```
+				A categorical catastrophe!
+				(replace: "cat")[**dog**]
+				```
+
+				This example changes the `|face>` and `|heart>` hooks to read "smile":
+				```
+				A |heart>[song] in your heart, a |face>[song] on your face.
+				(replace: ?face, ?heart)[smile]
+				```
+
+				Rationale:
+				A common way to make your stories feel dynamic is to cause their text to modify itself
+				before the player's eyes, in response to actions they perform. You can check for these actions
+				using macros such as (link:), (click:) or (live:), and you can make these changes using macros
+				such as (replace:).
+
+				Details:
+				(replace:) lets you specify a target, and a block of text to replace the target with. The attached hook
+				will not be rendered normally - thus, you can essentially place (replace:) commands anywhere in the passage
+				text without interfering much with the passage's visible text.
+
+				If the given target is a string, then every instance of the string in the current passage is replaced
+				with a copy of the hook's contents. If the given target is a hook reference, then only named hooks
+				with the same name as the reference will be replaced with the hook's contents. Use named hooks when
+				you want only specific places in the passage text to change.
+
+				If the target doesn't match any part of the passage, nothing will happen. This is to allow you to
+				place (replace:) commands in `header` tagged passages, if you want them to conditionally affect
+				certain named hooks throughout the entire game, without them interfering with other passages.
+
+				See also:
+				(append:), (prepend:)
+
+				#revision
+			*/
 			"replace",
-			// (append:)
-			// Similar to replace, but appends the contents to the scope(s).
+			/*d:
+				(append: ...HookName or String) -> Changer
+
+				A variation of (replace:) which adds the attached hook's contents to
+				the end of each target, rather than replacing it entirely.
+
+				Example usage:
+				* `(append: "Emily", "Em")[, my maid] ` adds ", my maid " to the end of every occurrence of "Emily" or "Em".
+				* `(append: ?dress)[ from happier days]` adds " from happier days" to the end of the `|dress>` hook.
+
+				Rationale:
+				As this is a variation of (replace:), the rationale for this macro can be found in
+				that macro's description. This provides the ability to append content to a target, building up
+				text or amending it with an extra sentence or word, changing or revealing a deeper meaning.
+
+				See also:
+				(replace:), (prepend:)
+
+				#revision
+			*/
 			"append",
-			// (prepend:)
-			// Similar to replace, but prepends the contents to the scope(s).
+			/*d:
+				(prepend: ...HookName or String) -> Changer
+
+				A variation of (replace:) which adds the attached hook's contents to
+				the beginning of each target, rather than replacing it entirely.
+
+				Example usage:
+
+				* `(prepend: "Emily", "Em")[Miss ] ` adds "Miss " to the start of every occurrence of "Emily" or "Em".
+				* `(prepend: ?dress)[my wedding ]` adds "my wedding " to the start of the `|dress>` hook.
+
+				Rationale:
+				As this is a variation of (replace:), the rationale for this macro can be found in
+				that macro's description. This provides the ability to prepend content to a target, adding
+				preceding sentences or words to a text to change or reveal a deeper meaning.
+
+				See also:
+				(replace:), (append:)
+
+				#revision
+			*/
 			"prepend"
 		];
 	
 	revisionTypes.forEach((e) => {
 		Macros.addChanger(e,
-			(_, scope) => {
+			(_, ...scopes) => {
 				/*
-					If the selector is empty (which means it's the empty string) then throw an error,
+					If a selector is empty (which means it's the empty string) then throw an error,
 					because nothing can be selected.
 				*/
-				if (!scope) {
+				if (!scopes.every(Boolean)) {
 					return TwineError.create("datatype",
-						"The string given to this ("
+						"A string given to this ("
 						+ e
 						+ ":) macro was empty."
 					);
 				}
-				return ChangerCommand.create(e, [scope]);
+				return ChangerCommand.create(e, scopes);
 			},
-			(desc, scope) => {
+			(desc, ...scopes) => {
 				/*
 					Now, if the source hook was outside the collapsing syntax,
 					and its dest is inside it, then it should NOT be collapsed, reflecting
@@ -57,11 +158,11 @@ define(['jquery', 'utils', 'macros', 'datatypes/hookset', 'datatypes/changercomm
 				/*
 					Having done that, we may now alter the desc's target.
 				*/
-				desc.target = scope;
+				desc.newTargets = (desc.newTargets || []).concat(scopes);
 				desc.append = e;
 				return desc;
 			},
-			either(HookSet,String)
+			rest(either(HookSet,String))
 		);
 	});
 	
@@ -107,7 +208,7 @@ define(['jquery', 'utils', 'macros', 'datatypes/hookset', 'datatypes/changercomm
 			Sadly, since there's no permitted way to attach a jQuery handler
 			directly to the triggering element, the "actual" handler
 			is "attached" via a jQuery .data() key, and must be called
-			from this <html> handler.
+			from this <tw-story> handler.
 		*/
 		$(() => {
 			Utils.storyElement.on(
@@ -192,7 +293,7 @@ define(['jquery', 'utils', 'macros', 'datatypes/hookset', 'datatypes/changercomm
 					(Yes, the name "rerender" is #awkward.)
 				*/
 				if (enchantDesc.rerender) {
-					desc.target = selector;
+					desc.newTargets = (desc.newTargets || []).concat(selector);
 					desc.append = enchantDesc.rerender;
 				}
 				
@@ -264,8 +365,41 @@ define(['jquery', 'utils', 'macros', 'datatypes/hookset', 'datatypes/changercomm
 		target to be interacted with and then performing the deferred rendering.
 	*/
 	const interactionTypes = [
-		// (click:)
-		// Reveal the enclosed hook only when the scope is clicked.
+		/*d:
+			(click: HookName or String) -> Changer
+
+			Produces a command which, when attached to a hook, hides it and enchants the specified target, such that
+			it visually resembles a link, and that clicking it causes the attached hook to be revealed.
+
+			Example usage:
+			* `There is a small dish of water. (click: "dish")[Your finger gets wet.]` causes "dish" to become a link that,
+			when clicked, reveals "Your finger gets wet." at the specified location.
+			* `[Fie and fuggaboo!]<shout| (click: ?shout)[Blast and damnation!]` does something similar to every hook named `<shout|`.
+
+			Rationale:
+
+			The (link:) macro and its variations lets you make passages more interactive, by adding links that display text when
+			clicked. However, it can often greatly improve your passage code's readability to write a macro call that's separate
+			from the text that it affects. You could want to write an entire paragraph, then write code that makes certain words
+			into links, without interrupting the flow of the prose in the editor.
+
+			The (click:) macro lets you separate text and code in this way. Place (click:) hooks at the end of your passages, and have
+			them affect named hooks, or text strings, earlier in the passage.
+
+			Details:
+
+			Text or hooks targeted by a (click:) macro will be styled in a way that makes them indistinguishable from passage links,
+			and links created by (link:). When any one of the targets is clicked, this styling will be removed and the hook attached to the
+			(click:) will be displayed.
+
+			Additionally, if a (click:) macro is removed from the passage, then its targets will lose the link styling and no longer be
+			affected by the macro.
+
+			See also:
+			(link:), (link-reveal:), (link-repeat:), (mouseover:), (mouseout:), (replace:), (click-replace:)
+
+			#links 5
+		*/
 		{
 			name: "click",
 			enchantDesc: {
@@ -275,8 +409,33 @@ define(['jquery', 'utils', 'macros', 'datatypes/hookset', 'datatypes/changercomm
 				classList: "link enchantment-link"
 			}
 		},
-		// (mouseover:)
-		// Perform the enclosed macros when the scope is moused over.
+		/*d:
+			(mouseover: HookName or String) -> Changer
+
+			A variation of (click:) that, instead of showing the hook when the target is clicked, shows it
+			when the mouse merely hovers over it. The target is also styled differently, to denote this
+			hovering functionality.
+
+			Rationale:
+
+			(click:) and (link:) can be used to create links in your passage that reveal text or, in conjunction with
+			other macros, transform the text in myriad ways. This macro is exactly like (click:), except that instead of
+			making the target a link, it makes the target reveal the hook when the mouse hovers over it. This can convey
+			a mood of fragility and spontaneity in your stories, of text reacting to the merest of interactions.
+
+			Details:
+
+			This macro is subject to the same rules regarding the styling of its targets that (click:) has, so
+			consult (click:)'s details to review them.
+
+			This macro is not recommended for use in games or stories intended for use on touch devices, as
+			the concept of "hovering" over an element doesn't really make sense with that input method.
+			
+			See also:
+			(link:), (link-reveal:), (link-repeat:), (click:), (mouseout:), (replace:), (mouseover-replace:)
+
+			#links 9
+		*/
 		{
 			name: "mouseover",
 			enchantDesc: {
@@ -286,8 +445,35 @@ define(['jquery', 'utils', 'macros', 'datatypes/hookset', 'datatypes/changercomm
 				classList: "enchantment-mouseover"
 			}
 		},
-		// (mouseout:)
-		// Perform the enclosed macros when the scope is moused away.
+		/*d:
+			(mouseout: HookName or String) -> Changer
+
+			A variation of (click:) that, instead of showing the hook when the target is clicked, shows it
+			when the mouse moves over it, and then leaves. The target is also styled differently, to denote this
+			hovering functionality.
+
+			Rationale:
+
+			(click:) and (link:) can be used to create links in your passage that reveal text or, in conjunction with
+			other macros, transform the text in myriad ways. This macro is exactly like (click:), but rather than
+			making the target a link, it makes the target reveal the hook when the mouse stops hovering over it.
+			This is very similar to clicking, but is subtly different, and conveys a sense of "pointing" at the element to
+			interact with it rather than "touching" it. You can use this in your stories to give a dream-like or unearthly
+			air to scenes or places, if you wish.
+
+			Details:
+
+			This macro is subject to the same rules regarding the styling of its targets that (click:) has, so
+			consult (click:)'s details to review them.
+
+			This macro is not recommended for use in games or stories intended for use on touch devices, as
+			the concept of "hovering" over an element doesn't really make sense with that input method.
+			
+			See also:
+			(link:), (link-reveal:), (link-repeat:), (click:), (mouseover:), (replace:), (mouseout-replace:)
+
+			#links 13
+		*/
 		{
 			name: "mouseout",
 			enchantDesc: {
@@ -299,13 +485,113 @@ define(['jquery', 'utils', 'macros', 'datatypes/hookset', 'datatypes/changercomm
 		}
 	];
 	
-	//TODO: (hover:)
-	
 	interactionTypes.forEach((e) => Macros.addChanger(e.name, ...newEnchantmentMacroFns(e.enchantDesc, e.name)));
 	
 	/*
 		Combos are shorthands for interaction and revision macros that target the same hook:
 		for instance, (click: ?1)[(replace:?1)[...]] can be written as (click-replace: ?1)[...]
+	*/
+	/*d:
+		(click-replace: HookName or String) -> Changer
+
+		A special shorthand combination of the (click:) and (replace:) macros, this allows you to make a hook
+		replace its own text with that of the attached hook whenever it's clicked. `(click: ?1)[(replace:?1)[...]]`
+		can be rewritten as `(click-replace: ?1)[...]`.
+
+		Example usage:
+		```
+		My deepest secret.
+		(click-replace: "secret")[longing for you].
+		```
+
+		See also:
+		(click-prepend:), (click-append:)
+
+		#links 6
+	*/
+	/*d:
+		(click-append: HookName or String) -> Changer
+
+		A special shorthand combination of the (click:) and (append:) macros, this allows you to append
+		text to a hook or string when it's clicked. `(click: ?1)[(append:?1)[...]]`
+		can be rewritten as `(click-append: ?1)[...]`.
+
+		Example usage:
+		```
+		I have nothing to fear.
+		(click-append: "fear")[ but my own hand].
+		```
+
+		See also:
+		(click-replace:), (click-prepend:)
+
+		#links 7
+	*/
+	/*d:
+		(click-prepend: HookName or String) -> Changer
+
+		A special shorthand combination of the (click:) and (prepend:) macros, this allows you to prepend
+		text to a hook or string when it's clicked. `(click: ?1)[(prepend:?1)[...]]`
+		can be rewritten as `(click-prepend: ?1)[...]`.
+
+		Example usage:
+		```
+		Who stands with me?
+		(click-prepend: "?")[ but my shadow].
+		```
+
+		See also:
+		(click-replace:), (click-append:)
+
+		#links 8
+	*/
+	/*d:
+		(mouseover-replace: HookName or String) -> Changer
+
+		This is similar to (click-replace:), but uses the (mouseover:) macro's behaviour instead of
+		(click:)'s. For more information, consult the description of (click-replace:).
+
+		#links 10
+	*/
+	/*d:
+		(mouseover-append: HookName or String) -> Changer
+
+		This is similar to (click-append:), but uses the (mouseover:) macro's behaviour instead of
+		(click:)'s. For more information, consult the description of (click-append:).
+
+		#links 11
+	*/
+	/*d:
+		(mouseover-prepend: HookName or String) -> Changer
+
+		This is similar to (click-prepend:), but uses the (mouseover:) macro's behaviour instead of
+		(click:)'s. For more information, consult the description of (click-prepend:).
+
+		#links 12
+	*/
+	/*d:
+		(mouseout-replace: HookName or String) -> Changer
+
+		This is similar to (click-replace:), but uses the (mouseout:) macro's behaviour instead of
+		(click:)'s. For more information, consult the description of (click-replace:).
+
+		#links 14
+	*/
+	/*d:
+		(mouseout-append: HookName or String) -> Changer
+
+		This is similar to (click-append:), but uses the (mouseout:) macro's behaviour instead of
+		(click:)'s. For more information, consult the description of (click-append:).
+
+		#links 15
+	*/
+	/*d:
+		(mouseout-prepend: HookName or String) -> Changer
+
+		This is similar to (click-prepend:), but uses the (mouseout:) macro's behaviour instead of
+		(click:)'s. For more information, consult the description of (click-prepend:).
+		
+		#links 16
 	*/
 	revisionTypes.forEach((revisionType) => {
 		interactionTypes.forEach((interactionType) => {
