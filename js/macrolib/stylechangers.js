@@ -8,14 +8,44 @@ define(['jquery','macros', 'utils', 'utils/selectors', 'datatypes/colour', 'data
 		
 		This module modifies the Macros module only, and exports nothing.
 	*/
+	/*d:
+		Changer data
+		
+		Changer commands are similar to ordinary commands, but they only have an effect when they're attached to hooks,
+		and modify the hook in a certain manner. Macros that work like this include (text-style:), (font:), (transition:),
+		(text-rotate:), (hook:), (click:), (link:), and more.
+
+		You can save changer commands into variables, and re-use them many times in your story:
+		```
+		(set: $robotic to (font:'Courier New'))
+		$robotic[Hi, it's me. Your clanky, cold friend.]
+		```
+
+		Changer commands can be combined using the `+` operator: `(set: $x to (text-colour: red) + (font: "Skia"))` sets $x to a command
+		that can make a hook's text red-coloured and in Skia. This command can be re-used over and over in your story, and
+		is in essence a custom text style.
+
+		```
+		(set: $alertText to (font:"Courier New") + (text-style: "shudder") + (text-colour:"#e74"))
+		$alertText[This text is red shuddering Courier New.]
+		$alertText[Fuel warning: the petrol is upside-down.]
+		$alertText[Social alert: no one read the emails you sent yesterday.]
+		$alertText[Arithmetic error: I forgot my seven-times-tables.]
+		```
+	*/
 	const
 		{either, wrapped} = Macros.TypeSignature,
 		IfTypeSignature = [wrapped(Boolean, "If you gave a number, you may instead want to check that the number is not 0. "
 			+ "If you gave a string, you may instead want to check that the string is not \"\".")];
 
+	/*
+		A list of valid transition names. Used by (transition:).
+	*/
+	const validT8ns = ["dissolve", "shudder", "pulse"];
+
 	Macros.addChanger
 		/*d:
-			(if: Boolean) -> Command
+			(if: Boolean) -> Changer
 			
 			This macro accepts only booleans, and produces a command that can be attached to hooks
 			to hide them "if" the value was false.
@@ -25,14 +55,14 @@ define(['jquery','macros', 'utils', 'utils/selectors', 'datatypes/colour', 'data
 			Otherwise, it is not run.
 			
 			Rationale:
-			In any story with multiple paths or threads, where certain events could occur or not occur,
+			In a story with multiple paths or threads, where certain events could occur or not occur,
 			it's common to want to run a slightly modified version of a passage reflecting the current
 			state of the world. The (if:), (unless:), (else-if:) and (else:) macros let these modifications be
 			switched on or off depending on variables, comparisons or calculations of your choosing.
 			
 			Alternatives:
 			The (if:) macro is not the only attachment that can hide or show hooks! In fact,
-			any variable that contains a boolean can be used in its place. For example:
+			a variable that contains a boolean can be used in its place. For example:
 			
 			```
 			(set: $isAWizard to $foundWand and $foundHat and $foundBeard)
@@ -46,6 +76,8 @@ define(['jquery','macros', 'utils', 'utils/selectors', 'datatypes/colour', 'data
 			
 			See also:
 			(unless:), (else-if:), (else:)
+
+			#basics 6
 		*/
 		("if",
 			(_, expr) => ChangerCommand.create("if", [expr]),
@@ -53,12 +85,14 @@ define(['jquery','macros', 'utils', 'utils/selectors', 'datatypes/colour', 'data
 		IfTypeSignature)
 		
 		/*d:
-			(unless: Boolean) -> Command
+			(unless: Boolean) -> Changer
 			
 			This macro is the negated form of (if:): it accepts only booleans, and returns
 			a command that can be attached hooks to hide them "if" the value was true.
 			
 			For more information, see the documentation of (if:).
+
+			#basics 7
 		*/
 		("unless",
 			(_, expr) => ChangerCommand.create("unless", [!expr]),
@@ -66,7 +100,7 @@ define(['jquery','macros', 'utils', 'utils/selectors', 'datatypes/colour', 'data
 		IfTypeSignature)
 		
 		/*d:
-			(else-if: Boolean) -> Command
+			(else-if: Boolean) -> Changer
 			
 			This macro's result changes depending on whether the previous hook in the passage
 			was shown or hidden. If the previous hook was shown, then this command hides the attached
@@ -107,6 +141,8 @@ define(['jquery','macros', 'utils', 'utils/selectors', 'datatypes/colour', 'data
 			
 			See also:
 			(if:), (unless:), (else:)
+
+			#basics 8
 		*/
 		("elseif", (section, expr) => {
 			/*
@@ -122,7 +158,7 @@ define(['jquery','macros', 'utils', 'utils/selectors', 'datatypes/colour', 'data
 		IfTypeSignature)
 		
 		/*d:
-			(else:) -> Command
+			(else:) -> Changer
 			
 			This is a convenient limited variant of the (else-if:) macro. It will simply show
 			the attached hook if the preceding hook was hidden, and hide it otherwise.
@@ -146,6 +182,8 @@ define(['jquery','macros', 'utils', 'utils/selectors', 'datatypes/colour', 'data
 			```
 			This usage can result in a somewhat puzzling passage source structure, where each (else:) hook
 			alternates between visible and hidden depending on the first such hook. So, it is best avoided.
+
+			#basics 9
 		*/
 		("else", (section) => {
 			if (!("lastHookShown" in section.stack[0])) {
@@ -157,21 +195,23 @@ define(['jquery','macros', 'utils', 'utils/selectors', 'datatypes/colour', 'data
 		null)
 
 		/*d:
-			(hook: String) -> Command
-			Allows the author to give a hook a computed tag name.
+			(hook: String) -> Changer
+			A command that allows the author to give a hook a computed tag name.
 			
 			Example usage:
-			`(hook: $hookName)[]`
+			`(hook: $name)[]`
 			
 			Rationale:
 			You may notice that it isn't possible to attach a nametag to hooks with commands
 			already attached - in the case of `(font:"Museo Slab")[The Vault]<title|`, the nametag results
 			in an error. This command can be added with other commands to allow the hook to be named:
-			`(font:"Museo Slab")+(hook: "title")[The Vault]`.
+			`(font:"Museo Slab")+(hook: "title")`.
 			
 			Furthermore, unlike the nametag syntax, (hook:) can be given any string expression:
 			`(hook: "eyes" + (string:$eyeCount))` is valid, and will, as you'd expect, give the hook
 			the name of `eyes1` if `$eyeCount` is 1.
+
+			#styling
 		*/
 		(["hook"],
 			(_, name) => ChangerCommand.create("hook", [name]),
@@ -180,10 +220,10 @@ define(['jquery','macros', 'utils', 'utils/selectors', 'datatypes/colour', 'data
 		)
 
 		/*d:
-			(transition: String) -> Command
+			(transition: String) -> Changer
 			Also known as: (t8n:)
 			
-			Apply a built-in CSS transition to a hook as it appears.
+			A command that applies a built-in CSS transition to a hook as it appears.
 			
 			Example usage:
 			`(transition: "pulse")[Gleep!]` makes the hook `[Gleep!]` use the "pulse" transition
@@ -195,15 +235,16 @@ define(['jquery','macros', 'utils', 'utils/selectors', 'datatypes/colour', 'data
 			* "shudder" (causes the hook to instantly appear while shaking back and forth)
 			* "pulse" (causes the hook to instantly appear while pulsating rapidly)
 			
-			All transitions are 0.8 seconds long. A means of altering transition times may be available
-			in a distant future update.
+			All transitions are 0.8 seconds long, unless a (transition-time:) command is added
+			to the command.
 			
 			See also:
-			(textstyle:)
+			(text-style:), (transition-time:)
+
+			#styling
 		*/
 		(["transition", "t8n"],
 			(_, name) => {
-				const validT8ns = ["dissolve", "shudder", "pulse"];
 				name = insensitiveName(name);
 				if (validT8ns.indexOf(name) === -1) {
 					return TwineError.create(
@@ -220,9 +261,63 @@ define(['jquery','macros', 'utils', 'utils/selectors', 'datatypes/colour', 'data
 			},
 			[String]
 		)
+
+		/*d:
+			(transition-time: Number) -> Changer
+			Also known as: (t8n-time:)
+			
+			A command that, when added to a (transition:) command, adjusts the time of the transition.
+
+			Example usage:
+			`(set: $slowTransition to (transition:"shudder") + (transition-time: 2s))` creates a transition
+			style which uses "shudder" and takes 2 seconds.
+
+			Details:
+			Much like (live:), this macro should be given a number of milliseconds (such as `50ms`) or seconds
+			(such as `10s`). Providing 0 or fewer seconds/milliseconds is not permitted and will result in an error.
+
+			See also:
+			(transition:)
+
+			#styling
+		*/
+		(["transition-time", "t8n-time"],
+			(_, time) => {
+				if (time <= 0) {
+					return TwineError.create(
+						"macrocall",
+						"(transition-time:) should be a positive number of (milli)seconds, not " + time);
+				}
+				return ChangerCommand.create("transition-time", [time]);
+			},
+			(d, time) => {
+				d.transitionTime     = time;
+				return d;
+			},
+			[Number]
+		)
 		
-		// (font:)
-		// A shortcut for applying a font to a span of text.
+		/*d:
+			(font: String) -> Changer
+			
+			This styling command changes the font used to display the text of the attached hook. Provide
+			the font's family name (such as "Helvetica Neue" or "Courier") as a string.
+
+			Example usage:
+			`(font:"Skia")[And what have we here?]`
+
+			Details:
+			Currently, this command will only work if the font is available to the player's browser.
+			If font files are embedded in your story stylesheet using base64 (an explanation for which
+			is beyond the scope of this macro's description) then it can be uses instead.
+
+			No error will be reported if the provided font name is not available, invalid or misspelled.
+
+			See also:
+			(text-style:)
+
+			#styling
+		*/
 		("font",
 			(_, family) => ChangerCommand.create("font", [family]),
 			(d, family) => {
@@ -232,8 +327,22 @@ define(['jquery','macros', 'utils', 'utils/selectors', 'datatypes/colour', 'data
 			[String]
 		)
 		
-		// (align:)
-		// A composable shortcut for the ===><== aligner syntax.
+		/*d:
+			(align: String) -> Changer
+			
+			This styling command changes the alignment of text in the attached hook, as if the
+			`===>` arrow syntax was used. In fact, these same arrows (`==>`, `=><=`, `<==>`, `====><=` etc.)
+			should be supplied as a string to specify the degree of alignment.
+
+			Example usage:
+			`(align: "=><==")[Hmm? Anything the matter?]`
+
+			Details:
+			Hooks affected by this command will take up their own lines in the passage, regardless of
+			their placement in the story prose. This allows them to be aligned in the specified manner.
+
+			#styling
+		*/
 		("align",
 			(_, arrow) => {
 				/*
@@ -300,12 +409,26 @@ define(['jquery','macros', 'utils', 'utils/selectors', 'datatypes/colour', 'data
 			[String]
 		)
 		
-		/*
-			(text-colour:)
-			A shortcut for applying a colour to a span of text.
-			The (colour:) alias is one I feel a smidge less comfortable with. It
-			should easily also refer to a value macro that coerces string to colour...
-			But, I suppose this is the more well-trod use-case for this keyword.
+		/*d:
+			(text-colour: String or Colour) -> Changer
+			Also known as: (colour:), (text-color:), (color:)
+
+			This styling command changes the colour used by the text in the attached hook.
+			You can supply either a string with a CSS-style colour (a colour name or
+			RGB number supported by CSS), or a built-in colour object.
+
+			Example usage:
+			`(colour: red + white)[Pink]` combines the built-in red and white colours to make pink.
+			`(colour: "#696969")[Gray]` uses a CSS-style colour to style the text gray.
+
+			Details:
+			This macro only affects the text colour. To change the text background, call upon
+			the (background:) macro.
+
+			See also:
+			(background:)
+
+			#styling
 		*/
 		(["text-colour", "text-color", "color", "colour"],
 			(_, CSScolour) => {
@@ -325,9 +448,28 @@ define(['jquery','macros', 'utils', 'utils/selectors', 'datatypes/colour', 'data
 			},
 			[either(String,Colour)]
 		)
-		/*
-			(text-rotate:)
-			A shortcut for applying a CSS rotation to a span of text.
+		/*d:
+			(text-rotate: Number) -> Changer
+
+			This styling command visually rotates the attached hook clockwise by a given number of
+			degrees. The rotational axis is in the centre of the hook.
+
+			Example usage:
+			`(text-rotate:45)[Tilted]`
+			
+			Details:
+
+			The surrounding non-rotated text will behave as if the rotated text is still in its original position -
+			the horizontal space of its original length will be preserved, and text it overlaps with vertically will
+			ignore it.
+
+			A rotation of 180 degrees will, due to the rotational axis, flip the hook upside-down and back-to-front, as
+			if the (text-style:) styles "mirror" and "upside-down" were both applied.
+
+			See also:
+			(text-style:)
+
+			#styling
 		*/
 		("text-rotate",
 			(_, rotation) => ChangerCommand.create("text-rotate", [rotation]),
@@ -343,10 +485,37 @@ define(['jquery','macros', 'utils', 'utils/selectors', 'datatypes/colour', 'data
 			},
 			[Number]
 		)
-		/*
-			(background:)
-			This sets the changer's background-color or background-image,
-			depending on what is supplied.
+		/*d:
+			(background: Colour or String) -> Changer
+
+			This styling command alters the background colour or background image
+			of the attached hook. Supplying a colour, or a string contanining a CSS
+			hexadecimal colour (such as `#A6A612`) will set the background to a flat colour.
+			Other strings will be interpreted as an image URL, and the background will be
+			set to it.
+
+			Example usage:
+			* `(background: red + white)[Pink background]`
+			* `(background: "#663399")[Purple background]`
+			* `(background: "marble.png")[Marble texture background]`
+
+			Details:
+			
+			Combining two (background:) commands will do nothing if they both influence the
+			colour or the image. For instance `(background:red) + (background:white)` will simply
+			produce the equivalent `(background:white)`. However, `(background:red) + (background:"mottled.png")`
+			will work as intended if the background image contains transparency, allowing the background
+			colour to appear through it.
+
+			Currently, supplying other CSS colour names (such as `burlywood`) is not
+			permitted - they will be interpreted as image URLs regardless.
+
+			No error will be reported if the image at the given URL cannot be accessed.
+
+			See also:
+			(colour:)
+
+			#styling
 		*/
 		("background",
 			(_, value) => {
@@ -387,7 +556,7 @@ define(['jquery','macros', 'utils', 'utils/selectors', 'datatypes/colour', 'data
 		)
 		
 		/*d:
-			(text-style: String) -> Command
+			(text-style: String) -> Changer
 			
 			This applies a selected built-in text style to the hook's text.
 			
@@ -424,6 +593,8 @@ define(['jquery','macros', 'utils', 'utils/selectors', 'datatypes/colour', 'data
 			
 			See also:
 			(css:)
+			
+			#styling
 		*/
 		/*
 			For encapsulation, the helpers that these two methods use are stored inside
@@ -570,7 +741,7 @@ define(['jquery','macros', 'utils', 'utils/selectors', 'datatypes/colour', 'data
 		)
 		
 		/*d:
-			(css: String) -> Command
+			(css: String) -> Changer
 			
 			This takes a string of inline CSS, and applies it to the hook, as if it
 			were a HTML "style" property.
@@ -587,12 +758,14 @@ define(['jquery','macros', 'utils', 'utils/selectors', 'datatypes/colour', 'data
 			extended styling, using inline CSS, to be applied to hooks.
 			
 			This is, however, intended solely as a "macro of last resort" - as it requires
-			basic knowledge of CSS - a separate language distinct from TwineScript - to use,
+			basic knowledge of CSS - a separate language distinct from Harlowe - to use,
 			and requires it be provided a single inert string, it's not as accommodating as
 			the other such macros.
 			
 			See also:
 			(text-style:)
+
+			#styling
 		*/
 		("css",
 			(_, text) => {

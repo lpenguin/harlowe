@@ -2,13 +2,19 @@ describe("hooks", function () {
 	'use strict';
 	describe("named hooks", function () {
 		it("consist of a |, a name, and a >, attached to a hook", function (){
-			expectMarkupToPrint("|hook>[foo]","foo");
+			expect("|hook>[foo]").markupToPrint("foo");
 		});
 		it("may also alternatively have a mirrored nametag on the other side", function (){
-			expectMarkupToPrint("[foo]<hook|","foo");
+			expect("[foo]<hook|").markupToPrint("foo");
 		});
 		it("names may not contain whitespace", function (){
-			expectMarkupToPrint("|hook >[foo]","|hook >[foo]");
+			expect("|hook >[foo]").markupToPrint("|hook >[foo]");
+		});
+		it("can be nested", function (){
+			expect("[[Hello!]<b|]<a|").markupToPrint("Hello!");
+			expect("[|b>[Hello!]]<a|").markupToPrint("Hello!");
+			expect("|a>[|b>[Hello!]]").markupToPrint("Hello!");
+			expect("|a>[[Hello!]<b|]").markupToPrint("Hello!");
 		});
 		it("become <tw-hook> elements", function (){
 			runPassage("[foo]<hook|");
@@ -21,13 +27,32 @@ describe("hooks", function () {
 	});
 	describe("macro attached hooks", function () {
 		it("consist of a macro, then a hook", function (){
-			expectMarkupToPrint("(if:true)[foo]","foo");
+			expect("(if:true)[foo]").markupToPrint("foo");
 		});
-		it("may not have a mirrored nametag on the other side", function (){
-			expectMarkupToError("(if:true)[foo]<hook|", 2);
+		it("may have any amount of whitespace between the macro and the hook", function (){
+			expect("(if:true) [foo]").markupToPrint("foo");
+			expect("(if:true)\n[foo]").markupToPrint("foo");
+			expect("(if:true) \n \n [foo]").markupToPrint("foo");
+		});
+		it("may not have a nametag on the left side", function (){
+			expect("(if:true)|hook>[foo]", 2).markupToError();
+			expect("(set:$a to 1)|hook>[foo]").not.markupToError();
+		});
+		it("may not have a mirrored nametag on the right side", function (){
+			expect("(if:true)[foo]<hook|", 2).markupToError();
+			// Because this syntax is ambiguous, it is also an error despite (set:) not attaching.
+			expect("(set:$a to 1)[foo]<hook|").markupToError();
 		});
 		it("will error if the hook has no closing bracket", function (){
-			expectMarkupToError("(if:true)[(if:true)[Good golly]", 2);
+			expect("(if:true)[(if:true)[Good golly]", 2).markupToError();
+		});
+		it("will error if the macro doesn't produce a changer command or boolean", function (){
+			expect("(either:'A')[Hey]").markupToError();
+			expect("(either:1)[Hey]").markupToError();
+			expect("(a:)[Hey]").markupToError();
+			expect("(datamap:)[Hey]").markupToError();
+			expect("(dataset:)[Hey]").markupToError();
+			expect("(set:$x to 1)[Hey]").markupToError();
 		});
 	});
 });

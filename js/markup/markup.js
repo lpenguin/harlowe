@@ -200,7 +200,40 @@
 					} else if (arrow.indexOf("<") >-1) {
 						align = "left";
 					}
-					return { align: align };
+					return { align };
+				},
+			},
+			/*
+				Text column syntax
+				
+				==|      : right column, width 1
+				=|=      : center column
+				|==      : left column
+				|==|     : no columns
+				==|||    : right column, width 3
+			*/
+			column: {
+				fn(match) {
+					let column;
+					const
+						arrow = match[1],
+						centerIndex = arrow.indexOf("|");
+						
+					if (centerIndex && centerIndex < arrow.length - 1) {
+						column = "center";
+					} else if (arrow[0] === "|" && arrow.slice(-1) === "|") {
+						column = "none";
+					} else if (centerIndex === arrow.length - 1) {
+						column = "right";
+					} else if (!centerIndex) {
+						column = "left";
+					}
+					return {
+						column,
+						width: /\|+/.exec(arrow)[0].length,
+						marginLeft: /^=*/.exec(arrow)[0].length,
+						marginRight: /=*$/.exec(arrow)[0].length,
+					};
 				},
 			},
 		});
@@ -228,12 +261,6 @@
 					message: "Harlowe macros use a different syntax to Twine 1 and SugarCube macros.",
 				}),
 			},
-			
-			/*
-				Like GitHub-Flavoured Markdown, Twine preserves line breaks
-				within paragraphs.
-			*/
-			br:            { fn: emptyFn, },
 			
 			/*
 				The order of these four is strictly important. As the back and front versions
@@ -289,28 +316,6 @@
 			tag:            { fn:        emptyFn },
 			url:            { fn:        emptyFn },
 			
-			passageLink: {
-				fn(match) {
-					const
-						p1 = match[1],
-						p2 = match[2],
-						p3 = match[3];
-					return {
-						type: "twineLink",
-						innerText: p2 ? p3 : p1,
-						passage:   p1 ? p3 : p2,
-					};
-				},
-			},
-			
-			simpleLink: {
-				fn: (match) => ({
-					type: "twineLink",
-					innerText: match[1],
-					passage:   match[1],
-				}),
-			},
-			
 			hookPrependedFront: {
 				fn: (match) => ({
 					name: match[1],
@@ -323,10 +328,10 @@
 				fn: () => ({
 					isFront: true,
 					demote() {
-						this.error("This tagged hook doesn't have a matching ].");
+						this.error("This attached hook should end with a ] without a <nametag|.");
 					},
 				}),
-				canFollow: ["macro", "variable"],
+				canFollow: ["macro", "variable", "tempVariable"],
 			},
 			
 			hookAppendedFront: {
@@ -338,7 +343,7 @@
 					rules are identical, the canFollow of one must match
 					the cannotFollow of the other.
 				*/
-				cannotFollow: ["macro", "variable"],
+				cannotFollow: ["macro", "variable", "tempVariable"],
 			},
 			
 			hookBack: {
@@ -351,7 +356,7 @@
 					},
 				}),
 			},
-			
+
 			hookAppendedBack: {
 				fn: (match) => ({
 					name: match[1],
@@ -398,6 +403,11 @@
 					passage: match[2]
 				}),
 			},
+			/*
+				Like GitHub-Flavoured Markdown, Twine preserves line breaks
+				within paragraphs.
+			*/
+			br:            { fn: emptyFn, },
 		});
 		
 		/*
@@ -422,19 +432,37 @@
 				}),
 			},
 			
+			/*
+				Passage links desugar to (link-goto:) calls, so they can
+				be used in expression position.
+			*/
+			passageLink: {
+				fn(match) {
+					const
+						p1 = match[1],
+						p2 = match[2],
+						p3 = match[3];
+					return {
+						type: "twineLink",
+						innerText: p2 ? p3 : p1,
+						passage:   p1 ? p3 : p2,
+					};
+				},
+			},
+			
+			simpleLink: {
+				fn: (match) => ({
+					type: "twineLink",
+					innerText: match[1],
+					passage:   match[1],
+				}),
+			},
+
 			hookRef:  { fn: textTokenFn("name") },
 			
 			variable:   { fn: textTokenFn("name") },
 			
-			whitespace: {
-				fn: emptyFn,
-				/*
-					To save creating tokens for every textual space,
-					this restriction is in place. It should have no effect
-					on syntactic whitespace.
-				*/
-				cannotFollow: "text",
-			},
+			tempVariable: { fn: textTokenFn("name") },
 		});
 		
 		/*
@@ -463,7 +491,14 @@
 						return { isMethodCall:   false };
 					},
 				},
-				
+
+				lambda: {
+					fn: (match) => ({
+						params: match[1],
+						conjunction: match[2],
+					}),
+				},
+
 				groupingFront: {
 					fn: () => ({
 						isFront: true,
@@ -621,7 +656,8 @@
 				},
 				inequality: {
 					fn: (match) => ({
-						operator: match[0],
+						operator: match[2],
+						negate: match[1].indexOf('not') >-1,
 					}),
 				},
 				augmentedAssign: {
@@ -633,6 +669,16 @@
 				identifier: {
 					fn: textTokenFn("name"),
 					cannotFollow: ["text"],
+				},
+
+				whitespace: {
+					fn: emptyFn,
+					/*
+						To save creating tokens for every textual space,
+						this restriction is in place. It should have no effect
+						on syntactic whitespace.
+					*/
+					cannotFollow: "text",
 				},
 			},
 			["boolean", "is", "to", "into", "and", "or", "not",
@@ -657,8 +703,10 @@
 			the arrays must now be modified in-place, using [].push.apply().
 		*/
 		markupMode.push(            ...Object.keys(blockRules),
-									...Object.keys(inlineRules),
-									...Object.keys(expressionRules));
+									// expressionRules must come before inlineRules because
+									// passageLink conflicts with hookAnonymousFront.
+									...Object.keys(expressionRules),
+									...Object.keys(inlineRules));
 		
 		/*
 			Warning: the property pattern "'s" conflicts with the string literal

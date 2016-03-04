@@ -4,6 +4,8 @@
             animation: $animations;
 }
 
+$time: 0.8s;
+
 /* Invalid/instant transition */
 .transition-in {
 	@include animation(appear 0ms step-start);
@@ -15,14 +17,19 @@
 /* Dissolve, fade-in */
 [data-t8n^=fade-in] {
 	&.transition-in {
-		@include animation(appear 0.8s);
+		@include animation(appear $time);
 		/*background-color: hsla(120,50%,50%,0.5);*/
+	}
+	&.transition-out {
+		display:none;
 	}
 }
 [data-t8n^=dissolve] {
-	@extend [data-t8n^=fade-in];
+	&.transition-in {
+		@include animation(appear $time);
+	}
 	&.transition-out {
-		@include animation(appear 0.8s reverse);
+		@include animation(appear $time reverse);
 	}
 }
 
@@ -34,41 +41,43 @@
 [data-t8n^=shudder-in] {
 	&.transition-in {
 		display: inline-block;
-		@include animation(shudder-in 0.8s);
+		@include animation(shudder-in $time);
 	}
 }
 [data-t8n^=shudder-out] {
 	&.transition-out {
 		display: inline-block;
-		@include animation(shudder-out 0.8s);
+		@include animation(shudder-out $time);
 	}
 }
 
 /* Box-flash */
 [data-t8n^=boxflash] {
 	&.transition-in {
-		@include animation(box-flash 0.8s);
+		@include animation(box-flash $time);
 	}
 }
 
 /* Pulse */
 [data-t8n^=pulse] {
 	&.transition-in {
-		@include animation(pulse 0.8s);
+		@include animation(pulse $time);
+		display:inline-block;
 	}
 	&.transition-out {
-		@include animation(pulse 0.8s reverse);
+		@include animation(pulse $time reverse);
+		display:inline-block;
 	}
 }
 
 /* Modifiers */
 [data-t8n$=fast] {
-	animation-duration: 0.4s;
-	-webkit-animation-duration: 0.4s;
+	animation-duration: $time/2;
+	-webkit-animation-duration: $time/2;
 }
 
 /* Modifiers */
 [data-t8n$=slow] {
-	animation-duration: 1.2s;
-	-webkit-animation-duration: 1.2s;
+	animation-duration: $time*2;
+	-webkit-animation-duration: $time*2;
 }

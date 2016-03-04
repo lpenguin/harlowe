@@ -19,6 +19,10 @@ define(['jquery', 'utils', 'renderer'], ($, {assertOnlyHas, impossible, transiti
 		
 		// {String} source            The hook's source, which can be finagled before it is run.
 		source:            "",
+
+		// {String} innerSource       Used by (link:), this stores the original source if some kind
+		//                            of "trigger element" needs to be rendered in its place initially.
+		innerSource:       "",
 		
 		// {Boolean} enabled          Whether or not this code is enabled.
 		//                            (Disabled code won't be used until something enables it).
@@ -26,6 +30,9 @@ define(['jquery', 'utils', 'renderer'], ($, {assertOnlyHas, impossible, transiti
 		
 		// {jQuery} target            Where to render the source, if not the hookElement.
 		target:           null,
+
+		// {Array} newTargets         Alternative targets to use instead of the original.
+		newTargets:       null,
 		
 		// {String} append            Which jQuery method name to append the source to the dest with.
 		append:           "append",
@@ -33,8 +40,8 @@ define(['jquery', 'utils', 'renderer'], ($, {assertOnlyHas, impossible, transiti
 		// {String} [transition]      Which built-in transition to use.
 		transition:       "instant",
 		
-		// {Number} [transitionTime]  The duration of the transition, in ms. CURRENTLY UNUSED.
-		transitionTime:   0,
+		// {Number|Null} [transitionTime]  The duration of the transition, in ms, or null if the default speed should be used.
+		transitionTime:   null,
 		
 		// {Array} styles             A set of CSS styles to apply inline to the hook's element.
 		//                            Used by (position-x:), etc.
@@ -83,33 +90,55 @@ define(['jquery', 'utils', 'renderer'], ($, {assertOnlyHas, impossible, transiti
 			to the target HTML element.
 		*/
 		update() {
-			const {target} = this;
-			/*
-				Apply the style attributes to the target element.
-			*/
-			if (Array.isArray(this.styles)) {
+			const {section, newTargets} = this;
+			let {target} = this;
+			
+			const forEachTarget = (target) => {
 				/*
-					Some styles depend on the pre-existing CSS to calculate their values
-					(for instance, "blurrier" converts the dominant text colour into a
-					text shadow colour, changing the text itself to transparent.)
-					If the user has complicated story CSS, it's not possible
-					to determine what colour should be used for such a hook
-					until it's connected to the DOM. So, now this .css call is deferred
-					for 1 frame, which should (._.) be enough time for it to become attached.
+					Apply the style attributes to the target element.
 				*/
-				setTimeout(() => target.css(Object.assign(...[{}].concat(this.styles))));
-			}
+				if (Array.isArray(this.styles) && this.styles.length > 0) {
+					/*
+						Some styles depend on the pre-existing CSS to calculate their values
+						(for instance, "blurrier" converts the dominant text colour into a
+						text shadow colour, changing the text itself to transparent.)
+						If the user has complicated story CSS, it's not possible
+						to determine what colour should be used for such a hook
+						until it's connected to the DOM. So, now this .css call is deferred
+						for 1 frame, which should (._.) be enough time for it to become attached.
+					*/
+					setTimeout(() => target.css(Object.assign(...[{}].concat(this.styles))));
+				}
+				/*
+					If HTML attributes were included in the changerDescriptor, apply them now.
+				*/
+				if (this.attr) {
+					this.attr.forEach(e => target.attr(e));
+				}
+				/*
+					Same with jQuery data (such as functions to call in event of, say, clicking).
+				*/
+				if (this.data) {
+					target.data(this.data);
+				}
+			};
+
 			/*
-				If HTML attributes were included in the changerDescriptor, apply them now.
+				These three if-statements are explained in render(), from which they have
+				been plucked. In short, forEachTarget should be run on every target element,
+				be there a set or a single one.
 			*/
-			if (this.attr) {
-				this.attr.forEach(e => target.attr(e));
+			if (Array.isArray(newTargets) && newTargets.length) {
+				target = newTargets;
 			}
-			/*
-				Same with jQuery data (such as functions to call in event of, say, clicking).
-			*/
-			if (this.data) {
-				target.data(this.data);
+			if (typeof target === "string") {
+				target = section.selectHook(target);
+			}
+			if (typeof target.forEach === "function") {
+				target.forEach(forEachTarget);
+			}
+			else {
+				forEachTarget(target);
 			}
 		},
 		
@@ -123,17 +152,65 @@ define(['jquery', 'utils', 'renderer'], ($, {assertOnlyHas, impossible, transiti
 		*/
 		render() {
 			const
-				{target, source, transition, enabled} = this;
+				{source, transition, transitionTime, enabled, section, newTargets} = this;
 			let
-				{append} = this;
+				{target, append} = this;
 			
 			assertOnlyHas(this, changeDescriptorShape);
-			
+
 			/*
-				First, a quick check to see if this is enabled and with a target.
-				If not, assume nothing needs to be done, and return.
+				First: if this isn't enabled, everything is fine and nothing needs to be done.
 			*/
-			if (!target || !enabled) {
+			if (!enabled) {
+				return $();
+			}
+
+			/*
+				newTargets are targets (such as ?foo in (replace:?foo)) which should be used instead of
+				the original. This substitution will be caught by the next two if-statements.
+			*/
+			if (Array.isArray(newTargets) && newTargets.length) {
+				target = newTargets;
+			}
+			/*
+				As you know, in TwineScript a pseudo-hook selector is just a
+				raw string. Such strings are passed directly to macros, and,
+				at that point of execution inside TwineScript.eval, they don't
+				have access to a particular section to call selectHook() from.
+				
+				So, we currently defer creating a PseudoHookSet from the selector string
+				until just here.
+			*/
+			if (typeof target === "string") {
+				target = section.selectHook(target);
+			}
+			/*
+				Each individual element of the HookSet, jQuery, Array, etc. must be rendered separately.
+				This simplifies the implementation of render() considerably, and moreover allows the multiple
+				DOMs created at each target to be united into a single jQuery collection to return.
+			*/
+			if (target.jquery && target.length > 1) {
+				target = Array.from(target).map($);
+			}
+			if (typeof target.forEach === "function") {
+				let dom = $();
+				target.forEach((e) => {
+					/*
+						Generate a new descriptor which has the same properties
+						(rather, delegates to the old one via the prototype chain)
+						but has just this hook/word as its target.
+						Then, render using that descriptor.
+					*/
+					dom = dom.add(this.create({ target: e, newTargets:null }).render());
+				});
+				return dom;
+			}
+			/*
+				If there's no target, something incorrect has transpired.
+			*/
+			if (!target) {
+				impossible("ChangeDescriptor.render",
+					"ChangeDescriptor has source but not a target!");
 				return $();
 			}
 			/*
@@ -156,8 +233,8 @@ define(['jquery', 'utils', 'renderer'], ($, {assertOnlyHas, impossible, transiti
 					hook, then I'd change append to "replaceWith".
 				*/
 				else {
-					impossible("Section.render", "The target jQuery doesn't have a '" + append + "' method.");
-					return;
+					impossible("Section.render", "The target doesn't have a '" + append + "' method.");
+					return $();
 				}
 			}
 			/*
@@ -229,7 +306,8 @@ define(['jquery', 'utils', 'renderer'], ($, {assertOnlyHas, impossible, transiti
 						This is #awkward, I know...
 					*/
 					append === "replace" ? target : dom,
-					transition
+					transition,
+					transitionTime
 				);
 			}
 			

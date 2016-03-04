@@ -1,12 +1,14 @@
 <!DOCTYPE html>
 <meta charset="utf-8">
-<title>Jasmine Spec Runner v2.2.1</title>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jasmine/2.2.1/jasmine.css">
+<title>Jasmine Spec Runner v2.4.1</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jasmine/2.4.1/jasmine.css">
+<style>.jasmine-disabled { display:none; } .jasmine-open { z-index:2; }</style>
+<link rel="stylesheet" href="../build/harlowe-css.css"/>
 <script src="../node_modules/es6-shim/es6-shim.min.js"></script>
 <script src="../node_modules/requirejs/require.js"></script>
 <script>
 // Testing the format.js file, with its compiled CSS and minified ES5
-if(location.search.indexOf("&code=formatjs") > -1) {
+if(location.search.indexOf("?code=formatjs") > -1) {
 	window.storyFormat = function(e) {
 		var root = document.createElement('html');
 		root.innerHTML = e.source.replace(/.+\n/,'');
@@ -20,7 +22,7 @@ else {
 	document.write('<link rel="stylesheet" href="../build/harlowe-css.css"\/>');
 
 	// Testing the compiled ES5
-	if(location.search.indexOf("&code=es5") > -1) {
+	if(location.search.indexOf("?code=es5") > -1) {
 		document.write("<script src='../build/harlowe-min.js'><\/script>");
 	}
 	// Testing the raw ES6 source
@@ -30,9 +32,9 @@ else {
 	}
 }
 </script>
-<script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/jasmine/2.2.1/jasmine.js"></script>
-<script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/jasmine/2.2.1/jasmine-html.js"></script>
-<script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/jasmine/2.2.1/boot.js"></script>
+<script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/jasmine/2.4.1/jasmine.js"></script>
+<script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/jasmine/2.4.1/jasmine-html.js"></script>
+<script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/jasmine/2.4.1/boot.js"></script>
 <script role="script" type="text/twine-javascript">
 window.createPassage = function(text, name, tags) {
 	Passages.set(name, new Map([
@@ -45,37 +47,81 @@ window.goToPassage = function(text, name) {
 	Engine.goToPassage(text, name);
 	return $('tw-passage > tw-transition-container, tw-passage > tw-hook');
 };
-window.runPassage = function(text, name) {
+window.runPassage = function(text, name, tags) {
 	name = name || "test";
-	createPassage(text, name);
+	createPassage(text, name, tags);
 	Engine.goToPassage(name);
 	
-	return $('tw-passage > tw-transition-container, tw-passage > tw-hook');
+	return $('tw-passage:last-of-type > tw-transition-container, tw-passage > tw-hook');
 };
-window.expectMarkupToBecome = function(markup, html) {
-	expect(runPassage(markup).html() || '').toBe(html);
-};
-window.expectMarkupToPrint = function(markup, text) {
-	expect(runPassage(markup).find('br').replaceWith(document.createTextNode('\n')).end().text() || '').toBe(text);
-};
-window.expectMarkupToError = function(markup, number) {
-	if (number === undefined) {
-		number = 1;
+
+var combinations = new Set(function recur(prefix, arr) {
+	var ret = [];
+	if (prefix.length >= 4) {
+		return [prefix];
 	}
-	else if (typeof number !== "number") {
-		throw TypeError("Wrong 2nd argument to expectMarkupToError");
+	for (var i = 0; i < arr.length; i += 1) {
+		ret.push(prefix.concat([arr[i]]));
+		ret = ret.concat(recur(prefix.concat([arr[i]]), arr));
 	}
-	expect(runPassage(markup).find('tw-error:not(.javascript)').filter(function(){ return !$(this).text().match(/\[object \w+\]/)}).length).toBe(number);
-};
-window.expectMarkupToJSError = function(markup, number) {
-	if (typeof number !== "number") {
-		number = 1;
-	}
-	expect(runPassage(markup).find('tw-error.javascript').length).toBe(number);
-};
-window.expectMarkupNotToError = window.expectMarkupToNotError = function(markup) {
-	expect(runPassage(markup).find('tw-error').length).toBe(0);
-};
+	return ret;
+}([], [
+	[Number, "2"],
+	[String, "'A𐌎B'"],
+	[Boolean, "false"],
+	[Array, "(a: 2,3,4,5)"],
+	[Map, "(datamap:)"],
+	[Set, "(dataset:)"],
+]));
+
+window.checkMacroTypeSignature = function(macroname, signature, afterward) {
+	Array.from(combinations).filter(function(e) { return e.length <= signature.length + 1; }).forEach(function(combination) {
+		/*
+			Zip up the arguments and signature params to compare them.
+		*/
+		var zipped = [];
+		for (var i = 0; i < Math.max(combination.length, signature.length); i+=1) {
+			zipped.push([combination[i], signature[i]]);
+		}
+
+		var canRun =
+			zipped.every(function(e) {
+				var argument = e[0];
+				var param = e[1];
+				var argType = (argument || {})[0];
+
+				return (argType === param ||
+					/*
+						If param is "any", accept any present argument.
+					*/
+					(param === Macros.TypeSignature.Any && argument !== undefined) &&
+					/*
+						If param is "optional" or "zero or more", the argument may be undefined.
+					*/
+					(param && ["optional","zero or more"].indexOf(param.pattern) > -1 &&
+					argType === param.innerType || argument === undefined) ||
+					/*
+						If param is "either", the argument may be any of the given types.
+					*/
+					(param && param.pattern === "either" &&
+					param.innerType.indexOf(argType) > -1) ||
+					/*
+						If param is undefined, and actual final param was not present, "rest" or "zero or more",
+						the argument may be undefined.
+					*/
+					(param === undefined && (signature.length == 0 || ["rest","zero or more"].indexOf(signature[signature.length-1].pattern) > -1) &&
+					argType === param.innerType || argument === undefined));
+			});
+		var exp = expect("(" + macroname + ":" + combination.map(function(e){return e[1]}) + ")" + afterward);
+		if (canRun) {
+			exp.not.markupToError();
+		}
+		else {
+			exp.markupToError();
+		}
+	});
+}
+
 window.clearState = function() {
 	State.reset();
 	Passages.clear();
@@ -84,6 +130,62 @@ window.Engine = Engine;
 </script>
 <script>
 jasmine.DEFAULT_TIMEOUT_INTERVAL = 10000;
+
+beforeEach(function() {
+	jasmine.addMatchers({
+		markupToBecome: Object.bind(Object,{
+			compare: function(a,e) {
+				if ((runPassage(a).html() || '') === e) {
+					return { pass: true,  message: "Expected markup '" + a + "' not to become '" + e + "'" };
+				} else {
+					return { pass: false, message: "Expected markup '" + a + "' to become '" + e + "'" };
+				}
+			}
+		}),
+		markupToPrint: Object.bind(Object,{
+			compare: function(a,e) {
+				var result = (runPassage(a).find('br').replaceWith(document.createTextNode('\n')).end().text() || '');
+				if (result === e) {
+					return { pass: true,  message: "Expected markup '" + a + "' not to print '" + e + "'" };
+				} else {
+					return { pass: false, message: "Expected markup '" + a + "' to print '" + e + "', not '" + result + "'" };
+				}
+			}
+		}),
+		markupToError: Object.bind(Object,{
+			compare: function(a,e) {
+				var p = runPassage(a);
+				var error = p.find('tw-error:not(.javascript)');
+				if (error.length > 0) {
+					return { pass: true,  message: "Expected markup '" + a + "' not to error, but its error was '" + p.text() + "'" };
+				} else {
+					return { pass: false, message: "Expected markup '" + a + "' to error, but it rendered '" + p.html() + "'" };
+				}
+			},
+			negativeCompare: function(a,e) {
+				var p = runPassage(a);
+				var error = p.find('tw-error'); // Includes tw-error.javascript
+				if (error.length === 0) {
+					return { pass: true,  message: "Expected markup '" + a + "' not to error, but its error was '" + p.text() + "'" };
+				} else {
+					return { pass: false, message: "Expected markup '" + a + "' to error, but it rendered '" + p.html() + "'" };
+				}
+			}
+		}),
+		markupToJSError: Object.bind(Object,{
+			compare: function(a,e) {
+				var p = runPassage(a);
+				var error = p.find('tw-error.javascript');
+				if (error.length > 0) {
+					return { pass: true,  message: "Expected markup '" + a + "' not to throw a JS error, but its error was '" + p.text() + "'" };
+				} else {
+					return { pass: false, message: "Expected markup '" + a + "' to throw a JS error, but it rendered '" + p.html() + "'" };
+				}
+			},
+		}),
+	});
+});
+
 beforeEach(function f(done) {
 	if (window.$ && window.clearState) {
 		$('tw-story').empty();
@@ -100,9 +202,9 @@ afterAll(function() {
 </script>
 <body>
 <nav style="font-family:Monaco;background:#eee;padding:0.5em">
-<a style='color:black' href="#" onclick="location=String(location).replace(/(&amp;.+)?$/,'&amp;code=es6')">Raw ES6</a> |
-<a style='color:black' href="#" onclick="location=String(location).replace(/(&amp;.+)?$/,'&amp;code=es5')">Compiled harlowe-min.js</a> |
-<a style='color:black' href="#" onclick="location=String(location).replace(/(&amp;.+)?$/,'&amp;code=formatjs')">Compiled format.js</a>
+<a style='color:black' href="#" onclick="location=String(location).replace(/\??(code.+)?$/,'?code=es6')">Raw ES6</a> |
+<a style='color:black' href="#" onclick="location=String(location).replace(/\??(code.+)?$/,'?code=es5')">Compiled harlowe-min.js</a> |
+<a style='color:black' href="#" onclick="location=String(location).replace(/\??(code.+)?$/,'?code=formatjs')">Compiled format.js</a>
 </nav>
 
 <!-- include spec files here... -->
@@ -113,6 +215,7 @@ afterAll(function() {
 <script src="spec/markup/headers.js"></script>
 <script src="spec/markup/lists.js"></script>
 <script src="spec/markup/aligners.js"></script>
+<script src="spec/markup/columns.js"></script>
 <script src="spec/markup/verbatim_syntax.js"></script>
 <script src="spec/markup/collapsing_syntax.js"></script>
 <script src="spec/markup/html.js"></script>
@@ -125,17 +228,20 @@ afterAll(function() {
 <script src="spec/twinescript/operators.js"></script>
 <script src="spec/twinescript/identifiers.js"></script>
 <script src="spec/twinescript/variables.js"></script>
+<script src="spec/twinescript/temporary_variables.js"></script>
 <script src="spec/twinescript/property_indexing.js"></script>
 <script src="spec/twinescript/move.js"></script>
 
 <script src="spec/value_macros/primitives.js"></script>
 <script src="spec/value_macros/data_structures.js"></script>
+<script src="spec/value_macros/lambda_macros.js"></script>
 <script src="spec/value_macros/game_state.js"></script>
 
 <script src="spec/changer_macros/control_flow.js"></script>
 <script src="spec/changer_macros/style.js"></script>
 <script src="spec/changer_macros/links.js"></script>
 <script src="spec/changer_macros/hooks.js"></script>
+<script src="spec/changer_macros/enchantment.js"></script>
 <script src="spec/changer_macros/interaction.js"></script>
 <script src="spec/changer_macros/revision.js"></script>
 

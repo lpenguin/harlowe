@@ -11,8 +11,8 @@ jshint_flags = --reporter scripts/jshintreporter.js
 # This function accepts two comma-separated JS string expressions,
 # and replaces every instance of the former in the stream with the latter.
 
-node_replace = node -e '\
-	function read(e) { return require("fs").readFileSync(e,"utf8"); }\
+node_replace = node --harmony_destructuring -e '\
+	var read = e => require("fs").readFileSync(e,"utf8"); \
 	with(process)\
 		stdin.pipe(require("replacestream")($(1))).pipe(stdout)'
 
@@ -25,44 +25,54 @@ css = "{{CSS}}", JSON.stringify("<style title=\"Twine CSS\">" + read("build/harl
 
 # Now, the rules.
 
-default: dirs jshint build/harlowe-css.css
+# Since I can test in Firefox without compiling the ES6 files, default only compiles the CSS.
 
-all: dirs jshint dist/format.js dist/exampleOutput.html
+default: dirs jshint css
+
+css: build/harlowe-css.css
+
+docs:
+	@node --harmony_destructuring scripts/harlowedocs.js
+
+all: dirs jshint dist/format.js docs dist/exampleOutput.html
 
 clean:
-	-rm -f build/*
-	-rm -f dist/*
+	@-rm -f build/*
+	@-rm -f dist/*
 
 dirs:
-	-mkdir -p build dist
+	@-mkdir -p build dist
 
 jshint:
-	jshint js --config js/.jshintrc $(jshint_flags)
-	jshint test/spec --config test/spec/.jshintrc $(jshint_flags)
+	@jshint js --config js/.jshintrc $(jshint_flags)
+	@jshint test/spec --config test/spec/.jshintrc $(jshint_flags)
 
 build/harlowe-css.css: scss/*.scss
-	cat scss/*.scss \
-	| sass --stdin --style compressed --scss \
+	@cat scss/*.scss \
+	| node -e 'var s=""; with(require("sass.js")) with(process) stdin.on("data",d=>s+=d).on("end",_=>compile(s, {style:style.compressed}, s => stdout.write(s.text)))' \
 	> build/harlowe-css.css
 
 build/harlowe-min.js: js/*.js js/*/*.js js/*/*/*.js
-	node_modules/.bin/r.js -o $(requirejs_harlowe_flags) \
+	@node_modules/.bin/r.js -o $(requirejs_harlowe_flags) \
 	| babel --presets es2015 \
 	| uglifyjs - -c --comments \
 	> build/harlowe-min.js
 
 # Crudely edit out the final define() call that's added for codemirror/mode.
 unwrap = /(?:,|\n)define\([^\;]+\;/g, ""
+# Inject the definitions of valid macros, containing only the name/sig/returntype/aka
+validmacros = "\"MACROS\"", JSON.stringify(require("./scripts/metadata").Macro.shortDefs())
 
 build/twinemarkup-min.js: js/markup/*.js js/markup/*/*.js
-	node_modules/.bin/r.js -o $(requirejs_twinemarkup_flags) \
+	@node_modules/.bin/r.js -o $(requirejs_twinemarkup_flags) \
 	| $(call node_replace, $(unwrap)) \
+	| $(call node_replace, $(validmacros)) \
 	| babel --presets es2015 \
 	| uglifyjs - -c --comments \
 	> build/twinemarkup-min.js
 
-dist/format.js : build/harlowe-min.js build/twinemarkup-min.js build/harlowe-css.css
-	cat format.js \
+dist/format.js : build/harlowe-min.js build/twinemarkup-min.js css
+	@cat format.js \
 	| $(call node_replace, $(source)) \
 	| $(call node_replace, $(setup)) \
 	| $(call node_replace, $(engine)) \
@@ -74,12 +84,13 @@ examplename = "{{STORY_NAME}}", "Example Output File"
 engine_raw = "{{HARLOWE}}", "<script title=\"Twine engine code\" data-main=\"harlowe\">" + read("build/harlowe-min.js") + "</script>\n"
 css_raw = "{{CSS}}", "<style title=\"Twine CSS\">" + read("build/harlowe-css.css") + "</style>"
 
-dist/exampleOutput.html: build/harlowe-min.js build/harlowe-css.css
-	cat template.html \
+dist/exampleOutput.html: build/harlowe-min.js css
+	@cat template.html \
 	| $(call node_replace, $(engine_raw)) \
 	| $(call node_replace, $(css_raw)) \
 	| $(call node_replace, $(examplestory)) \
 	| $(call node_replace, $(examplename)) \
 	> dist/exampleOutput.html
 
-.PHONY : all dirs default jshint clean
+.PHONY : all dirs default jshint clean css docs
+

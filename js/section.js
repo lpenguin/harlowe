@@ -6,13 +6,15 @@ define([
 	'twinescript/environ',
 	'state',
 	'utils/hookutils',
+	'utils/operationutils',
 	'datatypes/hookset',
 	'internaltypes/pseudohookset',
 	'internaltypes/changedescriptor',
+	'internaltypes/varscope',
 	'internaltypes/twineerror',
 	'internaltypes/twinenotifier',
 ],
-($, Utils, Selectors, Renderer, Environ, State, HookUtils, HookSet, PseudoHookSet, ChangeDescriptor, TwineError, TwineNotifier) => {
+($, Utils, Selectors, Renderer, Environ, State, {selectorType}, {printBuiltinValue,objectName}, HookSet, PseudoHookSet, ChangeDescriptor, VarScope, TwineError, TwineNotifier) => {
 	"use strict";
 
 	let Section;
@@ -46,21 +48,17 @@ define([
 		@private
 		@param {jQuery} expr The <tw-expression> element.
 		@param {Any} result The result of running the expression.
+		@param {jQuery} nextHook The next <tw-hook> element, passed in solely to save re-computing it.
 	*/
-	function applyExpressionToHook(expr, result) {
-		/*
-			To be considered connected, the next hook must be the very next element.
-		*/
-		const nextHook = expr.next(Selectors.hook);
-		
+	function applyExpressionToHook(expr, result, nextHook) {
 		/*
 			If result is a ChangerCommand, please run it.
 		*/
-		if (result && result.changer) {
+		if (result && typeof result === "object" && result.changer) {
 			if (!nextHook.length) {
 				expr.replaceWith(TwineError.create("changer",
 					"The (" + result.macroName + ":) command should be assigned to a variable or attached to a hook.",
-					"Macros like this should usually be touching the left side of a hook: " + expr.attr('title') + "[Some text]"
+					"Macros like this should appear to the left of a hook: " + expr.attr('title') + "[Some text]"
 				).render(expr.attr('title')));
 			}
 			else {
@@ -99,17 +97,15 @@ define([
 		/*
 			Else, if it's a live macro, please run that.
 		*/
-		else if (result && result.live) {
+		else if (result && typeof result === "object" && result.live) {
 			runLiveHook.call(this, nextHook, result.delay, result.event);
 		}
 		/*
-			And finally, the falsy primitive case.
+			And finally, the false case.
 			This is special: as it prevents hooks from being run, an (else:)
-			that follows this will return true.
+			that follows this will pass.
 		*/
-		else if   (result === false
-				|| result === null
-				|| result === undefined) {
+		else if (result === false) {
 			nextHook.removeAttr('source');
 			expr.addClass("false");
 			
@@ -117,6 +113,16 @@ define([
 				this.stack[0].lastHookShown = false;
 				return;
 			}
+		}
+		/*
+			Any other values that aren't primitive true should result in runtime errors
+			when attached to hooks.
+		*/
+		else if (result !== true && nextHook.length) {
+			expr.replaceWith(TwineError.create("datatype",
+					objectName(result) + " cannot be attached to this hook.",
+					"Only booleans, changer commands, and the (live:) macro can be attached to hooks."
+				).render(expr.attr('title')));
 		}
 		/*
 			The (else:) and (elseif:) macros require a little bit of state to be
@@ -139,6 +145,10 @@ define([
 	*/
 	function runExpression(expr) {
 		/*
+			To be considered connected, the next anonymous hook must be the next non-whitespace element.
+		*/
+		const nextHook = expr.next(Selectors.hook + ":not([name])");
+		/*
 			Execute the expression, and obtain its result value.
 		*/
 		let result = this.eval(expr.popAttr('js') || '');
@@ -147,11 +157,12 @@ define([
 			This must of course run after the sensor/changer function was run,
 			in case that provided an error.
 		*/
-		if (TwineError.containsError(result)) {
-			if (result instanceof Error) {
-				result = TwineError.fromError(result);
+		let error;
+		if ((error = TwineError.containsError(result))) {
+			if (error instanceof Error) {
+				error = TwineError.fromError(error);
 			}
-			expr.replaceWith(result.render(expr.attr('title'), expr));
+			expr.replaceWith(error.render(expr.attr('title'), expr));
 		}
 		/*
 			If we're in debug mode, a TwineNotifier may have been sent.
@@ -161,14 +172,20 @@ define([
 			expr.append(result.render());
 		}
 		/*
-			If the expression had a TwineScript_Print method, do that.
+			Print the expression if it's a string, number, or has a TwineScript_Print method.
 		*/
-		else if (result && result.TwineScript_Print && !result.changer) {
+		else if (!nextHook.length &&
+				(typeof result === "string"
+				|| typeof result === "number"
+				|| result instanceof Map
+				|| result instanceof Set
+				|| Array.isArray(result)
+				|| (result && result.TwineScript_Print && !result.changer))) {
 			/*
-				TwineScript_Print() typically emits side-effects. These
-				will occur... now.
+				TwineScript_Print(), when called by printBuiltinValue(), typically emits
+				side-effects. These will occur... now.
 			*/
-			result = result.TwineScript_Print();
+			result = printBuiltinValue(result);
 			
 			/*
 				If TwineScript_Print returns an object of the form { earlyExit },
@@ -180,10 +197,10 @@ define([
 			}
 			/*
 				On rare occasions (specifically, when the passage component
-				of the link syntax produces an error) TwineScript_Print
+				of the link syntax produces an error) TwineScript_Print()
 				returns a jQuery of the <tw-error>.
 			*/
-			if (result instanceof $) {
+			else if (result instanceof $) {
 				expr.append(result);
 			}
 			/*
@@ -197,22 +214,14 @@ define([
 				expr.replaceWith(result.render(expr.attr('title'), expr));
 			}
 			else {
+				/*
+					Transition the resulting Twine code into the expression's element.
+				*/
 				this.renderInto(result, expr);
 			}
 		}
-		/*
-			This prints an object if it's a string, number, or has a custom toString method
-			and isn't a function.
-		*/
-		else if (typeof result === "string"  || typeof result === "number"
-			|| (typeof result === "object" && result && result.toString !== Object.prototype.toString)) {
-			/*
-				Transition the resulting Twine code into the expression's element.
-			*/
-			this.renderInto(result + '', expr);
-		}
 		else {
-			applyExpressionToHook.call(this, expr, result);
+			applyExpressionToHook.call(this, expr, result, nextHook);
 		}
 	}
 	
@@ -466,14 +475,19 @@ define([
 					The expression stack is an array of plain objects,
 					each housing runtime data that is local to the expression being
 					evaluated. It is used by macros such as "display" and "if" to
-					keep track of prior evaluations - e.g. display loops, else().
+					keep track of prior evaluations - e.g. display loops, (else:).
+					Its objects currently are allowed to possess:
+					- lastHookShown: Boolean
+					- tempVariables: VarScope
 					
 					render() pushes a new object to this stack before
 					running expressions, and pops it off again afterward.
 				*/
 				stack: [],
 				/*
-					This is an enchantments stack. I'll explain later.
+					This is an enchantments stack. Enchantment objects (created by macros
+					such as (click:)) are tracked here to ensure that post-hoc permutations
+					of this enchantment's DOM are also enchanted correctly.
 				*/
 				enchantments: []
 			});
@@ -563,7 +577,7 @@ define([
 				|| PseudoHookSet.isPrototypeOf(selectorString)) {
 				return selectorString;
 			}
-			switch(HookUtils.selectorType(selectorString)) {
+			switch(selectorType(selectorString)) {
 				case "hookRef": {
 					return HookSet.create(this, selectorString);
 				}
@@ -609,25 +623,18 @@ define([
 			@return {Boolean} Whether the ChangeDescriptors enabled the rendering
 				(i.e. no (if:false) macros or such were present).
 		*/
-		renderInto(source, target, changers) {
+		renderInto(source, target, ...changers) {
 			/*
 				This is the ChangeDescriptor that defines this rendering.
 			*/
-			const desc = ChangeDescriptor.create({ target, source, });
-				
-			/*
-				Define an additional desc property linking it back to this section.
-				This is used by enchantment macros to determine where to register
-				their enchantments to.
-			*/
-			desc.section = this;
+			const desc = ChangeDescriptor.create({ target, source, section: this});
 			
 			/*
 				Run all the changer functions.
 				[].concat() wraps a non-array in an array, while
 				leaving arrays intact.
 			*/
-			changers && [].concat(changers).forEach((changer) => {
+			changers.forEach((changer) => {
 				/*
 					If a non-changer object was passed in (such as from
 					specificEnchantmentEvent()), assign its values,
@@ -635,35 +642,13 @@ define([
 					Honestly, having non-changer descriptor-altering objects
 					is a bit displeasingly rough-n-ready, but it's convenient...
 				*/
-				if (!changer || !changer.changer) {
+				if (!changer.changer) {
 					Object.assign(desc, changer);
 				}
 				else {
 					changer.run(desc);
 				}
 			});
-			
-			/*
-				As you know, in TwineScript a pseudo-hook selector is just a
-				raw string. Such strings are passed directly to macros, and,
-				at that point of execution inside TwineScript.eval, they don't
-				have access to a particular section to call selectHook() from.
-				
-				So, we currently defer creating an array from the selector string
-				until just here.
-			*/
-			if (typeof desc.target === "string") {
-				desc.target = this.selectHook(desc.target);
-			}
-			
-			/*
-				If there's no target, something incorrect has transpired.
-			*/
-			if (!desc.target) {
-				Utils.impossible("Section.renderInto",
-					"ChangeDescriptor has source but not a target!");
-				return false;
-			}
 			
 			/*
 				This stores the returned DOM created by rendering the changeDescriptor.
@@ -679,25 +664,6 @@ define([
 				dom = TwineError.create("infinite", "Printing this expression may have trapped me in an infinite loop.")
 					.render(target.attr('title')).replaceAll(target);
 			}
-			/*
-				Otherwise, render the source into the target.
-				
-				When a non-jQuery is the target in the descriptor, it is bound to be
-				a HookSet or PseudoHookSet, and each word or hook within that set
-				must be rendered separately. This simplifies the implementation
-				of render() considerably.
-			*/
-			else if (!(desc.target instanceof $)) {
-				desc.target.forEach((e) => {
-					/*
-						Generate a new descriptor which has the same properties
-						(rather, delegates to the old one via the prototype chain)
-						but has just this hook/word as its target.
-						Then, render using that descriptor.
-					*/
-					dom = dom.add(desc.create({ target: e }).render());
-				});
-			}
 			else {
 				/*
 					Now, run the changer.
@@ -709,7 +675,7 @@ define([
 				Before executing the expressions, put a fresh object on the
 				expression data stack.
 			*/
-			this.stack.unshift(Object.create(null));
+			this.stack.unshift(Object.assign(Object.create(null), {tempVariables: Object.create(VarScope)}));
 			
 			/*
 				This provides (sigh) a reference to this object usable by the

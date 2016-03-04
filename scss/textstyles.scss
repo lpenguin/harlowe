@@ -10,8 +10,8 @@ h3 {
 	font-size: 1.75em;
 }
 h1, h2, h3, h4, h5, h6 {
-	line-height: 1em;
-	margin: 0.6em 0;
+	line-height: 1rem;
+	margin: 0.3em 0 0.6em 0;
 }
 
 pre {
@@ -19,11 +19,11 @@ pre {
 }
 
 small {
-    font-size: 70%;
+	font-size: 70%;
 }
 
 big {
-    font-size: 120%;
+	font-size: 120%;
 }
 
 mark {
@@ -58,10 +58,23 @@ blink {
 	-webkit-animation: fade-in-out 1s steps(1,end) infinite alternate;
 }
 
+/* This causes consecutive line breaks to consume less height than they normally would. */
+br + br {
+	display:block;
+	height: 0;
+	margin: 0.25ex 0;
+}
+
 /*** Secondary text styles, for general use by Twine authors ***/
 
 tw-align {
 	display:block;
+}
+
+tw-columns {
+	@include flexbox;
+	@include flex-direction(row);
+	@include justify-content(space-between);
 }
 
 tw-outline {

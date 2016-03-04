@@ -16,17 +16,17 @@ describe("interaction macros", function() {
 	}].forEach(function(e) {
 		describe("(" + e.name + ":)", function() {
 			it("accepts either 1 hookset or 1 non-empty string", function() {
-				expectMarkupToNotError("(print:(" + e.name + ":?foo))");
-				expectMarkupToNotError("(print:(" + e.name + ":'baz'))");
+				expect("(print:(" + e.name + ":?foo))").not.markupToError();
+				expect("(print:(" + e.name + ":'baz'))").not.markupToError();
 
-				expectMarkupToError("(print:(" + e.name + ":?foo, ?bar))");
-				expectMarkupToError("(print:(" + e.name + ":?foo, 'baz'))");
-				expectMarkupToError("(print:(" + e.name + ":'baz', 'baz'))");
-				expectMarkupToError("(print:(" + e.name + ":''))");
+				expect("(print:(" + e.name + ":?foo, ?bar))").markupToError();
+				expect("(print:(" + e.name + ":?foo, 'baz'))").markupToError();
+				expect("(print:(" + e.name + ":'baz', 'baz'))").markupToError();
+				expect("(print:(" + e.name + ":''))").markupToError();
 			});
 			it("errors when placed in passage prose while not attached to a hook", function() {
-				expectMarkupToError("(" + e.name + ":?foo)");
-				expectMarkupToNotError("(" + e.name + ":?foo)[]");
+				expect("(" + e.name + ":?foo)").markupToError();
+				expect("(" + e.name + ":?foo)[]").not.markupToError();
 			});
 			describe("given a single hook", function() {
 				it("enchants the selected hook as a " + e.action, function() {

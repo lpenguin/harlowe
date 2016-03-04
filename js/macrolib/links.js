@@ -16,7 +16,7 @@ define(['jquery', 'macros', 'utils', 'utils/selectors', 'state', 'passages', 'en
 		Sadly, since there's no permitted way to attach a jQuery handler
 		directly to the triggering element, the "actual" handler
 		is "attached" via a jQuery .data() key, and must be called
-		from this <html> handler.
+		from this <tw-story> handler.
 	*/
 	$(() => $(Utils.storyElement).on(
 		/*
@@ -27,9 +27,9 @@ define(['jquery', 'macros', 'utils', 'utils/selectors', 'state', 'passages', 'en
 		function clickLinkEvent() {
 			const link = $(this),
 				/*
-					This could be a (link:) link. Such links' events
+					This could be a (link:) command. Such links' events
 					are, due to limitations in the ChangeDescriptor format,
-					attached to the <tw-expression> enclosing it.
+					attached to the <tw-expression> next to it.
 				*/
 				event = link.parent().data('clickEvent');
 			
@@ -39,7 +39,7 @@ define(['jquery', 'macros', 'utils', 'utils/selectors', 'state', 'passages', 'en
 			}
 			/*
 				If no event was registered, then this must be
-				a passage link.
+				a passage link (a non-command).
 			*/
 			const next = link.attr('passage-name');
 			
@@ -52,7 +52,7 @@ define(['jquery', 'macros', 'utils', 'utils/selectors', 'state', 'passages', 'en
 	
 	[
 		/*d:
-			(link: String) -> Command
+			(link: String) -> Changer
 			Also known as: (link-replace:)
 			
 			Makes a command to create a special link that can be used to show a hook.
@@ -76,10 +76,12 @@ define(['jquery', 'macros', 'utils', 'utils/selectors', 'state', 'passages', 'en
 			
 			See also:
 			(link-reveal:), (link-repeat:), (link-goto:), (click:)
+
+			#links 1
 		*/
 		["link", "link-replace"],
 		/*d:
-			(link-reveal: String) -> Command
+			(link-reveal: String) -> Changer
 			
 			Makes a command to create a special link that shows a hook, keeping the link's
 			text visible after clicking.
@@ -103,10 +105,12 @@ define(['jquery', 'macros', 'utils', 'utils/selectors', 'state', 'passages', 'en
 			
 			See also:
 			(link:), (link-repeat:), (link-goto:), (click:)
+
+			#links 2
 		*/
 		["link-reveal"],
 		/*d:
-			(link-repeat: String) -> Command
+			(link-repeat: String) -> Changer
 			
 			Makes a command to create a special link that shows a hook, and, when clicked again,
 			re-runs the hook, replacing its contents with a newer version.
@@ -129,13 +133,21 @@ define(['jquery', 'macros', 'utils', 'utils/selectors', 'state', 'passages', 'en
 			
 			See also:
 			(link-reveal:), (link:), (link-goto:), (click:)
+			
+			#links 3
 		*/
 		["link-repeat"]
 	].forEach(arr =>
 		Macros.addChanger(arr,
 			(_, expr) => ChangerCommand.create(arr[0], [expr]),
 			(desc, text) => {
-				const innerSource = desc.source;
+				/*
+					This check ensures that multiple concatenations of (link:) do not overwrite
+					the original source with their successive '<tw-link>' substitutions.
+				*/
+				if (!desc.innerSource) {
+					desc.innerSource = desc.source;
+				}
 				desc.source = '<tw-link tabindex=0>' + text + '</tw-link>';
 				/*
 					Only (link-replace:) removes the link on click (by using the "replace"
@@ -144,8 +156,8 @@ define(['jquery', 'macros', 'utils', 'utils/selectors', 'state', 'passages', 'en
 				desc.append = arr[0] === "link" ? "replace" : "append";
 				desc.data = {
 					clickEvent(link) {
-						desc.source = innerSource;
-						desc.section.renderInto(innerSource + "", null, desc);
+						desc.source = desc.innerSource;
+						desc.section.renderInto(desc.innerSource + "", null, desc);
 						/*
 							Only (link-reveal:) turns the link into plain text:
 							the others either remove it (via the above) or leave it be.
@@ -164,6 +176,39 @@ define(['jquery', 'macros', 'utils', 'utils/selectors', 'state', 'passages', 'en
 		(link-goto:) is an eager version of (link:...)[(goto:...)], where the
 		passage name ((goto:)'s argument) is evaluated alongside (link:)'s argument.
 		It is also what the standard link syntax desugars to.
+	*/
+	/*d:
+		(link-goto: String, [String]) -> Command
+		
+		Takes a string of link text, and an optional destination passage name, and makes a command to create
+		a link that takes the player to another passage. The link functions identically to a standard link.
+		This command should not be attached to a hook.
+		
+		Example usage:
+		* `(link-goto: "Enter the cellar", "Cellar")` is approximately the same as `[[Enter the cellar->Cellar]]`.
+		* `(link-goto: "Cellar")` is the same as `[[Cellar]]`.
+
+		Rationale:
+		This macro serves as an alternative to the standard link syntax (`[[Link text->Destination]]`), but has a couple of
+		slight differences.
+
+		* The link syntax lets you supply a fixed text string for the link, and an expression for the destination
+		passage's name. However, it does not provide any other means of computing the link. (link-goto:) also
+		allows the link text to be any expression - so, something like `(link-goto: "Move " + $name + "to the cellar", "Cellar")`
+		can be written.
+
+		* The resulting command from this macro, like all commands, can be saved and used elsewhere.
+		If you have a complicated link you need to use in several passages, you could (set:) it to a variable and use that variable
+		in its place.
+
+		Details:
+		As a bit of trivia... the Harlowe engine actually converts all standard links into (link-goto:) macro calls internally -
+		the link syntax is, essentially, a syntactic shorthand for (link-goto:).
+
+		See also:
+		(link:), (link-reveal:), (link-repeat:), (goto:)
+
+		#links 4
 	*/
 	Macros.add
 		(["link-goto"],

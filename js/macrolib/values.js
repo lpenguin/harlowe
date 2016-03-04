@@ -10,6 +10,16 @@ define(['macros', 'utils/operationutils', 'internaltypes/twineerror'],
 		{rest, zeroOrMore,
 		/* Any is a value, not a method. */
 		Any} = Macros.TypeSignature;
+
+	const
+		/*
+			These two strings are modified copies of regex components from markup/patterns.js.
+		*/
+		// This includes all forms of Unicode 6 whitespace (including \n and \r) except Ogham space mark.
+		whitespace   = "[ \\n\\r\\f\\t\\v\u00a0\u2000-\u200a\u2028\u2029\u202f\u205f\u3000]",
+
+		// This handles alphanumeric ranges not covered by \w. Doesn't include hyphens or underscores.
+		anyLetter    = "[\\dA-Za-z\u00c0-\u00de\u00df-\u00ff\u0150\u0170\u0151\u0171\\uD800-\\uDFFF]";
 	
 	Macros.add
 		/*d:
@@ -20,7 +30,7 @@ define(['macros', 'utils/operationutils', 'internaltypes/twineerror'],
 			When making a story, you'll mostly work with strings that you intend to insert into
 			the passage source. If a string contains markup, then the markup will be processed when it's
 			inserted. For instance, `"The ''biiiiig'' bellyblob"` will print as "The <b>biiiiig</b> bellyblob".
-			Even macro calls inside strings will be processed: printing `"The (print:2+3) bears"` will print "The 6 bears".
+			Even macro calls inside strings will be processed: printing `"The (print:2*3) bears"` will print "The 6 bears".
 			If you wish to avoid this, simply include the verbatim markup inside the string:``"`It's (exactly: as planned)`"`` will
 			print "It's (exactly: as planned)".
 			
@@ -30,8 +40,24 @@ define(['macros', 'utils/operationutils', 'internaltypes/twineerror'],
 			Also, notice that you can only add strings together. You can't subtract them, much less multiply or divide them.
 			
 			Strings are similar to arrays, in that their individual characters can be accessed: `"ABC"'s 1st` evaluates to "A",
-			and `"Exeunt"'s last` evaluates to "t". They, too, have a "length": `"Marathon"'s length` is 8. The (substring:)
-			macro may be used to retrieve subsections of a string.
+			`"Gosh"'s 2ndlast` evaluates to "s", and `"Exeunt"'s last` evaluates to "t". They, too, have a "length":
+			`"Marathon"'s length` is 8. If you don't know the exact position of a character, you can use an expression,
+			in brackers, after it: `$string's ($pos - 3)`.
+
+			Also, you can use the `contains` and `is in` operators to see if a certain string is contained within another: `"mother"
+			contains "moth"` is true, as is `"a" is in "a"`.
+
+			To summarise, here are the operations you can perform on strings.
+
+			| Operator | Function | Example
+			|---
+			| `+` | Joining. | `"A" + "Z"` (is "AZ")
+			| `is` | Evaluates to boolean `true` if both sides are equal, otherwise `false`. | `$name is "Frederika"`
+			| `is not` | Evaluates to boolean `true` if both sides are not equal, otherwise `false`. | `$friends is not $enemies`
+			| `contains` | Evaluates to boolean `true` if the left side contains the right side, otherwise `false`. | `"Fear" contains "ear"`
+			| `is in` | Checking if the right string contains the left string, otherwise `false`. | `"ugh" is in "Through"`
+			| `'s` | Obtaining the character at the right numeric position. | `"YO"'s 1st` (is "Y")<br>`"PS"'s (2)` (is "S")
+			| `of` | Obtaining the character at the left numeric position. | `1st of "YO"` (is "Y")<br>`(2) of "PS"` (is "S")
 		*/
 		/*d:
 			(text: [Number or String or Boolean or Array]...) -> String
@@ -61,6 +87,8 @@ define(['macros', 'utils/operationutils', 'internaltypes/twineerror'],
 			
 			See also:
 			(num:)
+
+			#string
 		*/
 		(["text", "string"],
 			/*
@@ -75,32 +103,167 @@ define(['macros', 'utils/operationutils', 'internaltypes/twineerror'],
 		/*d:
 			(substring: String, Number, Number) -> String
 			
-			This macro produces a substring of the given string, cut from two *inclusive* number positions.
+			This macro produces a substring of the given string, cut from two inclusive number positions.
 			
 			Example usage:
-			`(substring: "growl", 3, 5)` (results in the string "owl").
-			
+			`(substring: "growl", 3, 5)` is the same as `"growl"'s (a:3,4,5)`
+
 			Rationale:
-			If you need to examine a portion of a string between certain character positions, or
-			wanted to strip off a known number of characters from either end of a string,
-			this macro can be used. Simply provide it with the string itself, then the number position
-			of the leftmost character of the substring, then the position of the rightmost character.
+			You can obtain substrings of strings without this macro, by using the `'s` or `of` syntax along
+			with an array of positions. For instance, `$str's (range:4,12)` obtains a substring of $str containing
+			its 4th through 12th characters. But, for compatibility with previous Harlowe versions which did not
+			feature this syntax, this macro also exists.
 			
 			Details:
 			If you provide negative numbers, they will be treated as being offset from the end
 			of the string - `-2` will specify the `2ndlast` character, just as 2 will specify
 			the `2nd` character.
 			
-			If the last number given is larger than the first (for instance, in `(substring: "hewed", 4, 2)`)
+			If the last number given is smaller than the first (for instance, in `(substring: "hewed", 4, 2)`)
 			then the macro will still work - in that case returning "ewe" as if the numbers were in
 			the correct order.
 			
 			See also:
 			(subarray:)
+
+			#string
 		*/
 		("substring", (_, string, a, b) => subset(string, a, b),
 		[String, Number, Number])
+
+		/*d:
+			(lowercase: String) -> String
+			
+			This macro produces a lowercase version of the given string.
+			
+			Example usage:
+			`(lowercase: "GrImAcE")` is the same as `"grimace"`
+			
+			Details:
+			The results of this macro for non-ASCII characters currently depends on the player's browser's Unicode
+			support. For instance, 'İ' in lowercase should be 'i̇', but some browsers don't support this.
+			
+			See also:
+			(uppercase:), (startcase:)
+
+			#string
+		*/
+		("lowercase", (_, string) => string.toLowerCase(),
+		[String])
 		
+		/*d:
+			(uppercase: String) -> String
+			
+			This macro produces an uppercase version of the given string.
+			
+			Example usage:
+			`(uppercase: "GrImAcE")` is the same as `"GRIMACE"`
+			
+			Details:
+			The results of this macro for non-ASCII characters currently depends on the player's browser's Unicode
+			support. For instance, 'ß' in uppercase should be 'SS', but some browsers don't support this.
+			
+			See also:
+			(uppercase:), (upperfirst:), (lowerfirst:), (startcase:),
+
+			#string
+		*/
+		("uppercase", (_, string) => string.toUpperCase(),
+		[String])
+		
+		/*d:
+			(lowerfirst: String) -> String
+			
+			This macro produces a version of the given string, where the first alphanumeric character is lowercase, and
+			other characters are left as-is.
+			
+			Example usage:
+			`(lowerfirst: "  College B")` is the same as `"  college B"`
+			
+			Details:
+			If the first alphanumeric character cannot change case (for instance, if it's a number) then nothing
+			will change in the string. So, "8DX" won't become "8dX".
+
+			The results of this macro for non-ASCII characters currently depends on the player's browser's Unicode
+			support. For instance, 'İ' in lowercase should be 'i̇', but some browsers don't support this.
+			
+			See also:
+			(uppercase:), (lowercase:), (upperfirst:), (startcase:)
+
+			#string
+		*/
+		("lowerfirst", (_, string) =>
+			// This has to be an entire word, to handle surrogate pairs and single characters alike.
+			string.replace(new RegExp(anyLetter + "+"), word => {
+				// Split the word into code points first.
+				word = Array.from(word);
+				return word[0].toLowerCase() + (word.slice(1).join('')).toLowerCase();
+			}
+		),
+		[String])
+		
+		/*d:
+			(upperfirst: String) -> String
+			
+			This macro produces a version of the given string, where the first alphanumeric character is uppercase, and
+			other characters are left as-is.
+			
+			Example usage:
+			`(upperfirst: "  college B")` is the same as `"  College B"`
+			
+			Details:
+			If the first alphanumeric character cannot change case (for instance, if it's a number) then nothing
+			will change in the string. So, "4ever" won't become "4Ever".
+
+			The results of this macro for non-ASCII characters currently depends on the player's browser's Unicode
+			support. For instance, 'ß' in uppercase should be 'SS', but some browsers don't support this.
+			
+			See also:
+			(uppercase:), (startcase:)
+
+			#string
+		*/
+		("upperfirst", (_, string) =>
+			// This has to be an entire word, to handle surrogate pairs and single characters alike.
+			string.replace(new RegExp(anyLetter + "+"), word => {
+				// Split the word into code points first.
+				word = Array.from(word);
+				return word[0].toUpperCase() + (word.slice(1).join('')).toLowerCase();
+			}
+		),
+		[String])
+
+		/*d:
+			(words: String) -> Array
+			
+			This macro takes a string and creates an array of each word ("word" meaning a sequence of non-whitespace
+			characters) in the string.
+			
+			Example usage:
+			`(words: "god-king Torment's peril")` is the same as `(a: "god-king", "Torment's", "peril")`
+			
+			Rationale:
+			It can be useful to explicitly distinguish individual words within a string, in a manner not possible
+			with just the `contains` operator - for instance, seeing if a string contains the bare word "to" - not "torn"
+			or any other larger word. This macro allows a string's words to be split up and examined individually -
+			you can safely check if `(words: $a) contains "to"`, or check on a particular word in the sequence by
+			asking if, say, `(words: $a)'s 2nd is 'goose'`.
+
+			Details:
+			If the string was empty or contained only whitespace, then this will create an empty array. Moreover,
+			if the string contained no whitespace, then the array will contain just the entire original string.
+
+			The whitespace characters recognised by this macro include line breaks, non-breaking spaces, and other uncommon
+			space characters.
+			
+			See also:
+			(startcase:)
+
+			#string
+		*/
+		("words", (_, string) => string.split(new RegExp(whitespace + "+")).filter(Boolean),
+		[String])
+
 		/*d:
 			Number data
 			
@@ -113,7 +276,7 @@ define(['macros', 'utils/operationutils', 'internaltypes/twineerror'],
 			operations in mathematics: first multiplying and dividing, then adding and subtracting. You can group
 			subexpressions together and force them to be evaluated first with parentheses.
 			
-			If you're not familiar with some of those symbols, here's a review:
+			If you're not familiar with some of those symbols, here's a review, along with various other operations you can perform.
 			
 			| Operator | Function | Example
 			|---
@@ -122,8 +285,12 @@ define(['macros', 'utils/operationutils', 'internaltypes/twineerror'],
 			| `*` | Multiplication. | `5 * 5` (is 25)
 			| `/` | Division. | `5 / 5` (is 1)
 			| `%` | Modulo (remainder of a division). | `5 % 26` (is 1)
+			| `>` | Evaluates to boolean `true` if the left side is greater than the right side, otherwise `false`. | `$money > 3.75`
+			| `>=` | Evaluates to boolean `true` if the left side is greater than or equal to the right side, otherwise `false`. | `$apples >= $carrots + 5`
+			| `<` | Evaluates to boolean `true` if the left side is less than the right side, otherwise `false`. | `$shoes < $people * 2`
+			| `<=` | Evaluates to boolean `true` if the left side is less than or equal to the right side, otherwise `false`. | `65 <= $age`
 			
-			You can only perform these operations on two pieces of data if they're both numbers. Adding the
+			You can only perform these operations (apart from `is`) on two pieces of data if they're both numbers. Adding the
 			string "5" to the number 2 would produce an error, and not the number 7 nor the string "52". You must
 			convert one side or the other using the (num:) or (text:) macros.
 		*/
@@ -151,6 +318,8 @@ define(['macros', 'utils/operationutils', 'internaltypes/twineerror'],
 			
 			See also:
 			(text:)
+
+			#number
 		*/
 		(["num", "number"], (_, expr) => {
 			/*
@@ -171,22 +340,21 @@ define(['macros', 'utils/operationutils', 'internaltypes/twineerror'],
 			Computers can perform more than just mathematical tasks - they are also virtuosos in classical logic. Much as how
 			arithmetic involves manipulating numbers with addition, multiplication and such, logic involves manipulating the
 			values `true` and `false` using its own operators. Those are not text strings - they are values as fundamental as
-			the natural numbers. In computer science, they are both called **Booleans**, after the 19th century mathematician
+			the natural numbers. In computer science, they are both called *Booleans*, after the 19th century mathematician
 			George Boole.
 			
-			`is` is a logical operator that's short for 'equals.' Just as + adds the two numbers on each side of it, `is`
-			compares two values on each side and evaluates to `true` or `false` depending on whether they're identical. It
-			works equally well with strings, numbers, arrays, and anything else, but beware - the string `"2"` is not equal
-			to the number 2.
+			`is` is a logical operator. Just as + adds the two numbers on each side of it, `is` compares two values on each
+			side and evaluates to `true` or `false` depending on whether they're identical. It works equally well with strings,
+			numbers, arrays, and anything else, but beware - the string `"2"` is not equal to the number 2.
 			
-			There are several other logical operators available:
+			There are several other logical operators available.
 			
-			| Operator | Function | Example
+			| Operator | Purpose | Example
 			|---
-			| `is` | Evaluates to `true` if both sides are equal. | `$bullets is 5`
+			| `is` | Evaluates to `true` if both sides are equal, otherwise `false`. | `$bullets is 5`
 			| `is not` | Evaluates to `true` if both sides are not equal. | `$friends is not $enemies`
-			| `contains` | Evaluates to `true` if the left side equals or contains the right side | `"Fear" contains "ear"`
-			| `is in` | Evaluates to `true` if the right side equals or contains the left side | `"ugh" is in "Through"`
+			| `contains` | Evaluates to `true` if the left side contains the right side. | `"Fear" contains "ear"`
+			| `is in` | Evaluates to `true` if the right side contains the left side. | `"ugh" is in "Through"`
 			| `>` | Evaluates to `true` if the left side is greater than the right side. | `$money > 3.75`
 			| `>=` | Evaluates to `true` if the left side is greater than or equal to the right side. | `$apples >= $carrots + 5`
 			| `<` | Evaluates to `true` if the left side is less than the right side. | `$shoes < $people * 2`
@@ -218,28 +386,47 @@ define(['macros', 'utils/operationutils', 'internaltypes/twineerror'],
 		};
 	}
 	
-	/*
-		Choose one argument. Can be used as such: (either: "pantry", "larder", "cupboard" )
-	*/
-	function either(...args) {
-		return args[~~(Math.random() * args.length)];
-	}
-	
 	({
-		/*
-			Wrappers for Date
-		*/
+		/*d:
+			(weekday:) -> String
 
-		// The current weekday, in full
+			This date/time macro produces one of the strings "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday"
+			or "Saturday", based on the weekday on the current player's system clock.
+
+			Example usage:
+			`Today is a (weekday:).`
+
+			#date and time
+		*/
 		weekday: [() => ['Sun', 'Mon', 'Tues', 'Wednes', 'Thurs', 'Fri', 'Satur'][new Date().getDay()] + "day",
 		// 0 args
 		null],
 
-		// The current day number
+		/*d:
+			(monthday:) -> Number
+
+			This date/time macro produces a number corresponding to the day of the month on the current player's system clock.
+			This should be between 1 (on the 1st of the month) and 31, inclusive.
+
+			Example usage:
+			`Today is day (monthday:).`
+			
+			#date and time
+		*/
 		monthday: [() => new Date().getDate(),
 		null],
 
-		// The current time in 12-hour hours:minutes format.
+		/*d:
+			(current-time:) -> String
+
+			This date/time macro produces a string of the current 12-hour time on the current player's system clock,
+			in the format "12:00 AM".
+
+			Example usage:
+			`The time is (current-time:).`
+			
+			#date and time
+		*/
 		currenttime: [() => {
 			const d = new Date(),
 				am = d.getHours() < 12;
@@ -248,40 +435,219 @@ define(['macros', 'utils/operationutils', 'internaltypes/twineerror'],
 		},
 		null],
 
-		// The current date in DateString format (eg. "Thu Jan 01 1970").
+		/*d:
+			(current-date:) -> String
+
+			This date/time macro produces a string of the current date the current player's system clock,
+			in the format "Thu Jan 01 1970".
+
+			Example usage:
+			`Right now, it's (current-date:).`
+			
+			#date and time
+		*/
 		currentdate: [() => {
 			return new Date().toDateString();
 		},
 		null],
 
-		/*
-			Wrappers for basic Math
-			(includes ES6 polyfills)
-		*/
+		/*d:
+			(min: ...Number) -> Number
 
+			This maths macro accepts numbers, and evaluates to the lowest valued number.
+
+			Example usage:
+			`(min: 2, -5, 2, 7, 0.1)` produces -5.
+
+			#maths
+		*/
 		min: [Math.min, rest(Number)],
-		max: [Math.max, rest(Number)],
-		abs: [Math.abs, Number],
-		sign: [Math.sign, Number],
-		sin:    [Math.sin, Number],
-		cos:    [Math.cos, Number],
-		tan:    [Math.tan, Number],
-		floor:  [Math.floor, Number],
-		round:  [Math.round, Number],
-		ceil:   [Math.ceil, Number],
-		pow:    [Math.pow, Number],
-		exp:    [Math.exp, Number],
-		sqrt:   [mathFilter(Math.sqrt), Number],
-		log:    [mathFilter(Math.log), Number],
-		log10:  [mathFilter(Math.log10), Number],
-		log2:   [mathFilter(Math.log2), Number],
-		
-		/*
-			Basic randomness
-		*/
+		/*d:
+			(max: ...Number) -> Number
 
-		/*
-			This function returns a random integer from a to b inclusive.
+			This maths macro accepts numbers, and evaluates to the highest valued number.
+
+			Example usage:
+			`(max: 2, -5, 2, 7, 0.1)` produces 7.
+
+			#maths
+		*/
+		max: [Math.max, rest(Number)],
+		/*d:
+			(abs: Number) -> Number
+
+			This maths macro finds the absolute value of a number (without the sign).
+
+			Example usage:
+			`(abs: -4)` produces 4.
+
+			#maths
+		*/
+		abs: [Math.abs, Number],
+		/*d:
+			(sign: Number) -> Number
+
+			This maths macro produces -1 when given a negative number, 0 when given 0, and 1
+			when given a positive number.
+
+			Example usage:
+			`(sign: -4)` produces -1.
+
+			#maths
+		*/
+		sign: [Math.sign, Number],
+		/*d:
+			(sin: Number) -> Number
+
+			This maths macro computes the sine of the given number of radians.
+
+			Example usage:
+			`(sin: 3.14159265 / 2)` produces 1.
+
+			#maths
+		*/
+		sin:    [Math.sin, Number],
+		/*d:
+			(cos: Number) -> Number
+
+			This maths macro computes the cosine of the given number of radians.
+
+			Example usage:
+			`(cos: 3.14159265)` produces -1.
+
+			#maths
+		*/
+		cos:    [Math.cos, Number],
+		/*d:
+			(tan: Number) -> Number
+
+			This maths macro computes the tangent of the given number of radians.
+
+			Example usage:
+			`(tan: 3.14159265 / 4)` produces approximately 1.
+
+			#maths
+		*/
+		tan:    [Math.tan, Number],
+		/*d:
+			(floor: Number) -> Number
+
+			This macro rounds the given number downward to a whole number. If a whole number is provided,
+			it returns the number as-is.
+
+			Example usage:
+			`(floor: 1.99)` produces 1.
+
+			#number
+		*/
+		floor:  [Math.floor, Number],
+		/*d:
+			(round: Number) -> Number
+
+			This macro rounds the given number to the nearest whole number - downward if
+			its decimals are smaller than 0.5, and upward otherwise. If a whole number is provided,
+			it returns the number as-is.
+
+			Example usage:
+			`(round: 1.5)` produces 2.
+
+			#number
+		*/
+		round:  [Math.round, Number],
+		/*d:
+			(ceil: Number) -> Number
+
+			This macro rounds the given number upward to a whole number. If a whole number is provided,
+			it returns the number as-is.
+
+			Example usage:
+			`(ceil: 1.1)` produces 2.
+
+			#number
+		*/
+		ceil:   [Math.ceil, Number],
+		/*d:
+			(pow: Number, Number) -> Number
+
+			This maths macro raises the first number to the power of the second number, and
+			provides the result.
+
+			Example usage:
+			`(pow: 2, 8)` produces 256.
+
+			#maths
+		*/
+		pow:    [Math.pow, Number, Number],
+		/*d:
+			(exp: Number, Number) -> Number
+
+			This maths macro raises Euler's number to the power of the second number, and
+			provides the result.
+
+			Example usage:
+			`(exp: 6)` produces approximately 7.38905609893065.
+
+			#maths
+		*/
+		exp:    [Math.exp, Number],
+		/*d:
+			(sqrt: Number) -> Number
+
+			This maths macro produces the square root of the given number.
+
+			Example usage:
+			`(sqrt: 25)` produces 5.
+
+			#maths
+		*/
+		sqrt:   [mathFilter(Math.sqrt), Number],
+		/*d:
+			(log: Number) -> Number
+
+			This maths macro produces the natural logarithm (the base-e logarithm) of the given number.
+
+			Example usage:
+			`(log: (exp:5))` produces 5.
+
+			#maths
+		*/
+		log:    [mathFilter(Math.log), Number],
+		/*d:
+			(log10: Number) -> Number
+
+			This maths macro produces the base-10 logarithm of the given number.
+
+			Example usage:
+			`(log10: 100)` produces 2.
+
+			#maths
+		*/
+		log10:  [mathFilter(Math.log10), Number],
+		/*d:
+			(log2: Number) -> Number
+
+			This maths macro produces the base-2 logarithm of the given number.
+
+			Example usage:
+			`(log2: 256)` produces 8.
+
+			#maths
+		*/
+		log2:   [mathFilter(Math.log2), Number],
+
+		/*d:
+			(random: Number, [Number]) -> Number
+
+			This macro produces a positive whole number randomly selected between the two numbers, inclusive
+			(or, if the second number is absent, then between 0 and the first number, inclusive).
+
+			Example usage:
+			`(random: 1,6)` simulates a six-sided die roll.
+
+			See also:
+			(either:), (shuffled:)
+
+			#number
 		*/
 		random: [(a, b) => {
 			/*
@@ -303,23 +669,36 @@ define(['macros', 'utils/operationutils', 'internaltypes/twineerror'],
 			return ~~((Math.random() * (to - from))) + from;
 		}, [Number, Macros.TypeSignature.optional(Number)]],
 		
-		either: [either, rest(Any)],
+		/*d:
+			(either: ...Any) -> Any
+			
+			Give this macro several values, separated by commas, and it will pick and return
+			one of them randomly.
+			
+			Example usage:
+			`A (either: "slimy", "goopy", "slippery") puddle` will randomly be "A slimy puddle", "A goopy puddle"
+			or "A slippery puddle".
+			
+			Rationale:
+			There are plenty of occasions where you might want random elements in your story: a few random adjectives
+			or flavour text lines to give repeated play-throughs variety, for instance, or a few random links for a "maze"
+			area. For these cases, you'll probably want to simply select from a few possibilities. The (either:)
+			macro provides this functionality.
 
-		/*
-			Wrappers for Window
+			Details:
+			As with many macros, you can use the spread `...` operator to place all of the values in an array or dataset
+			into (either:), and pick them randomly. `(either: ...$array)`, for instance, will choose one possibility from
+			all of the array contents.
+
+			If you want to pick two or more values randomly, you may want to use the (shuffled:) macro, and extract a subarray
+			from its result.
+			
+			See also:
+			(random:), (shuffled:)
+
+			#basics
 		*/
-
-		// Keep "undefined" from being the default text.
-		alert: [(text) => window.alert(text || ""),
-			String],
-		prompt: [(text, value) => window.prompt(text || "", value || "") || "",
-			String, String],
-		confirm: [(text) => window.confirm(text || ""),
-			String],
-		openURL: [window.open, String],
-		reload: [window.location.reload.bind(window.location), null],
-		gotoURL: [window.location.assign.bind(window.location), String],
-		pageURL: [() => window.location.href, null],
+		either: [(...args) => args[~~(Math.random() * args.length)], rest(Any)],
 		
 		/*
 			This method takes all of the above and registers them
