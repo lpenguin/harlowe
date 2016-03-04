@@ -2,7 +2,13 @@
 
 Rough documentation is at http://twine2.neocities.org/
 
-###1.2.2 changes (unreleased):
+###1.3.0 changes (unreleased):
+
+#####Bugfixes
+
+ * Fixed a bug where the "outline" `(textstyle:)` option didn't have the correct text colour when no background colour was present, making it appear solid black.
+
+###1.2.2 changes:
 
 ####Bugfixes
 
