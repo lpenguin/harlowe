@@ -41,6 +41,15 @@ describe("save macros", function() {
 			);
 			expectMarkupToNotError("(savegame:'1')");
 		});
+		it("can save changer command variables", function() {
+			runPassage(
+				"(set:$c1 to (font:'Skia'))" +
+				"(set:$c2 to $c1 + (align:'==>'))" +
+				"(set:$c3 to (a:$c2 + (if: true)))",
+				"corge"
+			);
+			expectMarkupToNotError("(savegame:'1')");
+		});
 		it("works from the start of the game", function() {
 			expectMarkupToNotError("(savegame:'1','Filename')", "qux");
 			
@@ -100,14 +109,27 @@ describe("save macros", function() {
 			runPassage(
 				"(set:$arr to (a:'egg'))" +
 				"(set:$dm to (datamap:'HP',4))" +
-				"(set:$ds to (dataset:2,4))" +
-				"(savegame:'1')",
-				"corge"
-			);
+				"(set:$ds to (dataset:2,4))");
+			runPassage("(savegame:'1')");
 			expectMarkupToNotError("(loadgame:'1')");
 			requestAnimationFrame(function() {
 				expectMarkupToPrint("$arr (text:$dm's HP) (text: $ds contains 4)","egg 4 true");
 				done();
+			});
+		});
+		it("can restore changer command variables", function(done) {
+			runPassage(
+				"(set:$c1 to (text-style:'underline'))" +
+				"(set:$c2 to (a: $c1 + (hook: 'luge')))");
+			runPassage("(savegame:'1')");
+			expectMarkupToNotError("(loadgame:'1')");
+			requestAnimationFrame(function() {
+				var hook = runPassage("(either:$c2's 1st)[goop]").find('tw-hook');
+				requestAnimationFrame(function() {
+					expect(hook.css('text-decoration')).toBe('underline');
+					expect(hook.attr('name')).toBe('luge');
+					done();
+				});
 			});
 		});
 	});
