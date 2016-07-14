@@ -60,7 +60,7 @@ define([
 			If you use (set:) as an expression, it just evaluates to an empty string.
 			
 			See also:
-			(push:)
+			(put:)
 		*/
 		("set", (_, ...assignmentRequests) => {
 			let debugMessage = "";

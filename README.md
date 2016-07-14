@@ -8,6 +8,7 @@ Rough documentation is at http://twine2.neocities.org/
 
  * Fixed a bug where the "outline" `(textstyle:)` option didn't have the correct text colour when no background colour was present, making it appear solid black.
  * Fixed a bug where changer commands couldn't be added together more than once without the possibility of some of the added commands being lost.
+ * Fixed a bug where `(pow:)` only accepted 1 value instead of 2, and, moreover, that it could return the Javascript value `NaN`, which Harlowe macros shouldn't be able to return.
 
 ####Alterations
 
