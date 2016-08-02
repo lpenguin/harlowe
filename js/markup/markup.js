@@ -62,6 +62,7 @@
 			return () => ({
 				isFront: true,
 				matches: matches,
+				cannotCross: ["verbatimOpener"],
 			});
 		}
 		
@@ -247,6 +248,7 @@
 					matches: {
 						emFront: "em",
 					},
+					cannotCross: ["verbatimOpener"],
 				}),
 			},
 			strongBack: {
@@ -254,6 +256,7 @@
 					matches: {
 						strongFront: "strong",
 					},
+					cannotCross: ["verbatimOpener"],
 				}),
 			},
 			strongFront: {
@@ -349,6 +352,7 @@
 						hookPrependedFront: "hook",
 						hookAnonymousFront: "hook",
 					},
+					cannotCross: ["verbatimOpener"],
 				}),
 			},
 			
@@ -359,6 +363,7 @@
 					matches: {
 						hookAppendedFront: "hook",
 					},
+					cannotCross: ["verbatimOpener"],
 				}),
 			},
 			
@@ -386,6 +391,7 @@
 					matches: {
 						collapsedFront: "collapsed",
 					},
+					cannotCross: ["verbatimOpener"],
 				}),
 			},
 			escapedLine: {
