@@ -24,7 +24,7 @@
   "dependencies": {
     "almond": "latest",
     "es6-shim": "latest",
-    "jquery": "latest",
+    "jquery": "2",
     "requestanimationframe": "*"
   },
   "devDependencies": {
