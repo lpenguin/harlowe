@@ -1,12 +1,9 @@
 define(['utils', 'passages', 'datatypes/changercommand', 'internaltypes/twineerror', 'utils/operationutils'],
 ({impossible}, Passages, ChangerCommand, TwineError, {objectName}) => {
 	"use strict";
-	/**
+	/*
 		State
 		Singleton controlling the running game state.
-		
-		@class State
-		@static
 	*/
 	
 	/*
@@ -18,46 +15,36 @@ define(['utils', 'passages', 'datatypes/changercommand', 'internaltypes/twineerr
 			modify this base object.
 		*/
 		TwineScript_ObjectName: "this story's variables",
+
 		/*
-			This property means that these property names cannot be set to new
-			user values via (set:). Of course, mutating their contents
-			will cause new versions of them to appear in the Moment's variables map.
+			This is used to distinguish to (set:) that this is a variable store,
+			and assigning to its properties does affect game state.
 		*/
-		TwineScript_Writeproof: [],
+		TwineScript_VariableStore: true,
 	};
 
-	/**
+	/*
 		Prototype object for states remembered by the game.
-		
-		@class Moment
-		@for State
 	*/
 	const Moment = {
-		/**
+		/*
 			Current passage name
-			@property {String} passage
-			@for Moment
 		*/
 		passage: "",
 		
-		/**
-			Variables
-			@property {Object} variables
-			@for Moment
+		/*
+			As the prototype object, its variable property is the prototype variables object.
 		*/
 		variables: SystemVariables,
 
-		/**
+		/*
 			Make a new Moment that comes temporally after this.
 			This is usually a fresh Moment, but the State deserialiser
 			must re-create prior sessions' Moments.
 			Thus, pre-set variables may be supplied to this method.
 			
-			@method create
-			@for Moment
-			@param {String} p The name of the passage that the player is at in this moment.
-			@param {Object} [v] Variables to include in this moment.
-			@returns {Moment} created object
+			@param {String} The name of the passage that the player is at in this moment.
+			@param {Object} Variables to include in this moment.
 		*/
 		create(p, v) {
 			const ret = Object.create(Moment);
@@ -103,6 +90,25 @@ define(['utils', 'passages', 'datatypes/changercommand', 'internaltypes/twineerr
 		is stored in a variable.
 	*/
 	let serialiseProblem;
+
+	/*
+		Debug Mode event handlers are stored here by on(). "forward" and "back" handlers are called
+		when the present changes, and thus when play(), fastForward() and rewind() have been called.
+		"load" handlers are called exclusively in deserialise().
+	*/
+	const eventHandlers = {
+		forward: [],
+		back: [],
+		load: [],
+	};
+
+	/*
+		A private method to create a new present after altering the state.
+		@param {String} The name of the passage the player is now currently at.
+	*/
+	function newPresent(newPassageName) {
+		present = (timeline[recent] || Moment).create(newPassageName);
+	}
 	
 	/*
 		The current game's state.
@@ -112,49 +118,38 @@ define(['utils', 'passages', 'datatypes/changercommand', 'internaltypes/twineerr
 			Getters/setters
 		*/
 
-		/**
+		/*
 			Get the current passage name.
 			Used as a common argument to Engine.showPassage()
-			
-			@property {String} passage
-			@for State
 		*/
 		get passage() {
 			return present.passage;
 		},
 		
-		/**
+		/*
 			Get the current variables.
-			
-			@property {Array} variables
 		*/
 		get variables() {
 			return present.variables;
 		},
 
-		/**
+		/*
 			Is there an undo cache?
-			@property {Number} pastLength
 		*/
 		get pastLength() {
 			return recent;
 		},
 
-		/**
+		/*
 			Is there a redo cache?
-			@property {Number} futureLength
 		*/
 		get futureLength() {
 			return (timeline.length - 1) - recent;
 		},
 
-		/**
+		/*
 			Did we ever visit this passage, given its name?
 			Return the number of times visited.
-			
-			@method passageNameVisited
-			@param {String} name Name of the passage.
-			@return {Boolean} Whether it was visited.
 		*/
 		passageNameVisited(name) {
 			let ret = 0;
@@ -169,12 +164,10 @@ define(['utils', 'passages', 'datatypes/changercommand', 'internaltypes/twineerr
 			return ret;
 		},
 
-		/**
-			Return how long ago this named passage has been visited.
-			
-			@method passageNameLastVisited
-			@param {String} name Name of the passage.
-			@return {Number} How many turns ago it was visited.
+		/*
+			Return how long ago this named passage has been visited,
+			or infinity if it was never visited.
+			This isn't exposed directly to authors.
 		*/
 		passageNameLastVisited(name) {
 			if (!Passages.get(name)) {
@@ -194,12 +187,9 @@ define(['utils', 'passages', 'datatypes/changercommand', 'internaltypes/twineerr
 			return Infinity;
 		},
 
-		/**
+		/*
 			Return an array of names of all previously visited passages, in the order
-			they were visited. This may include doubles.
-			
-			@method previousPassage
-			@return {Array} Array of previously visited passages.
+			they were visited. This may include doubles. This IS exposed directly to authors.
 		*/
 		pastPassageNames() {
 			const ret = [];
@@ -213,20 +203,10 @@ define(['utils', 'passages', 'datatypes/changercommand', 'internaltypes/twineerr
 		/*
 			Movers/shakers
 		*/
-		
-		/**
-			Create a new present after altering the state
-			@method newPresent
-			@param {String} newPassageName The name of the passage the player is now currently at.
-		*/
-		newPresent(newPassageName) {
-			present = (timeline[recent] || Moment).create(newPassageName);
-		},
 
-		/**
+		/*
 			Push the present state to the timeline, and create a new state.
-			@method play
-			@param {String} newPassageName The name of the passage the player is now currently at.
+			@param {String} The name of the passage the player is now currently at.
 		*/
 		play(newPassageName) {
 			if (!present) {
@@ -239,14 +219,15 @@ define(['utils', 'passages', 'datatypes/changercommand', 'internaltypes/twineerr
 			recent += 1;
 			
 			// Create a new present
-			this.newPresent(newPassageName);
+			newPresent(newPassageName);
+			// Call the 'forward' event handler with this passage name.
+			eventHandlers.forward.forEach(fn => fn(newPassageName));
 		},
 
-		/**
+		/*
 			Rewind the state. This will fail if the player is at the first moment.
 			
-			@method rewind
-			@param {String|Number} arg Either a string (passage id) or a number of steps to rewind.
+			@param {String|Number} Either a string (passage id) or a number of steps to rewind.
 			@return {Boolean} Whether the rewind was actually performed.
 		*/
 		rewind(arg) {
@@ -268,17 +249,18 @@ define(['utils', 'passages', 'datatypes/changercommand', 'internaltypes/twineerr
 				recent -= 1;
 			}
 			if (moved) {
-				this.newPresent(timeline[recent].passage);
+				newPresent(timeline[recent].passage);
+				// Call the 'back' event handler.
+				eventHandlers.back.forEach(fn => fn());
 			}
 			return moved;
 		},
 
-		/**
+		/*
 			Undo the rewinding of a state. Fails if no moments are in the future to be redone.
 			Currently only accepts numbers.
 			
-			@method  fastForward
-			@param {Number} arg The number of turns to move forward.
+			@param {Number} The number of turns to move forward.
 			@return {Boolean} Whether the fast-forward was actually performed.
 		*/
 		fastForward(arg) {
@@ -293,15 +275,30 @@ define(['utils', 'passages', 'datatypes/changercommand', 'internaltypes/twineerr
 				recent += 1;
 			}
 			if (moved) {
-				this.newPresent(timeline[recent].passage);
+				newPresent(timeline[recent].passage);
+				eventHandlers.forward.forEach(fn => fn(timeline[recent].passage));
 			}
 			return moved;
 		},
 		
-		/**
-			This method is only for debugging purposes. It is called nowhere except for the test specs.
-			
-			@method reset
+		/*
+			This is used only by Debug Mode - it lets event handlers be registered and called when the State changes.
+			"forward" functions have the signature (passageName). "back" functions have no signature.
+			"load" functions have the signature (timeline), where timeline is the entire timeline Moments array.
+		*/
+		on(name, fn) {
+			if (!(name in eventHandlers)) {
+				impossible('State.on', 'invalid event name');
+				return;
+			}
+			if (typeof fn === "function" && !eventHandlers[name].includes(fn)) {
+				eventHandlers[name].push(fn);
+			}
+			return State;
+		},
+
+		/*
+			This method is only for Harlowe debugging purposes. It is called nowhere except for the test specs.
 		*/
 		reset() {
 			if (!window.jasmine) {
@@ -387,11 +384,10 @@ define(['utils', 'passages', 'datatypes/changercommand', 'internaltypes/twineerr
 			return variable;
 		}
 		
-		/**
+		/*
 			Serialise the game history, from the present backward (ignoring the redo cache)
 			into a JSON string.
 			
-			@method serialise
 			@return {String|Boolean} The serialised state, or false if serialisation failed.
 		*/
 		function serialise() {
@@ -443,7 +439,7 @@ define(['utils', 'passages', 'datatypes/changercommand', 'internaltypes/twineerr
 			}
 		}
 		
-		/**
+		/*
 			Deserialise the string and replace the current history.
 			@method deserialise
 		*/
@@ -485,12 +481,13 @@ define(['utils', 'passages', 'datatypes/changercommand', 'internaltypes/twineerr
 					Re-establish the moment objects' prototype link to Moment.
 				*/
 				return Object.assign(Object.create(Moment), moment);
-			})).indexOf(false) > -1) {
+			})).includes(false)) {
 				return false;
 			}
 			timeline = newTimeline;
+			eventHandlers.load.forEach(fn => fn(timeline));
 			recent = timeline.length - 1;
-			this.newPresent(timeline[recent].passage);
+			newPresent(timeline[recent].passage);
 		}
 		return {
 			serialise: serialise,

@@ -2,24 +2,35 @@ describe("collapsing whitespace syntax", function() {
 	'use strict';
 	
 	it("eliminates runs of whitespace between { and }", function() {
-		expectMarkupToPrint(
-			"A{   \n   }B",
+		expect(
+			"A{   \n   }B"
+		).markupToPrint(
 			"AB"
 		);
 	});
+	it("produces a <tw-collapsed> element", function() {
+		expect(
+			"{A}"
+		).markupToBecome(
+			"<tw-collapsed>A</tw-collapsed>"
+		);
+	});
 	it("works on whitespace enclosed in elements", function() {
-		expectMarkupToPrint(
-			"A{ '' '' // // }B",
+		expect(
+			"A{ '' '' // // }B"
+		).markupToPrint(
 			"AB"
 		);
 	});
 	it("reduces whitespace between non-whitespace to single spaces", function() {
-		expectMarkupToPrint(
-			"A { A  \n  B } B",
+		expect(
+			"A { A  \n  B } B"
+		).markupToPrint(
 			"A A B B"
 		);
-		expectMarkupToPrint(
-			"A{ C }B",
+		expect(
+			"A{ C }B"
+		).markupToPrint(
 			"ACB"
 		);
 	});
@@ -28,12 +39,14 @@ describe("collapsing whitespace syntax", function() {
 		expect(p.text()).toBe("A B");
 		expect(p.find('b').length).toBe(1);
 		
-		expectMarkupToPrint(
-			"{A '' B''}",
+		expect(
+			"{A '' B''}"
+		).markupToPrint(
 			"A B"
 		);
-		expectMarkupToPrint(
-			"{''B '' C}",
+		expect(
+			"{''B '' C}"
+		).markupToPrint(
 			"B C"
 		);
 	});
@@ -42,53 +55,62 @@ describe("collapsing whitespace syntax", function() {
 		expect(p.find('br').length).toBe(2);
 	});
 	it("collapses runs of whitespace between non-whitespace down to a single space", function() {
-		expectMarkupToPrint(
-			"{   A   B   }",
+		expect(
+			"{   A   B   }"
+		).markupToPrint(
 			"A B"
 		);
-		expectMarkupToPrint(
-			"{   A B   }",
+		expect(
+			"{   A B   }"
+		).markupToPrint(
 			"A B"
 		);
-		expectMarkupToPrint(
-			"X{   A   B   }Y",
+		expect(
+			"X{   A   B   }Y"
+		).markupToPrint(
 			"XA BY"
 		);
-		expectMarkupToPrint(
-			"G{   A  }{ B   }H",
+		expect(
+			"G{   A  }{ B   }H"
+		).markupToPrint(
 			"GA BH"
 		);
 	});
 	it("can be nested", function() {
-		expectMarkupToPrint(
-			"{{   ''A''   }}  B  C",
+		expect(
+			"{{   ''A''   }}  B  C"
+		).markupToPrint(
 			"A  B  C"
 		);
-		expectMarkupToPrint(
-			"{  A {   ''B''   }} C",
+		expect(
+			"{  A {   ''B''   }} C"
+		).markupToPrint(
 			"A B C"
 		);
 	});
 	it("can collapse spaces in empty elements", function() {
-		expectMarkupToPrint(
-			"{A '' '' B}",
+		expect(
+			"{A '' '' B}"
+		).markupToPrint(
 			"A B"
 		);
 	});
 	it("collapses through invisible expressions", function() {
-		expectMarkupToPrint(
-			"{ (set: $r to 1)\n(set: $r to 2) }",
+		expect(
+			"{ (set: $r to 1)\n(set: $r to 2) }"
+		).markupToPrint(
 			""
 		);
-		expectMarkupToPrint(
-			"{A(set: $r to 1)B}",
+		expect(
+			"{A(set: $r to 1)B}"
+		).markupToPrint(
 			"AB"
 		);
 	});
 	it("works with expressions", function() {
-		expectMarkupToPrint("(set: $a to '')(set: $b to 'B'){A  $a $b $a C}", "A B C");
-		expectMarkupToPrint("(set: $a to '')(set: $b to 'B')A{ $a $b $a }C", "ABC");
-		expectMarkupToPrint("A{ (print:'') (print:'B') (print:'') }C", "ABC");
+		expect("(set: $a to '')(set: $b to 'B'){A  $a $b $a C}").markupToPrint("A B C");
+		expect("(set: $a to '')(set: $b to 'B')A{ $a $b $a }C").markupToPrint("ABC");
+		expect("A{ (print:'') (print:'B') (print:'') }C").markupToPrint("ABC");
 	});
 	it("works inside (display:)", function() {
 		createPassage("{B\nC}", "grault");
@@ -100,10 +122,10 @@ describe("collapsing whitespace syntax", function() {
 		expect(p.text()).toBe("");
 	});
 	it("won't affect text inside macros", function() {
-		expectMarkupToPrint("{(print:'Red   Blue''s length)}", "10");
+		expect("{(print:'Red   Blue''s length)}").markupToPrint("10");
 	});
 	it("won't affect text outputted by expressions", function() {
-		expectMarkupToPrint("{(set: $a to 'Red   Blue')(print:$a)}", "Red   Blue");
+		expect("{(set: $a to 'Red   Blue')(print:$a)}").markupToPrint("Red   Blue");
 	});
 	it("won't affect text outputted by (display:)", function() {
 		createPassage("B\nC", "grault");
@@ -124,52 +146,58 @@ describe("collapsing whitespace syntax", function() {
 		expect(p.text()).toBe("A     B");
 	});
 	it("will affect text inside nested hooks", function() {
-		expectMarkupToPrint("{ A(if:true)[      ]B }", "A B");
-		expectMarkupToPrint("{ X(if:false)[      ]Y }", "XY");
-		expectMarkupToPrint("{ C (if:true)[    ] D }", "C D");
-		expectMarkupToPrint("{ E (if:true)[  F  ] G }", "E F G");
-		expectMarkupToPrint("{ H (if:true)[  I  J ] K }", "H I J K");
+		expect("{ A(if:true)[      ]B }").markupToPrint("A B");
+		expect("{ X(if:false)[      ]Y }").markupToPrint("XY");
+		expect("{ C (if:true)[    ] D }").markupToPrint("C D");
+		expect("{ E (if:true)[  F  ] G }").markupToPrint("E F G");
+		expect("{ H (if:true)[  I  J ] K }").markupToPrint("H I J K");
 	});
 	it("doesn't needlessly eliminate preceding and trailing spaces in nested hooks", function() {
-		expectMarkupToPrint(
-			"{A[ A]<1| [B ]<1|B}",
+		expect(
+			"{A[ A]<1| [B ]<1|B}"
+		).markupToPrint(
 			"A A B B"
 		);
-		expectMarkupToPrint(
-			"{E['' ''E]<1| [B'' '']<1|B}",
+		expect(
+			"{E['' ''E]<1| [B'' '']<1|B}"
+		).markupToPrint(
 			"E E B B"
 		);
-		expectMarkupToPrint(
-			"{''C''[ ''C'']<1| [''D'' ]<1|''D''}",
+		expect(
+			"{''C''[ ''C'']<1| [''D'' ]<1|''D''}"
+		).markupToPrint(
 			"C C D D"
 		);
-		expectMarkupToPrint(
-			"{E [ E]<1| [F ]<1| F}",
+		expect(
+			"{E [ E]<1| [F ]<1| F}"
+		).markupToPrint(
 			"E E F F"
 		);
-		expectMarkupToPrint(
-			"{''G'' [ ''G'']<1| [''H'' ]<1| ''H''}",
+		expect(
+			"{''G'' [ ''G'']<1| [''H'' ]<1| ''H''}"
+		).markupToPrint(
 			"G G H H"
 		);
-		expectMarkupToPrint(
-			"{I'' ''['' ''I]<1| [J'' '']<1|'' ''J}",
+		expect(
+			"{I'' ''['' ''I]<1| [J'' '']<1|'' ''J}"
+		).markupToPrint(
 			"I I J J"
 		);
 	});
 	it("works with (replace:) inserting text across collapsed regions", function() {
-		expectMarkupToPrint("{[]<1|(replace:?1)[Good     golly!]}", "Good golly!");
-		expectMarkupToPrint("{[]<1|}{(replace:?1)[Good     golly!]}", "Good golly!");
+		expect("{[]<1|(replace:?1)[Good     golly!]}").markupToPrint("Good golly!");
+		expect("{[]<1|}{(replace:?1)[Good     golly!]}").markupToPrint("Good golly!");
 	});
 	it("works with (replace:) inserting text into and out of collapsed regions", function() {
-		expectMarkupToPrint("{[]<1|}(replace:?1)[Good     golly!]", "Good     golly!");
-		expectMarkupToPrint("[]<2|{(replace:?2)[Good     golly!]}", "Good golly!");
-		expectMarkupToPrint("(replace:?1)[Good     golly?]{[]<1|}", "Good     golly?");
-		expectMarkupToPrint("{(replace:?2)[Good     golly?]}[]<2|", "Good golly?");
+		expect("{[]<1|}(replace:?1)[Good     golly!]").markupToPrint("Good     golly!");
+		expect("[]<2|{(replace:?2)[Good     golly!]}").markupToPrint("Good golly!");
+		expect("(replace:?1)[Good     golly?]{[]<1|}").markupToPrint("Good     golly?");
+		expect("{(replace:?2)[Good     golly?]}[]<2|").markupToPrint("Good golly?");
 	});
 	it("works with links in nested hooks", function() {
-		expectMarkupToPrint("{A[ [[B]]]<1|}", "A B");
-		expectMarkupToPrint("{[[[D]] ]<1|C}", "D C");
-		expectMarkupToPrint("{E[ [[F]] ]<1|G}", "E F G");
+		expect("{A[ [[B]]]<1|}").markupToPrint("A B");
+		expect("{[[[D]] ]<1|C}").markupToPrint("D C");
+		expect("{E[ [[F]] ]<1|G}").markupToPrint("E F G");
 	});
 	it("will not affect text inside verbatim guards inside nested hooks", function() {
 		var p = runPassage("{ A (if:true)[`    `] B }");
@@ -178,6 +206,6 @@ describe("collapsing whitespace syntax", function() {
 		expect(p.text()).toBe("C  B  D");
 	});
 	it("works even when empty", function() {
-		expectMarkupToPrint("A{}B","AB");
+		expect("A{}B").markupToPrint("AB");
 	});
 });
