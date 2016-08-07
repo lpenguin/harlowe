@@ -6,13 +6,14 @@ define([
 	'state',
 	'engine',
 	'passages',
-	'internaltypes/assignmentrequest',
+	'datatypes/lambda',
+	'datatypes/assignmentrequest',
 	'internaltypes/twineerror',
 	'internaltypes/twinenotifier'],
-($, NaturalSort, Macros, {objectName, subset, collectionType, isValidDatamapName}, State, Engine, Passages, AssignmentRequest, TwineError, TwineNotifier) => {
+($, NaturalSort, Macros, {objectName, typeName, subset, collectionType, isValidDatamapName, is, clone}, State, Engine, Passages, Lambda, AssignmentRequest, TwineError, TwineNotifier) => {
 	"use strict";
 	
-	const {optional, rest, zeroOrMore, Any}   = Macros.TypeSignature;
+	const {optional, rest, either, zeroOrMore, Any}   = Macros.TypeSignature;
 	
 	Macros.add
 		/*d:
@@ -24,7 +25,14 @@ define([
 			make (set:) and (put:) more readable.
 		*/
 		/*d:
-			(set: VariableToValue, [...VariableToValue]) -> String
+			Instant data
+
+			A few special macros in Harlowe perform actions immediately, as soon as they're evaluated.
+			These can be used in passages, but cannot have their values saved using (set:) or (put:),
+			or stored in data structures.
+		*/
+		/*d:
+			(set: VariableToValue, [...VariableToValue]) -> Instant
 			
 			Stores data values in variables.
 			
@@ -54,13 +62,14 @@ define([
 			expressions, it's a shorthand for what's on the left side: `(set: $vases to it + 1)`
 			is a shorthand for `(set: $vases to $vases + 1)`.
 			
-			If the variable you're setting cannot be changed - for instance, if it's the $Design
-			variable - then an error will be printed.
-			
-			If you use (set:) as an expression, it just evaluates to an empty string.
+			If the destination isn't something that can be changed - for instance, if you're trying to set a
+			bare value to another value, like `(set: true to 2)` - then an error will be printed. This includes
+			modifying arrays - `(set: (a:2,3)'s 1st to 1)` is also an error.
 			
 			See also:
-			(put:)
+			(push:), (move:)
+
+			#basics 1
 		*/
 		("set", (_, ...assignmentRequests) => {
 			let debugMessage = "";
@@ -74,7 +83,23 @@ define([
 				if (ar.operator === "into") {
 					return TwineError.create("macrocall", "Please say 'to' when using the (set:) macro.");
 				}
-				const result = ar.dest.set(ar.src);
+				let result;
+				/*
+					If ar.src is a VarRef, obtain its current value.
+					Note that this could differ from its value at compilation time -
+					in (set: $a to 1, $b to $a), the second $a has a different value to the first.
+				*/
+				if (ar.src && ar.src.varref) {
+					const get = ar.src.get();
+					let error;
+					if ((error = TwineError.containsError(get))) {
+						return error;
+					}
+					result = ar.dest.set(get);
+				}
+				else {
+					result = ar.dest.set(ar.src);
+				}
 				/*
 					If the setting caused an error to occur, abruptly return the error.
 				*/
@@ -93,19 +118,19 @@ define([
 			/*
 				There's nothing that can be done with the results of (set:) or (put:)
 				operations, except to display nothing when they're in bare passage text.
-				Return a plain unobservable value that prints out as "".
+				Return a plain unstorable value that prints out as "".
 			*/
 			return {
 				TwineScript_TypeName:     "a (set:) operation",
 				TwineScript_ObjectName:   "a (set:) operation",
-				TwineScript_Unobservable: true,
+				TwineScript_Unstorable: true,
 				TwineScript_Print:        () => debugMessage && TwineNotifier.create(debugMessage).render(),
 			};
 		},
 		[rest(AssignmentRequest)])
 		
 		/*d:
-			(put: VariableToValue, [...VariableToValue]) -> String
+			(put: VariableToValue, [...VariableToValue]) -> Instant
 			
 			A left-to-right version of (set:) that requires the word `into` rather than `to`.
 			
@@ -127,8 +152,11 @@ define([
 			
 			`it` can also be used with (put:), but, interestingly, it's used on the right-hand side of
 			the expression: `(put: $eggs + 2 into it)`.
-			
-			Once again, this evaluates to an empty string.
+
+			See also:
+			(set:), (move:)
+
+			#basics 2
 		*/
 		("put", (_, ...assignmentRequests) => {
 			let debugMessage = "";
@@ -160,56 +188,90 @@ define([
 			return {
 				TwineScript_TypeName:     "a (put:) operation",
 				TwineScript_ObjectName:   "a (put:) operation",
-				TwineScript_Unobservable: true,
+				TwineScript_Unstorable: true,
 				TwineScript_Print:        () => debugMessage && TwineNotifier.create(debugMessage).render(),
 			};
 		},
 		[rest(AssignmentRequest)])
 		
 		/*d:
-			(move: [VariableToValue]) -> String
+			(move: VariableToValue, [...VariableToValue]) -> Instant
 			
 			A variant of (put:) that deletes the source value after copying it - in effect
 			moving the value from the source to the destination.
 			
+			Example usage:
+			`(move: $arr's 1st into $var)`
+
 			Rationale:
 			You'll often use data structures such as arrays or datamaps as storage for values
 			that you'll only use once, such as a list of names to print out. When it comes time
 			to use them, you can remove it from the structure and retrieve it in one go.
+
+			Details:
+			You must use the `into` keyword, like (put:), with this macro. This is because, like (put:),
+			the destination of the value is on the right, whereas the source is on the left.
+
+			You can also set multiple variables in a single (move:) by separating each VariableToValue
+			with commas: `(move: $a's 1st into $b, $a's 2nd into $c)`, etc.
+
+			If the value you're accessing cannot be removed - for instance, if it's an array's `length` -
+			then an error will be produced.
+
+			See also:
+			(push:), (set:)
+
+			#basics 3
 		*/
-		("move", (_, ar) => {
-			if (ar.operator !== "into") {
-				return TwineError.create("macrocall", "Please say 'into' when using the (move:) macro.");
-			}
+		("move", (_, ...assignmentRequests) => {
+			let debugMessage = "";
 			/*
-				If ar.src is a VarRef, then it's a variable, and its value
-				should be deleted when the assignment is completed.
+				This has to be a plain for-loop so that an early return
+				is possible.
 			*/
-			if (ar.src && ar.src.varref) {
-				const get = ar.src.get();
-				let error;
-				if ((error = TwineError.containsError(get))) {
-					return error;
+			for(let i = 0; i < assignmentRequests.length; i+=1) {
+				const ar = assignmentRequests[i];
+				if (ar.operator !== "into") {
+					return TwineError.create("macrocall", "Please say 'into' when using the (move:) macro.");
 				}
-				ar.dest.set(get);
-				ar.src.delete();
-			}
-			else {
 				/*
-					Otherwise, it's either a plain value (such as seen in
-					(move: 2 into $red)) or something which has a TwineScript_DeleteValue
-					method that should be called.
+					If ar.src is a VarRef, then it's a variable, and its value
+					should be deleted when the assignment is completed.
 				*/
-				ar.dest.set(ar.src);
-				if (ar.src.TwineScript_DeleteValue) {
-					ar.src.TwineScript_DeleteValue();
+				let result, error;
+				if (ar.src && ar.src.varref) {
+					const get = ar.src.get();
+					if ((error = TwineError.containsError(get))) {
+						return error;
+					}
+					result = ar.dest.set(get);
+					if ((error = TwineError.containsError(result))) {
+						return error;
+					}
+					ar.src.delete();
+				}
+				else {
+					/*
+						Otherwise, it's a plain value (such as seen in (move: 2 into $red)).
+					*/
+					result = ar.dest.set(ar.src);
+					if ((error = TwineError.containsError(result))) {
+						return error;
+					}
+				}
+				if (Engine.options.debug) {
+					// Add a semicolon only if a previous iteration appended a message.
+					debugMessage += (debugMessage ? "; " : "")
+						+ objectName(ar.dest)
+						+ " is now "
+						+ objectName(ar.src);
 				}
 			}
 			return {
 				TwineScript_TypeName:     "a (move:) operation",
 				TwineScript_ObjectName:   "a (move:) operation",
-				TwineScript_Unobservable: true,
-				TwineScript_Print:        "",
+				TwineScript_Unstorable: true,
+				TwineScript_Print:        () => debugMessage && TwineNotifier.create(debugMessage).render(),
 			};
 		},
 		[rest(AssignmentRequest)])
@@ -221,7 +283,7 @@ define([
 		/*d:
 			Array data
 			
-			There are occasions when you may need to work with a sequence of values of unknown length.
+			There are occasions when you may need to work with a whole sequence of values at once.
 			For example, a sequence of adjectives (describing the player) that should be printed depending
 			on what a numeric variable (such as a health point variable) currently is.
 			You could create many, many variables to hold each value, but it is preferable to
@@ -235,18 +297,39 @@ define([
 			Array data is referenced much like string characters are. You can refer to data positions using `1st`,
 			`2nd`, `3rd`, and so forth: `$array's 1st` refers to the value in the first position. Additionally, you can
 			use `last` to refer to the last position, `2ndlast` to refer to the second-last, and so forth. Arrays also
-			have a `length` number: `$array's length` tells you how many values are in it.
+			have a `length` number: `$array's length` tells you how many values are in it. If you don't know the exact
+			position to remove an item from, you can use an expression, in brackers, after it: `$array's ($pos - 3)`.
 			
 			Arrays may be joined by adding them together: `(a: 1, 2) + (a: 3, 4)` is the same as `(a: 1, 2, 3, 4)`.
 			You can only join arrays to other arrays. To add a bare value to the front or back of an array, you must
 			put it into an otherwise empty array using the (a:) macro: `$myArray + (a:5)` will make an array that's just
 			$myArray with 5 added on the end, and `(a:0) + $myArray` is $myArray with 0 at the start.
+
+			You can make a subarray by providing a range (an array of numbers, such as
+			those created with (range:)) as a reference - `$arr's (a:1,2)` produces an array with only the first 2 values of $arr.
+			Additionally, you can subtract items from arrays (that is, create a copy of an array with certain values removed) using
+			the `-` operator: `(a:"B","C") - (a:"B")` produces `(a:"C")`. Note that multiple copies of a value in an array will all
+			be removed by doing this: `(a:"B","B","B","C") - (a:"B")` also produces `(a:"C")`.
 			
 			You may note that certain macros, like (either:), accept sequences of values. A special operator, `...`, exists which
 			can "spread out" the values inside an array, as if they were individually placed inside the macro call.
 			`(either: ...$array)` is a shorthand for `(either: $array's 1st, $array's 2nd, $array's 3rd)`, and so forth for as many
 			values as there are inside the $array. Note that you can still include values after the spread: `(either: 1, ...$array, 5)`
 			is valid and works as expected.
+
+			To summarise, the following operators work on arrays.
+			
+			| Operator | Purpose | Example
+			|---
+			| `is` | Evaluates to boolean `true` if both sides contain equal items in an equal order, otherwise `false`. | `(a:1,2) is (a:1,2)` (is true)
+			| `is not` | Evaluates to `true` if both sides differ in items or ordering. | `(a:4,5) is not (a:5,4)` (is true)
+			| `contains` | Evaluates to `true` if the left side contains the right side. | `(a:"Ape") contains "Ape"`<br>`(a:(a:99)) contains (a:99)`
+			| `is in` | Evaluates to `true` if the right side contains the left side. | `"Ape" is in (a:"Ape")`
+			| `+` | Joins arrays. | `(a:1,2) + (a:1,2)` (is `(a:1,2,1,2)`)
+			| `-` | Subtracts arrays. | `(a:1,1,2,3,4,5) - (a:1,2)` (is `(a:3,4,5)`)
+			| `...` | When used in a macro call, it separates each value in the right side. | `(a: 0, ...(a:1,2,3,4), 5)` (is `(a:0,1,2,3,4,5)`)
+			| `'s` | Obtains the item at the right numeric position. | `(a:"Y","Z")'s 1st` (is "Y")<br>`(a:4,5)'s (2)` (is 5)
+			| `of` | Obtains the item at the left numeric position. | `1st of (a:"Y","O")` (is "Y")<br>`(2) of (a:"P","S")` (is "S")
 		*/
 		/*d:
 			(a: [...Any]) -> Array
@@ -276,6 +359,8 @@ define([
 			
 			See also:
 			(datamap:), (dataset:)
+			
+			#data structure 1
 		*/
 		(["a", "array"], (_, ...args) => args, zeroOrMore(Any))
 		
@@ -295,13 +380,15 @@ define([
 			the first and last numbers.
 			
 			Details:
-			Certain kinds of macros, like (either:), accept sequences of values. You can
+			Certain kinds of macros, like (either:) or (dataset:), accept sequences of values. You can
 			use (range:) with these in conjunction with the `...` spreading operator:
 			`(dataset: ...(range:2,6))` is equivalent to `(dataset: 2,4,5,6,7)`, and
 			`(either: ...(range:1,5))` is equivalent to `(random: 1,5)`.
 			
 			See also:
-			(a:), (subarray:)
+			(a:)
+
+			#data structure
 		*/
 		("range", function range(_, a, b) {
 			/*
@@ -323,7 +410,7 @@ define([
 			}
 			return ret;
 		},
-		[Number, Number])
+		[parseInt, parseInt])
 		
 		/*d:
 			(subarray: Array, Number, Number) -> Array
@@ -332,34 +419,37 @@ define([
 			whose positions are between the two numbers, inclusively.
 			
 			Example usage:
-			```
-			(set: $a to (a: "Red","Gold","Blue","White"))
-			(print: (subarray: $a, 3, 4))
-			```
+			`(subarray: $a, 3, 4)` is the same as `$a's (a:3,4)`
 			
 			Rationale:
 			
-			One of the most basic things you can do with an array is split it into smaller
-			arrays. For instance, you may have a 'deck' of random string values that you wish
-			to divide into two decks and use independently of each other. This macro provides
-			a means of doing this - just specify the two positions in which to take values from.
+			You can obtain subarrays of arrays without this macro, by using the `'s` or `of` syntax along
+			with an array of positions. For instance, `$a's (range:4,12)` obtains a subarray of $a containing
+			its 4th through 12th values. But, for compatibility with previous Harlowe versions which did not
+			feature this syntax, this macro also exists.
 			
 			Details:
+
+			If you provide negative numbers, they will be treated as being offset from the end
+			of the array - `-2` will specify the `2ndlast` item, just as 2 will specify
+			the `2nd` item.
 			
-			You can, of course, obtain an array with just one value in it by supplying the same
-			position to (subarray:) - `(subarray: $a, 3,3)` produces an array containing just
-			the third value.
-			
+			If the last number given is larger than the first (for instance, in `(subarray: (a:1,2,3,4), 4, 2)`)
+			then the macro will still work - in that case returning (a:2,3,4) as if the numbers were in
+			the correct order.
+
 			See also:
 			(substring:), (rotated:)
+			
+			#deprecated
 		*/
 		("subarray", (_, array, a, b) => subset(array, a, b),
-		[Array, Number, Number])
+		[Array, parseInt, parseInt])
 		
 		/*d:
-			(shuffled: Any, Any, [...Any])
+			(shuffled: Any, Any, [...Any]) -> Array
 			
-			Identical to (array:), except that it randomly rearranges the elements
+			Identical to (a:), except that it randomly rearranges the elements
 			instead of placing them in the given order.
 			
 			Example usage:
@@ -384,7 +474,9 @@ define([
 			providing just one (or none) will cause an error to be presented.
 			
 			See also:
-			(array:), (either:), (rotated:)
+			(a:), (either:), (rotated:)
+			
+			#data structure
 		*/
 		("shuffled", (_, ...args) =>
 			// The following is an in-place Fisher–Yates shuffle.
@@ -399,31 +491,31 @@ define([
 					a[j] = e;
 				}
 				return a;
-			},[]),
+			},[]).map(clone),
 		[Any, rest(Any)])
 		
 		/*d:
-			(sorted: String, String, [...String])
+			(sorted: Number or String, ...Number or String) -> Array
 			
-			Similar to (array:), except that it requires string elements, and orders the
-			strings in English alphanumeric sort order, rather than the order in which they were provided.
+			Similar to (a:), except that it requires only numbers or strings, and orders
+			them in English alphanumeric sort order, rather than the order in which they were provided.
 			
 			Example usage:
 			```
-			(set: $a to (a: 'A','C','E','G'))
+			(set: $a to (a: 'A','C','E','G', 2, 1))
 			(print: (sorted: ...$a))
 			```
 			
 			Rationale:
-			Often, you'll be using arrays as 'decks' that will provide string values to other parts of
-			your story in a specific order. If you want, for instance, these strings to appear in
+			Often, you'll be using arrays as 'decks' that will provide values to other parts of
+			your story in a specific order. If you want, for instance, several strings to appear in
 			alphabetical order, this macro can be used to create a sorted array, or (by using the
 			spread `...` syntax) convert an existing array into a sorted one.
 			
 			Details:
-			Unlike other programming languages, this does not strictly use ASCII sort order, but alphanumeric sorting:
+			Unlike other programming languages, strings aren't sorted using ASCII sort order, but alphanumeric sorting:
 			the string "A2" will be sorted after "A1" and before "A11". Moreover, if the player's web browser
-			supports internationalisation (that is, every current browser except Safari and IE 10), then
+			supports internationalisation (that is, every current browser except Safari 6-8 and IE 10), then
 			the strings will be sorted using English language rules (for instance, "é" comes after "e" and before
 			"f", and regardless of the player's computer's language settings. Otherwise, it will sort
 			using ASCII comparison (whereby "é" comes after "z").
@@ -435,10 +527,13 @@ define([
 			providing just one (or none) will cause an error to be presented.
 			
 			See also:
-			(array:), (shuffled:), (rotated:)
+			(a:), (shuffled:), (rotated:)
+			
+			#data structure
 		*/
+		// Note that since this only accepts primitives, clone() is unnecessary.
 		("sorted", (_, ...args) => args.sort(NaturalSort("en")),
-		[String, rest(String)])
+		[either(Number,String), rest(either(Number,String))])
 		
 		/*d:
 			(rotated: Number, [...Any]) -> Array
@@ -466,13 +561,18 @@ define([
 			Think of the number as being an addition to each position in the original sequence -
 			if it's 1, then the value in position 1 moves to 2, the value in position 2 moves to 3,
 			and so forth.
+
+			Incidentally... you can also use this macro to rotate a string's characters, by doing
+			something like this: `(string: ...(rotated: 1, ...$str))`
 			
 			Details:
 			To ensure that it's being used correctly, this macro requires three or more items -
 			providing just two, one or none will cause an error to be presented.
 			
 			See also:
-			(subarray:), (sorted:)
+			(sorted:)
+			
+			#data structure
 		*/
 		("rotated", (_, number, ...array) => {
 			/*
@@ -492,10 +592,173 @@ define([
 				return TwineError.create("macrocall",
 					"I can't rotate these " + array.length + " values by " + number + " positions.");
 			}
-			return array.slice(number).concat(array.slice(0, number));
+			return array.slice(number).concat(array.slice(0, number)).map(clone);
 		},
-		[Any, Any, rest(Any)])
+		[parseInt, Any, rest(Any)])
+
+		/*d:
+			(repeated: Number, ...Any) -> Array
+			
+			When given a number and a sequence of values, this macro produces an array containing
+			those values repeated, in order, by the given number of times.
+			
+			Example usage:
+			`(repeated: 5, false)` produces `(a: false, false, false, false, false)`
+			`(repeated: 3, 1,2,3)` produces `(a: 1,2,3,1,2,3,1,2,3)`
+			
+			Rationale:
+			This macro, as well as (range:), are the means by which you can create a large array of
+			similar or regular data, quickly. Just as an example: you want, say, an array of several
+			identical, complex datamaps, each of which are likely to be modified in the game,
+			you can use (repeated:) to make those copies easily. Or, if you want, for instance, a
+			lot of identical strings accompanied by a lone different string, you can use (repeated:)
+			and add a `(a: "string")`to the end.
+
+			When you already have an array variable, this is similar to simply adding that variable
+			to itself several times. However, if the number of times is over 5, this can be much
+			simpler to write.
+			
+			Details:
+			An error will, of course, be produced if the number given is 0 or less, or contains a fraction.
+			
+			See also:
+			(a:), (range:)
+			
+			#data structure
+		*/
+		("repeated", (_, number, ...array) => {
+			if (number <= 0) {
+				return TwineError.create("macrocall",
+					"I can't repeat these values " + number + " times.");
+			}
+			const ret = [];
+			while(number-- > 0) {
+				ret.push(...array);
+			}
+			return ret.map(clone);
+		},
+		[parseInt, rest(Any)])
+
+		/*d:
+			(interlaced: Array, ...Array) -> Array
+			
+			Takes multiple arrays, and pairs up each value in those arrays: it
+			creates an array containing each array's first value, an array containing each
+			array's second value, and so forth. If some values have no matching pair (i.e. one array
+			is longer than the other) then those values are ignored.
+			
+			Example usage:
+			`(interlaced: (a: 'A', 'B', 'C', 'D'), (a: 1, 2, 3))` is the same as `(a: 'A',1,'B',2,'C',3)`
+			
+			Rationale:
+			There are a couple of other macros which accept data in pairs - the most notable being
+			(datamap:), which takes data names and data values paired. This macro can help
+			with using such macros. For instance, you can supply an array of (datanames:) and
+			(datavalues:) to (interlaced:), and supply that to (datamap:), to produce the original
+			datamap again. Or, you can supply just the names, and use a macro like (repeated:) to
+			fill the other values.
+			
+			However, (interlaced:) can also be of use alongside macros which accept a sequence: you
+			can use it to cleanly insert values between each item. For instance, one can pair
+			an array with another array of spaces, and then convert them to a string with (text:).
+			`(text: ...(interlaced: $arr, (repeated: $arr's length, ' '))` will create a string containing
+			each element of $arr, followed by a space.
+			
+			Details:
+			If one of the arrays provided is empty, the resulting array will be empty, as well.
+			
+			See also:
+			(a:), (rotated:), (repeated:)
+			
+			#data structure
+		*/
+		("interlaced", (_, ...arrays) => {
+			/*
+				Determine the length of the longest array.
+			*/
+			let len = Math.min(...arrays.map(arr => arr.length));
+			const ret = [];
+			/*
+				For each array, add its element to the returning array.
+			*/
+			for(let i = 0; i < len; i += 1) {
+				for(let j = 0; j < arrays.length; j+=1) {
+					ret.push(clone(arrays[j][i]));
+				}
+			}
+			return ret;
+		},
+		[Array, rest(Array)])
+		;
+
+	/*
+		This convenience function is used to run reduce() on macro args using a passed-in lambda,
+		which is an operation common to (find:), (all-pass:) and (some-pass:).
+	*/
+	function lambdaFilter(section, lambda, args) {
+		return args.reduce((result, arg) => {
+			/*
+				If an earlier iteration produced an error, don't run any more
+				computations and just return.
+			*/
+			let error;
+			if ((error = TwineError.containsError(result))) {
+				return error;
+			}
+			/*
+				Run the lambda, to determine whether to filter out this element.
+			*/
+			const passedFilter = lambda.apply(section, {loop:arg, pass:true, fail:false});
+			if ((error = TwineError.containsError(passedFilter))) {
+				return error;
+			}
+			return result.concat(passedFilter ? [arg] : []);
+		}, []);
+	}
+
+	Macros.add
+		/*
+			(altered: Lambda, ...Any)
+		*/
+		("altered", (section, lambda, ...args) => args.map(loop => lambda.apply(section, {loop})),
+		[Lambda.TypeSignature('via'), rest(Any)])
+		/*
+			(find: Lambda, ...Any)
+		*/
+		("find", (section, lambda, ...args) => lambdaFilter(section, lambda, args),
+		[Lambda.TypeSignature('where'), rest(Any)])
+		/*
+			(all-pass: Lambda, ...Any)
+		*/
+		("all-pass", (section, lambda, ...args) => {
+			const ret = lambdaFilter(section, lambda, args);
+			return TwineError.containsError(ret) || ret.length === args.length;
+		},
+		[Lambda.TypeSignature('where'), rest(Any)])
+		/*
+			(some-pass: Lambda, ...Any)
+		*/
+		("some-pass", (section, lambda, ...args) => {
+			const ret = lambdaFilter(section, lambda, args);
+			return TwineError.containsError(ret) || ret.length > 0;
+		},
+		[Lambda.TypeSignature('where'), rest(Any)])
+		/*
+			(none-pass: Lambda, ...Any)
+		*/
+		("none-pass", (section, lambda, ...args) => {
+			const ret = lambdaFilter(section, lambda, args);
+			return TwineError.containsError(ret) || ret.length === 0;
+		},
+		[Lambda.TypeSignature('where'), rest(Any)])
+		/*
+			(folded: Lambda, ...Any)
+		*/
+		("folded", (section, lambda, ...args) => args.reduce((making,loop) => lambda.apply(section, {making,loop})),
+		[Lambda.TypeSignature('via making'), rest(Any)])
+		;
 		
+	Macros.add
 		/*d:
 			(datanames: Datamap) -> Array
 			
@@ -514,11 +777,14 @@ define([
 			
 			See also:
 			(datavalues:)
+			
+			#data structure
 		*/
 		("datanames", (_, map) =>  Array.from(map.keys()).sort(NaturalSort("en")),
 		[Map])
-		/*
-			(datavalues:)
+		/*d:
+			(datavalues: Datamap) -> Array
+			
 			This takes a datamap, and returns an array of its values, sorted
 			alphabetically by their name.
 			
@@ -535,37 +801,113 @@ define([
 			
 			See also:
 			(datanames:)
+			
+			#data structure
 		*/
 		("datavalues", (_, map) =>
+			/*
+				We first need to sort values by their keys (thus necessitating using .entries())
+				then extracting just the values.
+			*/
 			Array.from(map.entries()).sort(
 				(a,b) => ([a[0],b[0]].sort(NaturalSort("en"))[0] === a[0] ? -1 : 1)
 			).map(
-				e => e[1]
+				e => clone(e[1])
 			),
 		[Map])
 		
-		/*
-			(history:)
-			Returns the array of past passage names, directly from State.
-			(It should be changed to return Passage datamaps, but, it is what it is.)
-			This is used to implement the visited() function from Twine 1.
+		/*d:
+			(history:) -> Array
+
+			This returns an array containing the string names of all of the passages
+			the player has visited up to now, in the order that the player visited them.
+
+			Example usage:
+			`(history:) contains "Cellar"` is true if the player has visited a passage called
+			"Cellar" at some point.
+
+			Rationale:
+			Often, you may find yourself using "flag" variables to keep track of whether
+			the player has visited a certain passage in the past. You can use (history:), along with
+			data structure operators such as the `contains` operator, to obviate this necessity.
+
+			Details:
+			This includes duplicate names if the player has visited a passage more than once, or visited
+			the same passage two or more turns in a row.
+
+			This does *not* include the name of the current passage the player is visiting.
+
+			See also:
+			(passage:), (savedgames:)
+
+			#game state
 		*/
 		("history", () => State.pastPassageNames(),
 		[])
 		
-		/*
-			(passage:)
-			Returns the array of past passage names, directly from State.
-			This is used to implement the visited() function from Twine 1.
+		/*d:
+			(passage: [String]) -> Datamap
+			
+			When given a passage string name, this provides a datamap containing information about that passage. If no
+			name was provided, then it provides information about the current passage.
+			
+			Example usage:
+			`(passage:"Cellar")`
+
+			Rationale:
+			There are times when you wish to examine the data of the story as it is running - for instance, checking what
+			tag a certain passage has, and performing some special behaviour as a result. This macro provides that functionality.
+
+			Details:
+			The datamap contains the following names and values.
+
+			| Name | Value |
+			|---
+			| source | The source markup of the passage, exactly as you entered it in the Twine editor |
+			| name | The string name of this passage. |
+			| tags | An array of strings, which are the tags you gave to this passage. |
+
+			The "source" value, like all strings, can be printed using (print:). Be warned that printing the source of
+			the current passage, while inside of it, may lead to an infinite regress.
+
+			Interestingly, the construction `(print: (passage: "Cellar")'s source)` is essentially identical in function (albeit longer to write)
+			than `(display: "Cellar")`.
+
+			See also:
+			(history:), (savedgames:)
+
+			#game state
 		*/
 		("passage", (_, passageName) =>
 			Passages.get(passageName || State.passage)
 				|| TwineError.create('macrocall', "There's no passage named '" + passageName + "' in this story."),
 		[optional(String)])
 		
-		/*
-			(savedgames:)
-			Returns a datamap of currently saved games.
+		/*d:
+			(saved-games:) -> Datamap
+			
+			This returns a datamap containing the names of currently occupied save game slots.
+
+			Example usage:
+			`(print (saved-games:)'s "File A")` prints the name of the save file in the slot "File A".
+			`(if: (saved-games:) contains "File A")` checks if the slot "File A" is occupied.
+
+			Rationale:
+			For a more thorough description of the save file system, see the (save-game:) article.
+			This macro provides a means to examine the current save files in the user's browser storage, so
+			you can decide to print "Load game" links if a slot is occupied, or display a list of
+			all of the occupied slots.
+
+			Details:
+			Each name in the datamap corresponds to an occupied slot name. The values are the file names of
+			the files occupying the slot.
+
+			Changing the datamap does not affect the save files - it is simply information.
+
+			See also:
+			(save-game:), (load-game:)
+
+			#saving
 		*/
 		("savedgames", () => {
 			/*
@@ -604,13 +946,58 @@ define([
 		/*
 			DATAMAP MACROS
 		*/
-		/*
-			(datamap:)
-			Similar to (a:), these create standard JS Maps and Sets.
-			But, instead of supplying an iterator, you supply keys and values
-			interleaved: (datamap: key, value, key, value).
+		/*d:
+			Datamap data
+			
+			There are occasions when you may need to work with collections of values that "belong" to a
+			specific object or entity in your story - for example, a table of numeric "statistics" for
+			a monster - or that associate a certain kind of value with another kind, such as a combination of
+			adjectives ("slash", "thump") that change depending on the player's weapon name ("claw", "mallet") etc.
+			You can create datamaps to keep these values together, move them around en masse, and organise them.
+			
+			Datamaps are one of the two major "data structures" you can use in Harlowe. The other, arrays,
+			are created with (a:). You'll want to use datamaps if you want to store values that directly correspond to *strings*,
+			and whose *order* and *position* do not matter. If you need to preserve the order of the values, then an array
+			may be better suited.
+			
+			Datamaps consist of several string *name*s, each of which maps to a specific *value*. `$animals's frog` and `frog of $animals`
+			refers to the value associated with the name 'frog'. You can add new names or change existing values by using (set:) -
+			`(set: $animals's wolf to "howl")`.
+
+			You can express the name as a bare word if it doesn't have a space or other punctuation in it - `$animals's frog` is OK, but
+			`$animals's komodo dragon` is not. In that case, you'll need to always supply it as a string - `$animals's "komodo dragon"`.
+			
+			Datamaps may be joined by adding them together: `(datamap: "goose", "honk") + (datamap: "robot", "whirr")` is the same as
+			`(datamap: "goose", "honk", "robot", "whirr")`. In the event that the second datamap has the same name as the first one,
+			it will override the first one's value - `(datamap: "dog", "woof") + (datamap: "dog", "bark")` will act as
+			`(datamap: "dog", "bark")`.
+			
+			You may notice that you usually need to know the names a datamap contains in order to access its values. There are certain
+			macros which provide other ways of examining a datamap's contents: (datanames:) provides a sorted array of its names, and
+			(datavalues:) provides a sorted array of its values.
+
+			To summarise, the following operators work on datamaps.
+			
+			| Operator | Purpose | Example
+			|---
+			| `is` | Evaluates to boolean `true` if both sides contain equal names and values, otherwise `false`. | `(datamap:"HP",5) is (datamap:"HP",5)` (is true)
+			| `is not` | Evaluates to `true` if both sides differ in items or ordering. | `(datamap:"HP",5) is not (datamap:"HP",4)` (is true)<br>`(datamap:"HP",5) is not (datamap:"MP",5)` (is true)
+			| `contains` | Evaluates to `true` if the left side contains the name on the right.<br>(To check that a datamap contains a value, try using `contains` with (datavalues:)) | `(datamap:"HP",5) contains "HP"` (is true)<br>`(datamap:"HP",5) contains 5` (is false)
+			| `is in` | Evaluates to `true` if the right side contains the name on the left. | `"HP" is in (datamap:"HP",5)` (is true)
+			| `+` | Joins datamaps, using the right side's value whenever both sides contain the same name. | `(datamap:"HP",5) + (datamap:"MP",5)`
+		*/
+		/*d:
+			(datamap: [...Any]) -> Datamap
+			Also known as: (dm:)
+
+			Creates a datamap, which is a data structure that pairs string names with data values.
+			You should provide a string name, followed by the value paired with it, and then another
+			string name, another value, and so on, for as many as you'd like.
 
 			Example usage:
+			`(datamap:)` creates an empty datamap.
+			`(datamap: "Cute", 4, "Wit", 7)` creates a datamap with two names and values.
+			The following code also creates a datamap, with the names and values laid out in a readable fashion:
 			```
 			(datamap:
 				"Susan", "A petite human in a yellow dress",
@@ -619,13 +1006,37 @@ define([
 			)
 			```
 			
-			One concern about maps: even though they are a Map,
-			inserting a non-primitive in key position is problematic because
-			retrieving the key uses compare-by-reference, and most
-			of Twine 2's unique object types are immutable (hence, can't be
-			used in by-reference comparisons).
+			Rationale:
+			For an explanation of what datamaps are, see the Datamap article.
+			This macro is the primary means of creating datamaps - simply supply a name,
+			followed by a value, and so on.
+
+			In addition to creating datamaps for long-term use, this is also used to
+			create "momentary" datamaps which are used only in some operation. For instance,
+			to add several values to a datamap at once, you can do something like this:
+			```
+			(set: $map to it + (datamap: "Name 1", "Value 1", "Name 2", "Value 2"))
+			```
+
+			You can also use (datamap:) as a kind of "multiple choice" structure, if you combine it with
+			the `'s` or `of` syntax. For instance...
+			```
+			(set: $element to $monsterName of (datamap:
+				"Chilltoad", "Ice",
+				"Rimeswan", "Ice",
+				"Brisketoid", "Fire",
+				"Slime", "Water"
+			))
+			```
+			...will set $element to one of those elements if $monsterName matches the correct name. But, be warned: if
+			none of those names matches $monsterName, an error will result.
+
+			See also:
+			(a:), (dataset:)
+
+			#data structure 2
 		*/
-		("datamap", (_, ...args) => {
+		(["datamap","dm"], (_, ...args) => {
 			let key;
 			const map = new Map();
 			/*
@@ -633,10 +1044,6 @@ define([
 				map.set() with every two values.
 				During each odd iteration, the element is the key.
 				Then, the element is the value.
-			*/
-			/*
-				Note that, as is with most macro functions in this file,
-				the slice(1) eliminates the implicit first Section argument.
 			*/
 			const status = args.reduce((status, element) => {
 				let error;
@@ -666,7 +1073,7 @@ define([
 					);
 				}
 				else {
-					map.set(key, element);
+					map.set(key, clone(element));
 					key = undefined;
 				}
 				return status;
@@ -691,44 +1098,134 @@ define([
 		/*
 			DATASET MACROS
 		*/
-		/*
-			(dataset:)
-			Sets are more straightforward - their JS constructors can accept
-			arrays straight off.
+		/*d:
+			Dataset data
+
+			Arrays are useful for dealing with a sequence of related data values, especially if
+			they have a particular order. There are occasions, however, where you don't really
+			care about the order, and instead would simply use the array as a storage place for
+			values - using `contains` and `is in` to check which values are inside.
+
+			Think of datasets as being like arrays, but with specific restrictions:
+
+			* You can't access any positions within the dataset (so, for instance, the `1st`, `2ndlast`
+			and `last` aren't available, although the `length` still is) and can only use `contains`
+			and `is in` to see whether a value is inside.
+
+			* Datasets only contain unique values: adding the string "Go" to a dataset already
+			containing "Go" will do nothing.
+
+			* Datasets are considered equal (by the `is` operator) if they have the same items, regardless
+			of order (as they have no order).
+
+			These restrictions can be helpful in that they can stop programming mistakes from
+			occurring - you might accidentally try to modify a position in an array, but type the name of
+			a different array that should not be modified as such. Using a dataset for the second
+			array, if that is what best suits it, will cause an error to occur instead of allowing
+			this unintended operation to continue.
+
+
+			| Operator | Purpose | Example
+			|---
+			| `is` | Evaluates to boolean `true` if both sides contain equal items, otherwise `false`. | `(dataset:1,2) is (dataset 2,1)` (is true)
+			| `is not` | Evaluates to `true` if both sides differ in items. | `(dataset:5,4) is not (dataset:5)` (is true)
+			| `contains` | Evaluates to `true` if the left side contains the right side. | `(dataset:"Ape") contains "Ape"`<br>`(dataset:(dataset:99)) contains (dataset:99)`
+			| `is in` | Evaluates to `true` if the right side contains the left side. | `"Ape" is in (dataset:"Ape")`
+			| `+` | Joins datasets. | `(dataset:1,2,3) + (dataset:1,2,4)` (is `(dataset:1,2,3,4)`)
+			| `-` | Subtracts datasets. | `(dataset:1,2,3) - (dataset:1,3)` (is `(dataset:2)`)
+			| `...` | When used in a macro call, it separates each value in the right side.<br>The dataset's values are sorted before they are spread out.| `(a: 0, ...(dataset:1,2,3,4), 5)` (is `(a:0,1,2,3,4,5)`)
 		*/
-		("dataset", (_, ...args) => new Set(args), zeroOrMore(Any))
+		/*d:
+			(dataset: [...Any]) -> Dataset
+			Also known as: (ds:)
+
+			Creates a dataset, which is an unordered collection of unique values.
+			
+			Example usage:
+			`(dataset:)` creates an empty dataset, which could be filled with other values later.
+			`(dataset: "gold", "frankincense", "myrrh")` creates a dataset with three strings.
+			
+			Rationale:
+			For an explanation of what datasets are, see the Dataset article. This macro is the primary
+			means of creating datasets - simply supply the values to it, in any order you like.
+			
+			Details:
+			You can also use this macro to remove duplicate values from an array (though also eliminating the array's
+			order) by using the spread `...` operator like so: `(a: ...(dataset: ...$array))`.
+			
+			See also:
+			(datamap:), (a:)
+			
+			#data structure 3
+		*/
+		(["dataset","ds"], (_, ...args) => new Set(args.map(clone)), zeroOrMore(Any))
 		
 		/*
 			COLLECTION OPERATIONS
 		*/
-		/*
-			(count:)
-			Accepts 2 arguments - a collection and a value - and returns the number
-			of occurrences of the value in the collection, using the same semantics
-			as the "contains" operator.
+		/*d:
+			(count: Any, Any) -> Number
+
+			Accepts two values, and produces the number of times the second value is inside
+			the first value.
+
+			Example usage:
+			`(count: (a:1,2,3,2,1), 1)` produces 2.
+
+			Rationale:
+			You can think of this macro as being like the `contains` operator, but more powerful.
+			While `contains` produces `true` or `false` if one or more occurrences of the right side
+			appear in the left side, (count:) produces the actual number of occurrences.
+
+			Details:
+			If you use this with a datamap or dataset (which can't have duplicates) then an error will result.
+
+			See also:
+			(datanames:), (datavalues:)
+
+			#data structure
 		*/
 		("count", (_, collection, value) => {
 			switch(collectionType(collection)) {
 				case "dataset":
 				case "datamap": {
-					return +collection.has(name);
+					return TwineError.create("macrocall",
+						"(count:) shouldn't be given a datamap or dataset.",
+						"You should use the 'contains' operator instead. For instance, write: $variable contains 'value'."
+					);
 				}
 				case "string": {
 					if (typeof value !== "string") {
-						return new TypeError(
+						return TwineError.create("macrocall",
 							objectName(collection)
 							+ " can't contain  "
 							+ objectName(value)
 							+ " because it isn't a string."
 						);
 					}
+					/*
+						Since String#split() always produces an array of length 1 or more,
+						this will always produce 0 or higher.
+					*/
 					return collection.split(value).length-1;
 				}
 				case "array": {
-					return collection.reduce((count, e) => count + (e === value), 0);
+					return collection.reduce((count, e) => count + is(e,value), 0);
+				}
+				default: {
+					return TwineError.create("macrocall",
+						objectName(collection)
+						+ " can't contain values, let alone "
+						+ objectName(value)
+						+ "."
+					);
 				}
 			}
 		},
+		/*
+			This currently has "Any" instead of "either(Array,String)" as its signature's first argument, so
+			that the above special error messages can appear for certain wrong argument types.
+		*/
 		[Any, Any])
 		
 		// End of macros

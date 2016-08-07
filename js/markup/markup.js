@@ -1,8 +1,6 @@
-/**
+/*
 	TwineMarkup, by Leon Arnott.
 	This module, alongside the Patterns module, defines the standard syntax of Harlowe.
-	
-	@module TwineMarkup
 */
 (function () {
 	"use strict";
@@ -201,7 +199,40 @@
 					} else if (arrow.indexOf("<") >-1) {
 						align = "left";
 					}
-					return { align: align };
+					return { align };
+				},
+			},
+			/*
+				Text column syntax
+				
+				==|      : right column, width 1
+				=|=      : center column
+				|==      : left column
+				|==|     : no columns
+				==|||    : right column, width 3
+			*/
+			column: {
+				fn(match) {
+					let column;
+					const
+						arrow = match[1],
+						centerIndex = arrow.indexOf("|");
+						
+					if (centerIndex && centerIndex < arrow.length - 1) {
+						column = "center";
+					} else if (arrow[0] === "|" && arrow.slice(-1) === "|") {
+						column = "none";
+					} else if (centerIndex === arrow.length - 1) {
+						column = "right";
+					} else if (!centerIndex) {
+						column = "left";
+					}
+					return {
+						column,
+						width: /\|+/.exec(arrow)[0].length,
+						marginLeft: /^=*/.exec(arrow)[0].length,
+						marginRight: /=*$/.exec(arrow)[0].length,
+					};
 				},
 			},
 		});
@@ -229,12 +260,6 @@
 					message: "Harlowe macros use a different syntax to Twine 1 and SugarCube macros.",
 				}),
 			},
-			
-			/*
-				Like GitHub-Flavoured Markdown, Twine preserves line breaks
-				within paragraphs.
-			*/
-			br:            { fn: emptyFn, },
 			
 			/*
 				The order of these four is strictly important. As the back and front versions
@@ -292,28 +317,6 @@
 			tag:            { fn:        emptyFn },
 			url:            { fn:        emptyFn },
 			
-			passageLink: {
-				fn(match) {
-					const
-						p1 = match[1],
-						p2 = match[2],
-						p3 = match[3];
-					return {
-						type: "twineLink",
-						innerText: p2 ? p3 : p1,
-						passage:   p1 ? p3 : p2,
-					};
-				},
-			},
-			
-			simpleLink: {
-				fn: (match) => ({
-					type: "twineLink",
-					innerText: match[1],
-					passage:   match[1],
-				}),
-			},
-			
 			hookPrependedFront: {
 				fn: (match) => ({
 					name: match[1],
@@ -322,46 +325,29 @@
 				}),
 			},
 			
-			hookAnonymousFront: {
-				fn: () => ({
-					isFront: true,
-					demote() {
-						this.error("This tagged hook doesn't have a matching ].");
-					},
-				}),
-				canFollow: ["macro", "variable"],
-			},
-			
-			hookAppendedFront: {
+			hookFront: {
 				fn: () => ({
 					isFront: true,
 				}),
-				/*
-					Because hookAnonymousFront's and hookAppendedFront's
-					rules are identical, the canFollow of one must match
-					the cannotFollow of the other.
-				*/
-				cannotFollow: ["macro", "variable"],
 			},
 			
 			hookBack: {
 				fn: () => ({
-					type: "hookAppendedBack",
 					matches: {
 						// Matching front token : Name of complete token
 						hookPrependedFront: "hook",
-						hookAnonymousFront: "hook",
+						hookFront: "hook",
 					},
 					cannotCross: ["verbatimOpener"],
 				}),
 			},
-			
+
 			hookAppendedBack: {
 				fn: (match) => ({
 					name: match[1],
 					tagPosition: "appended",
 					matches: {
-						hookAppendedFront: "hook",
+						hookFront: "hook",
 					},
 					cannotCross: ["verbatimOpener"],
 				}),
@@ -404,6 +390,11 @@
 					passage: match[2]
 				}),
 			},
+			/*
+				Like GitHub-Flavoured Markdown, Twine preserves line breaks
+				within paragraphs.
+			*/
+			br:            { fn: emptyFn, },
 		});
 		
 		/*
@@ -428,25 +419,42 @@
 				}),
 			},
 			
-			hookRef:  { fn: textTokenFn("name") },
+			/*
+				Passage links desugar to (link-goto:) calls, so they can
+				be used in expression position.
+			*/
+			passageLink: {
+				fn(match) {
+					const
+						p1 = match[1],
+						p2 = match[2],
+						p3 = match[3];
+					return {
+						type: "twineLink",
+						innerText: p2 ? p3 : p1,
+						passage:   p1 ? p3 : p2,
+					};
+				},
+			},
+			
+			simpleLink: {
+				fn: (match) => ({
+					type: "twineLink",
+					innerText: match[1],
+					passage:   match[1],
+				}),
+			},
 			
 			variable:   { fn: textTokenFn("name") },
 			
-			whitespace: {
-				fn: emptyFn,
-				/*
-					To save creating tokens for every textual space,
-					this restriction is in place. It should have no effect
-					on syntactic whitespace.
-				*/
-				cannotFollow: "text",
-			},
+			tempVariable: { fn: textTokenFn("name") },
 		});
 		
 		/*
 			Now, macro code rules.
 		*/
 		const macroRules = setupRules(macroMode, Object.assign({
+
 				/*
 					The macroName must be a separate token, because it could
 					be a method call (which in itself contains a variable token
@@ -469,7 +477,7 @@
 						return { isMethodCall:   false };
 					},
 				},
-				
+
 				groupingFront: {
 					fn: () => ({
 						isFront: true,
@@ -483,7 +491,7 @@
 				*/
 				property: {
 					fn: textTokenFn("name"),
-					canFollow: ["variable", "hookRef", "property",
+					canFollow: ["variable", "hookRef", "property", "tempVariable", "colour",
 						"itsProperty", "belongingItProperty", "macro", "grouping", "string",
 						/*
 							These must also be included so that the correct error can be reported.
@@ -551,6 +559,8 @@
 						},
 					}),
 				},
+				
+				hookRef:  { fn: textTokenFn("name") },
 				
 				cssTime: {
 					fn: (match) => ({
@@ -627,7 +637,8 @@
 				},
 				inequality: {
 					fn: (match) => ({
-						operator: match[0],
+						operator: match[2],
+						negate: match[1].indexOf('not') >-1,
 					}),
 				},
 				augmentedAssign: {
@@ -640,8 +651,18 @@
 					fn: textTokenFn("name"),
 					cannotFollow: ["text"],
 				},
+
+				whitespace: {
+					fn: emptyFn,
+					/*
+						To save creating tokens for every textual space,
+						this restriction is in place. It should have no effect
+						on syntactic whitespace.
+					*/
+					cannotFollow: "text",
+				},
 			},
-			["boolean", "is", "to", "into", "and", "or", "not",
+			["boolean", "is", "to", "into", "where", "via", "with", "making", "and", "or", "not",
 			"isNot", "contains", "isIn"].reduce(function(a, e) {
 				a[e] = {
 					fn: emptyFn,
@@ -663,8 +684,10 @@
 			the arrays must now be modified in-place, using [].push.apply().
 		*/
 		markupMode.push(            ...Object.keys(blockRules),
-									...Object.keys(inlineRules),
-									...Object.keys(expressionRules));
+									// expressionRules must come before inlineRules because
+									// passageLink conflicts with hookAnonymousFront.
+									...Object.keys(expressionRules),
+									...Object.keys(inlineRules));
 		
 		/*
 			Warning: the property pattern "'s" conflicts with the string literal
@@ -724,27 +747,18 @@
 	}
 	
 	function exporter(Lexer) {
-		/**
+		/*
 			Export the TwineMarkup module.
 			
 			Since this is a light freeze, Utils and Patterns are still modifiable.
-			
-			@class TwineMarkup
-			@static
 		*/	
 		const TwineMarkup = Object.freeze({
 			
-			/**
-				@method lex
-				@param {String} src String source to lex.
-				@return {Array} Tree structure of
-			*/
 			lex: rules(Lexer).lex,
 			
-			/**
-				Export the Patterns.
-				
-				@property {Object} Patterns
+			/*
+				The Patterns are exported for use by consumers in understanding
+				the specifics of Harlowe's markup language.
 			*/
 			Patterns,
 		});
@@ -755,8 +769,8 @@
 		This requires the Patterns and Lexer modules.
 	*/
 	if(typeof module === 'object') {
-		Patterns = require('patterns');
-		module.exports = exporter(require('lexer'));
+		Patterns = require('./patterns');
+		module.exports = exporter(require('./lexer'));
 	}
 	else if(typeof define === 'function' && define.amd) {
 		define('markup', ['lexer', 'patterns'], function (Lexer, P) {

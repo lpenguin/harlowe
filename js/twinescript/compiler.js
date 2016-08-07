@@ -1,12 +1,9 @@
-define(['utils'], ({toJSLiteral, assert}) => {
+define(['utils'], ({toJSLiteral, impossible}) => {
 	"use strict";
 	
-	/**
+	/*
 		A module that handles the JIT compilation of TwineScript syntax tokens
 		(received from TwineMarkup) into Javascript code that calls Operations methods.
-		
-		@class Compiler
-		@static
 	*/
 	
 	/*
@@ -14,17 +11,28 @@ define(['utils'], ({toJSLiteral, assert}) => {
 		This is an otherwise plain object that may implement any of the following:
 		
 		{Function|String} TwineScript_ObjectName:
-			returns a string that's used when TwineScript needs to
+			returns a string that's used when Harlowe needs to
 			name the object in error messages or the debug menu.
+
+		{Function|String} TwineScript_TypeName:
+			returns a string that's used when Harlowe needs to
+			name the type of the object in error messages or the debug menu.
 		
 		{Function} TwineScript_Clone:
 			a function which clones the value, even if it's an oddly-shaped object.
 			Should be used exclusively by VarRef.set().
 		
 		{Function} TwineScript_+:
-			a function which is used to overload the + operator. Note that TwineScript
+			a function which is used to overload the + operator. Note that Harlowe
 			automatically forces both sides of + to be of identical type.
+
+		{Function} TwineScript_is:
+			a function which is used to overload the "is" operator.
 		
+		{Function} TwineScript_GetElement:
+			a function that, if present, is used to obtain integer-indexed elements
+			of the object, as if it were an array. Currently used by HookSets.
+
 		{Function} TwineScript_Print:
 			a function which is used when the given object is printed into the passage.
 		
@@ -32,11 +40,19 @@ define(['utils'], ({toJSLiteral, assert}) => {
 			returns a string that's used when the object CAN be implicitly
 			coerced to string. This should be used very sparingly.
 		
-		{Function} set TwineScript_Assignee:
-			a setter function that, if present, proxies the act of setting a value to
-			this object, if it's usable as an lvalue. Currently hardcoded to only
-			work for hookRefs!!
-		
+		{Boolean} TwineScript_Unstorable:
+			a value that, if present and truthy, means the value cannot be stored using
+			(set:) or (put:), nor can be used inside macros with an Any signature.
+
+		{Boolean} TwineScript_Identifiers:
+			a value that, if present and truthy, means the object is the Identifiers object
+			in Operations. Should be used exclusively by VarRef.set().
+
+		{Boolean} TwineScript_VariableStore:
+			a value that, if present and truthy, means the object is either a State's
+			variables store, or a Section's temporary variables store.
+			in Operations. Should be used exclusively by VarRef.set().
+
 		{Function} toString:
 			if this is present and !== Object.prototype.toString, then this is
 			used by Section to convert this datatype to renderable TwineMarkup code.
@@ -56,77 +72,179 @@ define(['utils'], ({toJSLiteral, assert}) => {
 		first token that has one of those types. Very useful.
 		
 		@param {Array} array The tokens array.
-		@param {String} types* The token type(s).
+		@param {Array} types The token type(s).
 		@return {Number} The array index, or NaN.
 	*/
-	function indexOfType(array, ...types) {
+	function indexOfType(array, types) {
 		for (let i = 0; i < array.length; i+=1) {
-			if (types.indexOf(array[i].type) > -1) {
+			if (types.includes(array[i].type)) {
 				return i;
 			}
 		}
 		return NaN;
 	}
 	
-	function rightAssociativeIndexOfType(array, ...types) {
+	function rightAssociativeIndexOfType(array, types) {
 		/*
 			What this does is tricky: it reverses the passed-in array,
 			calls the normal indexOfType, then inverts the returned index
 			(converting, say, 3/10 on the reversed array into 7/10 on
 			the original array).
-			
-			For browser optimisation purposes, arguments is copied into an
-			array
 		*/
 		return (array.length - 1) - indexOfType(...[
 			/*
 				Regrettably, .reverse() is an in-place method, so a copy must be
 				manually made.
 			*/
-			[...array].reverse(), ...types
+			[...array].reverse(), types
 		]);
 	}
+
+	/*
+		When given an array of tokens, this finds the token with the highest or lowest precedence
+		among them, and returns it with its index.
+	*/
+	function precedentToken(tokens, order) {
+		/*
+			If none is found, this empty array is returned.
+		*/
+		let ret = [];
+		if (!tokens.length) {
+			return ret;
+		}
+		/*
+			The following is the precedence table for Harlowe tokens,
+			in ascending order of tightness. Each row has identical precedence.
+			Absent token types have the least precedence.
+		*/
+		[
+			["comma"],
+			["spread"],
+			["to"],
+			["into"],
+			{rightAssociative: ["where", "via"]},
+			{rightAssociative: ["with", "making"]},
+			["augmentedAssign"],
+			["and", "or"],
+			["is", "isNot"],
+			["contains", "isIn"],
+			["inequality"],
+			["addition", "subtraction"],
+			["multiplication", "division"],
+			["not"],
+			["belongingProperty"],
+			["belongingOperator", "belongingItOperator"],
+			{rightAssociative: ["property"]},
+			{rightAssociative: ["itsProperty"]},
+			["belongingItProperty"],
+			{rightAssociative: ["possessiveOperator", "itsOperator"]},
+			["twineLink"],
+			["macro"],
+			["grouping"],
+		][order === "most" ? "reverse" : "valueOf"]().some(types => {
+			let index;
+			/*
+				Right-associative token types are wrapped especially.
+			*/
+			if (types.rightAssociative) {
+				index = rightAssociativeIndexOfType(tokens, types.rightAssociative);
+			}
+			else {
+				index = indexOfType(tokens, types);
+			}
+			/*
+				Return the token once we find it.
+			*/
+			if (!Number.isNaN(index) && index > -1) {
+				ret = [tokens[index], index];
+				return true;
+			}
+		});
+		return ret;
+	}
+
+	/*
+		A helper for the comparison operators that computes
+		which Operations method to call for them.
+	*/
+	function compileComparisonOperator(token) {
+		if (token.type === "inequality") {
+			let operation = token.operator;
+			return (token.negate ? ({
+					'>' :     '<=',
+					'<' :     '>=',
+					'>=':     '<',
+					'<=':     '>',
+				}[operation]) : operation);
+		}
+		else {
+			return token.type;
+		}
+	}
+
+	/*
+		A helper which performs compileComparisonOperator(), then returns the inverse of
+		the compiled operation. Used in the "and" and "or" operator compilation
+		to flip child comparisons.
+	*/
+	function invertComparisonOperator(token) {
+		const type = compileComparisonOperator(token);
+		return ({
+			'>' :     '<',
+			'<' :     '>',
+			'>=':     '<=',
+			'<=':     '>=',
+			contains: "isIn",
+			isIn:     "contains",
+			is:       "isNot",
+			isNot:    "is",
+		}[type]);
+	}
 	
-	/**
+	/*
 		This takes an array from TwineMarkup, rooted at an expression,
 		and returns raw Javascript code for the expression's execution.
 		
-		@method compile
-		@param {Array} tokens The tokens array.
-		@param {Boolean} isVarRef Whether the returned expression should be a VarRef.
+		@param {Array} The tokens array.
+		@param {Object} Some flags to carry down recursive calls to compile()
+			{Boolean} isVarRef: whether or not this value should be compiled to a VarRef
+			{String} elidedComparison: whether or not this is part of an elided comparison
+				inside an "and" or "or" operation, like "3 < 4 and 5".
 		@return {String} String of Javascript code.
 	*/
-	function compile(tokens, isVarRef) {
+	function compile(tokens, {isVarRef, elidedComparison} = {}) {
+		// Convert tokens to a 1-size array if it's just a single non-array.
+		tokens = [].concat(tokens);
 		/*
 			Recursive base case: no tokens.
 			Any behaviour that should be done in the event of no tokens
 			must be performed elsewhere.
 		*/
-		if (!tokens) {
+		if (!tokens.length) {
 			return "";
 		}
-		// Convert tokens to a 1-size array if it's just a single non-array.
-		tokens = [].concat(tokens);
 		/*
 			Obtain the first token, which is used for several base-cases in this function,
 			such as the one below.
 		*/
-		const token = tokens[0];
+		let token = tokens[0];
 		/*
 			Potential early return if we're at a leaf node.
 		*/
 		if (tokens.length === 1) {
 			if (token.type === "identifier") {
 				if (isVarRef) {
-					/*
-						This error message is a bit ugly, I must admit...
-					*/
-					return "TwineError.create('keyword','I can\\'t use \\'" + token.text + "\\' in this position.') ";
+					return "VarRef.create(Operations.Identifiers," + toJSLiteral(token.text) + ")";
 				}
 				return " Operations.Identifiers." + token.text.toLowerCase() + " ";
 			}
 			else if (token.type === "variable") {
 				return "VarRef.create(State.variables,"
+					+ toJSLiteral(token.name)
+					+ ")" + (isVarRef ? "" : ".get()");
+			}
+			else if (token.type === "tempVariable") {
+				return "VarRef.create(section.stack[0].tempVariables,"
 					+ toJSLiteral(token.name)
 					+ ")" + (isVarRef ? "" : ".get()");
 			}
@@ -139,15 +257,6 @@ define(['utils'], ({toJSLiteral, assert}) => {
 					2. The ? sigil is needed to distinguish the hook name
 					from a pseudo-hook selector string.
 				*/
-				if (isVarRef) {
-					/*
-						Assignments to hookRefs assign text to all of their matching hooks.
-						
-						TwineScript_Assignee is a setter accessor used as a TwineScript
-						assignment interface.
-					*/
-					return "VarRef.create(section.selectHook('?" + token.name + "'), 'TwineScript_Assignee')";
-				}
 				return " section.selectHook('?" + token.name + "') ";
 			}
 			else if (token.type === "string") {
@@ -171,40 +280,18 @@ define(['utils'], ({toJSLiteral, assert}) => {
 				return compile(token.children);
 			}
 		}
-		
+
 		/*
-			Attempt to find the index of a valid token, using this
-			order of precedence:
-			
-			grouping ()
-			property 's
-			macro
-			not
-			multiply
-			divide
-			modulo
-			add
-			subtract
-			<
-			<=
-			>
-			>=
-			contains
-			is
-			is not
-			and
-			or
-			to
-			spread ...
-			comma
-			
-			We must check these in reverse, so that the least-precedent
-			is associated last.
+			Obtain the least precedent token, its index i, and its type.
 		*/
-		let i, macroNameToken,
+		let i;
+		[token, i] = precedentToken(tokens, "least");
+		const type = (token || {}).type;
+
+		let
 			/*
 				These hold the returned compilations of the tokens
-				surrounding a currently matched token, as part of this function's
+				surrounding a matched token, as part of this function's
 				recursive descent.
 			*/
 			left, right,
@@ -228,46 +315,82 @@ define(['utils'], ({toJSLiteral, assert}) => {
 				"it", which is the nearest previous left-hand operand.
 			*/
 			implicitLeftIt = false;
-		
+
+		if (!type) {
+			/*
+				If no token was found, skip the rest of these checks.
+			*/
+		}
 		/*
 			I'll admit it: I'm not yet sure what place the JS comma will have in
 			TwineScript. As of right now, let's just pass it through
 			at the correct precedence, and require both sides.
 		*/
-		if ((i = indexOfType(tokens, "comma")) >-1) {
+		else if (type === "comma") {
 			midString = ",";
 			/*
-				Unlike Javascript, Twinescript allows trailing commas in calls.
+				Unlike Javascript, Harlowe allows trailing commas in calls.
 			*/
 			needsRight = false;
 		}
-		else if ((i = indexOfType(tokens, "spread")) >-1) {
+		else if (type === "spread") {
 			/*
 				Whether or not this actually makes sense as a "mid"string
 				is probably easily disputed.
 			*/
 			midString = "Operations.makeSpreader(";
 			right =
-				compile(tokens.splice(i + 1))
+				compile(tokens.slice(i + 1))
 				+ ")";
 			needsLeft = false;
 		}
-		else if ((i = indexOfType(tokens, "to")) >-1) {
+		else if (type === "to") {
 			assignment = "to";
-			left  = "Operations.setIt(" + compile(tokens.slice(0,  i), "varRef") + ")";
+			right = compile(tokens.slice(i + 1), {isVarRef:true});
+			left  = "Operations.setIt(" + compile(tokens.slice(0,  i), {isVarRef:true}) + ")";
 		}
-		else if ((i = indexOfType(tokens, "into")) >-1) {
+		else if (type === "into") {
 			assignment = "into";
-			right = compile(tokens.slice(0,  i), "varRef");
-			left  = "Operations.setIt(" + compile(tokens.slice(i + 1), "varRef") + ")";
+			right = compile(tokens.slice(0,  i), {isVarRef:true});
+			left  = "Operations.setIt(" + compile(tokens.slice(i + 1), {isVarRef:true}) + ")";
+		}
+		else if (type === "where" || type === "via") {
+			left = "Lambda.create("
+				+ compile(tokens.slice(0, i), {isVarRef:true})
+				+ ",";
+			midString = toJSLiteral(token.type)
+				+ ",";
+			right = toJSLiteral(compile(tokens.slice(i + 1)))
+				+ ")";
+		}
+		else if (type === "with" || type === "making") {
+			/*
+				This token requires that whitespace + a temp variable be to the right of it.
+			*/
+			const rightTokens = tokens.slice(i + 1);
+			if (![2,3].includes(rightTokens.length) || rightTokens[0].type !== "whitespace" || rightTokens[1].type !== "tempVariable"
+					|| (rightTokens[2] && rightTokens[2].type !== "whitespace")) {
+				left = "TwineError.create('operation','I need a temporary variable to the right of \\'";
+				midString = token.type;
+				right = "\\'.')";
+			}
+			else {
+				left = "Lambda.create("
+					+ compile(tokens.slice(0, i), {isVarRef:true})
+					+ ",";
+				midString = toJSLiteral(token.type)
+					+ ",";
+				right = toJSLiteral(rightTokens[1].name)
+					+ ")";
+			}
 		}
 		/*
 			I'm also not sure if augmented assignment is strictly necessary given that
 			one can do (set: $x to it+1), and += is sort of an overly abstract token.
 		*/
-		else if ((i = indexOfType(tokens, "augmentedAssign")) >-1) {
-			assignment = tokens[i].operator;
-			left  = compile(tokens.slice(0,  i), "varRef");
+		else if (type === "augmentedAssign") {
+			assignment = token.operator;
+			left  = compile(tokens.slice(0,  i), {isVarRef:true});
 			/*
 				This line converts the "b" in "a += b" into "a + b" (for instance),
 				thus partially de-sugaring the augmented assignment.
@@ -278,26 +401,128 @@ define(['utils'], ({toJSLiteral, assert}) => {
 				a binary-arity Operation method name.
 			*/
 			right = "Operations['" + assignment + "']("
-				+ (compile(tokens.slice (0,  i)) + ","
-				+  compile(tokens.splice(i + 1))) + ")";
+				+ (compile(tokens.slice(0,  i)) + ","
+				+  compile(tokens.slice(i + 1))) + ")";
 		}
-		else if ((i = indexOfType(tokens, "and", "or")) >-1) {
-			operation = tokens[i].type;
+		/*
+			The following are the logical arithmetic operators.
+		*/
+		else if (type === "and" || type === "or") {
+			/*
+				Rule: a side is a comparison if its least precedentToken's type is a comparison
+				operator, or its type is "and" or "or" and its sides are a comparison.
+			*/
+			const isComparisonOp = (tokens) => {
+				const [token, i] = precedentToken(tokens, "least");
+				if (!token) {
+					return;
+				}
+				if (['inequality','is','isNot','isIn','contains'].includes(token.type)) {
+					return token;
+				}
+				if (['and','or'].includes(token.type)) {
+					return (isComparisonOp(tokens.slice(0, i)) || isComparisonOp(tokens.slice(i + 1)));
+				}
+			};
+
+			const
+				leftIsComparison        = isComparisonOp(tokens.slice(0,  i)),
+				rightIsComparison       = isComparisonOp(tokens.slice(i + 1)),
+				// This error message is used for elided "is not" comparisons.
+				ambiguityError = "TwineError.create('operation', 'This use of \"is not\" and \""
+					+ type + "\" is grammatically ambiguous',"
+					+ "'Maybe try rewriting this as \"__ is not __ " + type + " __ is not __') ";
+			
+			operation = token.type;
+			/*
+				If elidedComparison is a matching type, then this token is a continuation of an elided
+				comparison, such as "3 < 4 and [5 and 6]".
+				Simply add the left and right side as arguments to elidedComparisonOperator().
+			*/
+			if (elidedComparison === token.type) {
+				operation = '';
+				left  = (compile(tokens.slice(0,  i), {isVarRef, elidedComparison})).trim();
+				midString = ",";
+				right = (compile(tokens.slice(i + 1), {elidedComparison})).trim();
+			}
+			/*
+				If the left side is a comparison operator, and the right side is not,
+				wrap the right side in an elidedComparisonOperator call.
+				This transforms statements like (if: $a > 2 and 3) into (if: $a > 2 and it > 3).
+			*/
+			else if (leftIsComparison && !rightIsComparison) {
+				const
+					[leftSide]            = precedentToken(tokens.slice(0,  i), "least"),
+					operator = toJSLiteral(compileComparisonOperator(leftSide));
+				/*
+					The one operation for which this transformation cannot be allowed is "is not",
+					because of its semantic ambiguity ("a is not b and c") in English.
+				*/
+				if (leftSide.type === 'isNot') {
+					return ambiguityError;
+				}
+				right = "Operations.elidedComparisonOperator("
+					+ toJSLiteral(token.type) + ","
+					+ operator + ","
+					+ compile(tokens.slice(i + 1), {elidedComparison:type})
+					+ ")";
+			}
+			/*
+				If the right side is a comparsion operator, and the left side is not,
+				swap the left and right sides, invert the right (left) side, then perform the above.
+				This transforms statements like (if: $a and $b < 3) into (if: 3 >= $b and it >= $a).
+			*/
+			else if (!leftIsComparison && rightIsComparison) {
+				/*
+					isComparisonOp actually returns the token holding the comparison op.
+					We can reuse that token in this computation.
+				*/
+				const rightSide = rightIsComparison,
+					rightIndex = tokens.indexOf(rightSide),
+					operator = toJSLiteral(invertComparisonOperator(rightSide));
+
+				/*
+					Again, "is not" should not be transformed.
+				*/
+				if (rightSide.type === 'isNot') {
+					return ambiguityError;
+				}
+				right = "Operations.elidedComparisonOperator("
+					+ toJSLiteral(token.type) + ","
+					+ operator + ","
+					+ compile(tokens.slice(0, i), {elidedComparison:type})
+					+ ")";
+				/*
+					The following additional action swaps the tokens to the right and left of rightSide,
+					and changes rightSide's type into its inverse. This changes ($b < 3) into (3 > $b),
+					and thus alters the It value of the expression from $b to 3.
+
+					For multi-part comparisons, (3 and 4 and 5 < 6) becomes (6 > 5 and it > 3 and it > 4).
+
+					This could cause issues when "it" is used explicitly in the expression, but frankly such
+					uses are already kinda nonsensical ("(if: $a is in it and $b)"?).
+				*/
+				left =
+					compile([
+						...tokens.slice(rightIndex + 1),
+						// Create a copy of rightSide with the type changed, rather than mutate it in-place.
+						Object.assign(Object.create(rightSide), {
+							[rightSide.type === "inequality" ? "operator" : "type"]:
+								invertComparisonOperator(rightSide),
+						}),
+						...tokens.slice(i + 1, rightIndex),
+					]);
+			}
 		}
-		else if ((i = indexOfType(tokens, "is", "isNot")) >-1) {
+		/*
+			The following are the comparison operators.
+		*/
+		else if (type === "is" || type === "isNot" || type === "contains" || type === "isIn" || type === "inequality") {
 			implicitLeftIt = true;
-			operation = tokens[i].type;
+			operation = compileComparisonOperator(token);
 		}
-		else if ((i = indexOfType(tokens, "contains", "isIn")) >-1) {
-			implicitLeftIt = true;
-			operation = tokens[i].type;
-		}
-		else if ((i = indexOfType(tokens, "inequality")) >-1) {
-			implicitLeftIt = true;
-			operation = tokens[i].operator;
-		}
-		else if ((i = indexOfType(tokens, "addition", "subtraction")) >-1) {
-			operation = tokens[i].text;
+		else if (type === "addition" || type === "subtraction") {
+			operation = token.text;
 			/*
 				Since +- arithmetic operators can also be unary,
 				we must, in those cases, change the left token to 0 if
@@ -312,17 +537,17 @@ define(['utils'], ({toJSLiteral, assert}) => {
 				left = "0";
 			}
 		}
-		else if ((i = indexOfType(tokens, "multiplication", "division")) >-1) {
-			operation = tokens[i].text;
+		else if (type === "multiplication" || type === "division") {
+			operation = token.text;
 		}
-		else if ((i = indexOfType(tokens, "not")) >-1) {
-			midString = "Operations.not(";
-			right =
-				compile(tokens.splice(i + 1))
+		else if (type === "not") {
+			midString = " ";
+			right = "Operations.not("
+				+ compile(tokens.slice(i + 1))
 				+ ")";
 			needsLeft = false;
 		}
-		else if ((i = indexOfType(tokens, "belongingProperty")) >-1) {
+		else if (type === "belongingProperty") {
 			/*
 				As with the preceding case, we need to manually wrap the variable side
 				inside the Operations.get() call, while leaving the other side as is.
@@ -331,21 +556,26 @@ define(['utils'], ({toJSLiteral, assert}) => {
 				/*
 					belongingProperties place the variable on the right.
 				*/
-				+ compile(tokens.slice (i + 1), "varref")
+				+ compile(tokens.slice (i + 1), {isVarRef:true})
 				+ ","
 				/*
 					Utils.toJSLiteral() is used to both escape the name
 					string and wrap it in quotes.
 				*/
-				+ toJSLiteral(tokens[i].name) + ")"
+				+ toJSLiteral(token.name) + ")"
 				+ (isVarRef ? "" : ".get()");
 			midString = " ";
 			needsLeft = needsRight = false;
 		}
-		else if ((i = indexOfType(tokens, "belongingOperator", "belongingItOperator")) >-1) {
-			if (tokens[i].type.includes("It")) {
+		else if (type === "belongingOperator" || type === "belongingItOperator") {
+			if (token.type.includes("It")) {
 				right = "Operations.Identifiers.it";
 				needsRight = false;
+			}
+			else {
+				// Since, as with belonging properties, the variable is on the right,
+				// we must compile the right side as a varref.
+				right = compile(tokens.slice (i + 1), {isVarRef:true});
 			}
 			possessive = "belonging";
 		}
@@ -356,47 +586,58 @@ define(['utils'], ({toJSLiteral, assert}) => {
 			instead of the incorrect:
 				VarRef.create(a,1).get() VarRef.create(,2).get()
 		*/
-		else if ((i = rightAssociativeIndexOfType(tokens, "property")) >-1) {
+		else if (type === "property") {
 			/*
 				This is somewhat tricky - we need to manually wrap the left side
 				inside the Operations.get() call, while leaving the right side as is.
 			*/
 			left = "VarRef.create("
-				+ compile(tokens.slice (0, i), "varref")
+				+ compile(tokens.slice(0, i), {isVarRef:true})
 				+ ","
 				/*
 					Utils.toJSLiteral() is used to both escape the name
 					string and wrap it in quotes.
 				*/
-				+ toJSLiteral(tokens[i].name) + ")"
+				+ toJSLiteral(token.name) + ")"
 				+ (isVarRef ? "" : ".get()");
 			midString = " ";
 			needsLeft = needsRight = false;
 		}
-		else if ((i = rightAssociativeIndexOfType(tokens, "itsProperty")) >-1
-				|| (i = indexOfType(tokens, "belongingItProperty")) >-1) {
+		else if (type === "itsProperty" || type === "belongingItProperty") {
 			/*
 				This is actually identical to the above, but with the difference that
 				there is no left subtoken (it is always Identifiers.it).
 			*/
 			left = "VarRef.create(Operations.Identifiers.it,"
-				+ toJSLiteral(tokens[i].name) + ").get()";
+				+ toJSLiteral(token.name) + ").get()";
 			midString = " ";
 			needsLeft = needsRight = false;
 		}
-		else if ((i = rightAssociativeIndexOfType(tokens, "possessiveOperator", "itsOperator")) >-1) {
-			if (tokens[i].type.includes("it")) {
+		else if (type === "possessiveOperator" || type === "itsOperator") {
+			if (token.type.includes("it")) {
 				left = "Operations.Identifiers.it";
 				needsLeft = false;
 			}
 			possessive = "possessive";
 		}
-		else if ((i = indexOfType(tokens, "macro")) >-1) {
+		else if (type === "twineLink") {
+			/*
+				This crudely desugars the twineLink token into a
+				(link-goto:) token, in a manner similar to that in Renderer.
+			*/
+			midString = 'Macros.run("link-goto", [section,'
+				+ toJSLiteral(token.innerText) + ","
+				+ toJSLiteral(token.passage) + "])";
+			needsLeft = needsRight = false;
+		}
+		else if (type === "macro") {
 			/*
 				The first child token in a macro is always the method name.
 			*/
-			macroNameToken = tokens[i].children[0];
-			assert(macroNameToken.type === "macroName");
+			const macroNameToken = token.children[0];
+			if(macroNameToken.type !== "macroName") {
+				impossible('Compiler.compile', 'macro token had no macroName child token');
+			}
 			
 			midString = 'Macros.run('
 				/*
@@ -407,7 +648,7 @@ define(['utils'], ({toJSLiteral, assert}) => {
 				*/
 				+ (macroNameToken.isMethodCall
 					? compile(macroNameToken.children)
-					: '"' + tokens[i].name + '"'
+					: '"' + token.name + '"'
 				)
 				/*
 					The arguments given to a macro instance are given in an array.
@@ -426,27 +667,26 @@ define(['utils'], ({toJSLiteral, assert}) => {
 					(That, of course, being the comma - (macro: 1,2,3) vs [1,2,3].)
 					This is currently true, but it is nonetheless a fairly bold assumption.
 				*/
-				+ compile(tokens[i].children.slice(1))
+				+ compile(token.children.slice(1))
 				+ '])';
 			needsLeft = needsRight = false;
 		}
-		else if ((i = indexOfType(tokens, "grouping")) >-1) {
-			midString = "(" + compile(tokens[i].children, isVarRef) + ")";
+		else if (type === "grouping") {
+			midString = "(" + compile(token.children, {isVarRef}) + ")";
 			needsLeft = needsRight = false;
 		}
-		
 		/*
 			If a token was found, we can recursively
 			compile those next to it.
 		*/
-		if (i >- 1) {
+		if (i > -1) {
 			/*
 				Any of the comparisons above could have provided specific
 				values for left and right, but usually they will just be
 				the tokens to the left and right of the matched one.
 			*/
-			left  = left  || (compile(tokens.slice (0,  i), isVarRef)).trim();
-			right = right || (compile(tokens.splice(i + 1))).trim();
+			left  = left  || (compile(tokens.slice(0,  i), {isVarRef})).trim();
+			right = right || (compile(tokens.slice(i + 1))).trim();
 			/*
 				The compiler should implicitly insert the "it" keyword when the
 				left-hand-side of a comparison operator was omitted.
@@ -463,7 +703,7 @@ define(['utils'], ({toJSLiteral, assert}) => {
 					+ (needsLeft && needsRight ? "and " : "")
 					+ (needsRight ? "right " : "")
 					+ "of "
-					+ '"' + tokens[i].text + '"'
+					+ '"' + token.text + '"'
 					+ "')";
 			}
 
@@ -473,7 +713,7 @@ define(['utils'], ({toJSLiteral, assert}) => {
 			else if (assignment) {
 				return "Operations.makeAssignmentRequest("
 					+ [left, right, toJSLiteral(assignment)]
-					+")";
+					+ ")";
 			}
 			else if (possessive) {
 				return "VarRef.create("
@@ -495,10 +735,10 @@ define(['utils'], ({toJSLiteral, assert}) => {
 				This should default to a " " so that some separation lies between tokens.
 				Otherwise, some tokens like "contains" will break in certain (rare) circumstances.
 			*/
-			return ((token.value || token.text) + "").trim() || " ";
+			return (('value' in tokens[0] ? tokens[0].value : tokens[0].text) + "").trim() || " ";
 		}
 		else {
-			return tokens.reduce((a, token) => a + compile(token, isVarRef), "");
+			return tokens.reduce((a, token) => a + compile(token, {isVarRef}), "");
 		}
 		return "";
 	}

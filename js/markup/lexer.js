@@ -1,10 +1,8 @@
-/**
+/*
 	The Lexer accepts plain strings, and, given a set of rules, transforms
 	them to a tree of tokens.
 	
 	Consumers must augment this object's 'rules' property.
-	
-	@module Lexer
 */
 (function(){
 	"use strict";
@@ -204,8 +202,7 @@
 			if (!this.children || this.children.length === 0) {
 				return !!fn(this);
 			}
-			let ret;
-			return this.children.everyLeaf(() => { ret = ret && !!everyLeaf(fn); });
+			return this.children.reduce((a,e) => e.everyLeaf(fn) && a, true);
 		},
 		
 		/*
@@ -311,7 +308,7 @@
 				If a peek is available, check that before running
 				the full match regexp.
 			*/
-			(!rule.peek || rule.peek === text.slice(0, rule.peek.length));
+			(!rule.peek || rule.peek.toLowerCase() === text.slice(0, rule.peek.length).toLowerCase());
 	}
 	
 	/*

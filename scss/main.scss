@@ -1,7 +1,7 @@
 /*
 	This toggles compatibility with 1.x.x Harlowe.
 */
-$version: 1;
+$version: 2;
 
 /*
 	<html> controls the background of the page.
@@ -62,32 +62,13 @@ tw-story {
 		height: 100%;
 	}
 	/*
-		This is the base font size, which is
-		permuted below.
+		This is the base font size, which is permuted below.
 	*/
-	//TODO: Change to rem for 2.0.0
 	$font-size: 1.5em;
-	@if $version == 2 {
-		$font-size: 1.5rem;
-	}
 	
 	font-size:   $font-size;
 	line-height: $font-size;
 	
-	/*
-		These responsive degradations are based off
-		the "ideal" width of the page (1920px).
-	*/
-	$max-width: 1280px;
-	@media screen and (max-width: $max-width * 0.8) {
-		font-size: $font-size * 0.8;
-	}
-	@media screen and (max-width: $max-width * 0.7) {
-		font-size: $font-size * 0.7;
-	}
-	@media screen and (max-width: $max-width * 0.6) {
-		font-size: $font-size * 0.6;
-	}
 	/*
 		The <tw-story>'s default distance from the top and bottom of the page is 5%.
 	*/
@@ -103,6 +84,13 @@ tw-story {
 */
 tw-passage {
 	display: block;
+}
+
+/* This causes consecutive line breaks to consume less height than they normally would. */
+br + br {
+	display:block;
+	height: 0;
+	margin: 0.8ex 0;
 }
 
 /*

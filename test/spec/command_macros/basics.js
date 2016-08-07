@@ -3,14 +3,14 @@ describe("basic command macros", function() {
 	
 	describe("the (print:) macro", function() {
 		it("requires exactly 1 argument of any type", function() {
-			expectMarkupToError("(print:)");
-			expectMarkupToError("(print:1,2)");
+			expect("(print:)").markupToError();
+			expect("(print:1,2)").markupToError();
 		});
 		it("prints the text equivalent of number expressions", function() {
-			expectMarkupToPrint("(print:2+0)", "2");
+			expect("(print:2+0)").markupToPrint("2");
 		});
 		it("prints the text equivalent of string expressions", function() {
-			expectMarkupToPrint("(print: 'gar' + 'ply')", "garply");
+			expect("(print: 'gar' + 'ply')").markupToPrint("garply");
 		});
 		it("prints twinemarkup in strings", function() {
 			var expr = runPassage("(print: '//gar' + 'ply//')").find('tw-expression');
@@ -19,13 +19,28 @@ describe("basic command macros", function() {
 			expect(expr.children().is('i')).toBe(true);
 		});
 		it("prints the text equivalent of boolean expressions", function() {
-			expectMarkupToPrint("(print: true)", "true");
+			expect("(print: true)").markupToPrint("true");
 		});
 		it("prints the text equivalent of arrays", function() {
-			expectMarkupToPrint("(print: (a: 2))", "2");
+			expect("(print: (a: 2,4))").markupToPrint("2,4");
+			expect("(print: (a: (a:2,4)))").markupToPrint("2,4");
+		});
+		it("prints the text equivalent of datasets", function() {
+			expect("(print: (dataset: 2,4))").markupToPrint("2,4");
+			expect("(print: (dataset: (dataset:2,4)))").markupToPrint("2,4");
+		});
+		it("can be run with (print:)", function() {
+			expect("(print:(print:'Golly molly'))").markupToPrint("Golly molly");
 		});
 		it("evaluates to a command object that can't be +'d", function() {
-			expectMarkupToError("(print: (print:1) + (print:1))");
+			expect("(print: (print:1) + (print:1))").markupToError();
+		});
+		it("commands inside (print:) aren't executed until it is executed", function() {
+			spyOn(window,'open');
+			runPassage("(set: $x to (print:(open-url:'http://example.org')))");
+			expect(window.open).not.toHaveBeenCalled();
+			runPassage("$x");
+			expect(window.open).toHaveBeenCalledWith('http://example.org','');
 		});
 		it("can be (set:) into a variable", function() {
 			var expr = runPassage("(set: $x to (print:'//grault//'))$x").find('tw-expression:last-child');
@@ -34,21 +49,21 @@ describe("basic command macros", function() {
 			expect(expr.children().is('i')).toBe(true);
 		});
 		it("stores its expression in its PrintCommand", function() {
-			expectMarkupToPrint('(set: $name to "Dracula")'
+			expect('(set: $name to "Dracula")'
 				+ '(set: $p to (print: "Count " + $name))'
 				+ '(set: $name to "Alucard")'
-				+ '$p',
-				"Count Dracula");
+				+ '$p'
+			).markupToPrint("Count Dracula");
 		});
 		it("will error if an infinite regress is created", function() {
-			expectMarkupToError("(set: $x to '$x')(print: $x)");
+			expect("(set: $x to '$x')(print: $x)").markupToError();
 		});
 	});
 	describe("the (display:) macro", function() {
 		it("requires exactly 1 string argument", function() {
-			expectMarkupToError("(display:)");
-			expectMarkupToError("(display: 1)");
-			expectMarkupToError("(display:'A','B')");
+			expect("(display:)").markupToError();
+			expect("(display: 1)").markupToError();
+			expect("(display:'A','B')").markupToError();
 		});
 		it("when placed in a passage, prints out the markup of another passage", function() {
 			createPassage("''Red''", "grault");
@@ -63,8 +78,12 @@ describe("basic command macros", function() {
 
 			expect(expr.text()).toBe("Small");
 		});
+		it("can be run with (print:)", function() {
+			createPassage("Red", "grault");
+			expect("(print:(display:'grault'))").markupToPrint("Red");
+		});
 		it("evaluates to a command object that can't be +'d", function() {
-			expectMarkupToError("(print: (display:'grault') + (display:'grault'))");
+			expect("(print: (display:'grault') + (display:'grault'))").markupToError();
 		});
 		it("can be (set:) into a variable", function() {
 			createPassage("''Red''", "grault");
@@ -74,11 +93,11 @@ describe("basic command macros", function() {
 			expect(expr.children().is('b')).toBe(true);
 		});
 		it("produces an error if the passage doesn't exist", function() {
-			expectMarkupToError("(display: 'grault')");
+			expect("(display: 'grault')").markupToError();
 		});
 		it("will error if an infinite regress is created", function() {
 			createPassage("(display: 'grault')", "grault");
-			expectMarkupToError("(display: 'grault')");
+			expect("(display: 'grault')").markupToError();
 		});
 	});
 	describe("the (go-to:) macro", function() {
@@ -93,9 +112,9 @@ describe("basic command macros", function() {
 		}
 		
 		it("requires exactly 1 string argument", function() {
-			expectMarkupToError("(go-to:)");
-			expectMarkupToError("(go-to: 1)");
-			expectMarkupToError("(go-to:'A','B')");
+			expect("(go-to:)").markupToError();
+			expect("(go-to: 1)").markupToError();
+			expect("(go-to:'A','B')").markupToError();
 		});
 		it("when placed in a passage, navigates the player to another passage", function(done) {
 			createPassage("''Red''", "croak");
@@ -110,18 +129,32 @@ describe("basic command macros", function() {
 			createPassage("", "grault");
 			runPassage("(go-to: 'grault')","garply");
 			waitForGoto(function() {
-				expectMarkupToPrint('(print:(history:))','garply,grault');
+				expect('(print:(history:))').markupToPrint('garply,grault');
 				done();
 			});
 		});
 		it("prevents macros after it from running", function(done) {
 			createPassage("", "flunk");
 			runPassage("(set:$a to 1)(go-to:'flunk')(set:$a to 2)");
-			expectMarkupToPrint("$a","1");
+			expect("$a").markupToPrint("1");
 			waitForGoto(done);
 		});
+		it("prevents macros even outside of its home hook", function(done) {
+			createPassage("", "flunk");
+			runPassage("(set:$a to 1)(if:true)[(go-to:'flunk')](set:$a to 2)");
+			expect("$a").markupToPrint("1");
+			waitForGoto(done);
+		});
+		it("can be run with (print:)", function(done) {
+			createPassage("''Red''", "croak");
+			runPassage("(print:(go-to: 'croak'))");
+			waitForGoto(function() {
+				expect($('tw-passage:last-child').find('b').text()).toBe("Red");
+				done();
+			});
+		});
 		it("evaluates to a command object that can't be +'d", function() {
-			expectMarkupToError("(print: (go-to:'crepax') + (go-to:'crepax'))");
+			expect("(print: (go-to:'crepax') + (go-to:'crepax'))").markupToError();
 		});
 		it("can be (set:) into a variable", function(done) {
 			createPassage("''Red''", "waldo");
@@ -133,7 +166,7 @@ describe("basic command macros", function() {
 			});
 		});
 		it("produces an error if the passage doesn't exist", function() {
-			expectMarkupToError("(go-to: 'freek')");
+			expect("(go-to: 'freek')").markupToError();
 		});
 		it("transitions out the preceding <tw-passage> when stretchtext is off", function(done) {
 			createPassage("''Red''", "waldo");
@@ -142,6 +175,84 @@ describe("basic command macros", function() {
 				expect($('tw-passage').length).toBe(1);
 				done();
 			});
+		});
+	});
+	describe("the (alert:) macro", function() {
+		it("requires exactly 1 string argument", function() {
+			expect("(alert:)").markupToError();
+			expect("(alert:1)").markupToError();
+			expect("(alert:'e','f')").markupToError();
+		});
+		it("produces a command which calls window.alert", function() {
+			spyOn(window,'alert');
+			runPassage("(alert:'Gooball')");
+			expect(window.alert).toHaveBeenCalledWith('Gooball');
+		});
+		it("evaluates to a command object that can't be +'d", function() {
+			expect("(print: (alert:'a') + (alert:'b'))").markupToError();
+		});
+		it("can be (set:) into a variable", function() {
+			spyOn(window,'alert');
+			runPassage("(set: $x to (alert:'Gooball'))");
+			expect(window.alert).not.toHaveBeenCalled();
+			runPassage("$x");
+			expect(window.alert).toHaveBeenCalledWith('Gooball');
+		});
+	});
+
+	describe("the (open-url:) macro", function() {
+		it("requires exactly 1 string argument", function() {
+			expect("(open-url:)").markupToError();
+			expect("(open-url:1)").markupToError();
+			expect("(open-url:'e','f')").markupToError();
+		});
+		it("produces a command which calls window.open", function() {
+			spyOn(window,'open');
+			runPassage("(open-url:'http://example.org')");
+			expect(window.open).toHaveBeenCalledWith('http://example.org','');
+		});
+		it("evaluates to a command object that can't be +'d", function() {
+			expect("(print: (alert:'a') + (alert:'b'))").markupToError();
+		});
+		it("can be (set:) into a variable", function() {
+			spyOn(window,'open');
+			runPassage("(set: $x to (open-url:'http://example.org'))");
+			expect(window.open).not.toHaveBeenCalled();
+			runPassage("$x");
+			expect(window.open).toHaveBeenCalledWith('http://example.org','');
+		});
+	});
+
+	describe("the (reload:) macro", function() {
+		// window.location.reload cannot be spied on, as it and window.location are non-configurable
+		it("takes no arguments", function() {
+			expect("(set: $x to (reload:1))").markupToError();
+			expect("(set: $x to (reload:'e'))").markupToError();
+		});
+		it("evaluates to a command object that can't be +'d", function() {
+			expect("(print: (reload:) + (reload:))").markupToError();
+		});
+		it("can be (set:) into a variable", function() {
+			expect("(set: $x to (reload:))").not.markupToError();
+		});
+		it("can't be used in the first passage", function() {
+			expect("(reload:)").markupToError();
+		});
+	});
+
+	describe("the (goto-url:) macro", function() {
+		// window.location.assign cannot be spied on, as it and window.location are non-configurable
+		it("requires exactly 1 string argument", function() {
+			expect("(set: $x to (goto-url:))").markupToError();
+			expect("(set: $x to (goto-url:1))").markupToError();
+			expect("(set: $x to (goto-url:'http://example.org','http://example.org'))").markupToError();
+			expect("(set: $x to (goto-url:false))").markupToError();
+		});
+		it("evaluates to a command object that can't be +'d", function() {
+			expect("(print: (goto-url:'http://example.org') + (goto-url:'http://example.org'))").markupToError();
+		});
+		it("can be (set:) into a variable", function() {
+			expect("(set: $x to (goto-url:'http://example.org'))").not.markupToError();
 		});
 	});
 });

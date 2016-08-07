@@ -3,6 +3,7 @@ define([
 	'state',
 	'utils',
 	'datatypes/colour',
+	'datatypes/lambda',
 	'internaltypes/varref',
 	'internaltypes/twineerror',
 	'twinescript/operations'
@@ -10,14 +11,13 @@ define([
 /*
 	To keep the eval scope very clean in compiled code, no destructuring is done here.
 */
-(Macros, State, Utils, Colour, VarRef, TwineError, OperationsProto) => {
+(Macros, State, Utils, Colour, Lambda, VarRef, TwineError, OperationsProto) => {
 	"use strict";
-	/**
+	/*
 		Creates a new script execution environment. This accepts and
 		decorates a Section object (see Engine.showPassage) with the
 		eval method.
 		
-		@module Environ
 		@param {Section} section
 		@return {Object} An environ object with eval methods.
 	*/
@@ -38,14 +38,14 @@ define([
 		*/
 		Operations;
 		
-		section.eval = function(/*variadic*/) {
+		section.eval = function(...args) {
 			try {
 				/*
 					This specifically has to be a "direct eval()" - calling eval() "indirectly"
 					makes it run in global scope.
 				*/
 				return eval(
-					Array.from(arguments).join('')
+					args.join('')
 				);
 			} catch(e) {
 				/*
@@ -53,8 +53,6 @@ define([
 					to the author, as a last-ditch and probably
 					unhelpful error message.
 				*/
-				Utils.log(e);
-				Utils.log(Array.from(arguments).join(''));
 				return e;
 			}
 		};
