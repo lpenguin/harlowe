@@ -31,7 +31,8 @@
 			lex = markup.lex;
 		});
 	}
-	else if (typeof StoryFormat === 'function' && this instanceof StoryFormat) {
+	// Loaded as a story format in TwineJS
+	else if (this && this.loaded && this.modules) {
 		lex = this.modules.Markup.lex;
 	}
 	
