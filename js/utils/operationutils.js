@@ -1,5 +1,5 @@
+"use strict";
 define(['utils', 'internaltypes/twineerror'], ({assert, impossible, toJSLiteral}, TwineError) => {
-	"use strict";
 	
 	/*
 		First, a quick shortcut to determine whether the

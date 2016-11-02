@@ -6,6 +6,7 @@
 	
 	@module Lexer
 */
+/*jshint strict:true*/
 (function(){
 	"use strict";
 	let Lexer;

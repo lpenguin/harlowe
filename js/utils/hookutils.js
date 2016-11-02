@@ -1,5 +1,5 @@
+"use strict";
 define(['jquery', 'utils/selectors'], ($, Selectors) => {
-	"use strict";
 	
 	/**
 		HookUtils contains a number of utility methods which are only of use to

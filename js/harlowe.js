@@ -2,6 +2,7 @@
 	This require.config call must be in here, so that local testing of Harlowe
 	can be conducted without having to recompile harlowe.min.js.
 */
+"use strict";
 require.config({
 	paths: {
 		// External libraries
@@ -23,7 +24,6 @@ require.config({
 });
 require(['jquery', 'renderer', 'state', 'engine', 'passages', 'utils/selectors', 'macrolib', 'repl'],
 		($, Renderer, State, Engine, Passages, Selectors) => {
-	"use strict";
 	/**
 		Harlowe, the default story format for Twine 2.
 		

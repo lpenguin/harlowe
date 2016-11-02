@@ -1,3 +1,4 @@
+"use strict";
 define([
 	'utils',
 	'macrolib/values',
@@ -8,7 +9,6 @@ define([
 	'macrolib/links',
 ],
 function({log}) {
-	"use strict";
 	/*
 		Twine macro standard library.
 		Modifies the Macros module only. Exports nothing.

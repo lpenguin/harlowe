@@ -1,6 +1,6 @@
+"use strict";
 define(['state', 'internaltypes/twineerror', 'utils/operationutils', 'datatypes/hookset'],
 (State, TwineError, {isObject, isSequential, objectName, clone, numericIndex, isValidDatamapName}, HookSet) => {
-	'use strict';
 	/*
 		VarRefs are essentially objects pairing a chain of properties
 		with an initial variable reference - "$red's blue's gold" would be

@@ -1,5 +1,5 @@
+"use strict";
 define(['jquery', 'utils/hookutils'], ($, {hookToSelector}) => {
-	"use strict";
 	
 	/**
 		A HookSet is an object representing a "hook selection". Hooks in

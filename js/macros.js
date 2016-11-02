@@ -1,6 +1,6 @@
+"use strict";
 define(['jquery', 'utils/naturalsort', 'utils', 'utils/operationutils', 'internaltypes/twineerror'],
 ($, NaturalSort, {insensitiveName, nth, plural, assert, lockProperty}, {objectName, typeName}, TwineError) => {
-	"use strict";
 	/**
 		This contains a registry of macro definitions, and methods to add to that registry.
 		

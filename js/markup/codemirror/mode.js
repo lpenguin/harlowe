@@ -1,3 +1,4 @@
+/*jshint strict:true*/
 (function() {
 	'use strict';
 	/*
