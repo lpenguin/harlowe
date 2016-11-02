@@ -1,6 +1,6 @@
+"use strict";
 define(['jquery', 'markup', 'utils/selectors', 'utils/customelements'],
 ($, TwineMarkup, Selectors) => {
-	"use strict";
 
 	const
 		// Used by lockProperties

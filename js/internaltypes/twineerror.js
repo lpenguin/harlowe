@@ -1,5 +1,5 @@
+"use strict";
 define(['jquery', 'utils'], ($, {impossible, assert, escape}) => {
-	"use strict";
 	/*
 		TwineErrors are errors created by the TwineScript runtime. They are supplied with as much
 		information as they can, in order to give the author sufficient assistance in

@@ -1,5 +1,5 @@
+"use strict";
 define([], () => {
-	"use strict";
 	/*
 		Custom Elements
 		

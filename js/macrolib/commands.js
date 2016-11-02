@@ -1,6 +1,6 @@
+"use strict";
 define(['requestAnimationFrame', 'macros', 'utils', 'state', 'passages', 'engine', 'internaltypes/twineerror', 'utils/operationutils'],
 (requestAnimationFrame, Macros, {toJSLiteral, unescape}, State, Passages, Engine, TwineError, {isObject}) => {
-	"use strict";
 	
 	/*d:
 		Command data

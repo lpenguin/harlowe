@@ -1,5 +1,5 @@
+"use strict";
 define(['utils', 'macros', 'utils/operationutils'], ({assert}, Macros, {is}) => {
-	"use strict";
 	/*
 		A ChangerCommand is a command that is used to alter the way a particular
 		Section renders the value. It does this by mutating a passed-in ChangeDescriptor

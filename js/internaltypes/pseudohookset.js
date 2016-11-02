@@ -1,5 +1,5 @@
+"use strict";
 define(['jquery', 'utils/hookutils'], ($, {wrapTextNodes}) => {
-	"use strict";
 	
 	/**
 		A PseudoHookSet represents a "pseudo-hook", which selects

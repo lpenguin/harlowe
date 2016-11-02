@@ -1,9 +1,9 @@
+"use strict";
 define(['utils', 'jquery'], ({assert}, $) => {
 	/*
 		Colours are first-class objects in TwineScript.
 		You can't do much with them, though - just add them.
 	*/
-	"use strict";
 	const
 		/*
 			These RegExps check for HTML #fff and #ffffff format colours.

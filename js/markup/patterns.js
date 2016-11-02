@@ -5,6 +5,7 @@
 	
 	@module Patterns
 */
+/*jshint strict:true*/
 (function(){
 	"use strict";
 	let Patterns;
