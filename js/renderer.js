@@ -1,18 +1,22 @@
 "use strict";
 define(['utils', 'markup', 'twinescript/compiler', 'internaltypes/twineerror'],
-({wrapHTMLTag, escape, impossible, toJSLiteral}, TwineMarkup, Compiler, TwineError) => {
-	/**
+({escape, impossible, toJSLiteral, insensitiveName}, TwineMarkup, Compiler, TwineError) => {
+	/*
 		The Renderer takes the syntax tree from TwineMarkup and returns a HTML string.
 		
 		Among other responsibilities, it's the intermediary between TwineMarkup and TwineScript -
 		macros and expressions become <tw-expression> and <tw-macro> elements alongside other
 		markup syntax (with their compiled JS code attached as attributes), and the consumer of
 		the HTML (usually Section) can run that code in the Environ.
-		
-		@class Renderer
-		@static
 	*/
 	let Renderer;
+
+	/*
+		A simple function to wrap text in a given HTML tag, with no attributes.
+	*/
+	function wrapHTMLTag(text, tagName) {
+		return '<' + tagName + '>' + text + '</' + tagName + '>';
+	}
 	/*
 		This makes a basic enclosing HTML tag with no attributes, given the tag name,
 		and renders the contained text.
@@ -34,16 +38,13 @@ define(['utils', 'markup', 'twinescript/compiler', 'internaltypes/twineerror'],
 	*/
 	Renderer = {
 		
-		/**
+		/*
 			Renderer accepts the same story options that Harlowe does.
 			Currently it only makes use of { debug }.
-			
-			@property options
-			@type Object
 		*/
 		options: {},
 		
-		/**
+		/*
 			A composition of TwineMarkup.lex and Renderer.render,
 			but with a (currently rudimentary) memoizer.
 		*/
@@ -71,18 +72,18 @@ define(['utils', 'markup', 'twinescript/compiler', 'internaltypes/twineerror'],
 			};
 		})(),
 		
-		/**
+		/*
 			The recursive rendering method.
 			
-			@method render
-			@static
-			@param {Array} tokens A TwineMarkup token array.
+			@param {Array} A TwineMarkup token array.
 			@return {String} The rendered HTML string.
 		*/
 		render: function render(tokens) {
 			// The output string.
 			let out = '';
-			
+			// Stack of tag tokens whose names match HTML table elements.
+			let HTMLTableStack = [];
+
 			if (!tokens) {
 				return out;
 			}
@@ -123,9 +124,7 @@ define(['utils', 'markup', 'twinescript/compiler', 'internaltypes/twineerror'],
 					}
 					case "align": {
 						while(token && token.type === "align") {
-							let style = '';
-							let body = '';
-							const align = token.align;
+							const {align} = token;
 							const j = (i += 1);
 							
 							/*
@@ -142,7 +141,8 @@ define(['utils', 'markup', 'twinescript/compiler', 'internaltypes/twineerror'],
 								i += 1;
 							}
 							
-							body += render(tokens.slice(j, i));
+							const body = render(tokens.slice(j, i));
+							let style = '';
 							
 							switch(align) {
 								case "center":
@@ -165,13 +165,78 @@ define(['utils', 'markup', 'twinescript/compiler', 'internaltypes/twineerror'],
 						}
 						break;
 					}
+					case "column": {
+						/*
+							We need information about all of the columns before we can produce HTML
+							of them. So, let's collect the information in this array.
+						*/
+						const columns = [];
+						while(token && token.type === "column") {
+							const {column:columnType} = token;
+							const j = (i += 1);
+							
+							/*
+								Base case.
+							*/
+							if (columnType === "none") {
+								i -= 1;
+								break;
+							}
+
+							/*
+								Crankforward until the end tag is found.
+							*/
+							while(i < len && tokens[i] && tokens[i].type !== "column") {
+								i += 1;
+							}
+							/*
+								Store the information about this column.
+							*/
+							columns.push({
+								text: token.text,
+								type: columnType,
+								body: render(tokens.slice(j, i)),
+								width: token.width,
+								marginLeft: token.marginLeft,
+								marginRight: token.marginRight,
+							});
+							token = tokens[i];
+						}
+						if (columns.length) {
+							/*jshint -W083 */
+							const
+								totalWidth = columns.reduce((a,e)=> a + e.width, 0);
+
+							out += "<tw-columns>"
+								+ columns.map(e =>
+									`<tw-column type=${e.type} ${''
+									} style="width:${e.width/totalWidth*100}%; margin-left: ${e.marginLeft}em; margin-right: ${e.marginRight}em;" ${
+										(Renderer.options.debug ? ` title="${e.text}"` : "")
+									}>${e.body}</tw-column>\n`
+								).join('')
+								+ "</tw-columns>";
+						}
+						break;
+					}
 					case "heading": {
 						out += renderTag(token, 'h' + token.depth);
 						break;
 					}
-					case "br":
+					case "br": {
+						/*
+							The HTMLTableStack is a small hack to suppress implicit <br>s inside <table> elements.
+							Normally, browser DOM parsers will move <br>s inside <table>, <tbody>,
+							<thead>, <tfoot> or <tr> elements outside, which is usually quite undesirable
+							when laying out table HTML in passage text.
+							However, <td> and <th> are, of course, fine.
+						*/
+						if (!HTMLTableStack.length || /td|th/.test(HTMLTableStack[0])) {
+							out += '<br>';
+						}
+						break;
+					}
 					case "hr": {
-						out += '<' + token.type + '>';
+						out += '<hr>';
 						break;
 					}
 					case "escapedLine":
@@ -184,6 +249,14 @@ define(['utils', 'markup', 'twinescript/compiler', 'internaltypes/twineerror'],
 					}
 					case "scriptStyleTag":
 					case "tag": {
+						/*
+							Populate the HTMLTableStack, as described above. Note that explicit <br> tags
+							are not filtered out by this: these are left to the discretion of the author.
+						*/
+						const insensitiveText = token.text.toLowerCase();
+						if (/^<\/?(?:table|thead|tbody|tr|tfoot|td|th)\b/.test(insensitiveText)) {
+							HTMLTableStack[token.text.startsWith('</') ? "shift" : "unshift"](insensitiveText);
+						}
 						out += token.text.startsWith('</')
 							? token.text
 							: token.text.replace(/>$/, " data-raw>");
@@ -218,7 +291,8 @@ define(['utils', 'markup', 'twinescript/compiler', 'internaltypes/twineerror'],
 					}
 					case "hook": {
 						out += '<tw-hook '
-							+ (token.name ? 'name="' + token.name + '"' : '')
+							+ (token.hidden ? 'hidden ' : '')
+							+ (token.name ? 'name="' + insensitiveName(token.name) + '"' : '')
 							// Debug mode: show the hook destination as a title.
 							+ ((Renderer.options.debug && token.name) ? ' title="Hook: ?' + token.name + '"' : '')
 							+ ' source="' + escape(token.innerText) + '">'
@@ -242,8 +316,8 @@ define(['utils', 'markup', 'twinescript/compiler', 'internaltypes/twineerror'],
 					/*
 						Expressions
 					*/
-					case "hookRef":
 					case "variable":
+					case "tempVariable":
 					case "macro": {
 						out += '<tw-expression type="' + token.type + '" name="' + escape(token.name || token.text) + '"'
 							// Debug mode: show the macro name as a title.

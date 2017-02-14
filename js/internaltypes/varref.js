@@ -1,6 +1,6 @@
 "use strict";
-define(['state', 'internaltypes/twineerror', 'utils/operationutils', 'datatypes/hookset'],
-(State, TwineError, {isObject, isSequential, objectName, clone, numericIndex, isValidDatamapName}, HookSet) => {
+define(['state', 'internaltypes/twineerror', 'utils', 'utils/operationutils', 'datatypes/hookset', 'datatypes/colour'],
+(State, TwineError, {impossible}, {isObject, isSequential, objectName, typeName, clone, numericIndex, isValidDatamapName}, HookSet, Colour) => {
 	/*
 		VarRefs are essentially objects pairing a chain of properties
 		with an initial variable reference - "$red's blue's gold" would be
@@ -10,11 +10,20 @@ define(['state', 'internaltypes/twineerror', 'utils/operationutils', 'datatypes/
 		them amounts to a VarRef.set() call made by the (set:) or (put:) macro,
 		and deleting them amounts to a VarRef.delete() call.
 	*/
+	let VarRefProto;
 	/*
 		The default defaultValue, used for all uninitialised properties
 		and variables, is 0.
 	*/
 	const defaultValue = 0;
+
+	/*
+		Debug Mode event handlers are stored here by on().
+	*/
+	const eventHandlers = {
+		set: [],
+		delete: [],
+	};
 
 	/*
 		This converts a single TwineScript property index into a JavaScript property indexing
@@ -41,6 +50,7 @@ define(['state', 'internaltypes/twineerror', 'utils/operationutils', 'datatypes/
 			1st, 2nd etc.: indices.
 			last: antonym of 1st.
 			2ndlast, 3rdlast: reverse indices.
+			any, all: produce special "determiner" objects used for comparison operations.
 		*/
 		if (isSequential(obj)) {
 			let match;
@@ -49,11 +59,19 @@ define(['state', 'internaltypes/twineerror', 'utils/operationutils', 'datatypes/
 				the number 1 is treated the same as the string "1st", and so forth.
 			*/
 			if (typeof prop === "number") {
+				if (prop === 0) {
+					return TwineError.create("property", "You can't access elements at position 0 of "
+					+ objectName(obj)
+					+ ".",
+					"Only positive and negative position values exist.");
+				}
 				/*
 					Since JS arrays are 0-indexed, we need only subtract 1 from prop
 					to convert it to a JS property index.
 				*/
-				prop -= 1;
+				else if (prop > 0) {
+					prop -= 1;
+				}
 			}
 			/*
 				Given that prop is a string, convert "1st", "2ndlast", etc. into a number.
@@ -75,19 +93,20 @@ define(['state', 'internaltypes/twineerror', 'utils/operationutils', 'datatypes/
 			else if (prop === "last") {
 				prop = -1;
 			}
-			else if (prop !== "length") {
+			else if (!["length","any","all"].includes(prop) || HookSet.isPrototypeOf(obj)) {
 				return TwineError.create("property",
-					"You can only access position strings/numbers ('4th', 'last', '2ndlast', (2), etc.) and 'length' of "
+					"You can only access position strings/numbers ('4th', 'last', '2ndlast', (2), etc.)"
+					+ (HookSet.isPrototypeOf(obj) ? "" : ", 'length', 'any' and 'all'") + " of "
 					+ objectName(obj) + ", not " + objectName(prop) + ".");
 			}
 		}
 		/*
 			Sets, being essentially a limited kind of arrays, cannot have any
-			property access other than 'length'.
+			property access other than 'length', 'any' and 'all'.
 		*/
 		else if (obj instanceof Set) {
-			if (prop !== "length") {
-				return TwineError.create("property", "You can only get the 'length' of a "
+			if (!["length","any","all"].includes(prop)) {
+				return TwineError.create("property", "You can only get the 'length', 'any' and 'all' of a "
 					+ objectName(obj)
 					+ ".",
 					"To check contained values, use the 'contains' operator.");
@@ -96,7 +115,9 @@ define(['state', 'internaltypes/twineerror', 'utils/operationutils', 'datatypes/
 				This kludge must be used to pave over a little difference
 				between Arrays and Sets.
 			*/
-			prop = "size";
+			if (prop === "length") {
+				prop = "size";
+			}
 		}
 		/*
 			Numbers and booleans cannot have properties accessed.
@@ -117,8 +138,14 @@ define(['state', 'internaltypes/twineerror', 'utils/operationutils', 'datatypes/
 				prop = prop.value;
 			}
 			/*
+				If prop is another VarRef (such as in "$b's ($a)") then read
+				its value now.
+			*/
+			if (VarRefProto.isPrototypeOf(prop)) {
+				prop = prop.get();
+			}
+			/*
 				Properties can be single values, or arrays.
-				[].concat() converts both to an array.
 			*/
 			if (Array.isArray(prop)) {
 				prop = prop.map(prop => compilePropertyIndex(object, prop));
@@ -154,6 +181,51 @@ define(['state', 'internaltypes/twineerror', 'utils/operationutils', 'datatypes/
 	}
 
 	/*
+		This helper converts negative property positions into JS positions.
+		As mentioned in compilePropertyIndex, obj.length
+		cannot be accurately determined until objectOrMapGet() and objectOrMapSet().
+	*/
+	function convertNegativeProp(obj, prop) {
+		/*
+			Recall that unary + converts negative to positive, so
+			"-0" must be used in its place.
+		*/
+		if (prop-0 < 0 &&
+				/*
+					This should be <= because (a:1,2,3)'s (-3) should
+					access the first element.
+				*/
+				Math.abs(prop) <= obj.length) {
+			return obj.length + (prop-0);
+		}
+		return prop;
+	}
+
+	/*
+		This helper creates a determiner, which is a special object returned
+		from a sequence's "any" or "all" properties, and, when used in comparison
+		operations like "contains" and ">", allows all of the sequence's elements
+		to be compared succinctly.
+	*/
+	function createDeterminer(obj, prop) {
+		const name = {
+			any: "'any' value of ",
+			all: "'all' values of ",
+		}[prop];
+
+		return {
+			determiner: prop,
+			array: [...obj],
+			TwineScript_ObjectName: name + objectName(obj),
+			TwineScript_TypeName: name + "a data structure",
+			TwineScript_Unstorable: true,
+			TwineScript_Print() {
+				return "`[" + this.TwineScript_TypeName + "]`";
+			},
+		};
+	}
+
+	/*
 		As Maps have a different means of accessing stored values
 		than arrays, these tiny utility functions are needed.
 		They have the slight bonus that they can fit into some .reduce() calls
@@ -168,16 +240,20 @@ define(['state', 'internaltypes/twineerror', 'utils/operationutils', 'datatypes/
 		} else if (obj instanceof Map) {
 			return obj.get(prop);
 		} else {
-			/*
-				As mentioned in compilePropertyIndex, obj.length
-				cannot be accurately determined until here and now.
-				Recall that unary + converts negative to positive, so
-				"-0" must be used in its place.
-			*/
-			if (isSequential(obj) && prop-0 < 0) {
-				prop = obj.length + (prop-0);
+			if (isSequential(obj)) {
+				prop = convertNegativeProp(obj,prop);
 			}
-			return obj[prop];
+			if (prop === "any" || prop === "all") {
+				return createDeterminer(obj,prop);
+			}
+			if (obj.TwineScript_GetElement && Number.isFinite(+prop)) {
+				return obj.TwineScript_GetElement(prop);
+			} else {
+				const ret = obj[prop];
+				if (typeof ret !== "function") {
+					return ret;
+				}
+			}
 		}
 	}
 	
@@ -188,7 +264,10 @@ define(['state', 'internaltypes/twineerror', 'utils/operationutils', 'datatypes/
 	*/
 	function propertyDebugName(prop) {
 		if (prop.computed) {
-			return "(" + objectName(prop.value) + ")";
+			if (typeof prop.value === "string") {
+				return "('" + prop.value + "')";
+			}
+			return "(" + prop.value + ")";
 		}
 		return "'" + prop + "'";
 	}
@@ -205,26 +284,28 @@ define(['state', 'internaltypes/twineerror', 'utils/operationutils', 'datatypes/
 			return prop.map(prop => canSet(obj, prop));
 		}
 
-		const
-			// Error messages which must be identical in both cases where they are used.
-			specialCollectionErrorMsg = "I won't add " + propertyDebugName(prop)
-				+ " to " + objectName(obj)
-				+ " because it's one of my special system collections.",
-			writeproofErrorMsg = "I can't modify '" + propertyDebugName(prop)
-				+ "' because it holds one of my special system collections.";
-		
+		/*
+			HookRefs cannot be altered.
+		*/
+		if (HookSet.isPrototypeOf(obj)) {
+			return TwineError.create('operation', "I can't modify " + objectName(obj),
+				'You should alter hooks indirectly using macros like (replace:) or (enchant:).');
+		}
+		/*
+			Neither can datasets.
+		*/
+		if (obj instanceof Set) {
+			return TwineError.create('operation', "I can't modify " + objectName(obj),
+				'You should use an (array:) if you need to modify the data inside this dataset.');
+		}
+		/*
+			Neither can colours.
+		*/
+		if (Colour.isPrototypeOf(obj)) {
+			return TwineError.create('operation', "I can't modify the components of " + objectName(obj));
+		}
+
 		if (obj instanceof Map) {
-			/*
-				The "TwineScript_Sealed" expando property means that this map/object cannot be
-				expanded (presumably because it's a system variable).
-			*/
-			if (obj.TwineScript_Sealed && !obj.has(prop)) {
-				return TwineError.create("operation", specialCollectionErrorMsg);
-			}
-			if (obj.TwineScript_Writeproof &&
-					obj.TwineScript_Writeproof.indexOf(prop) > -1) {
-				return TwineError.create("operation", writeproofErrorMsg);
-			}
 			return true;
 		}
 		/*
@@ -236,10 +317,10 @@ define(['state', 'internaltypes/twineerror', 'utils/operationutils', 'datatypes/
 				Unlike in JavaScript, you can't change the length of
 				an array or string - it's fixed.
 			*/
-			if(prop === "length") {
+			if(["length","any","all"].includes(prop)) {
 				return TwineError.create(
 					"operation",
-					"I can't forcibly alter the length of " + objectName(obj) + "."
+					"I can't forcibly alter the '" + prop + "' of " + objectName(obj) + "."
 				);
 			}
 			/*
@@ -254,12 +335,13 @@ define(['state', 'internaltypes/twineerror', 'utils/operationutils', 'datatypes/
 				);
 			}
 		}
-		if (obj.TwineScript_Sealed && !(prop in obj)) {
-			return TwineError.create("operation", specialCollectionErrorMsg);
-		}
-		if (obj.TwineScript_Writeproof &&
-				obj.TwineScript_Writeproof.indexOf(prop) > -1) {
-			return TwineError.create("operation", writeproofErrorMsg);
+		/*
+			Identifiers cannot be set.
+		*/
+		if (obj.TwineScript_Identifiers && prop in obj) {
+			return TwineError.create('keyword',
+				"I can't alter the value of the '"
+				+ prop + "' identifier.", "You can only alter data in variables and hooks, not fixed identifiers.");
 		}
 		/*
 			Numbers and booleans cannot have properties altered.
@@ -275,20 +357,20 @@ define(['state', 'internaltypes/twineerror', 'utils/operationutils', 'datatypes/
 		This should only be run after canSet(), above, has verified it is safe.
 	*/
 	function objectOrMapSet(obj, prop, value) {
+		const origProp = prop;
 		if (obj instanceof Map) {
 			obj.set(prop, value);
 		} else {
-			/*
-				As mentioned in compilePropertyIndex, obj.length
-				cannot be accurately determined until here and now.
-				Recall that unary + converts negative to positive, so
-				"-0" must be used in its place.
-			*/
-			if (isSequential(obj) && prop-0 < 0) {
-				prop = obj.length + (prop-0);
+			if (isSequential(obj)) {
+				prop = convertNegativeProp(obj, prop);
 			}
-			obj[prop] = value;
+			if (obj.TwineScript_Set) {
+				obj.TwineScript_Set(prop);
+			} else {
+				obj[prop] = value;
+			}
 		}
+		eventHandlers.set.forEach(fn => fn(obj, origProp, value));
 	}
 
 	/*
@@ -296,11 +378,12 @@ define(['state', 'internaltypes/twineerror', 'utils/operationutils', 'datatypes/
 		which performs the actual deletoon based on object type.
 	*/
 	function objectOrMapDelete(obj, prop) {
+		const origProp = prop;
 		/*
 			As mentioned previously, conversion of negative props must occur now.
 		*/
-		if (isSequential(obj) && prop-0 < 0) {
-			prop = obj.length + (prop-0);
+		if (isSequential(obj)) {
+			prop = convertNegativeProp(obj, prop);
 		}
 		/*
 			If it's an array, and the prop is an index,
@@ -316,17 +399,11 @@ define(['state', 'internaltypes/twineerror', 'utils/operationutils', 'datatypes/
 			obj.delete(prop);
 		}
 		/*
-			If it has a TwineScript_DeleteValue method, call that.
-			This will usually be a hook reference.
-		*/
-		else if (obj.TwineScript_DeleteValue) {
-			obj.TwineScript_DeleteValue(prop);
-		}
-		/*
 			Note: The only plain object anticipated to be provided here is the
 			state variables object.
 		*/
 		else delete obj[prop];
+		eventHandlers.delete.forEach(fn => fn(obj, origProp));
 	}
 	
 	/*
@@ -346,7 +423,8 @@ define(['state', 'internaltypes/twineerror', 'utils/operationutils', 'datatypes/
 		return {
 			get: self,
 			set: self,
-			delete: self
+			delete: self,
+			varref: true,
 		};
 	}
 
@@ -365,6 +443,16 @@ define(['state', 'internaltypes/twineerror', 'utils/operationutils', 'datatypes/
 			property key. This allows, for instance, getting a subarray by passing a range.
 		*/
 		if (Array.isArray(prop)) {
+			/*
+				HookSets, when sliced, produce another HookSet rather than an array.
+			*/
+			if (HookSet.isPrototypeOf(obj)) {
+				/*
+					HookSet's implementation of TwineScript_GetElement supports
+					arrays of properties being passed in.
+				*/
+				return obj.TwineScript_GetElement(prop);
+			}
 			return (prop.map(e => get(obj, e,
 					/*
 						This is incorrect, but I don't have access to the "original"
@@ -373,9 +461,7 @@ define(['state', 'internaltypes/twineerror', 'utils/operationutils', 'datatypes/
 					e
 				)))
 				/*
-					Strings are the only collection which, when sliced, produce a string
-					rather than an array. This is a complexity trade-off which is, I feel,
-					justified.
+					Strings, when sliced, produce another string rather than an array.
 				*/
 				[typeof obj === "string" ? "join" : "valueOf"]("");
 		}
@@ -387,7 +473,6 @@ define(['state', 'internaltypes/twineerror', 'utils/operationutils', 'datatypes/
 		if (typeof obj === "string") {
 			obj = [...obj];
 		}
-
 		const result =  objectOrMapGet(obj, prop);
 		/*
 			An additional error condition exists for get(): if the property
@@ -406,6 +491,16 @@ define(['state', 'internaltypes/twineerror', 'utils/operationutils', 'datatypes/
 			*/
 			if (obj === State.variables) {
 				return defaultValue;
+			}
+			/*
+				If this is a temp variable access, display the following error message
+				about the visibility of temp variables.
+			*/
+			if (obj.TwineScript_VariableStore) {
+				return TwineError.create("property",
+					// Don't use propertyDebugName(), because it puts the string name in quotes.
+					"There isn't a temp variable named _" + originalProp + " in this place.",
+					"Temp variables only exist inside the same passage and hook in which they're (set:).");
 			}
 			return TwineError.create("property", "I can't find a "
 				// Use the original non-compiled property key in the error message.
@@ -456,7 +551,7 @@ define(['state', 'internaltypes/twineerror', 'utils/operationutils', 'datatypes/
 	/*
 		The prototype object for VarRefs.
 	*/
-	const VarRefProto = Object.freeze({
+	VarRefProto = Object.freeze({
 		varref: true,
 		
 		get() {
@@ -475,12 +570,19 @@ define(['state', 'internaltypes/twineerror', 'utils/operationutils', 'datatypes/
 		*/
 		set(value) {
 			/*
-				If value has a TwineScript_AssignValue() method
-				(i.e. is a HookSet) then its returned value is used
-				instead of copying over the object itself.
+				Show an error if this request is attempting to assign to a value which isn't
+				stored in the variables or temp. variables.
+				e.g. (set: (a:)'s 1st to 1).
+				The identifiers store has a different, better error message produced by canSet().
 			*/
-			if (value && value.TwineScript_AssignValue) {
-				value = value.TwineScript_AssignValue();
+			if (this.object && !this.object.TwineScript_VariableStore && !this.object.TwineScript_Identifiers) {
+				return TwineError.create("macrocall", "I can't (set:) "
+					+ objectName(this)
+					+ ", if the "
+					+ (objectName(this.object).match(/ (.+$)/) || ['',"value"])[1]
+					+ " isn't stored in a variable.",
+					"Modifying data structures that aren't in variables won't change the game state at all."
+				);
 			}
 
 			/*
@@ -495,20 +597,22 @@ define(['state', 'internaltypes/twineerror', 'utils/operationutils', 'datatypes/
 				*/
 				let error;
 				if ((error = TwineError.containsError(value, object, property) || TwineError.containsError(
-						isObject(object) && canSet(object, property)
+						canSet(object, property)
 					))) {
 					return error;
 				}
+				/*
+					Produce an error if the value is "unstorable".
+				*/
+				if (value && value.TwineScript_Unstorable) {
+					return TwineError.create("operation", typeName(value) + " can't be stored.");
+				}
 
 				/*
-					HookSets have a special restriction: only strings can be assigned to it.
-					As of July 2015, nothing else has an assignee restriction.
+					Only attempt to clone the object if it's not the final iteration.
 				*/
-				if (HookSet.isPrototypeOf(object) && typeof value !== "string") {
-					return TwineError.create(
-						"datatype",
-						"You can only set hook references to strings, not " + objectName(value) + "."
-					);
+				if (i > 0) {
+					object = clone(object);
 				}
 
 				/*
@@ -583,12 +687,6 @@ define(['state', 'internaltypes/twineerror', 'utils/operationutils', 'datatypes/
 						objectOrMapSet(object, property, value);
 					}
 				}
-				/*
-					Only attempt to clone the object if it's not the final iteration.
-				*/
-				if (i > 0) {
-					object = clone(object);
-				}
 				return object;
 			}, value);
 		},
@@ -607,7 +705,7 @@ define(['state', 'internaltypes/twineerror', 'utils/operationutils', 'datatypes/
 				*/
 				let error;
 				if ((error = TwineError.containsError(value, object, property) || TwineError.containsError(
-						isObject(object) && canSet(object, property)
+						canSet(object, property)
 					))) {
 					return error;
 				}
@@ -622,22 +720,43 @@ define(['state', 'internaltypes/twineerror', 'utils/operationutils', 'datatypes/
 					If this is the first iteration, then delete the property.
 				*/
 				if (value === null) {
-					if (isObject(object)) {
+					/*
+						Much as in set(), we must convert strings to an array in order
+						to delete characters from them.
+					*/
+					const isString = typeof object === "string";
+					if (isString) {
+						object = [...object];
+					}
+
+					/*
+						If the property is an array of properties, delete each property.
+					*/
+					if (Array.isArray(property)) {
 						/*
-							If the property is an array of properties, delete each property.
+							Iterate over each property position, and delete them.
+							If the object is sequential, we must first remove duplicate
+							positions, and sort the unique positions in descending order,
+							so that deleting one will not change the positions of the next.
+
+							Note that property sequences which include "length" should still
+							work with this.
 						*/
-						if (Array.isArray(property)) {
-							/*
-								Iterate over each property, and zip it with the value
-								to set at that property position. For example:
-								(a: 1) to (a: "wow")
-								would set "wow" to the position "1"
-							*/
-							property.forEach(prop => objectOrMapDelete(object, prop));
+						if (isSequential(object)) {
+							property = [...new Set(property)];
+							property.sort((a,b) =>
+								convertNegativeProp(object, b) - convertNegativeProp(object, a));
 						}
-						else {
-							objectOrMapDelete(object, property);
-						}
+						property.forEach(prop => objectOrMapDelete(object, prop));
+					}
+					else {
+						objectOrMapDelete(object, property);
+					}
+					/*
+						Now, convert the string back, if string it once was.
+					*/
+					if (isString) {
+						object = object.join('');
 					}
 				}
 				/*
@@ -698,7 +817,30 @@ define(['state', 'internaltypes/twineerror', 'utils/operationutils', 'datatypes/
 				print a $ instead of "[name]'s"
 			*/
 			return (this.object === State.variables ? "$" : (objectName(this.object) + "'s "))
-				+ this.propertyChain.reduce((a, e) => a + "'s " + propertyDebugName(e));
+				/*
+					If the property chain contains a single, potentially computed value, then get the
+					value's debug name. Otherwise, get the full chain's debug names.
+				*/
+				+ (this.propertyChain.length === 1
+					? propertyDebugName(this.propertyChain[0])
+					: this.propertyChain.reduce((a, e) => a + "'s " + propertyDebugName(e))
+				);
+		},
+
+		/*
+			This is used only by Debug Mode - it lets event handlers be registered and called when variables change.
+			"set" functions have the signature (obj, prop, value).
+			"delete" functions have the signature (obj, prop).
+		*/
+		on(name, fn) {
+			if (!(name in eventHandlers)) {
+				impossible('VarRef.on', 'invalid event name');
+				return;
+			}
+			if (typeof fn === "function" && !eventHandlers[name].includes(fn)) {
+				eventHandlers[name].push(fn);
+			}
+			return VarRefProto;
 		},
 	});
 	

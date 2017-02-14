@@ -7,12 +7,12 @@ describe("HTML in twinemarkup", function() {
 	}
 	
 	it("due to the behaviour of jQuery.parseHTML(), orphaned end-tags are silently removed", function() {
-		expectMarkupToPrint("Bee</b>", "Bee");
+		expect("Bee</b>").markupToPrint("Bee");
 	});
 
 	it("doesn't recognise tags that begin with a non-ASCII-letter", function() {
-		expectMarkupToPrint("<3>Bee</3>", "<3>Bee");
-		expectMarkupToPrint("<é>Bee</é>", "<é>Bee");
+		expect("<3>Bee</3>").markupToPrint("<3>Bee");
+		expect("<é>Bee</é>").markupToPrint("<é>Bee");
 	});
 
 	describe("span-level tags", function() {
@@ -52,6 +52,13 @@ describe("HTML in twinemarkup", function() {
 			expect(runPassage("Hey!<script>window.foo = 1;</script>").find('script').length).toBe(1);
 			expect(window.foo).toBe(1);
 		});
+		it("can have src attributes", function(done) {
+			runPassage('<script src="data:text/javascript;plain,window.foo=1//"></script>');
+			setTimeout(function() {
+				expect(window.foo).toBe(1);
+				done();
+			},1000);
+		});
 		afterEach(function() {
 			delete window.foo;
 		});
@@ -59,6 +66,18 @@ describe("HTML in twinemarkup", function() {
 	describe("<style> tags", function() {
 		it("can be used without escaping their contents", function() {
 			expect(runPassage("<style>b { box-sizing: content-box; }</style><b>Hey</b>").find('b').css('box-sizing')).toBe('content-box');
+		});
+	});
+
+	describe("<table> tags", function() {
+		it("won't allow line breaks to become erroneous <br> elements inside them", function() {
+			expect(runPassage("<table>\n<tr> \n<td>X</td>C\nV</tr>\n?</table>").find('br').length).toBe(0);
+		});
+		it("will allow line breaks nested inside some other structure", function() {
+			expect(runPassage("<table>''\n''<tr><td>X</td>''\n''</tr></table>").find('br').length).toBe(2);
+		});
+		it("will allow explicit <br> elements inside them to be automatically moved", function() {
+			expect(runPassage("<table><br><tr><td>X</td><br></tr></table>").find('br + br').length).toBe(1);
 		});
 	});
 	
@@ -87,22 +106,41 @@ describe("HTML in twinemarkup", function() {
 	describe("HTML comments", function() {
 		it("are removed from the rendered HTML", function() {
 			[0,1,2].forEach(function(i) {
-				expectMarkupToBecome(
-					"A<!--" + "\n".repeat(i) + "-->B",
+				expect(
+					"A<!--" + "\n".repeat(i) + "-->B"
+				).markupToBecome(
 					"AB"
 				);
 			});
 		});
 		it("can handle partial syntax inside", function() {
-			expectMarkupToBecome(
-				"A<!--''-->B",
+			expect(
+				"A<!--''-->B"
+			).markupToBecome(
 				"AB"
 			);
 		});
 		it("can be nested", function() {
-			expectMarkupToBecome(
-				"A<!--Cool<!-- -->Cool-->B",
+			expect(
+				"A<!--Cool<!-- -->Cool-->B"
+			).markupToBecome(
 				"AB"
+			);
+		});
+	});
+	describe("HTML entities", function() {
+		it("(named) can be used", function() {
+			expect(
+				"&para;&sect;&hearts;"
+			).markupToBecome(
+				"¶§♥"
+			);
+		});
+		it("(numeric) can be used", function() {
+			expect(
+				"&#223;&#xDF;"
+			).markupToBecome(
+				"ßß"
 			);
 		});
 	});

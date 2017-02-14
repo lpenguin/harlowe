@@ -22,15 +22,14 @@ require.config({
 		'jqueryplugins',
 	],
 });
-require(['jquery', 'renderer', 'state', 'engine', 'passages', 'utils/selectors', 'macrolib', 'repl'],
-		($, Renderer, State, Engine, Passages, Selectors) => {
-	/**
+require(['jquery', 'debugmode', 'renderer', 'state', 'engine', 'passages', 'utils/selectors', 'macros',
+	'macrolib/values', 'macrolib/commands', 'macrolib/datastructures', 'macrolib/stylechangers', 'macrolib/enchantments', 'macrolib/links',
+	'repl'],
+		($, DebugMode, Renderer, State, Engine, Passages, Selectors) => {
+	/*
 		Harlowe, the default story format for Twine 2.
 		
 		This module contains only code which initialises the document and the game.
-		
-		@module Harlowe
-		@main Harlowe
 	*/
 	
 	// Used to execute custom scripts outside of main()'s scope.
@@ -39,32 +38,11 @@ require(['jquery', 'renderer', 'state', 'engine', 'passages', 'utils/selectors',
 	}
 	
 	/*
-		This helper removes various globals created by TwineJS before it initiates a test play.
-	*/
-	function testPlayCleanup() {
-		["_", "Backbone", "Store", "Mn", "Marionette", "saveAs", "FastClick", "JSZip", "SVG", "requestAnimFrame", "UUID",
-		"XDate", "CodeMirror", "ui", "nwui", "AppPref", "Passage", "StoryFormat", "Story", "AppPrefCollection", "PassageCollection",
-		"StoryCollection", "StoryFormatCollection", "WelcomeView", "StoryItemView", "StoryListView", "PassageItemView",
-		"StoryEditView", "TwineRouter", "TransRegion", "TwineApp", "app", "storyFormat"].forEach((name) => {
-			// Some of these are defined non-configurable, but still writable, for some reason.
-			try {
-				delete window[name];
-			} catch(e) {
-				window[name] = undefined;
-			}
-		});
-	}
-	
-	/**
 		Sets up event handlers for specific Twine elements. This should only be called
 		once at setup.
-
-		@method installHandlers
 	*/
 	let installHandlers = () => {
-		const html = $(document.documentElement),
-			debugHTML =
-			"<tw-debugger><button class='show-invisibles'>&#9903; Debug View</button></tw-debugger>";
+		const html = $(document.documentElement);
 		
 		/*
 			This gives interactable elements that should have keyboard access (via possessing
@@ -79,10 +57,7 @@ require(['jquery', 'renderer', 'state', 'engine', 'passages', 'utils/selectors',
 		
 		// If the debug option is on, add the debugger.
 		if (Engine.options.debug) {
-			$(document.body).append(debugHTML);
-			$('.show-invisibles').click(() => {
-				html.toggleClass('debug-mode').is(".debug-mode");
-			});
+			DebugMode();
 		}
 		installHandlers = null;
 	};
@@ -101,7 +76,7 @@ require(['jquery', 'renderer', 'state', 'engine', 'passages', 'utils/selectors',
 			const stack = (error && error.stack && ("\n" + error.stack.replace(/\([^\)]+\)/g,'') + "\n")) || ("(" + message + ")\n");
 			alert("Sorry to interrupt, but this page's code has got itself in a mess. "
 				+ stack
-				+ "(This is probably due to a bug in the Twine game engine.)");
+				+ "(This is probably due to a bug in the Harlowe game engine.)");
 			/*
 				Having produced that once-off message, we now restore the page's previous onerror, and invoke it.
 			*/
@@ -120,12 +95,6 @@ require(['jquery', 'renderer', 'state', 'engine', 'passages', 'utils/selectors',
 
 		if (header.length === 0) {
 			return;
-		}
-		
-		// If this is a test play, and globals created by TwineJS are present, delete them.
-		
-		if ("TwineApp" in window) {
-			testPlayCleanup();
 		}
 
 		// Load options from attribute into story object

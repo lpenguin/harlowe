@@ -18,18 +18,15 @@ define(['jquery', 'utils', 'internaltypes/changedescriptor'], ($, Utils, ChangeD
 			scope to enchant.
 		*/
 		create(descriptor) {
-			Utils.assertOnlyHas(descriptor, ['scope', 'attr', 'data', 'changer']);
+			Utils.assertOnlyHas(descriptor, ['scope', 'section', 'attr', 'data', 'changer', 'functions']);
 
 			return Object.assign(Object.create(this), {
 				/*
-					A store for the <tw-enchantment> wrappers created
-					by enchantScope.
+					A store for the <tw-enchantment> wrappers created by enchantScope.
 					
-					This is a case of a jQuery object being used as a
-					data structure rather than as a query result set.
-					Search function calls for DOM elements 'contained' in
-					these enchantments is more succinct using jQuery
-					than using a plain Array or Set.
+					This is a case of a jQuery object being used as a data structure rather
+					than as a query result set. Search function calls for DOM elements 'contained' in
+					these enchantments is more succinct using jQuery than using a plain Array or Set.
 				*/
 				enchantments: $(),
 			}, descriptor);
@@ -39,7 +36,7 @@ define(['jquery', 'utils', 'internaltypes/changedescriptor'], ($, Utils, ChangeD
 			classes to the matched elements.
 		*/
 		enchantScope() {
-			const {attr, data, changer} = this;
+			const {attr, data, functions, section, changer} = this;
 			let {scope} = this;
 			/*
 				scope could be a jQuery, if this is a HTML scope created by, say, (enchant: "<i>"). In which
@@ -57,7 +54,7 @@ define(['jquery', 'utils', 'internaltypes/changedescriptor'], ($, Utils, ChangeD
 			/*
 				Now, enchant each selected word or hook within the scope.
 			*/
-			scope.forEach((e) => {
+			scope.forEach(section, (e) => {
 				/*
 					Create a fresh <tw-enchantment>, and wrap the elements in it.
 
@@ -67,13 +64,16 @@ define(['jquery', 'utils', 'internaltypes/changedescriptor'], ($, Utils, ChangeD
 				const wrapping = e.wrapAll("<tw-enchantment>").parent();
 
 				/*
-					Apply the attr and data now.
+					Apply the attr, data and functions now.
 				*/
 				if (attr) {
 					wrapping.attr(attr);
 				}
 				if (data) {
 					wrapping.data(data);
+				}
+				if (functions) {
+					functions.forEach(fn => fn(wrapping));
 				}
 				if (changer) {
 					const cd = ChangeDescriptor.create({target:wrapping});
@@ -87,12 +87,12 @@ define(['jquery', 'utils', 'internaltypes/changedescriptor'], ($, Utils, ChangeD
 					It must be performed now because the aforementioned .attr() call
 					may entirely alter the style attribute.
 				*/
-				if (e.is('tw-story')) {
+				if (e.is(Utils.storyElement)) {
 					wrapping.css({ width: '100%', height: '100%' });
 				}
 
 				/*
-					Store the wrapping in the Section's enchantments list.
+					Store the wrapping in the enchantments list.
 				*/
 				this.enchantments = this.enchantments.add(wrapping);
 			});

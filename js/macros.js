@@ -1,19 +1,14 @@
 "use strict";
-define(['jquery', 'utils/naturalsort', 'utils', 'utils/operationutils', 'internaltypes/twineerror'],
-($, NaturalSort, {insensitiveName, nth, plural, assert, lockProperty}, {objectName, typeName}, TwineError) => {
-	/**
+define(['jquery', 'utils/naturalsort', 'utils', 'utils/operationutils', 'datatypes/changercommand', 'datatypes/lambda', 'datatypes/hookset', 'internaltypes/twineerror'],
+($, NaturalSort, {insensitiveName, nth, plural, andList, lockProperty}, {objectName, typeName, singleTypeCheck}, ChangerCommand, Lambda, HookSet, TwineError) => {
+	/*
 		This contains a registry of macro definitions, and methods to add to that registry.
-		
-		@class Macros
-		@static
 	*/
 	
 	let Macros;
 	const
 		// Private collection of registered macros.
-		macroRegistry = {},
-		// Private collection of command definitions, which are created by command macros.
-		commandRegistry = {};
+		macroRegistry = {};
 		
 	/*
 		This function wraps another function (expected to be a macro implementation
@@ -30,25 +25,26 @@ define(['jquery', 'utils/naturalsort', 'utils', 'utils/operationutils', 'interna
 			// Spreaders are spread out now.
 			args = args.reduce((newArgs, el) => {
 				if (el && el.spreader === true) {
+					const {value} = el;
 					/*
 						Currently, the full gamut of spreadable
-						JS objects isn't available - only arrays, sets and strings.
+						JS objects isn't available - only arrays, sets, and strings.
 					*/
-					if (Array.isArray(el.value)
-							|| typeof el.value === "string") {
-						for(let i = 0; i < el.value.length; i++) {
-							newArgs.push(el.value[i]);
+					if (Array.isArray(value)
+							|| typeof value === "string") {
+						for(let i = 0; i < value.length; i++) {
+							newArgs.push(value[i]);
 						}
 					}
-					else if (el.value instanceof Set) {
-						newArgs.push(Array.from(el.value).sort(NaturalSort("en")));
+					else if (value instanceof Set) {
+						newArgs.push(...Array.from(value).sort(NaturalSort("en")));
 					}
 					else {
 						newArgs.push(
 							TwineError.create("operation",
 								"I can't spread out "
-								+ objectName(el.value)
-								+ ", which is not a string, dataset or array."
+								+ objectName(value)
+								+ ", because it is not a string, dataset, or array."
 							)
 						);
 					}
@@ -70,105 +66,21 @@ define(['jquery', 'utils/naturalsort', 'utils', 'utils/operationutils', 'interna
 	}
 	
 	/*
-		This function checks the type of a single argument. It's run
-		for every argument passed into a type-signed macro.
-		
-		@param {Anything}     arg  The plain JS argument value to check.
-		@param {Array|Object} type A type description to compare the argument with.
-		@return {Boolean} True if the argument passes the check, false otherwise.
-	*/
-	function singleTypeCheck(arg, type) {
-		/*
-			First, check if it's a None type.
-		*/
-		if (type === null) {
-			return arg === undefined;
-		}
-		/*
-			Now, check if the signature is an Optional, Either, or Wrapped.
-		*/
-		if (type.innerType) {
-			/*
-				Optional signatures can exit early if the arg is absent.
-			*/
-			if (type.pattern === "optional" || type.pattern === "zero or more") {
-				if (arg === undefined) {
-					return true;
-				}
-				return singleTypeCheck(arg, type.innerType);
-			}
-			/*
-				Either signatures must check every available type.
-			*/
-			if (type.pattern === "either") {
-				/*
-					The arg passes the test if it matches some of the types.
-				*/
-				return type.innerType.some(type => singleTypeCheck(arg, type));
-			}
-			/*
-				Otherwise, if this is a Wrapped signature, ignore the included
-				message and continue.
-			*/
-			if (type.pattern === "wrapped") {
-				return singleTypeCheck(arg, type.innerType);
-			}
-		}
-		// If Type but no Arg, then return an error.
-		if(type !== undefined && arg === undefined) {
-			return false;
-		}
-		
-		// The Any type permits any accessible argument, as long as it's present.
-		if (type === Macros.TypeSignature.Any && arg !== undefined && !arg.TwineScript_Unobservable) {
-			return true;
-		}
-		/*
-			The built-in types. Let's not get tricky here.
-		*/
-		if (type === String) {
-			return typeof arg === "string";
-		}
-		if (type === Boolean) {
-			return typeof arg === "boolean";
-		}
-		if (type === Number) {
-			return typeof arg === "number";
-		}
-		if (type === Array) {
-			return Array.isArray(arg);
-		}
-		if (type === Map || type === Set) {
-			return arg instanceof type;
-		}
-		/*
-			For TwineScript-specific types, this check should mostly suffice.
-			TODO: I really need to replace those duck-typing properties.
-		*/
-		return Object.isPrototypeOf.call(type,arg);
-	}
-	
-	/*
 		This converts a passed macro function into one that performs type-checking
 		on its inputs before running. It provides macro authors with another layer of
 		error feedback.
 		
-		@param {String|Array}      name            The macro's name(s).
-		@param {Function}          fn              A macro function.
-		@param {Array|Object|null} typeSignature   An array of Twine macro parameter type data.
+		@param {String|Array}      The macro's name(s).
+		@param {Function}          A macro function.
+		@param {Array|Object|null} An array of Twine macro parameter type data.
 	*/
 	function typeSignatureCheck(name, fn, typeSignature) {
 		/*
-			Return early if no signature was present for this macro.
-		*/
-		if (!typeSignature) {
-			return fn;
-		}
-		/*
 			The typeSignature *should* be an Array, but if it's just one item,
 			we can normalise it to Array form.
+			If the item is null or undefined, then that means it should be a 0-length type signature.
 		*/
-		typeSignature = [].concat(typeSignature);
+		typeSignature = [].concat(typeSignature || []);
 		
 		/*
 			The name is used solely for error message generation. It can be a String or
@@ -214,7 +126,7 @@ define(['jquery', 'utils/naturalsort', 'utils', 'utils/operationutils', 'interna
 				*/
 				if (ind >= typeSignature.length && !rest) {
 					return TwineError.create(
-						"typesignature",
+						"datatype",
 						(args.length - typeSignature.length) +
 							" too many values were given to this " + name + " macro.",
 						signatureInfo
@@ -253,29 +165,47 @@ define(['jquery', 'utils/naturalsort', 'utils', 'utils/operationutils', 'interna
 					*/
 					if (arg === undefined) {
 						return TwineError.create(
-							"typesignature",
+							"datatype",
 							"The " + name + " macro needs "
 								+ plural((typeSignature.length - ind), "more value") + ".",
 							signatureInfo
 						);
 					}
 					/*
-						Unobservable data types are the only kinds which Any signatures will not
+						Unstorable data types are the only kinds which Any signatures will not
 						match. Produce a special error message in this case.
 					*/
-					if (arg && arg.TwineScript_Unobservable && type === Macros.TypeSignature.Any) {
+					if (arg && arg.TwineScript_Unstorable &&
+							(type === Macros.TypeSignature.Any ||
+								(type.innerType && type.innerType === Macros.TypeSignature.Any))) {
 						return TwineError.create(
-							"typesignature",
-							name + "'s " + nth(ind + 1) + " value is not valid data for this macro.",
+							"datatype",
+							name + "'s " + nth(ind + 1) + " value, " + objectName(arg) + ", is not valid data for this macro.",
 							signatureInfo
 						);
 					}
-					
+
+					/*
+						If the data type is a lambda, produce special error messages.
+					*/
+					if (arg && Lambda.isPrototypeOf(arg) && type.pattern === "lambda") {
+						/*
+							Print an error comparing the expected clauses with the actual ones.
+						*/
+						/*jshint -W083 */
+						return TwineError.create('datatype',
+							name + "'s " + nth(ind + 1) + " value (a lambda) should have "
+							+ andList(["where","making","via","with"].filter(e => type.clauses.includes(e)).map(e => "a '" + e + "' clause"))
+							+ ", not "
+							+ andList(["where","making","via","with"].filter(e => e in arg).map(e => "a '" + e + "' clause"))
+							+ ".");
+					}
+
 					/*
 						Otherwise, it was the most common case: an invalid data type.
 					*/
 					return TwineError.create(
-						"typesignature",
+						"datatype",
 						name + "'s " +
 							nth(ind + 1) + " value is " + objectName(arg) +
 							", but should be " +
@@ -294,17 +224,15 @@ define(['jquery', 'utils/naturalsort', 'utils', 'utils/operationutils', 'interna
 		};
 	}
 	
-	/**
+	/*
 		The bare-metal macro registration function.
 		If an array of names is given, an identical macro is created under each name.
 		
-		@method privateAdd
-		@private
-		@param {String|Array} name  A String, or an Array holding multiple strings.
-		@param {String} type The type (either "sensor", "changer", or, and in absentia, "value")
-		@param {Function} fn  The function.
+		@param {String|Array} A String, or an Array holding multiple strings.
+		@param {String} The type (either "sensor", "changer", or, and in absentia, "value")
+		@param {Function} The function.
 	*/
-	function privateAdd(name, type, fn) {
+	function privateAdd(name, fn) {
 		// Add the fn to the macroRegistry, plus aliases (if name is an array of aliases)
 		if (Array.isArray(name)) {
 			name.forEach((n) => lockProperty(macroRegistry, insensitiveName(n), fn));
@@ -314,50 +242,38 @@ define(['jquery', 'utils/naturalsort', 'utils', 'utils/operationutils', 'interna
 	}
 	
 	Macros = {
-		/**
+		/*
 			Checks if a given macro name is registered.
-			@method has
-			@param {String} Name of the macro definition to check for existence
-			@return {Boolean} Whether the name is registered.
 		*/
 		has(e) {
 			e = insensitiveName(e);
 			return macroRegistry.hasOwnProperty(e);
 		},
 		
-		/**
-			Retrieve a registered macro definition by name.
-			
-			@method get
-			@param {String} Name of the macro definition to get
-			@return Macro definition object, or false
+		/*
+			Retrieves a registered macro definition by name, or false if it isn't defined.
 		*/
 		get(e) {
 			e = insensitiveName(e);
 			return (macroRegistry.hasOwnProperty(e) && macroRegistry[e]);
 		},
 		
-		/**
+		/*
 			A high-level wrapper for add() that creates a Value Macro from 3
 			entities: a macro implementation function, a ChangerCommand function, and
 			a parameter type signature array.
 			
 			The passed-in function should return a changer.
-			
-			@method add
-			@param {String} name
-			@param {Function} fn
 		*/
 		add: function add(name, fn, typeSignature) {
 			privateAdd(name,
-				"value",
 				readArguments(typeSignatureCheck(name, fn, typeSignature))
 			);
 			// Return the function to enable "bubble chaining".
 			return add;
 		},
 	
-		/**
+		/*
 			Takes a function, and registers it as a live Changer macro.
 			
 			Changers return a transformation function (a ChangerCommand) that is used to mutate
@@ -370,39 +286,16 @@ define(['jquery', 'utils/naturalsort', 'utils', 'utils/operationutils', 'interna
 			For instance, for (font: "Skia"), the changerCommandFn is partially applied with "Skia"
 			as an argument, augmented with some other values, and returned as the ChangerCommand
 			result.
-			
-			@method addChanger
-			@param {String} name
-			@param {Function} fn
-			@param {Function} changerCommand
 		*/
 		addChanger: function addChanger(name, fn, changerCommandFn, typeSignature) {
-			assert(changerCommandFn);
 			
 			privateAdd(name,
-				"changer",
 				readArguments(typeSignatureCheck(name, fn, typeSignature))
 			);
-			// I'll explain later. It involves registering the changerCommand implementation.
-			commandRegistry[Array.isArray(name) ? name[0] : name] = changerCommandFn;
+			ChangerCommand.register(Array.isArray(name) ? name[0] : name, changerCommandFn);
 			
 			// Return the function to enable "bubble chaining".
 			return addChanger;
-		},
-		
-		/**
-			This simple getter should only be called by changerCommand, in its run() method, which
-			allows the registered changer function to finally be invoked.
-			
-			TODO: This makes me wonder if this changer registering business shouldn't be in
-			the changerCommand module instead.
-			
-			@method getChangerFn
-			@param {String} name
-			@return {Function} the registered changer function.
-		*/
-		getChangerFn(name) {
-			return commandRegistry[name];
 		},
 		
 		/*
@@ -440,23 +333,22 @@ define(['jquery', 'utils/naturalsort', 'utils', 'utils/operationutils', 'interna
 				Any data
 				
 				A macro that is said to accept "Any" will accept any kind of data
-				(except for Unobservable data) without complaint, as long as the data
-				does not contain any errors.
+				without complaint, as long as the data does not contain any errors.
 			*/
 			Any: {
 				TwineScript_TypeName: "anything",
 			},
 			
 		},
-		
-		/**
+
+		/*
 			Runs a macro.
 			
 			In TwineScript.compile(), the myriad arguments given to a macro invocation are
 			converted to 2 parameters to runMacro:
 			
-			@param {String} name     The macro's name.
-			@param {Array}  args     An array enclosing the passed arguments.
+			@param {String} The macro's name.
+			@param {Array} An array enclosing the passed arguments.
 			@return The result of the macro function.
 		*/
 		run(name, args) {
@@ -471,7 +363,9 @@ define(['jquery', 'utils/naturalsort', 'utils', 'utils/operationutils', 'interna
 				return TwineError.create("macrocall",
 					"I can't run the macro '"
 					+ name
-					+ "' because it doesn't exist."
+					+ "' because it doesn't exist.",
+					"Did you mean to run a macro? If you have a word written like (this:), "
+					+ "it is regarded as a macro name."
 				);
 			}
 			return Macros.get(name)(args);

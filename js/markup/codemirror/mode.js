@@ -9,26 +9,22 @@
 	const insensitiveName = (e) => (e + "").toLowerCase().replace(/-|_/g, "");
 	
 	/*
-		This is a manually generated list of existent macros in Harlowe.
+		This MACROS token is actually replaced with an object literal listing
+		of the currently defined Harlowe macros at compile-time, from the metadata script.
 	*/
-	const validMacros = (
-		"text,string,substring,num,number,if,unless,elseif,else,nonzero,first-nonzero,passage," +
-		"nonempty,first-nonempty,weekday,monthday,currenttime,currentdate,min,max,abs,sign,sin,cos,tan,floor," +
-		"round,ceil,pow,exp,sqrt,log,log10,log2,random,either,alert,prompt,confirm,openURL,reload,gotoURL," +
-		"pageURL,hook,transition,t8n,font,align,text-colour,text-color,color,colour," +
-		"text-rotate,background,text-style,css,replace,append,prepend,click,mouseover,mouseout,click-replace," +
-		"mouseover-replace,mouseout-replace,click-append,mouseover-append,mouseout-append,click-prepend," +
-		"mouseover-prepend,mouseout-prepend,set,put,move,a,array,range,subarray,shuffled,sorted,rotated," +
-		"datanames,datavalues,history,datamap,dataset,count,display,print,goto,live,stop,savegame,savedgames,loadgame,link,link-goto," +
-		"link-replace,link-repeat,link-reveal"
-	).split(',').map(insensitiveName);
-	
+	const macros = "MACROS";
+
+	/*
+		Produce an array of the macro names, using both their names and their aliases.
+	*/
+	const validMacros = macros instanceof Object && Object.keys(macros).reduce((a,e)=>a.concat(macros[e].name, ...macros[e].aka),[]).map(insensitiveName);
+
 	/*
 		Import the TwineMarkup lexer function, and store it locally.
 	*/
 	let lex;
 	if(typeof define === 'function' && define.amd) {
-		define('markup', [], function (markup) {
+		define('markup', [], (markup) => {
 			lex = markup.lex;
 		});
 	}
@@ -40,29 +36,26 @@
 	/*
 		The mode is defined herein.
 	*/
-	window.CodeMirror && CodeMirror.defineMode('harlowe-1', () => {
+	window.CodeMirror && CodeMirror.defineMode('harlowe-2', () => {
 		let cm, tree,
 			// These caches are used to implement special highlighting when the cursor
 			// rests on variables or hookRefs, such that all the other variable/hook
 			// tokens are highlighted as well.
 			referenceTokens = {
 				variable: [],
+				tempVariable: [],
 				hook: [],
 				hookRef: [],
 				populate() {
 					this.variable = [];
+					this.tempVariable = [];
 					this.hook = [];
 					this.hookRef = [];
 
 					const recur = (token) => {
-						if (token.type === "variable") {
-							this.variable.push(token);
-						}
-						else if (token.type === "hook") {
-							this.hook.push(token);
-						}
-						else if (token.type === "hookRef") {
-							this.hookRef.push(token);
+						if (token.type === "variable" || token.type === "tempVariable"
+								|| token.type === "hook" || token.type === "hookRef") {
+							this[token.type].push(token);
 						}
 						token.children.forEach(recur);
 					};
@@ -134,32 +127,35 @@
 			cursorMarks.push(doc.markText(
 				doc.posFromIndex(token.start),
 				doc.posFromIndex(token.end),
-				{className: 'cm-harlowe-1-cursor'}
+				{className: 'cm-harlowe-2-cursor'}
 			));
 			/*
 				If the token is a variable or hookRef, then
 				highlight certain other instances in the text.
-				For variables and hookRefs, highlight all other occurrences of the variable
-				in the passage text.
+				For variables, hooks and hookRefs, highlight all other occurrences of
+				the variable in the passage text.
 			*/
-			if (token.type === "variable" || token.type === "hookRef") {
-				referenceTokens[token.type].forEach(e => {
+			if (token.type === "variable" || token.type === "tempVariable"
+					|| token.type === "hookRef" || token.type === "hook") {
+				// <hooks| should highlight matching ?hookRefs.
+				const type = token.type === "hook" ? "hookRef" : token.type;
+				referenceTokens[type].forEach(e => {
 					if (e !== token && e.name === token.name) {
 						cursorMarks.push(doc.markText(
 							doc.posFromIndex(e.start),
 							doc.posFromIndex(e.end),
-							{className: 'cm-harlowe-1-variableOccurrence'}
+							{className: 'cm-harlowe-2-variableOccurrence'}
 						));
 					}
 				});
 			}
 			/*
-				Also for hookRefs, highlight the nametags of the named hook(s)
-				that it refers to.
+				Also for hookRefs and hooks, highlight the nametags of the
+				named hook(s) that match this one's name.
 			*/
-			if (token.type === "hookRef") {
+			if (token.type === "hookRef" || token.type === "hook") {
 				referenceTokens.hook.forEach(e => {
-					if (e.name === token.name) {
+					if (e !== token && e.name === token.name) {
 						const tagStart =
 							// This assumes that the end of the hook's text consists of its <tag|,
 							// and nothing else.
@@ -170,7 +166,7 @@
 						cursorMarks.push(doc.markText(
 							doc.posFromIndex(tagStart),
 							doc.posFromIndex(tagStart + e.name.length),
-							{className: 'cm-harlowe-1-hookOccurrence'}
+							{className: 'cm-harlowe-2-hookOccurrence'}
 						));
 					}
 				});
@@ -217,7 +213,7 @@
 						TwineJS's PassageEditor stashes a reference to the CodeMirror instance in
 						the Harlowe modes object - and here, we retrieve it.
 					*/
-					cm = CodeMirror.modes['harlowe-1'].cm;
+					cm = CodeMirror.modes['harlowe-2'].cm;
 					cm.setOption('placeholder', [
 						"Enter the body text of your passage here.",
 						"''Bold'', //italics//, ^^superscript^^, ~~strikethrough~~, and <p>HTML tags</p> are available.",
@@ -228,6 +224,13 @@
 						"Hooks can be used for many things: showing text (if:) something happened, applying a (text-style:), making a place to (append:) text later on, and much more!",
 						"Consult the Harlowe documentation for more information.",
 						].join('\n\n'));
+					/*
+						Line numbers aren't important for a primarily prose-based form as passage text,
+						but it's good to have some UI element that distinguishes new lines from
+						wrapped lines. So, we use the CM lineNumbers gutter with only bullets in it.
+					*/
+					cm.setOption('lineNumbers', true);
+					cm.setOption('lineNumberFormatter', () => "\u2022");
 				}
 				
 				return {
@@ -281,7 +284,7 @@
 				let ret = '';
 				for (let i = 0; i < currentBranch.length; i+=1) {
 					const type = currentBranch[i].type;
-					let name = "harlowe-1-" + type;
+					let name = "harlowe-2-" + type;
 					counts[name] = (counts[name] || 0) + 1;
 					// If this name has been used earlier in the chain, suffix
 					// this name with an additional number.
@@ -295,7 +298,7 @@
 						*/
 						case "macroName":
 							if (validMacros.indexOf(insensitiveName(currentBranch[i].text.slice(0,-1))) === -1) {
-								name += " harlowe-1-error";
+								name += " harlowe-2-error";
 							}
 							break;
 					}
@@ -314,10 +317,10 @@
 		If the style element already exists, it is reused. Otherwise, it's created.
 		(Let's use pure DOM calls in the absence of a jQuery require() call.)
 	*/
-	let harloweStyles = document.querySelector('style#cm-harlowe-1');
+	let harloweStyles = document.querySelector('style#cm-harlowe-2');
 	if (!harloweStyles) {
 		harloweStyles = document.createElement('style');
-		harloweStyles.setAttribute('id','cm-harlowe-1');
+		harloweStyles.setAttribute('id','cm-harlowe-2');
 		document.head.appendChild(harloweStyles);
 	}
 	/*
@@ -326,10 +329,8 @@
 		a CSS selector, and the value maps directly to CSS attributes assigned by the selector.
 	*/
 	harloweStyles.innerHTML = (() => {
-		function nestedBG(h,s,l) {
-			return (e) => "background-color: hsla(" + h + "," + s + "%," + l + "%," + e +");";
-		}
 		const
+			nestedBG     = (h,s,l) => e => "background-color: hsla(" + h + "," + s + "%," + l + "%," + e +");",
 			warmHookBG   = nestedBG(40, 100, 50),
 			coolHookBG   = nestedBG(220, 100, 50),
 			macro        = percent => nestedBG(320, 44, 50)(percent) + "color: #a84186;",
@@ -342,7 +343,15 @@
 		*/
 		return {
 			root: 'box-sizing:border-box;',
-			cursor: "border-bottom: 2px solid darkgray;",
+
+			// The cursor token highlight should ignore the most common tokens, unwrapped text tokens.
+			"cursor:not([class^='cm-harlowe-2-text cm-harlowe-2-root'])":
+				"border-bottom: 2px solid darkgray;",
+
+			CodeMirror: "padding: 0 !important",
+
+			// The line number bullets (see the lineNumbers option, above), are a bit too dark by default.
+			"CodeMirror-linenumber": "color: #ccc;",
 
 			// "Warm" hooks
 			hook:        warmHookBG(0.05),
@@ -359,7 +368,7 @@
 				"font-weight:bold;",
 			
 			//TODO: whitespace within collapsed
-			error:
+			"error:not([class*='cm-harlowe-2-string'])":
 				invalid,
 			
 			macro:        macro(0.05),
@@ -393,6 +402,14 @@
 			"^=bold, ^=strong, ^=italic, ^=em, ^=sup, ^=verbatim":
 				intangible,
 
+			// These two rules implement "fake smart quotes", which should
+			// more easily convey strings' boundaries.
+			"^=string":
+				"font-style:italic; display:inline-block; transform: scaleX(-1);",
+
+			"string + ^=string":
+				"transform: none;",
+
 			"^=collapsed":
 				"font-weight:bold; color: hsl(201, 100%, 30%);",
 			
@@ -421,10 +438,23 @@
 				"color: #A15000;",
 			variable:
 				"color: #005682;",
+			tempVariable:
+				"color: #134e6c;",
 			hookRef:
 				"color: #007f54;",
 			"variableOccurrence, hookOccurrence":
-				"background: #7fffd4 !important;",
+				"background: #9fdfc9 !important;",
+
+			where:
+				"color: #007f00; font-style:italic;",
+			via:
+				"color: #007f00; font-style:italic;",
+			with:
+				"color: #007f00; font-style:italic;",
+			making:
+				"color: #007f00; font-style:italic;",
+			each:
+				"color: #007f00; font-style:italic;",
 			
 			heading:
 				"font-weight:bold;",
@@ -432,6 +462,8 @@
 				"display:block; background-image: linear-gradient(0deg, transparent, transparent 45%, silver 45%, transparent 55%, transparent);",
 			align:
 				"display:block; color: hsl(14, 99%, 27%); background-color: hsla(14, 99%, 87%, 0.2);",
+			column:
+				"display:block; color: hsl(204, 99%, 27%); background-color: hsla(204, 99%, 87%, 0.2);",
 			
 			escapedLine:
 				"font-weight:bold; color: hsl(51, 100%, 30%);",
@@ -444,6 +476,9 @@
 					var selector;
 					if (e === 'toString') {
 						return a;
+					}
+					if (e.slice(0,10) === "CodeMirror") {
+						return a + "." + e + "{" + this[e] + "}";
 					}
 					/*
 						Comma-containing names are handled by splitting them here,
@@ -464,11 +499,14 @@
 							if (e.indexOf('.') > -1) {
 								return e.split(/\./g).map(map).join('');
 							}
+							if (e.indexOf(" + ") > -1) {
+								return e.split(/ \+ /g).map(map).join(' + ');
+							}
 							// There's no need for $= because that will always be cm-harlowe-root or cm-harlowe-cursor.
 							if (e.indexOf("^=") === 0) {
-								return "[class^='cm-harlowe-1-" + e.slice(2) + "']";
+								return "[class^='cm-harlowe-2-" + e.slice(2) + "']";
 							}
-							return ".cm-harlowe-1-" + e;
+							return ".cm-harlowe-2-" + e;
 						});
 					return a + selector.join(', ') + "{" + this[e] + "}";
 				}, '');

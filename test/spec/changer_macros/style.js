@@ -1,10 +1,16 @@
 describe("style changer macros", function() {
 	'use strict';
+	var dominantTextColour, dominantBackground;
+	beforeAll(function() {
+		dominantTextColour = $('tw-story').css('color');
+		dominantBackground = $('tw-story').css('background-color');
+	});
+
 	describe("the (css:) macro", function() {
 		it("requires exactly 1 string argument", function() {
-			expectMarkupToError("(css:)");
-			expectMarkupToError("(css:1)");
-			expectMarkupToError("(css:'A','B')");
+			expect("(css:)").markupToError();
+			expect("(css:1)").markupToError();
+			expect("(css:'A','B')").markupToError();
 		});
 		it("applies the passed CSS to the hook as an inline style property", function() {
 			expect(runPassage("(css:'display:inline-block')[Hey]").find('tw-hook').css('display'))
@@ -25,121 +31,261 @@ describe("style changer macros", function() {
 			expect(hook.css('white-space')).toBe('pre-wrap');
 		});
 		it("compositions have structural equality", function() {
-			expectMarkupToPrint("(print: (css:'display:inline-block') + (css:'clear:both')"
-				+ " is (css:'display:inline-block') + (css:'clear:both'))", "true");
-			expectMarkupToPrint("(print: (css:'display:inline-block') + (css:'clear:both')"
-				+ " is (css:'display:flex') + (css:'clear:both'))", "false");
+			expect("(print: (css:'display:inline-block') + (css:'clear:both')"
+				+ " is (css:'display:inline-block') + (css:'clear:both'))").markupToPrint("true");
+			expect("(print: (css:'display:inline-block') + (css:'clear:both')"
+				+ " is (css:'display:flex') + (css:'clear:both'))").markupToPrint("false");
 		});
 		it("errors when placed in passage prose while not attached to a hook", function() {
-			expectMarkupToError("(css:'color:red')");
-			expectMarkupToNotError("(css:'color:red')[]");
+			expect("(css:'color:red')").markupToError();
+			expect("(css:'color:red')[]").not.markupToError();
 		});
 	});
 	describe("the (textstyle:) macro", function() {
 		it("requires exactly 1 string argument", function() {
-			expectMarkupToError("(print:(textstyle:))");
-			expectMarkupToError("(print:(textstyle:1))");
-			expectMarkupToError("(print:(textstyle:'A','B'))");
+			expect("(print:(textstyle:))").markupToError();
+			expect("(print:(textstyle:1))").markupToError();
+			expect("(print:(textstyle:'A','B'))").markupToError();
 		});
 		it("errors unless given a valid textstyle name", function() {
-			expectMarkupToError("(print:(textstyle:''))");
-			expectMarkupToError("(print:(textstyle:'garply corge'))");
+			expect("(print:(textstyle:''))").markupToError();
+			expect("(print:(textstyle:'garply corge'))").markupToError();
 			['bold', 'italic', 'underline', 'strike', 'superscript', 'subscript', 'blink', 'shudder',
 			'mark', 'condense', 'expand', 'outline', 'shadow', 'emboss', 'smear', 'blur', 'blurrier',
 			'mirror', 'upsidedown', 'fadeinout', 'rumble'].forEach(function(e) {
-				expectMarkupToNotError("(print:(textstyle:'" + e + "'))");
+				expect("(print:(textstyle:'" + e + "'))").not.markupToError();
 			});
 		});
-		it("errors when placed in passage prose while not attached to a hook", function() {
-			expectMarkupToError("(textstyle:'bold')");
-			expectMarkupToNotError("(textstyle:'bold')[]");
+		it("uses case- and dash-insensitive style names", function() {
+			expect("(textstyle:'BOLD')[]").not.markupToError();
+			expect("(textstyle:'--b--o--l--d')[]").not.markupToError();
+			expect("(textstyle:'_bOl_-D')[]").not.markupToError();
 		});
-		// TODO: Add .css() tests of output.
+		it("errors when placed in passage prose while not attached to a hook", function() {
+			expect("(textstyle:'bold')").markupToError();
+			expect("(textstyle:'bold')[]").not.markupToError();
+		});
+		['outline','shadow','blur','blurrier','emboss','smear'].forEach(function(e) {
+			describe("'" + e + "' style", function() {
+				it("uses the shadow colour equal to the dominant text colour", function(done) {
+					var hook = runPassage("(text-style:'" + e + "')[Goobar]")
+						.find('tw-hook');
+					setTimeout(function() {
+						expect(hook).toHaveTextShadowColour(dominantTextColour);
+						done();
+					});
+				});
+				it("correctly discerns the dominant text colour of outer hooks", function(done) {
+					var hook = runPassage("(text-colour: #fadaba)[|2>[(text-style:'" + e + "')[Goobar]]]")
+						.find('tw-hook[name=2] > tw-hook');
+					setTimeout(function() {
+						expect(hook).toHaveTextShadowColour('#fadaba');
+						done();
+					});
+				});
+				if (e.slice(0,4)==="blur") {
+					it("has transparent text colour", function(done) {
+						var hook = runPassage("(text-style:'" + e + "')[Goobar]")
+							.find('tw-hook');
+						setTimeout(function() {
+							expect(hook).toHaveColour('transparent');
+							done();
+						});
+					});
+				}
+				if (e === "outline") {
+					it("uses the text colour of the background", function(done) {
+						var hook = runPassage("(text-style:'outline')[Goobar]")
+							.find('tw-hook');
+						setTimeout(function() {
+							expect(hook).toHaveColour(dominantBackground);
+							done();
+						});
+					});
+					it("correctly discerns the background colour of outer hooks", function(done) {
+						var hook = runPassage("(background: #fadaba)[|2>[(text-style:'outline')[Goobar]]]")
+							.find('tw-hook[name=2] > tw-hook');
+						setTimeout(function() {
+							expect(hook).toHaveColour('#fadaba');
+							done();
+						});
+					});
+				}
+			});
+		});
+		['mirror','upside-down'].forEach(function(e) {
+			describe("'" + e + "' style", function() {
+				// We can't examine the elements any more than this.
+				it("uses a defined CSS transform ", function(done) {
+					var hook = runPassage("(text-style:'" + e + "')[Goobar]")
+						.find('tw-hook');
+					setTimeout(function() {
+						expect(hook.attr('style')).toMatch(new RegExp("transform:.*?\\s" +
+							((e === "mirror") ? "scaleX\\(\\s*-1\\s*\\)" : "scaleY\\(\\s*-1\\s*\\)")));
+						done();
+					});
+				});
+			});
+		});
+		['rumble','shudder','fade-in-out','blink'].forEach(function(e){
+			describe("'" + e + "' style", function() {
+				// We can't examine the elements any more than this.
+				it("uses a defined CSS animation and easing function", function(done) {
+					var hook = runPassage("(text-style:'" + e + "')[Goobar]")
+						.find('tw-hook');
+					setTimeout(function() {
+						var style = hook.attr('style');
+						expect(style).toMatch(new RegExp("animation(?:\\-name)?:.*?\\s" +
+							((e === "blink") ? "fade-in-out" :
+							e) + "\\b"));
+						expect(style).toMatch(new RegExp("animation(?:\\-timing\\-function)?:.*?\\s" +
+							(e === "blink" ? "steps\\(\\s*1,\\s*end\\s*\\)" :
+							e === "fade-in-out" ? "ease-in-out" :
+							"linear")));
+						done();
+					});
+				});
+			});
+		});
+		describe("'none' style", function() {
+			it("removes other styles it is composed to the right with", function(done) {
+				var hook = runPassage("(set:$x to (text-style:'bold'))(set:$x to it + (text-style:'none'))$x[Goobar]")
+					.find('tw-hook');
+				setTimeout(function() {
+					expect(hook.attr('style')).toBe(undefined);
+					done();
+				});
+			});
+			it("doesn't remove styles if it is composed to the left", function(done) {
+				var hook = runPassage("(set:$x to (text-style:'bold'))(set:$x to (text-style:'none') + it)$x[Goobar]")
+					.find('tw-hook');
+				setTimeout(function() {
+					expect(hook.attr('style')).toMatch(/font-weight:\s*(bold|800)/);
+					done();
+				});
+			});
+		});
 	});
 	describe("the (transition:) macro", function() {
 		it("requires exactly 1 string argument", function() {
-			expectMarkupToError("(print:(transition:))");
-			expectMarkupToError("(print:(transition:1))");
-			expectMarkupToError("(print:(transition:'A','B'))");
+			expect("(print:(transition:))").markupToError();
+			expect("(print:(transition:1))").markupToError();
+			expect("(print:(transition:'A','B'))").markupToError();
 		});
 		it("errors unless given a valid transition name", function() {
-			expectMarkupToError("(print:(transition:''))");
-			expectMarkupToError("(print:(transition:'garply corge'))");
+			expect("(print:(transition:''))").markupToError();
+			expect("(print:(transition:'garply corge'))").markupToError();
 			["dissolve", "shudder", "pulse"].forEach(function(e) {
-				expectMarkupToNotError("(print:(transition:'" + e + "'))");
+				expect("(print:(transition:'" + e + "'))").not.markupToError();
 			});
 		});
 		it("errors when placed in passage prose while not attached to a hook", function() {
-			expectMarkupToError("(transition:'dissolve')");
-			expectMarkupToNotError("(transition:'dissolve')[]");
+			expect("(transition:'dissolve')").markupToError();
+			expect("(transition:'dissolve')[]").not.markupToError();
 		});
 		it("has structural equality", function() {
-			expectMarkupToPrint("(print: (transition:'dissolve') is (transition:'dissolve'))","true");
-			expectMarkupToPrint("(print: (transition:'dissolve') is (transition:'pulse'))","false");
+			expect("(print: (transition:'dissolve') is (transition:'dissolve'))").markupToPrint("true");
+			expect("(print: (transition:'dissolve') is (transition:'pulse'))").markupToPrint("false");
 		});
 		// TODO: Add .css() tests of output.
 	});
-	describe("the (background:) macro", function() {
-		it("requires 1 string argument or 1 colour argument", function() {
-			expectMarkupToError("(print:(background:))");
-			expectMarkupToError("(print:(background:1))");
-			expectMarkupToError("(print:(background:'A','B'))");
-			expectMarkupToNotError("(print:(background:'A'))");
-			expectMarkupToNotError("(print:(background:red + white))");
+	describe("the (transition-time:) macro", function() {
+		it("requires exactly 1 number argument", function() {
+			expect("(print:(transition:))").markupToError();
+			expect("(print:(transition:'A'))").markupToError();
+			expect("(print:(transition:2,2))").markupToError();
+		});
+		it("errors unless given a positive number", function() {
+			expect("(print:(transition-time:0s))").markupToError();
+			expect("(print:(transition-time:-50ms))").markupToError();
+			expect("(print:(transition-time:50ms))").not.markupToError();
 		});
 		it("errors when placed in passage prose while not attached to a hook", function() {
-			expectMarkupToError("(background:'A')");
-			expectMarkupToNotError("(background:'A')[]");
+			expect("(transition-time:2s)").markupToError();
+			expect("(transition-time:2s)[]").not.markupToError();
+		});
+		it("has structural equality", function() {
+			expect("(print: (transition-time:2s) is (transition-time:2s))").markupToPrint("true");
+			expect("(print: (transition-time:2s) is (transition-time:2ms))").markupToPrint("false");
+		});
+		// TODO: Add .css() tests of output.
+	});
+	describe("the (text-rotate:) macro", function() {
+		it("requires exactly 1 number argument", function() {
+			expect("(print:(text-rotate:))").markupToError();
+			expect("(print:(text-rotate:1))").not.markupToError();
+			expect("(print:(text-rotate:'A'))").markupToError();
+			expect("(print:(text-rotate:55,55))").markupToError();
+		});
+		it("rotates the attached hook by the given number of degrees", function(done) {
+			var hook = runPassage("(text-rotate:20)[Rotated.]").find('tw-hook');
+			setTimeout(function() {
+				expect(hook.attr('style')).toMatch(/rotate\(20deg\)/);
+				done();
+			});
+		});
+	});
+	describe("the (background:) macro", function() {
+		it("requires 1 string argument or 1 colour argument", function() {
+			expect("(print:(background:))").markupToError();
+			expect("(print:(background:1))").markupToError();
+			expect("(print:(background:'A','B'))").markupToError();
+			expect("(print:(background:'A'))").not.markupToError();
+			expect("(print:(background:red + white))").not.markupToError();
+		});
+		it("errors when placed in passage prose while not attached to a hook", function() {
+			expect("(background:'A')").markupToError();
+			expect("(background:'A')[]").not.markupToError();
 		});
 		it("given a string, applies it as the background-image property", function(done) {
 			var p = runPassage("(background:'garply')[Hey]").find('tw-hook');
 			setTimeout(function() {
-				expect(p.attr('style')).toMatch(/background-image:\s+url\(['"]?.*?garply['"]?\)/);
+				expect(p.attr('style')).toMatch(/background-image:\s*url\(['"]?.*?garply['"]?\)/);
 				done();
 			});
 		});
 		it("given a string with a hex colour, applies it as the background-color property", function(done) {
 			var p = runPassage("(background:'#601040')[Hey]").find('tw-hook');
 			setTimeout(function() {
-				expect(p.attr('style')).toMatch(/background-color:\s+(?:#601040|rgb\(\s*96,\s*16,\s*64\s*\))/);
+				expect(p.attr('style')).toMatch(/background-color:\s*(?:#601040|rgb\(\s*96,\s*16,\s*64\s*\))/);
 				done();
 			});
 		});
 		it("given a colour, applies it as the background-color property", function(done) {
-			var p = runPassage("(background:black)[Hey]").find('tw-hook');
+			var p = runPassage("(background:'#800000')[Hey]").find('tw-hook');
 			setTimeout(function() {
-				expect(p.attr('style')).toMatch(/background-color:\s+(?:#000000|rgb\(\s*0,\s*0,\s*0\s*\))/);
+				expect(p.attr('style')).toMatch(/background-color:\s*(?:#800000|rgb\(\s*128,\s*0,\s*0\s*\))/);
 				done();
 			});
 		});
 		it("can compose with itself", function(done) {
-			var p = runPassage("(set: $x to (background:black)+(background:'garply'))$x[Hey]").find('tw-hook');
+			var p = runPassage("(set: $x to (background:'#800000')+(background:'garply'))$x[Hey]").find('tw-hook');
 			setTimeout(function() {
-				expect(p.attr('style')).toMatch(/background-image:\s+url\(['"]?.*?garply['"]?\)/);
-				expect(p.attr('style')).toMatch(/background-color:\s+(?:#000000|rgb\(\s*0,\s*0,\s*0\s*\))/);
+				expect(p.attr('style')).toMatch(/background-image:\s*url\(['"]?.*?garply['"]?\)/);
+				expect(p.attr('style')).toMatch(/background-color:\s*(?:#800000|rgb\(\s*128,\s*0,\s*0\s*\))/);
 				done();
 			});
 		});
 		it("compositions have structural equality", function() {
-			expectMarkupToPrint("(print: (background:black)+(background:'garply') is (background:black)+(background:'garply'))","true");
-			expectMarkupToPrint("(print: (background:black)+(background:'garply') is (background:black)+(background:'grault'))","false");
+			expect("(print: (background:black)+(background:'garply') is (background:black)+(background:'garply'))").markupToPrint("true");
+			expect("(print: (background:black)+(background:'garply') is (background:black)+(background:'grault'))").markupToPrint("false");
 		});
 	});
 	describe("the (align:) macro", function() {
 		it("requires exactly 1 string argument", function() {
-			expectMarkupToError("(print:(align:))");
-			expectMarkupToError("(print:(align:1))");
-			expectMarkupToError("(print:(align:'A','B'))");
+			expect("(print:(align:))").markupToError();
+			expect("(print:(align:1))").markupToError();
+			expect("(print:(align:'A','B'))").markupToError();
 		});
 		it("errors if not given an valid arrow", function() {
-			expectMarkupToError("(align:'')[]");
-			expectMarkupToError("(align:'===')[]");
-			expectMarkupToError("(align:'<<==')[]");
-			expectMarkupToError("(align:'===><==>')[]");
+			expect("(align:'')[]").markupToError();
+			expect("(align:'===')[]").markupToError();
+			expect("(align:'<<==')[]").markupToError();
+			expect("(align:'===><==>')[]").markupToError();
 		});
 		it("errors when placed in passage prose while not attached to a hook", function() {
-			expectMarkupToError("(align:'==>')");
-			expectMarkupToNotError("(align:'==>')[]");
+			expect("(align:'==>')").markupToError();
+			expect("(align:'==>')[]").not.markupToError();
 		});
 		it("right-aligns text when given '==>'", function(done) {
 			var align = runPassage("(align:'==>')[garply]").find('tw-hook');
@@ -207,8 +353,66 @@ describe("style changer macros", function() {
 			});
 		});
 		it("has structural equality", function() {
-			expectMarkupToPrint("(print: (align:'<==') is (align:'<=='))","true");
-			expectMarkupToPrint("(print: (align:'<==') is (align:'=><=='))","false");
+			expect("(print: (align:'<==') is (align:'<=='))").markupToPrint("true");
+			expect("(print: (align:'<==') is (align:'=><=='))").markupToPrint("false");
+		});
+	});
+	describe("the (hover-style:) macro", function() {
+		it("requires exactly 1 style changer argument", function() {
+			expect("(hover-style:)[]").markupToError();
+			expect("(hover-style:1)[]").markupToError();
+			expect("(hover-style:'A')[]").markupToError();
+			expect("(hover-style:(font:'Skia'),(textstyle:'bold'))[]").markupToError();
+
+			expect("(hover-style:(align:'==>'))[]").not.markupToError();
+			expect("(hover-style:(background:black))[]").not.markupToError();
+			expect("(hover-style:(css:'display:block'))[]").not.markupToError();
+			expect("(hover-style:(font:'Skia'))[]").not.markupToError();
+			expect("(hover-style:(text-colour:red))[]").not.markupToError();
+			expect("(hover-style:(text-rotate:2))[]").not.markupToError();
+		});
+		it("applies the passed-in style only when hovering over the hook", function(done) {
+			var hover = runPassage("(hover-style:(textstyle:'bold'))[garply]").find('tw-hook');
+			hover.mouseenter();
+			setTimeout(function() {
+				expect(hover.attr('style')).toMatch(/font-weight:\s*(bold|800)/);
+				hover.mouseleave();
+				setTimeout(function() {
+					expect(hover.attr('style')).not.toMatch(/font-weight:\s*(bold|800)/);
+					done();
+				});
+			});
+		});
+		it("applies the style alongside existing styles", function(done) {
+			var hover = runPassage("(hover-style:(textstyle:'bold'))+(text-color:'#ea1dac')[garply]").find('tw-hook');
+			hover.mouseenter();
+			setTimeout(function() {
+				expect(hover.attr('style')).toMatch(/font-weight:\s*(bold|800)/);
+				expect(hover).toHaveColour('#ea1dac');
+				hover.mouseleave();
+				done();
+			});
+		});
+		it("removes the passed-in style when leaving the hook", function(done) {
+			var hover = runPassage("(hover-style:(text-color:'#fadaba'))+(text-color:'#ea1dac')[garply]").find('tw-hook');
+			setTimeout(function() {
+				expect(hover).toHaveColour('#ea1dac');
+				hover.mouseenter();
+				setTimeout(function() {
+					expect(hover).toHaveColour('#fadaba');
+					hover.mouseleave();
+					setTimeout(function() {
+						expect(hover).toHaveColour('#ea1dac');
+						done();
+					});
+				});
+			});
+		});
+		it("errors if the passed-in changer isn't just a style changer", function() {
+			expect("(hover-style:(replace:?1))[]").markupToError();
+			expect("(hover-style:(if:true))[]").markupToError();
+			expect("(hover-style:(t8n:'dissolve'))[]").markupToError();
+			expect("(hover-style:(text-color:'red')+(hook:'E'))[]").markupToError();
 		});
 	});
 	it("can compose arbitrarily deep", function(done) {
