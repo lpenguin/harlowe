@@ -1,5 +1,5 @@
 "use strict";
-define(['utils', 'internaltypes/twineerror'], ({assert, impossible, toJSLiteral}, TwineError) => {
+define(['utils', 'datatypes/hookset', 'internaltypes/twineerror'], ({impossible, toJSLiteral}, HookSet, TwineError) => {
 	
 	/*
 		First, a quick shortcut to determine whether the
@@ -18,6 +18,7 @@ define(['utils', 'internaltypes/twineerror'], ({assert, impossible, toJSLiteral}
 		return Array.isArray(value) ? "array" :
 			value instanceof Map ? "datamap" :
 			value instanceof Set ? "dataset" :
+			typeof value === "string" ? "string" :
 			value && typeof value === "object" ? "object" :
 			/*
 				If it's not an object, then it's not a collection. Return
@@ -32,7 +33,9 @@ define(['utils', 'internaltypes/twineerror'], ({assert, impossible, toJSLiteral}
 		This requires that the datamap itself be passed in.
 	*/
 	function isValidDatamapName(map, name) {
-		assert(map instanceof Map);
+		if(!(map instanceof Map)) {
+			impossible('isValidDatamapName','called with non-Map');
+		}
 		/*
 			The computed variable property syntax means that basically
 			any value can be used as a property key. Currently, we only allow strings
@@ -70,11 +73,108 @@ define(['utils', 'internaltypes/twineerror'], ({assert, impossible, toJSLiteral}
 	}
 	
 	/*
-		Next, a shortcut to determine whether a given value should have
+		This function checks the type of a single macro argument. It's run
+		for every argument passed into a type-signed macro.
+		
+		@param {Anything}     arg  The plain JS argument value to check.
+		@param {Array|Object} type A type description to compare the argument with.
+		@return {Boolean} True if the argument passes the check, false otherwise.
+	*/
+	function singleTypeCheck(arg, type) {
+		/*
+			First, check if it's a None type.
+		*/
+		if (type === null) {
+			return arg === undefined;
+		}
+
+		/*
+			Now, check if the signature is an Optional, Either, or Wrapped.
+		*/
+		if (type.innerType) {
+			
+			/*
+				Optional signatures can exit early if the arg is absent.
+			*/
+			if (type.pattern === "optional" || type.pattern === "zero or more") {
+				if (arg === undefined) {
+					return true;
+				}
+				return singleTypeCheck(arg, type.innerType);
+			}
+			/*
+				Either signatures must check every available type.
+			*/
+			if (type.pattern === "either") {
+				/*
+					The arg passes the test if it matches some of the types.
+				*/
+				return type.innerType.some(type => singleTypeCheck(arg, type));
+			}
+			/*
+				If the type expects a lambda, then check the clauses and kind.
+			*/
+			if (type.pattern === "lambda" && singleTypeCheck(arg, type.innerType)) {
+				if(typeof type.clauses !== 'string') {
+					impossible('singleTypeCheck','lambda signature had non-string clauses');
+				}
+				return type.clauses.includes("where")  === "where"  in arg
+					&& type.clauses.includes("making") === "making" in arg
+					&& type.clauses.includes("via")    === "via"    in arg
+					&& type.clauses.includes("with")   === "with"   in arg;
+			}
+			/*
+				Otherwise, if this is a Wrapped signature, ignore the included
+				message and continue.
+			*/
+			if (type.pattern === "wrapped") {
+				return singleTypeCheck(arg, type.innerType);
+			}
+		}
+
+		// If Type but no Arg, then return an error.
+		if(type !== undefined && arg === undefined) {
+			return false;
+		}
+		
+		// The Any type permits any accessible argument, as long as it's present.
+		if (type.TwineScript_TypeName === "anything" && arg !== undefined && !arg.TwineScript_Unstorable) {
+			return true;
+		}
+		/*
+			The built-in types. Let's not get tricky here.
+		*/
+		if (type === String) {
+			return typeof arg === "string";
+		}
+		if (type === Boolean) {
+			return typeof arg === "boolean";
+		}
+		if (type === parseInt) {
+			return typeof arg === "number" && !Number.isNaN(arg) && !(arg + '').includes('.');
+		}
+		if (type === Number) {
+			return typeof arg === "number" && !Number.isNaN(arg);
+		}
+		if (type === Array) {
+			return Array.isArray(arg);
+		}
+		if (type === Map || type === Set) {
+			return arg instanceof type;
+		}
+		/*
+			For TwineScript-specific types, this check should mostly suffice.
+			TODO: I really need to replace those duck-typing properties.
+		*/
+		return Object.isPrototypeOf.call(type,arg);
+	}
+
+	/*
+		A shortcut to determine whether a given value should have
 		sequential collection functionality (e.g. Array, String, other stuff).
 	*/
 	function isSequential(value) {
-		return typeof value === "string" || Array.isArray(value);
+		return typeof value === "string" || Array.isArray(value) || HookSet.isPrototypeOf(value);
 	}
 	/*
 		Now, a function to clone arbitrary values.
@@ -101,10 +201,10 @@ define(['utils', 'internaltypes/twineerror'], ({assert, impossible, toJSLiteral}
 			For ES6 collections, we can depend on the constructors.
 		*/
 		if (value instanceof Map) {
-			return Object.assign(new Map(value), value);
+			return new Map(value);
 		}
 		if (value instanceof Set) {
-			return Object.assign(new Set(value), value);
+			return new Set(value);
 		}
 		/*
 			If it's a function, Function#bind() makes a copy without altering its 'this'.
@@ -166,7 +266,7 @@ define(['utils', 'internaltypes/twineerror'], ({assert, impossible, toJSLiteral}
 			: Array.isArray(obj) ? "an array"
 			: obj instanceof Map ? "a datamap"
 			: obj instanceof Set ? "a dataset"
-			: typeof obj === "boolean" ? "the logic value '" + obj + "'"
+			: typeof obj === "boolean" ? "the boolean value '" + obj + "'"
 			: (typeof obj === "string" || typeof obj === "number")
 				? 'the ' + typeof obj + " " + toJSLiteral(obj)
 			: obj === undefined ? "an empty variable"
@@ -192,7 +292,9 @@ define(['utils', 'internaltypes/twineerror'], ({assert, impossible, toJSLiteral}
 		*/
 		if (obj.innerType) {
 			if (obj.pattern === "either") {
-				assert(Array.isArray(obj.innerType));
+				if(!Array.isArray(obj.innerType)) {
+					impossible("typeName",'"either" pattern had non-array inner type');
+				}
 				
 				return obj.innerType.map(typeName).join(" or ");
 			}
@@ -209,6 +311,7 @@ define(['utils', 'internaltypes/twineerror'], ({assert, impossible, toJSLiteral}
 			(   obj === String ||
 				obj === Number ||
 				obj === Boolean)  ? "a " + typeof obj()
+			:   obj === parseInt  ? "a non-fractional number"
 			:   obj === Map       ? "a datamap"
 			:   obj === Set       ? "a dataset"
 			:   obj === Array     ? "an array"
@@ -259,7 +362,7 @@ define(['utils', 'internaltypes/twineerror'], ({assert, impossible, toJSLiteral}
 			);
 		}
 		if (l instanceof Set && r instanceof Set) {
-			return is(Array.from(l.values()), Array.from(r.values()));
+			return is([...l], [...r]);
 		}
 		/*
 			For TwineScript built-ins, use the TwineScript_is() method to determine
@@ -296,7 +399,7 @@ define(['utils', 'internaltypes/twineerror'], ({assert, impossible, toJSLiteral}
 		*/
 		if (container) {
 			if (typeof container === "string") {
-				return container.indexOf(obj) > -1;
+				return container.includes(obj);
 			}
 			if(Array.isArray(container)) {
 				return container.some((e) => is(e, obj));
@@ -309,9 +412,9 @@ define(['utils', 'internaltypes/twineerror'], ({assert, impossible, toJSLiteral}
 			}
 		}
 		/*
-			Default: since "'r' is in 'r'" is true, so is "false is in false".
+			Default: produce an error.
 		*/
-		return is(container, obj);
+		return TwineError.create("operation", objectName(container) + " cannot contain any values, let alone " + objectName(obj));
 	}
 	
 	/*
@@ -357,7 +460,7 @@ define(['utils', 'internaltypes/twineerror'], ({assert, impossible, toJSLiteral}
 			As the positive indices are 1-indexed, we shall subtract 1 from a if a is positive.
 			But, as they're inclusive, b shall be left as is.
 		*/
-		const ret = sequence.slice(a > 0 ? a - 1 : a, b);
+		const ret = sequence.slice(a > 0 ? a - 1 : a, b).map(clone);
 		/*
 			Now that that's done, convert any string sequence back into one.
 		*/
@@ -366,9 +469,73 @@ define(['utils', 'internaltypes/twineerror'], ({assert, impossible, toJSLiteral}
 		}
 		return ret;
 	}
+
+	/*
+		This provides a safe means of serialising Arrays, Maps, Sets, and primitives into user-presented HTML.
+		This is usually called by such a value appearing in passage prose, or within a (print:) command.
+	*/
+	function printBuiltinValue(value) {
+		/*
+			If an error was passed in, return the error now.
+		*/
+		if (TwineError.containsError(value)) {
+			return value;
+		}
+		if (value && typeof value.TwineScript_Print === "function") {
+			return value.TwineScript_Print();
+		}
+		else if (value instanceof Map) {
+			/*
+				In accordance with arrays being "pretty-printed" to something
+				vaguely readable, let's pretty-print datamaps into HTML tables.
+				
+				First, convert the map into an array of key-value pairs.
+			*/
+			value = Array.from(value.entries());
+			if (TwineError.containsError(value)) {
+				return value;
+			}
+			return value.reduce((html, [pair1, pair2]) =>
+				/*
+					Print each value, calling printBuiltinValue() on
+					each of them,. Notice that the above conversion means
+					that none of these pairs contain error.
+				*/
+				html + "<tr><td>`" +
+					printBuiltinValue(pair1) +
+					"`</td><td>`" +
+					printBuiltinValue(pair2) +
+					"`</td></tr>",
+				"<table class=datamap>") + "</table>";
+		}
+		else if (value instanceof Set) {
+			/*
+				Sets are close enough to arrays that we might as well
+				just pretty-print them identically.
+			*/
+			return Array.from(value.values()).map(printBuiltinValue) + "";
+		}
+		else if (Array.isArray(value)) {
+			return value.map(printBuiltinValue) + "";
+		}
+		/*
+			If it's an object we don't know how to print, emit an error
+			instead of [object Object].
+		*/
+		else if (isObject(value)) {
+			return TwineError.create("unimplemented", "I don't know how to print this value yet.");
+		}
+		/*
+			At this point, primitives have safely fallen through.
+		*/
+		else {
+			return value + "";
+		}
+	}
 	
 	const OperationUtils = Object.freeze({
 		isObject,
+		singleTypeCheck,
 		isValidDatamapName,
 		collectionType,
 		isSequential,
@@ -379,12 +546,19 @@ define(['utils', 'internaltypes/twineerror'], ({assert, impossible, toJSLiteral}
 		is,
 		contains,
 		subset,
+		printBuiltinValue,
 		/*
 			Used to determine if a property name is an array index.
 			If negative indexing sugar is ever added, this could
 			be replaced with a function.
 		*/
 		numericIndex: /^(?:[1-9]\d*|0)$/,
+		/*
+			An Array#filter() function which filters out duplicates using the is() comparator
+			instead of Javascript referencing. This manually filters out similar array/map objects which
+			Set()'s constructor won't filter out by itself.
+		*/
+		unique: (val1,ind,arr) => !arr.slice(ind + 1).some(val2 => is(val1, val2)),
 	});
 	return OperationUtils;
 });

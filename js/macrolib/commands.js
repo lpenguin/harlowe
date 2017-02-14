@@ -1,6 +1,6 @@
 "use strict";
-define(['requestAnimationFrame', 'macros', 'utils', 'state', 'passages', 'engine', 'internaltypes/twineerror', 'utils/operationutils'],
-(requestAnimationFrame, Macros, {toJSLiteral, unescape}, State, Passages, Engine, TwineError, {isObject}) => {
+define(['requestAnimationFrame', 'macros', 'utils', 'state', 'passages', 'engine', 'internaltypes/twineerror', 'datatypes/hookset', 'utils/operationutils'],
+(requestAnimationFrame, Macros, {toJSLiteral, unescape}, State, Passages, Engine, TwineError, HookSet, {printBuiltinValue}) => {
 	
 	/*d:
 		Command data
@@ -11,13 +11,9 @@ define(['requestAnimationFrame', 'macros', 'utils', 'state', 'passages', 'engine
 		
 		Macros that produce commands include (display:), (print:), (go-to:), (save-game:), (load-game:),
 		(link-goto:), and more.
-		
-		Many commands only have an effect when they're attached to hooks, and modify the
-		hook in a certain manner. Macros that work like this include (text-style:), (font:), (transition:),
-		(rotate:), (position-x:), (position-y:), (hook:), (click:), (link:), and more.
 	*/
 	const
-		{Any, optional} = Macros.TypeSignature;
+		{Any, rest, optional} = Macros.TypeSignature;
 	
 	const hasStorage = !!localStorage
 		&& (() => {
@@ -64,12 +60,14 @@ define(['requestAnimationFrame', 'macros', 'utils', 'state', 'passages', 'engine
 			Text-targeting macros (such as (replace:)) inside the
 			displayed passage will affect the text and hooks in the outer passage
 			that occur earlier than the (display:) command. For instance,
-			if passage A contains `(replace:Prince)[Frog]`, then another passage
+			if passage A contains `(replace:"Prince")[Frog]`, then another passage
 			containing `Princes(display:'A')` will result in the text `Frogs`.
 			
 			Like all commands, this can be set into a variable. It's not particularly
 			useful in that state, but you can use that variable in place of that command,
 			such as writing `$var` in place of `(display: "Yggdrasil")`.
+
+			#basics 5
 		*/
 		("display",
 			/*
@@ -105,7 +103,7 @@ define(['requestAnimationFrame', 'macros', 'utils', 'state', 'passages', 'engine
 			This command prints out any single argument provided to it, as text.
 			
 			Example usage:
-			`(print: $var)`
+			`(print: $var + "s")`
 			
 			Details:
 			It is capable of printing things which (text:) cannot convert to a string,
@@ -127,80 +125,108 @@ define(['requestAnimationFrame', 'macros', 'utils', 'state', 'passages', 'engine
 			
 			See also:
 			(text:), (display:)
-		*/
-		("print", function print(_, expr) {
-			
-			/*
-				If an error was passed in, return the error now.
-			*/
-			if (TwineError.containsError(expr)) {
-				return expr;
-			}
-			if (expr && typeof expr.TwineScript_Print === "function") {
-				expr = expr.TwineScript_Print();
-			}
-			else if (expr instanceof Map) {
-				/*
-					In accordance with arrays being "pretty-printed" to something
-					vaguely readable, let's pretty-print datamaps into HTML tables.
-					
-					First, convert the map into an array of key-value pairs.
-				*/
-				expr = Array.from(expr.entries());
-				if (TwineError.containsError(expr)) {
-					return expr;
-				}
-				expr = expr.reduce((html, pair) =>
-					/*
-						Print each value, recursively running (print:) on
-						each of them. Notice that the above conversion means
-						that none of these pairs contain error.
-					*/
-					html + "<tr><td>" +
-						print(_, pair[0]).TwineScript_Print() +
-						"</td><td>" +
-						print(_, pair[1]).TwineScript_Print() +
-						"</td></tr>",
-					"<table class=datamap>") + "</table>";
-			}
-			else if (expr instanceof Set) {
-				/*
-					Sets are close enough to arrays that we might as well
-					just pretty-print them identically.
-				*/
-				expr = Array.from(expr.values());
-			}
-			else if (Array.isArray(expr)) {
-				expr += "";
-			}
-			/*
-				If it's an object we don't know how to print, emit a JS error
-				instead of [object Object].
-			*/
-			else if (isObject(expr)) {
-				throw new TypeError("I don't know how to print this value yet.");
-			}
-			/*
-				At this point, primitives have safely fallen through.
-			*/
-			else {
-				expr += "";
-			}
-			
-			return {
-				TwineScript_ObjectName:
-					"a (print: " + toJSLiteral(expr) + ") command",
 
-				TwineScript_TypeName:
-					"a (print:) command",
+			#basics 4
+		*/
+		("print", (_, expr) => {
+			return {
+				TwineScript_ObjectName: "a (print:) command",
+
+				TwineScript_TypeName:   "a (print:) command",
 				
 				TwineScript_Print() {
-					return expr;
+					/*
+						The printBuiltinValue() call can call commands' TwineScript_Print() method,
+						so it must be withheld until here, so that wordings like (set: $x to (print:(goto:'X')))
+						do not execute the command prematurely.
+					*/
+					return printBuiltinValue(expr);
 				},
 			};
 		},
 		[Any])
-		
+
+		/*d:
+			(show: ...HookName) -> Command
+
+			Reveals hidden hooks, running the code within.
+
+			Example usage:
+			```
+			|fan)[The overhead fan spins lazily.]
+			
+			(link:"Turn on fan")[(show:?fan)]
+			```
+
+			Rationale:
+			The purpose of hidden hooks is, of course, to eventually show them - and this macro is
+			how you show them. You can use this command inside a (link:), trigger it in real-time with
+			a (live:) macro, or anywhere else.
+
+			Using (show:) vs (replace:):
+			There are different reasons for using hidden hooks and (show:) instead of (replace:). For your stories,
+			think about whether the prose being revealed is part of the "main" text of the passage, or is just an aside.
+			In neatly-coded stories, the main text should appear early in a passage's code, as the focus of the
+			writer's attention.
+
+			When using (replace:), the replacement prose is written far from its insertion point. This can improve
+			readability when the insertion point is part of a long paragraph or sentence, and the prose is a minor aside
+			or amendment, similar to a footnote or post-script, that would clutter the paragraph were it included inside.
+			Additionally, (replace:) can be used in a "header" or "footer" tagged passage to affect certain named hooks
+			throughout the story.
+
+			```
+			You turn away from her, facing the grandfather clock, its [stern ticking]<1| filling the tense silence.
+
+			(click-replace: ?1)[echoing, hollow ticking]
+			```
+
+			When using (show:), the hidden hook's position is fixed in the passage prose. This can improve
+			readability when the hidden hook contains a lot of the "main" text of a passage, which provides vital context
+			and meaning for the rest of the text.
+
+			```
+			I don't know where to begin... |1)[The weird state of my birth, the prophecy made centuries ago,
+			my first day of school, the day of the meteors, the day I awoke my friends' powers... so many strands in
+			the tapestry of my tale, and no time to unravel them.] ...so for now I'll start with when we fell down the hole.
+
+			(link:"Where, indeed?")[(show:?1)]
+			```
+
+			But, there aren't any hard rules for when you should use one or the other. As a passage changes in the writing, you should feel free to change between one or the other, or leave your choice as-is.
+
+			Details:
+			(show:) will reveal every hook with the given name. To only reveal a specific hook, you can use the
+			possessive syntax, as usual: `(show: ?shrub's 1st)`.
+
+			If you provide to (show:) a hook which is already visible, an error will be produced.
+
+			See also:
+			(hidden:), (replace:)
+
+			#showing and hiding
+		*/
+		("show", (section, ...hooks) => {
+			return {
+				TwineScript_ObjectName: "a (show:) command",
+
+				TwineScript_TypeName:   "a (show:) command",
+				
+				TwineScript_Print() {
+					hooks.forEach(hook => hook.forEach(section, elem => {
+						const hiddenSource = elem.data('hiddenSource');
+						if (hiddenSource === undefined) {
+							return TwineError.create("operation",
+								"I can't reveal a hook which is already visible.");
+						}
+						section.renderInto(hiddenSource, elem);
+					}));
+					return '';
+				},
+			};
+		},
+		[rest(HookSet)])
+
 		/*d:
 			(go-to: String) -> Command
 			This command stops passage code and sends the player to a new passage.
@@ -217,8 +243,8 @@ define(['requestAnimationFrame', 'macros', 'utils', 'state', 'passages', 'engine
 			a string. You can, for instance, go to a randomly selected passage by combining it with
 			(either:) - `(go-to: (either: "Win", "Lose", "Draw"))`.
 			
-			(go-to:) can be combined with (link:) to produce a structure not unlike a
-			normal passage link: `(link:"Enter the hole")[(go-to:"Falling")]` However, you
+			(go-to:) can be combined with (link:) to accomplish the same thing as (link-goto:):
+			`(link:"Enter the hole")[(go-to:"Falling")]` However, you
 			can include other macros inside the hook to run before the (go-to:), such as (set:),
 			(put:) or (save-game:).
 			
@@ -233,10 +259,13 @@ define(['requestAnimationFrame', 'macros', 'utils', 'state', 'passages', 'engine
 			will *not* cause `$listen` to become `"I love you"` when it runs.
 			
 			Going to a passage using this macro will count as a new "turn" in the game's passage history,
-			much as if a passage link was clicked.
+			much as if a passage link was clicked. If you want to go back to the previous passage,
+			forgetting the current turn, then you may use (undo:).
 			
 			See also:
-			(loadgame:)
+			(link-goto:), (undo:), (loadgame:)
+
+			#links
 		*/
 		("goto", (_, name) => ({
 				TwineScript_ObjectName: "a (go-to: " + toJSLiteral(name) + ") command",
@@ -259,7 +288,7 @@ define(['requestAnimationFrame', 'macros', 'utils', 'state', 'passages', 'engine
 						So, the change of passage must be deferred until just after
 						the passage has ceased rendering.
 					*/
-					requestAnimationFrame(Engine.goToPassage.bind(Engine,name, false /* stretchtext value */));
+					requestAnimationFrame(()=> Engine.goToPassage(name));
 					/*
 						But how do you immediately cease rendering the passage?
 						
@@ -272,9 +301,90 @@ define(['requestAnimationFrame', 'macros', 'utils', 'state', 'passages', 'engine
 				},
 			}),
 		[String])
+
+		/*
+			This is an experimental variant of the above, which isn't yet confirmed for public release.
+		*/
+		("goto-transition", (_, passageName, transitionName) => ({
+				TwineScript_ObjectName: "a (goto-transition: " + toJSLiteral(passageName) + "," + toJSLiteral(transitionName) + ") command",
+				TwineScript_TypeName:   "a (goto-transition:) command",
+				TwineScript_Print() {
+					/*
+						First, of course, check for the passage's existence.
+					*/
+					if (!Passages.has(passageName)) {
+						return TwineError.create("macrocall",
+							"I can't (goto-transition:) the passage '"
+							+ transitionName
+							+ "' because it doesn't exist."
+						);
+					}
+					requestAnimationFrame(() => Engine.goToPassage(passageName, {
+						transitionIn: transitionName,
+						transitionOut: transitionName,
+					}));
+					return { earlyExit: 1 };
+				},
+			}),
+		[String, String])
+
+		/*d:
+			(undo:) -> Command
+			This command stops passage code and "undoes" the current turn, sending the player to the previous visited
+			passage and forgetting any variable changes that occurred in this passage.
+
+			Example usage:
+			`You scurry back whence you came... (live:2s)[(undo:)]` will undo the current turn after 2 seconds.
+
+			Rationale:
+			The (go-to:) macro sends players to different passages instantly. But, it's common to want to
+			send players back to the passage they previously visited, acting as if this turn never happened.
+			(undo:) provides this functionality.
+
+			By default, Harlowe offers a button in its sidebar that lets players undo at any time, going
+			back to the beginning of the game session. However, if you wish to use this macro, and only permit undos
+			in certain passages and occasions, you may remove the button by using (replace:) on the ?sidebar in
+			a header tagged passage.
+
+			Details:
+			If this is the first turn of the game session, (undo:) will produce an error. You can check which turn it is
+			by examining the `length` of the (history:) array.
+
+			Just like (go-to:), (undo:) will "halt" the passage and prevent any macros and text
+			after it from running.
+
+			See also:
+			(go-to:), (link-undo:)
+
+			#links
+		*/
+		("undo", () => ({
+				TwineScript_ObjectName: "a (undo:) command",
+				TwineScript_TypeName:   "a (undo:) command",
+				TwineScript_Print() {
+					/*
+						Users of (undo:) should always check that (history:) is longer than 1.
+					*/
+					if (State.pastLength < 1) {
+						return TwineError.create("macrocall", "I can't (undo:) on the first turn.");
+					}
+					/*
+						As with the (goto:) macro, the change of passage must be deferred until
+						just after the passage has ceased rendering, to avoid <tw-story> being
+						detached twice.
+					*/
+					requestAnimationFrame(()=> Engine.goBack());
+					/*
+						As with the (goto:) macro, this returned object signals to
+						Section's runExpression() to cease evaluation.
+					*/
+					return { earlyExit: 1 };
+				},
+			}),
+		[])
 		
 		/*d:
-			(live: [Number]) -> Command
+			(live: [Number]) -> Changer
 			When you attach this macro to a hook, the hook becomes "live", which means that it's repeatedly re-run
 			every certain number of milliseconds, replacing the source inside of the hook with a newly computed version.
 			
@@ -299,6 +409,8 @@ define(['requestAnimationFrame', 'macros', 'utils', 'state', 'passages', 'engine
 			
 			Details:
 			Live hooks will continue to re-render themselves until they encounter and print a (stop:) macro.
+
+			#live
 		*/
 		/*
 			Yes, the actual implementation of this is in Section, not here.
@@ -313,7 +425,7 @@ define(['requestAnimationFrame', 'macros', 'utils', 'state', 'passages', 'engine
 			[optional(Number)]
 		)
 		
-		/*d
+		/*d:
 			(stop:) -> Command
 			This macro, which accepts no arguments, creates a (stop:) command, which is not configurable.
 			
@@ -332,6 +444,8 @@ define(['requestAnimationFrame', 'macros', 'utils', 'state', 'passages', 'engine
 			
 			See also:
 			(live:)
+
+			#live
 		*/
 		("stop",
 			() => ({
@@ -390,7 +504,9 @@ define(['requestAnimationFrame', 'macros', 'utils', 'state', 'passages', 'engine
 			to display an apology message in the event that it returns false (as seen above).
 			
 			See also:
-			(load-game:)
+			(load-game:), (saved-games:)
+
+			#saving
 		*/
 		("savegame",
 			(_, slotName, fileName) => {
@@ -464,10 +580,12 @@ define(['requestAnimationFrame', 'macros', 'utils', 'state', 'passages', 'engine
 			save, and going to the passage where that save was made.
 			
 			This macro assumes that the save slot exists and contains a game, which you can check by seeing if
-			`$Saves contains` the slot name before running (load-game:).
+			`(saved-games:) contains` the slot name before running (load-game:).
 			
 			See also:
-			(save-game:)
+			(save-game:), (saved-games:)
+			
+			#saving
 		*/
 		("loadgame",
 			(_, slotName) => {
@@ -493,5 +611,219 @@ define(['requestAnimationFrame', 'macros', 'utils', 'state', 'passages', 'engine
 				};
 			},
 			[String]
-		);
+		)
+		/*d:
+			(alert: String) -> Command
+
+			This macro produces a command that, when evaluated, shows a browser pop-up dialog box with the given
+			string displayed, and an "OK" button to dismiss it.
+
+			Example usage:
+			`(alert:"Beyond this point, things get serious. Grab a snack and buckle up.")`
+
+			Details:
+			This is essentially identical to the Javascript `alert()` function in purpose and ability. You
+			can use it to display a special message above the game itself. But, be aware that as the box uses
+			the player's operating system and browser's styling, it may clash visually with the design
+			of your story.
+
+			When the dialog is on-screen, the entire game is essentially "paused" - no further computations are
+			performed until it is dismissed.
+
+			See also:
+			(prompt:), (confirm:)
+
+			#popup
+		*/
+		("alert",
+			(_, text) => ({
+				TwineScript_ObjectName: "an (alert:) command",
+				TwineScript_TypeName:   "an (alert:) command",
+				TwineScript_Print() {
+					window.alert(text);
+					return "";
+				},
+			}),
+			[String]
+		)
+		/*d:
+			(prompt: String, String) -> String
+
+			When this macro is evaluated, a browser pop-up dialog box is shown with the first string displayed,
+			a text entry box containing the second string (as a default value), and an "OK" button to submit.
+			When it is submitted, it evaluates to the string in the text entry box.
+
+			Example usage:
+			`(set: $name to (prompt: "Your name, please:", "Frances Spayne"))`
+
+			Details:
+			This is essentially identical to the Javascript `prompt()` function in purpose and ability. You can
+			use it to obtain a string value from the player directly, such as a name for the main character.
+			But, be aware that as the box uses the player's operating system and browser's styling, it
+			may clash visually with the design of your story.
+
+			When the dialog is on-screen, the entire game is essentially "paused" - no further computations are
+			performed until it is dismissed.
+
+			See also:
+			(alert:), (confirm:)
+
+			#popup
+		*/
+		("prompt",
+			(_, text, value) => window.prompt(text, value) || "",
+			[String, String]
+		)
+		/*d:
+			(confirm: String) -> Boolean
+
+			When this macro is evaluated, a browser pop-up dialog box is shown with the given string displayed,
+			as well as "OK" and "Cancel" button to confirm or cancel whatever action or fact the string tells the player.
+			When it is submitted, it evaluates to the boolean true if "OK" had been pressed, and false if "Cancel" had.
+
+			Example usage:
+			`(set: $makeCake to (confirm: "Transform your best friend into a cake?"))`
+
+			Details:
+			This is essentially identical to the Javascript `confirm()` function in purpose and ability. You can
+			use it to ask the player a question directly, and act on the result immediately.
+			But, be aware that as the box uses the player's operating system and browser's styling, it
+			may clash visually with the design of your story.
+
+			When the dialog is on-screen, the entire game is essentially "paused" - no further computations are
+			performed until it is dismissed.
+
+			See also:
+			(alert:), (prompt:)
+
+			#popup
+		*/
+		("confirm",
+			(_, text) => window.confirm(text),
+			[String]
+		)
+		/*d:
+			(open-url: String) -> Command
+
+			When this macro is evaluated, the player's browser attempts to open a new tab with the given
+			URL. This will usually require confirmation from the player, as most browsers block
+			Javascript programs such as Harlowe from opening tabs by default.
+
+			Example usage:
+			`(open-url: "http://www.example.org/")`
+
+			Details:
+			If the given URL is invalid, no error will be reported - the browser will simply attempt to
+			open it anyway.
+
+			Much like the `<a>` HTML element, the URL is treated as a relative URL if it doesn't start
+			with "http://", "https://", or another such protocol. This means that if your story file is
+			hosted at "http://www.example.org/story.html", then `(open-url: "page2.html")` will actually open
+			the URL "http://www.example.org/page2.html".
+
+			See also:
+			(goto-url:)
+
+			#url
+		*/
+		("openURL",
+			(_, text) => ({
+				TwineScript_ObjectName: "an (open-url:) command",
+				TwineScript_TypeName:   "an (open-url:) command",
+				TwineScript_Print() {
+					window.open(text, '');
+					return "";
+				},
+			}),
+			[String]
+		)
+		/*d:
+			(reload:) -> Command
+
+			When this command is used, the player's browser will immediately attempt to reload
+			the page, in effect restarting the entire story.
+
+			Example usage:
+			`(click:"Restart")[(reload:)]`
+
+			Details:
+			If the first passage in the story contains this macro, the story will be caught in a "reload
+			loop", and won't be able to proceed. No error will be reported in this case.
+
+			#url
+		*/
+		("reload",
+			()=>({
+				TwineScript_ObjectName: "a (reload:) command",
+				TwineScript_TypeName:   "a (reload:) command",
+				TwineScript_Print() {
+					if (State.pastLength < 1) {
+						return TwineError.create("infinite", "I mustn't (reload:) the page in the starting passage.");
+					}
+					window.location.reload();
+					/*
+						This technically doesn't need to be an "early exit" command
+						like (goto:), because reload() halts all execution by itself.
+						But, when proper error-checking is added, this will be necessary.
+					*/
+					return { earlyExit: 1 };
+				},
+			}),
+			[]
+		)
+		/*d:
+			(goto-url: String) -> Command
+
+			When this command is used, the player's browser will immediately attempt to leave
+			the story's page, and navigate to the given URL in the same tab. If this succeeds, then
+			the story session will "end".
+
+			Example usage:
+			`(goto-url: "http://www.example.org/")`
+
+			Details:
+			If the given URL is invalid, no error will be reported - the browser will simply attempt to
+			open it anyway.
+			
+			Much like the `<a>` HTML element, the URL is treated as a relative URL if it doesn't start
+			with "http://", "https://", or another such protocol. This means that if your story file is
+			hosted at "http://www.example.org/story.html", then `(open-url: "page2.html")` will actually open
+			the URL "http://www.example.org/page2.html".
+
+			See also:
+			(open-url:)
+
+			#url
+		*/
+		("gotoURL",
+			(_, url)=>({
+				TwineScript_ObjectName: "a (goto-url:) command",
+				TwineScript_TypeName:   "a (goto-url:) command",
+				TwineScript_Print() {
+					window.location.assign(url);
+					/*
+						As with (reload:), this early exit signal will be useful once
+						proper editing is added.
+					*/
+					return { earlyExit: 1 };
+				},
+			}),
+			[String]
+		)
+		/*d:
+			(page-url:) -> String
+
+			This macro produces the full URL of the story's HTML page, as it is in the player's browser.
+
+			Example usage:
+			`(if: (page-url:) contains "#cellar")` will be true if the URL contains the `#cellar` hash.
+
+			Details:
+			This **may** be changed in a future version of Harlowe to return a datamap containing more
+			descriptive values about the URL, instead of a single string.
+
+			#url
+		*/
+		("pageURL", () => window.location.href, [])
+		;
 });

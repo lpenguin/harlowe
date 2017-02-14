@@ -5,19 +5,22 @@ define([
 	'utils/selectors',
 	'renderer',
 	'twinescript/environ',
+	'twinescript/operations',
 	'state',
-	'utils/hookutils',
+	'utils/operationutils',
+	'datatypes/changercommand',
 	'datatypes/hookset',
-	'internaltypes/pseudohookset',
+	'datatypes/colour',
 	'internaltypes/changedescriptor',
+	'internaltypes/varscope',
 	'internaltypes/twineerror',
 	'internaltypes/twinenotifier',
 ],
-($, Utils, Selectors, Renderer, Environ, State, HookUtils, HookSet, PseudoHookSet, ChangeDescriptor, TwineError, TwineNotifier) => {
+($, Utils, Selectors, Renderer, Environ, Operations, State, {printBuiltinValue,objectName}, ChangerCommand, HookSet, Colour, ChangeDescriptor, VarScope, TwineError, TwineNotifier) => {
 
 	let Section;
 
-	/**
+	/*
 		Section objects represent a block of Twine source rendered into the DOM.
 		It contains its own DOM, a reference to any enclosing Section,
 		and methods and properties related to invoking TwineScript code within it.
@@ -32,91 +35,89 @@ define([
 		The following things allow a section object to persist:
 		* Live hook macros (until they deactivate themselves when the section is removed from the DOM)
 		* Saved (enchant:), (link-goto:) and other macros.
-		
-		@class Section
-		@static
 	*/
 	
-	/**
+	/*
 		Apply the result of a <tw-expression>'s evaluation to the next hook.
 		If the result is a changer command, live command or boolean, this will cause the hook
 		to be rendered differently.
-		
-		@method runExpression
-		@private
-		@param {jQuery} expr The <tw-expression> element.
-		@param {Any} result The result of running the expression.
+
+		@param {jQuery} The <tw-expression> element.
+		@param {Any} The result of running the expression.
+		@param {jQuery} The next <tw-hook> element, passed in solely to save re-computing it.
 	*/
-	function applyExpressionToHook(expr, result) {
-		/*
-			To be considered connected, the next hook must be the very next element.
-		*/
-		const nextHook = expr.next(Selectors.hook);
-		
+	function applyExpressionToHook(expr, result, nextHook) {
 		/*
 			If result is a ChangerCommand, please run it.
 		*/
-		if (result && result.changer) {
-			if (!nextHook.length) {
-				expr.replaceWith(TwineError.create("changer",
-					"The (" + result.macroName + ":) command should be assigned to a variable or attached to a hook.",
-					"Macros like this should usually be touching the left side of a hook: " + expr.attr('title') + "[Some text]"
-				).render(expr.attr('title')));
-			}
-			else {
-				const enabled = this.renderInto(
-					/*
-						The use of popAttr prevents the hook from executing normally
-						if it wasn't actually the eventual target of the changer function.
-					*/
-					nextHook.popAttr('source'),
-					/*
-						Don't forget: nextHook may actually be empty.
-						This is acceptable - the result changer could alter the
-						target appropriately.
-					*/
-					nextHook,
-					result
-				);
+		if (result && typeof result === "object" && result.changer) {
+			const enabled = this.renderInto(
+				/*
+					The use of popAttr prevents the hook from executing normally
+					if it wasn't actually the eventual target of the changer function.
+				*/
+				nextHook.popAttr('source'),
+				/*
+					Don't forget: nextHook may actually be empty.
+					This is acceptable - the result changer could alter the
+					target appropriately.
+				*/
+				nextHook,
+				result
+			);
 
-				if (!enabled) {
-					/*
-						The 'false' class is used solely by debug mode to visually denote
-						that a macro such as (if:) suppressed a hook.
-					*/
+			if (!enabled) {
+				const name = Utils.insensitiveName(expr.attr('name'));
+				/*
+					The 'false' class is used solely by debug mode to visually denote
+					that a macro such as (if:) (but not (hidden:)) suppressed a hook.
+				*/
+				if (["if", "elseif", "unless", "else"].includes(name)) {
 					expr.addClass("false");
 					/*
 						Unfortunately, (else-if:) must be special-cased, so that it doesn't affect
 						lastHookShown, instead preserving the value of the original (if:).
 					*/
-					if (Utils.insensitiveName(expr.attr('name')) !== "elseif") {
+					if (name !== "elseif") {
 						this.stack[0].lastHookShown = false;
 					}
-					return;
 				}
+				return;
 			}
 		}
 		/*
 			Else, if it's a live macro, please run that.
 		*/
-		else if (result && result.live) {
+		else if (result && typeof result === "object" && result.live) {
 			runLiveHook.call(this, nextHook, result.delay, result.event);
 		}
 		/*
-			And finally, the falsy primitive case.
+			And finally, the false case.
 			This is special: as it prevents hooks from being run, an (else:)
-			that follows this will return true.
+			that follows this will pass.
 		*/
-		else if   (result === false
-				|| result === null
-				|| result === undefined) {
-			nextHook.removeAttr('source');
+		else if (result === false) {
+			/*
+				Just as in ChangeDescriptor.render(), suppressing a hook will move
+				its source into a 'hiddenSource' data store.
+			*/
+			if (nextHook.attr('source')) {
+				nextHook.data('hiddenSource', nextHook.popAttr('source'));
+			}
 			expr.addClass("false");
 			
-			if (nextHook.length) {
-				this.stack[0].lastHookShown = false;
-				return;
-			}
+			this.stack[0].lastHookShown = false;
+			return;
+		}
+		/*
+			Any other values that aren't primitive true should result in runtime errors
+			when attached to hooks.
+		*/
+		else if (result !== true) {
+			expr.replaceWith(TwineError.create("datatype",
+					objectName(result) + " cannot be attached to this hook.",
+					"Only Booleans, changer commands, and the (live:) macro can be attached to hooks."
+				).render(expr.attr('title')));
 		}
 		/*
 			The (else:) and (elseif:) macros require a little bit of state to be
@@ -124,34 +125,130 @@ define([
 			was shown or hidden by the attached expression.
 			Sadly, we must oblige with this overweening demand.
 		*/
-		if (nextHook.length) {
-			this.stack[0].lastHookShown = true;
-		}
+		this.stack[0].lastHookShown = true;
 	}
 	
-	/**
+	/*
+		This function selects the next sibling element which isn't a whitespace text node,
+		nor a <br>. It also returns the intervening whitespace.
+	*/
+	function nextNonWhitespace(e) {
+		const {nextSibling} = (e instanceof $ ? e[0] : e);
+		if (nextSibling &&
+				((nextSibling instanceof Text && !nextSibling.textContent.trim())
+				|| (nextSibling.tagName || '').toLowerCase() === "br")) {
+
+			const { whitespace, nextElem } = nextNonWhitespace(nextSibling);
+			return { whitespace: $(nextSibling).add(whitespace), nextElem };
+		}
+		return { whitespace: $(), nextElem: $(nextSibling) };
+	}
+	
+	/*
 		Run a newly rendered <tw-expression> element's code, obtain the resulting value,
 		and apply it to the next <tw-hook> element, if present.
 		
-		@method runExpression
-		@private
-		@param {jQuery} expr The <tw-expression> to run.
+		@param {jQuery} The <tw-expression> to run.
 	*/
 	function runExpression(expr) {
 		/*
 			Execute the expression, and obtain its result value.
 		*/
 		let result = this.eval(expr.popAttr('js') || '');
+
+		/*
+			Consecutive changer expressions, separated with "+" and followed by a hook,
+			will "chain up" into a single command, which is then applied to that hook.
+
+			As long as the result is a changer, it may link up with an expression following it
+			if a "+" is placed between them.
+
+			Note: If the result isn't a changer at all, then it might be another kind of value
+			(a boolean, or a (live:) command) which still can be attached, but not chained.
+		*/
+		let whitespace, nextElem, nextHook = $();
+		nextElem = expr;
+
+		while(ChangerCommand.isPrototypeOf(result)) {
+			/*
+				Check if the next non-whitespace element is a +, or an anonymous hook.
+			*/
+			({whitespace, nextElem} = nextNonWhitespace(nextElem));
+			if (nextElem[0] instanceof Text && nextElem[0].textContent.trim() === "+") {
+				/*
+					Having found a +, we must confirm the non-ws element after it is an expression.
+				*/
+				let whitespaceAfter, plusMark = nextElem;
+				({whitespace:whitespaceAfter, nextElem} = nextNonWhitespace(plusMark));
+				if (nextElem.is(Selectors.expression)) {
+					/*
+						It's an expression - we can join them.
+						Add the expressions, and remove the interstitial + and whitespace.
+					*/
+					const nextValue = this.eval(nextElem.popAttr('js'));
+					/*
+						(But, don't join them if the nextValue contains its own error.)
+					*/
+					if (TwineError.containsError(nextValue)) {
+						result = nextValue;
+						break;
+					}
+					const newResult = Operations["+"](result, nextValue);
+					$(whitespace).add(plusMark).add(whitespaceAfter).remove();
+					/*
+						If this causes result to become an error, create a new error with a more appropriate
+						message.
+					*/
+					if (TwineError.containsError(newResult)) {
+						result = TwineError.create("operation",
+							"I can't combine " + objectName(result) + " with " + objectName(nextValue) + "."
+						);
+					}
+					else {
+						result = newResult;
+					}
+					continue;
+				}
+				/*
+					If the next element wasn't an expression, fall down to the error below.
+				*/
+			}
+			if (nextElem.is(Selectors.hook)) {
+				/*
+					If it's an anonymous hook, apply the summed changer to it
+					(and remove the whitespace).
+				*/
+				whitespace.remove();
+				nextHook = nextElem;
+				break;
+			}
+			/*
+				If it's neither hook nor expression, then this evidently isn't connected to
+				a hook at all. Produce an error.
+			*/
+			expr.replaceWith(TwineError.create("syntax",
+				"The (" + result.macroName + ":) command should be assigned to a variable or attached to a hook.",
+				"Macros like this should appear to the left of a hook: " + expr.attr('title') + "[Some text]"
+			).render(expr.attr('title')));
+			break;
+		}
+		/*
+			IF the above loop wasn't entered at all (i.e. the result wasn't a changer) then an error may
+			be called for. For now, obtain the next hook anyway.
+		*/
+		nextHook = nextHook.length ? nextHook : nextNonWhitespace(expr).nextElem.filter(Selectors.hook);
+
 		/*
 			Print any error that resulted.
 			This must of course run after the sensor/changer function was run,
 			in case that provided an error.
 		*/
-		if (TwineError.containsError(result)) {
-			if (result instanceof Error) {
-				result = TwineError.fromError(result);
+		let error;
+		if ((error = TwineError.containsError(result))) {
+			if (error instanceof Error) {
+				error = TwineError.fromError(error);
 			}
-			expr.replaceWith(result.render(expr.attr('title'), expr));
+			expr.replaceWith(error.render(expr.attr('title'), expr));
 		}
 		/*
 			If we're in debug mode, a TwineNotifier may have been sent.
@@ -161,14 +258,29 @@ define([
 			expr.append(result.render());
 		}
 		/*
-			If the expression had a TwineScript_Print method, do that.
+			Print the expression if it's a string, number, data structure,
+			or is a non-changer command of some kind.
 		*/
-		else if (result && result.TwineScript_Print && !result.changer) {
+		else if (
+				/*
+					If it's plain data, it shouldn't be attached to a hook.
+					If it was attached, an error should be produced
+					(by applyExpressionToHook) to clue the author into the correct attachable types.
+				*/
+				(!nextHook.length &&
+				(typeof result === "string"
+				|| typeof result === "number"
+				|| result instanceof Map
+				|| result instanceof Set
+				|| Array.isArray(result)
+				|| Colour.isPrototypeOf(result)))
+				//  However, commands will cleanly "detach" without any error resulting.
+				|| (result && result.TwineScript_Print && !result.changer)) {
 			/*
-				TwineScript_Print() typically emits side-effects. These
-				will occur... now.
+				TwineScript_Print(), when called by printBuiltinValue(), typically emits
+				side-effects. These will occur... now.
 			*/
-			result = result.TwineScript_Print();
+			result = printBuiltinValue(result);
 			
 			/*
 				If TwineScript_Print returns an object of the form { earlyExit },
@@ -176,14 +288,14 @@ define([
 				immediately.
 			*/
 			if (result.earlyExit) {
-				return false;
+				return "earlyexit";
 			}
 			/*
 				On rare occasions (specifically, when the passage component
-				of the link syntax produces an error) TwineScript_Print
+				of the link syntax produces an error) TwineScript_Print()
 				returns a jQuery of the <tw-error>.
 			*/
-			if (result instanceof $) {
+			else if (result instanceof $) {
 				expr.append(result);
 			}
 			/*
@@ -197,22 +309,20 @@ define([
 				expr.replaceWith(result.render(expr.attr('title'), expr));
 			}
 			else {
+				/*
+					Transition the resulting Twine code into the expression's element.
+				*/
 				this.renderInto(result, expr);
 			}
 		}
-		/*
-			This prints an object if it's a string, number, or has a custom toString method
-			and isn't a function.
-		*/
-		else if (typeof result === "string"  || typeof result === "number"
-			|| (typeof result === "object" && result && result.toString !== Object.prototype.toString)) {
-			/*
-				Transition the resulting Twine code into the expression's element.
-			*/
-			this.renderInto(result + '', expr);
+		else if (nextHook.length) {
+			applyExpressionToHook.call(this, expr, result, nextHook);
 		}
-		else {
-			applyExpressionToHook.call(this, expr, result);
+		/*
+			The only remaining values should be unattached changers, or booleans.
+		*/
+		else if (!(result.changer || typeof result === "boolean")) {
+			Utils.impossible('Section.runExpression', "The expression evaluated to an unknown value: " + result.toSource());
 		}
 	}
 	
@@ -241,15 +351,65 @@ define([
 			return (result = (p.contents().length === 1));
 		};
 	})();
+
+	/*
+		Both of these navigates up the tree to find the nearest text node outside this element,
+		earlier or later in the document.
+		These return an unwrapped Text node, not a jQuery.
+	*/
+	function prevParentTextNode(e) {
+		const elem = e.first()[0],
+			parent = e.parent();
+		/*
+			Quit early if there's no parent.
+		*/
+		if (!parent.length) {
+			return null;
+		}
+		/*
+			Get the parent's text nodes, and obtain only the last one which is
+			earlier (or later, depending on positionBitmask) than this element.
+		*/
+		let textNodes = parent.textNodes().filter((e) => {
+			const pos = e.compareDocumentPosition(elem);
+			return pos & 4 && !(pos & 8);
+		});
+		textNodes = textNodes[textNodes.length-1];
+		/*
+			If no text nodes were found, look higher up the tree, to the grandparent.
+		*/
+		return !textNodes ? prevParentTextNode(parent) : textNodes;
+	}
 	
-	/**
+	function nextParentTextNode(e) {
+		const elem = e.last()[0],
+			parent = e.parent();
+		/*
+			Quit early if there's no parent.
+		*/
+		if (!parent.length) {
+			return null;
+		}
+		/*
+			Get the parent's text nodes, and obtain only the last one which is
+			earlier (or later, depending on positionBitmask) than this element.
+		*/
+		const textNodes = parent.textNodes().filter((e) => {
+			const pos = e.compareDocumentPosition(elem);
+			return pos & 2 && !(pos & 8);
+		})[0];
+		/*
+			If no text nodes were found, look higher up the tree, to the grandparent.
+		*/
+		return !textNodes ? nextParentTextNode(parent) : textNodes;
+	}
+
+	/*
 		<tw-collapsed> elements should collapse whitespace inside them in a specific manner - only
 		single spaces between non-whitespace should remain.
 		This function performs this transformation by modifying the text nodes of the passed-in element.
-		
-		@method collapse
-		@private
-		@param {jQuery} elem The element whose whitespace must collapse.
+
+		@param {jQuery} The element whose whitespace must collapse.
 	*/
 	function collapse(elem) {
 		/*
@@ -266,7 +426,7 @@ define([
 			return $(this || e).parentsUntil('tw-collapsed')
 				.filter('tw-verbatim, tw-expression, '
 					/*
-						Also, remove nodes that have collapsed=false on their parent elements,
+						Also, remove nodes that have collapsing=false on their parent elements,
 						which is currently (June 2015) only used to denote hooks whose contents were (replace:)d from
 						outside the collapsing syntax - e.g. {[]<1|}(replace:?1)[Good  golly!]
 					*/
@@ -277,18 +437,18 @@ define([
 			We need to keep track of what the previous and next exterior text nodes are,
 			but only if they were also inside a <tw-collapsed>.
 		*/
-		let beforeNode = elem.prevTextNode();
+		let beforeNode = prevParentTextNode(elem);
 		if (!$(beforeNode).parents('tw-collapsed').length) {
 			beforeNode = null;
 		}
-		let afterNode = elem.nextTextNode();
+		let afterNode = nextParentTextNode(elem);
 		if (!$(afterNode).parents('tw-collapsed').length) {
 			afterNode = null;
 		}
 		/*
 			- If the node contains <br>, replace with a single space.
 		*/
-		Utils.findAndFilter(elem, 'br:not([data-raw])')
+		elem.findAndFilter('br:not([data-raw])')
 			.filter(noVerbatim)
 			.replaceWith(document.createTextNode(" "));
 		/*
@@ -366,17 +526,14 @@ define([
 		elem[0] && supportsNormalize() && elem[0].normalize();
 	}
 	
-	/**
+	/*
 		A live hook is one that has the (live:) macro attached.
 		It repeatedly re-renders, allowing a passage to have "live" behaviour.
 		
 		This is exclusively called by runExpression().
 		
-		@method runLiveHook
-		@private
-		@param {Function} sensor The sensor function.
-		@param {jQuery} target The <tw-hook> that the sensor is connected to.
-		@param {Number} delay The timeout delay.
+		@param {jQuery} The <tw-hook>.
+		@param {Number} The timeout delay.
 	*/
 	function runLiveHook(target, delay) {
 		/*
@@ -433,19 +590,20 @@ define([
 	}
 	
 	Section = {
-		/**
+		/*
 			Creates a new Section which inherits from this one.
 			Note: while all Section use the methods on this Section prototype,
 			there isn't really much call for a Section to delegate to its
 			parent Section.
 			
-			@method create
-			@param {jQuery} newDom The DOM that comprises this section.
+			@param {jQuery} The DOM that comprises this section.
 			@return {Section} Object that inherits from this one.
 		*/
 		create(dom) {
 			// Just some overweening type-checking.
-			Utils.assert(dom instanceof $ && dom.length === 1);
+			if(!(dom instanceof $ && dom.length === 1)) {
+				Utils.impossible('Section.create','called with no DOM element');
+			}
 			
 			/*
 				Install all of the non-circular properties.
@@ -466,14 +624,19 @@ define([
 					The expression stack is an array of plain objects,
 					each housing runtime data that is local to the expression being
 					evaluated. It is used by macros such as "display" and "if" to
-					keep track of prior evaluations - e.g. display loops, else().
+					keep track of prior evaluations - e.g. display loops, (else:).
+					Its objects currently are allowed to possess:
+					- lastHookShown: Boolean
+					- tempVariables: VarScope
 					
 					render() pushes a new object to this stack before
 					running expressions, and pops it off again afterward.
 				*/
 				stack: [],
 				/*
-					This is an enchantments stack. I'll explain later.
+					This is an enchantments stack. Enchantment objects (created by macros
+					such as (click:)) are tracked here to ensure that post-hoc permutations
+					of this enchantment's DOM are also enchanted correctly.
 				*/
 				enchantments: []
 			});
@@ -485,36 +648,22 @@ define([
 			return ret;
 		},
 		
-		/**
+		/*
 			A quick check to see if this section's DOM is connected to the
 			story's DOM.
 			Currently only used by recursiveSensor().
-			
-			@method inDOM
 		*/
 		inDOM() {
 			return $(Utils.storyElement).find(this.dom).length > 0;
 		},
-
-		/**
-			This method runs Utils.$ (which is the $ function filtering out transition-out
-			elements) with the dom as the context.
-			
-			@method $
-		*/
-		$(str) {
-			return Utils.$(str, this.dom);
-		},
 		
-		/**
+		/*
 			This function allows an expression of TwineMarkup to be evaluated as data, and
 			determine the text within it.
 			This is currently only used by runLink, to determine the link's passage name.
-		
-			@method evaluateTwineMarkup
-			@private
+
 			@param {String} expr
-			@param {String|jQuery} text, or a <tw-error> element.
+			@return {String|jQuery} text, or a <tw-error> element.
 		*/
 		evaluateTwineMarkup(expr) {
 			/*
@@ -534,6 +683,9 @@ define([
 			
 			/*
 				But first!! Pull out any errors that were generated.
+				We return the plain <tw-error> elements in order to save re-creating
+				them later in the pipeline, even though it makes the type signature of
+				this function somewhat #awkward.
 			*/
 			let errors;
 			if ((errors = p.find('tw-error')).length > 0) {
@@ -542,56 +694,7 @@ define([
 			return p.text();
 		},
 		
-		/**
-			This method takes a selector string and selects hooks - usually single <tw-hook>s,
-			but also "pseudo-hooks", consecutive text nodes that match the selector -
-			querying only this section's DOM and all above it.
-			
-			This is most commonly invoked by TwineScript's desugaring of the HookRef
-			syntax (e.g. "?cupboard" becoming "section.selectHook('?cupboard')").
-			
-			@method selectHook
-			@param {String} selectorString
-			@return {HookSet|PseudoHookSet}
-		*/
-		selectHook(selectorString) {
-			/*
-				If a HookSet or PseudoHookSet was passed in, return it unmodified.
-				TODO: Should this be a bug?
-			*/
-			if (HookSet.isPrototypeOf(selectorString)
-				|| PseudoHookSet.isPrototypeOf(selectorString)) {
-				return selectorString;
-			}
-			switch(HookUtils.selectorType(selectorString)) {
-				case "hookRef": {
-					return HookSet.create(this, selectorString);
-				}
-				case "html": {
-					/*
-						This should be rewritten to account for more thorough HTML search
-						strings, such as:
-						<class="grault">
-						<id="grault">
-					*/
-					return Utils.findAndFilter(
-						/*
-							This selects only elements inside this section, plus the <tw-story> element.
-							This ensures stretchtext remains hygenically scoped, even though the
-							most recent passage decides the entire <tw-story>'s formatting.
-						*/
-						this.dom.add(Utils.storyElement),
-						selectorString.slice(1,-1)
-					);
-				}
-				case "string": {
-					return PseudoHookSet.create(this, selectorString);
-				}
-			}
-			return null;
-		},
-		
-		/**
+		/*
 			Renders the given TwineMarkup code into a given element,
 			transitioning it in. Changer functions can be provided to
 			modify the ChangeDescriptor object that controls how the code
@@ -602,32 +705,24 @@ define([
 			render TwineMarkup into <tw-expression>s (by runExpression())
 			and <tw-hook>s (by render() and runLiveHook()).
 			
-			@method renderInto
-			@param {String} code The TwineMarkup code to render into the target.
-			@param target The render destination. Usually a HookSet, PseudoHookSet or jQuery.
-			@param {Function|Array} [changers] The changer function(s) to run.
+			@param {String} The TwineMarkup code to render into the target.
+			@param The render destination. Usually a HookSet or jQuery.
+			@param [changers] The changer function(s) to run.
 			@return {Boolean} Whether the ChangeDescriptors enabled the rendering
 				(i.e. no (if:false) macros or such were present).
 		*/
-		renderInto(source, target, changers) {
+		renderInto(source, target, ...changers) {
 			/*
 				This is the ChangeDescriptor that defines this rendering.
 			*/
-			const desc = ChangeDescriptor.create({ target, source, });
-				
-			/*
-				Define an additional desc property linking it back to this section.
-				This is used by enchantment macros to determine where to register
-				their enchantments to.
-			*/
-			desc.section = this;
+			const desc = ChangeDescriptor.create({ target, source, section: this});
 			
 			/*
 				Run all the changer functions.
 				[].concat() wraps a non-array in an array, while
 				leaving arrays intact.
 			*/
-			changers && [].concat(changers).forEach((changer) => {
+			changers.forEach((changer) => {
 				/*
 					If a non-changer object was passed in (such as from
 					specificEnchantmentEvent()), assign its values,
@@ -635,7 +730,7 @@ define([
 					Honestly, having non-changer descriptor-altering objects
 					is a bit displeasingly rough-n-ready, but it's convenient...
 				*/
-				if (!changer || !changer.changer) {
+				if (!changer.changer) {
 					Object.assign(desc, changer);
 				}
 				else {
@@ -644,131 +739,152 @@ define([
 			});
 			
 			/*
-				As you know, in TwineScript a pseudo-hook selector is just a
-				raw string. Such strings are passed directly to macros, and,
-				at that point of execution inside TwineScript.eval, they don't
-				have access to a particular section to call selectHook() from.
-				
-				So, we currently defer creating an array from the selector string
-				until just here.
-			*/
-			if (typeof desc.target === "string") {
-				desc.target = this.selectHook(desc.target);
-			}
-			
-			/*
-				If there's no target, something incorrect has transpired.
-			*/
-			if (!desc.target) {
-				Utils.impossible("Section.renderInto",
-					"ChangeDescriptor has source but not a target!");
-				return false;
-			}
-			
-			/*
-				This stores the returned DOM created by rendering the changeDescriptor.
-			*/
-			let dom = $();
-			
-			/*
 				Infinite regress can occur from a couple of causes: (display:) loops, or evaluation loops
 				caused by something as simple as (set: $x to "$x")$x.
 				So here's a rudimentary check: bail if the stack length has now proceeded over 50 levels deep.
 			*/
 			if (this.stack.length >= 50) {
-				dom = TwineError.create("infinite", "Printing this expression may have trapped me in an infinite loop.")
+				TwineError.create("infinite", "Printing this expression may have trapped me in an infinite loop.")
 					.render(target.attr('title')).replaceAll(target);
 			}
-			/*
-				Otherwise, render the source into the target.
-				
-				When a non-jQuery is the target in the descriptor, it is bound to be
-				a HookSet or PseudoHookSet, and each word or hook within that set
-				must be rendered separately. This simplifies the implementation
-				of render() considerably.
-			*/
-			else if (!(desc.target instanceof $)) {
-				desc.target.forEach((e) => {
-					/*
-						Generate a new descriptor which has the same properties
-						(rather, delegates to the old one via the prototype chain)
-						but has just this hook/word as its target.
-						Then, render using that descriptor.
-					*/
-					dom = dom.add(desc.create({ target: e }).render());
-				});
-			}
-			else {
+
+			const renderAndExecute = (desc, stackObject) => {
 				/*
-					Now, run the changer.
+					Run the changer, and get all the newly rendered elements.
 				*/
-				dom = desc.render();
-			}
-			
-			/*
-				Before executing the expressions, put a fresh object on the
-				expression data stack.
-			*/
-			this.stack.unshift(Object.create(null));
-			
-			/*
-				This provides (sigh) a reference to this object usable by the
-				inner doExpressions function, below.
-			*/
-			const section = this;
+				const dom = desc.render();
+				
+				/*
+					Put the passed-in object on the data stack.
+				*/
+				this.stack.unshift(stackObject);
+				
+				/*
+					This provides (sigh) a reference to this object usable by the
+					inner doExpressions function, below.
+				*/
+				const section = this;
+
+				/*
+					Execute the expressions immediately.
+				*/
+				
+				dom.findAndFilter(Selectors.hook + ',' + Selectors.expression)
+						.each(function doExpressions() {
+					const expr = $(this);
+					
+					switch(expr.tag()) {
+						case Selectors.hook:
+						{
+							/*
+								First, hidden hooks should not be rendered, and instead stash
+								their source as "hiddenSource" data for macros to activate
+								later.
+							*/
+							if (expr.attr('hidden')) {
+								expr.removeAttr('hidden');
+								expr.data('hiddenSource', expr.popAttr('source'));
+							}
+							/*
+								Now we can render visible hooks.
+								Note that hook rendering may be triggered early by attached
+								expressions, so a hook lacking a 'source' attr may have
+								already been rendered.
+							*/
+							if (expr.attr('source')) {
+								section.renderInto(expr.popAttr('source'), expr);
+							}
+							/*
+								If the hook's render contained an earlyexit
+								expression (see below), halt here also.
+							*/
+							if (expr.find('[earlyexit]').length) {
+								return false;
+							}
+							break;
+						}
+						case Selectors.expression:
+						{
+							if (expr.attr('js')) {
+								/*
+									If this returns false, then the entire .each() loop
+									will terminate, thus halting expression evaluation.
+								*/
+								const result = runExpression.call(section, expr);
+								if (result === "earlyexit") {
+									dom.attr('earlyexit', true);
+									return false;
+								}
+								return result;
+							}
+						}
+					}
+				});
+
+				/*
+					Special case for hooks inside existing collapsing syntax:
+					their whitespace must collapse as well.
+					(This may or may not change in a future version).
+					
+					Important note: this uses the **original** target, not desc.target,
+					to determine if it's inside a <tw-collapsed>. This means that
+					{(replace:?1)[  H  ]} will always collapse the affixed hook regardless of
+					where the ?1 hook is.
+				*/
+				if (dom.length && target instanceof $ && target.is(Selectors.hook)
+						&& target.parents('tw-collapsed').length > 0) {
+					collapse(dom);
+				}
+				
+				dom.findAndFilter(Selectors.collapsed).each(function() {
+					collapse($(this));
+				});
+				
+				/*
+					After evaluating the expressions, pop the passed-in data stack object (and its scope).
+				*/
+				this.stack.shift();
+			};
 
 			/*
-				Execute the expressions immediately.
+				The temp variable scope of the rendered DOM inherit from the current
+				stack, or, if absent, the base VarScope class.
 			*/
-			
-			Utils.findAndFilter(dom, Selectors.hook + ',' + Selectors.expression)
-					.each(function doExpressions() {
-				const expr = $(this);
-				
-				switch(expr.tag()) {
-					case Selectors.hook:
-					{
-						if (expr.attr('source')) {
-							section.renderInto(expr.attr('source'), expr);
-							expr.removeAttr('source');
-						}
-						break;
-					}
-					case Selectors.expression:
-					{
-						/*
-							If this returns false, then the entire .each() loop
-							will terminate, thus halting expression evaluation.
-						*/
-						return runExpression.call(section, expr);
-					}
+			const tempVariables = Object.create(this.stack.length ?  this.stack[0].tempVariables : VarScope);
+			/*
+				If the descriptor features a loopVar, we must loop - that is, render and execute once for
+				each value in the loopVars, assigning the value to their temp. variable names in a new data stack per loop.
+
+				For a loopVars such as {
+					a: [1,2,3],
+					b: [5,6],
+				},
+				the created tempVariables objects should be these two:
+				{ a: 1, b: 5 },
+				{ a: 2, b: 6 }.
+			*/
+			if (Object.keys(desc.loopVars).length) {
+				// Copy the loopVars, to avoid permuting the descriptor.
+				const loopVars = Object.assign({}, desc.loopVars);
+				// Find the shortest loopVars array, and iterate that many times ()
+				let i = Math.min(...Object.keys(loopVars).map(name => loopVars[name].length));
+
+				/*jshint -W083 */
+				for(; i > 0; i -= 1) {
+					renderAndExecute(desc, {
+						tempVariables: Object.keys(loopVars).reduce((a,name) => {
+							a[name] = loopVars[name].shift();
+							return a;
+						}, Object.create(tempVariables)),
+					});
 				}
-			});
-			
-			/*
-				Special case for hooks inside existing collapsing syntax:
-				their whitespace must collapse as well.
-				(This may or may not change in a future version).
-				
-				Important note: this uses the **original** target, not desc.target,
-				to determine if it's inside a <tw-collapsed>. This means that
-				{(replace:?1)[  H  ]} will always collapse the affixed hook regardless of
-				where the ?1 hook is.
-			*/
-			if (dom.length && target instanceof $ && target.is(Selectors.hook)
-					&& target.parents('tw-collapsed').length > 0) {
-				collapse(dom);
 			}
-			
-			Utils.findAndFilter(dom, Selectors.collapsed).each(function() {
-				collapse($(this));
-			});
-			
 			/*
-				After evaluating the expressions, pop the expression data stack.
-				The data is purely temporary and can be safely discarded.
+				Otherwise, just render and execute once normally.
 			*/
-			this.stack.shift();
+			else {
+				renderAndExecute(desc, { tempVariables });
+			}
 			
 			/*
 				Finally, update the enchantments now that the DOM is modified.
@@ -787,11 +903,9 @@ define([
 			return desc.enabled;
 		},
 		
-		/**
+		/*
 			Updates all enchantments in the section. Should be called after every
 			DOM manipulation within the section (such as, at the end of .render()).
-
-			@method updateEnchantments
 		*/
 		updateEnchantments() {
 			this.enchantments.forEach((e) => {

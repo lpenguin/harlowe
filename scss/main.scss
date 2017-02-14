@@ -1,25 +1,14 @@
-/*
-	This toggles compatibility with 1.x.x Harlowe.
-*/
-$version: 1;
+$color: white;
+$background-color: black;
 
 /*
-	<html> controls the background of the page.
-	Given that the text colour is intimately connected to the background,
-	this also controls the text colour.
-	This element can be styled by setting a ChangerCommand to page.body
+	<html> should be left alone, except where needed to accomodate <tw-story>.
 */
 html {
-	font: 100% Georgia, serif;
 	margin: 0;
-	background-color: transparent;
-	color: #000;
 	// This allows <tw-story> to cover the entire page
 	height:100%;
 	overflow-x:hidden;
-	
-	// Use the more intuitive box model.
-	box-sizing: border-box;
 }
 /*
 	This enables border-box on every element by default, unless overridden
@@ -34,11 +23,8 @@ html {
 // This is just a reset.
 body {
 	margin: 0;
-	background-color: transparent;
-	@if $version == 2 {
-		// This allows <tw-story> to cover the entire page
-		height:100%;
-	}
+	// This allows <tw-story> to cover the entire page
+	height:100%;
 }
 
 /*
@@ -51,51 +37,37 @@ tw-storydata {
 
 /*
 	The <tw-story> element houses all of the <tw-passage>s.
+	This element can be styled by setting a ChangerCommand to ?page
 */
 tw-story {
 	@include flexbox;
 	@include flex-direction(column);
 	
-	width: 60%;
-	@if $version == 2 {
-		width: 100%;
-		height: 100%;
-	}
+	font: 100% Georgia, serif;
+	// Use the more intuitive box model.
+	box-sizing: border-box;
+
 	/*
-		This is the base font size, which is
-		permuted below.
+		Instead of a 60% width, this uses 40% horizontal padding (applied below).
 	*/
-	//TODO: Change to rem for 2.0.0
+	width: 100%;
+	min-height: 100%;
+	/*
+		This is the base font size, which is permuted below.
+	*/
 	$font-size: 1.5em;
-	@if $version == 2 {
-		$font-size: 1.5rem;
-	}
 	
 	font-size:   $font-size;
 	line-height: $font-size;
 	
 	/*
-		These responsive degradations are based off
-		the "ideal" width of the page (1920px).
-	*/
-	$max-width: 1280px;
-	@media screen and (max-width: $max-width * 0.8) {
-		font-size: $font-size * 0.8;
-	}
-	@media screen and (max-width: $max-width * 0.7) {
-		font-size: $font-size * 0.7;
-	}
-	@media screen and (max-width: $max-width * 0.6) {
-		font-size: $font-size * 0.6;
-	}
-	/*
 		The <tw-story>'s default distance from the top and bottom of the page is 5%.
 	*/
-	margin: 5% auto;
-	@if $version == 2 {
-		padding: 5% 20%;
-		margin: 0;
-	}
+	padding: 5% 20%;
+	margin: 0;
+
+	background-color: $background-color;
+	color: $color;
 }
 
 /*
@@ -103,6 +75,13 @@ tw-story {
 */
 tw-passage {
 	display: block;
+}
+
+/* This causes consecutive line breaks to consume less height than they normally would. */
+br + br {
+	display:block;
+	height: 0;
+	margin: 0.8ex 0;
 }
 
 /*
@@ -139,6 +118,12 @@ tw-icon {
 	tw-icon    : the undo button
 */
 
+// This ensures that hooks styled with borders, etc. won't be visible if they have their
+// contents suppressed by an (if:) macro.
+tw-hook:empty, tw-expression:empty {
+	display:none;
+}
+
 tw-error {
 	display: inline-block;
 	border-radius: 0.2em;
@@ -147,11 +132,11 @@ tw-error {
 	cursor: help;
 	&.error {
 		background-color: hsla(312, 72%, 55%, 0.4); // A demure pink
-		color:black;
+		color:$color;
 	}
 	&.warning {
 		background-color: hsla(30, 72%, 55%, 0.4); // A stained orange
-		color:black;
+		color:$color;
 		display: none; // Only available in debug mode.
 		.debug-mode & {
 			display: inline;

@@ -1,6 +1,6 @@
 "use strict";
-define(['jquery', 'utils', 'renderer'], ($, {assertOnlyHas, impossible, transitionIn}, {exec}) => {
-	/**
+define(['jquery', 'utils', 'renderer', 'datatypes/hookset'], ($, {assertOnlyHas, impossible, transitionIn}, {exec}, HookSet) => {
+	/*
 		When a new Section (generally a hook or expression) is about to be rendered,
 		a ChangeDescriptor is created and fed into all of the ChangerCommands which are
 		attached to the Section. They mutate the ChangeDescriptor, and the result describes
@@ -19,25 +19,35 @@ define(['jquery', 'utils', 'renderer'], ($, {assertOnlyHas, impossible, transiti
 		
 		// {String} source            The hook's source, which can be finagled before it is run.
 		source:            "",
+
+		// {String} innerSource       Used by (link:), this stores the original source if some kind
+		//                            of "trigger element" needs to be rendered in its place initially.
+		innerSource:       "",
 		
 		// {Boolean} enabled          Whether or not this code is enabled.
 		//                            (Disabled code won't be used until something enables it).
 		enabled:          true,
 		
-		// {jQuery} target            Where to render the source, if not the hookElement.
+		// {jQuery|HookSet}           Where to render the source, if not the hookElement.
 		target:           null,
 		
 		// {String} append            Which jQuery method name to append the source to the dest with.
 		append:           "append",
+
+		// {[newTarget]} newTargets   Alternative targets (which are {target,append} objects) to use instead of the original.
+		newTargets:       null,
 		
 		// {String} [transition]      Which built-in transition to use.
 		transition:       "instant",
 		
-		// {Number} [transitionTime]  The duration of the transition, in ms. CURRENTLY UNUSED.
-		transitionTime:   0,
+		// {Number|Null} [transitionTime]  The duration of the transition, in ms, or null if the default speed should be used.
+		transitionTime:   null,
+
+		// {Object} loopVars          An object of {temp variable : values array} pairs, which the source should loop over.
+		//                            Used only by (for:)
+		loopVars:         null,
 		
 		// {Array} styles             A set of CSS styles to apply inline to the hook's element.
-		//                            Used by (position-x:), etc.
 		styles:           null,
 		
 		// {Array} [attr]             Array of objects of attributes to apply to the <tw-expression> using $.fn.attr().
@@ -55,7 +65,26 @@ define(['jquery', 'utils', 'renderer'], ($, {assertOnlyHas, impossible, transiti
 		//                            their enchantments to.
 		section:          null,
 		
-		/**
+		/*
+			This method produces a short list of properties this descriptor has, which were altered by the changers
+			run against it (or supplied to it at creation).
+			It's used by (hover-style:) to ensure that the changers it receives only affect styles.
+		*/
+		summary() {
+			return [
+				"source", "innerSource", "enabled", "target", "append", "newTargets",
+				"transition", "transitionTime"
+			]
+			.filter(e => this.hasOwnProperty(e))
+			.concat([
+				this.attr.length && "attr",
+				this.styles.length && "styles",
+				Object.keys(this.loopVars).length && "loopVars",
+				Object.keys(this.data).length && "data",
+			].filter(Boolean));
+		},
+
+		/*
 			This creates an inheriting ChangeDescriptor, and is basically
 			another shorthand for the old create-assign pattern.
 			ChangeDescriptors can delegate to earlier descriptors if need be.
@@ -66,8 +95,10 @@ define(['jquery', 'utils', 'renderer'], ($, {assertOnlyHas, impossible, transiti
 			const ret = Object.assign(Object.create(this), {
 					// Of course, we can't inherit array contents from the prototype chain,
 					// so we have to copy the arrays.
-					attr:   [].concat(this.attr   || []),
-					styles: [].concat(this.styles || []),
+					attr:          [].concat(this.attr          || []),
+					styles:        [].concat(this.styles        || []),
+					loopVars:      this.loopVars || {},
+					data:          this.data || {},
 				}, properties);
 			/*
 				If a ChangerCommand was passed in, run it.
@@ -78,64 +109,165 @@ define(['jquery', 'utils', 'renderer'], ($, {assertOnlyHas, impossible, transiti
 			return ret;
 		},
 		
-		/**
+		/*
 			This method applies the style/attribute/data entries of this descriptor
 			to the target HTML element.
 		*/
 		update() {
-			const {target} = this;
+			const {section, newTargets} = this;
+			let {target} = this;
+			
 			/*
-				Apply the style attributes to the target element.
+				This loop iterates over every DOM element that the target
+				ultimately includes.
 			*/
-			if (Array.isArray(this.styles)) {
+			const forEachTarget = (elem) => {
 				/*
-					Some styles depend on the pre-existing CSS to calculate their values
-					(for instance, "blurrier" converts the dominant text colour into a
-					text shadow colour, changing the text itself to transparent.)
-					If the user has complicated story CSS, it's not possible
-					to determine what colour should be used for such a hook
-					until it's connected to the DOM. So, now this .css call is deferred
-					for 1 frame, which should (._.) be enough time for it to become attached.
+					Apply the style attributes to the element.
 				*/
-				setTimeout(() => target.css(Object.assign(...[{}].concat(this.styles))));
-			}
+				if (Array.isArray(this.styles) && this.styles.length > 0) {
+					/*
+						Some styles depend on the pre-existing CSS to calculate their values
+						(for instance, "blurrier" converts the dominant text colour into a
+						text shadow colour, changing the text itself to transparent.)
+						If the user has complicated story CSS, it's not possible
+						to determine what colour should be used for such a hook
+						until it's connected to the DOM. So, now this .css call is deferred
+						for 1 frame, which should (._.) be enough time for it to become attached.
+					*/
+					setTimeout(() => elem.css(Object.assign(...[{}].concat(this.styles))));
+				}
+				/*
+					If HTML attributes were included in the changeDescriptor, apply them now.
+				*/
+				if (this.attr) {
+					this.attr.forEach(e => elem.attr(e));
+				}
+				/*
+					Same with jQuery data (such as functions to call in event of, say, clicking).
+				*/
+				if (this.data) {
+					elem.data(this.data);
+				}
+			};
+
 			/*
-				If HTML attributes were included in the changerDescriptor, apply them now.
+				forEachTarget should be run on every target element, be there a set or a single one.
+				As in render(), the newTargets should be used instead of the original if present.
 			*/
-			if (this.attr) {
-				this.attr.forEach(e => target.attr(e));
+			if (Array.isArray(newTargets) && newTargets.length) {
+				target = newTargets.map(t => t.target);
 			}
-			/*
-				Same with jQuery data (such as functions to call in event of, say, clicking).
-			*/
-			if (this.data) {
-				target.data(this.data);
-			}
+
+			[].concat(target).forEach(target => {
+				if (HookSet.isPrototypeOf(target)) {
+					target.forEach(section, forEachTarget);
+				}
+				else {
+					/*
+						It's OK for length>1 jQuery collections to be treated as single
+						elements here, because the methods called on them (data(), attr(), css())
+						work regardless of number of contained elements.
+					*/
+					forEachTarget(target);
+				}
+			});
 		},
 		
-		/**
-			This method renders TwineMarkup, executing the TwineScript expressions
-			within. The expressions only have visibility
-			within this passage.
+		/*
+			This method renders TwineMarkup, executing the expressions
+			within. The expressions only have visibility within this passage.
 			
-			@method render
 			@return {jQuery} The rendered passage DOM.
 		*/
 		render() {
 			const
-				{target, source, transition, enabled} = this;
+				{source, transition, transitionTime, enabled, section, newTargets} = this;
 			let
-				{append} = this;
+				{target, append} = this;
 			
 			assertOnlyHas(this, changeDescriptorShape);
-			
+
 			/*
-				First, a quick check to see if this is enabled and with a target.
-				If not, assume nothing needs to be done, and return.
+				First: if this isn't enabled, nothing needs to be rendered. However,
+				the source needs to be saved in case the (show:) macro is used on this.
+				We store it as "hiddenSource" in every element's jQuery data store.
 			*/
-			if (!target || !enabled) {
+			if (!enabled || (target.popAttr('hidden') !== undefined)) {
+				/*
+					You may wonder if this should use the descriptor's 'innerSource', which is used by
+					(link:) to store the "inner" source behind the link's <tw-link> source. What should
+					happen is that when the hidden hook is shown, the link's <tw-link> is shown, which then
+					remains clickable and able to reveal the innerSource.
+
+					Also, this should not use newTargets, as a construction of the form "(hide:)(replace:?b)|a>[]"
+					followed by (show:?a) should result in ?a appearing, instead of nothing happening. (And
+					(show:?b) shouldn't do anything, either.)
+				*/
+				ChangeDescriptor.create({target,data:{hiddenSource:source}}).update();
 				return $();
 			}
+
+			/*
+				newTargets are targets specified by revision macros (such as ?foo in (replace:?foo))
+				which should be used instead of the original.
+			*/
+			if (Array.isArray(newTargets) && newTargets.length) {
+				target = newTargets;
+			}
+			/*
+				If there's no target (after modifying newTargets), something incorrect has transpired.
+			*/
+			if (!target) {
+				impossible("ChangeDescriptor.render",
+					"ChangeDescriptor has source but not a target!");
+				return $();
+			}
+			/*
+				For "collection" targets (a HookSet, newTarget array, or a length>1 jQuery), each target must be rendered separately,
+				by performing recursive render() calls. Then, return a jQuery containing every created element,
+				so that consumers like Section.renderInto() can modify all of their <tw-expressions>, etc.
+			*/
+			let dom = $();
+			const renderAll = append => target => {
+				/*
+					Generate a new descriptor which has the same properties
+					(rather, delegates to the old one via the prototype chain)
+					but has just this hook/word as its target.
+					Then, render using that descriptor.
+				*/
+				dom = dom.add(this.create({ target, append, newTargets:null }).render());
+			};
+			[].concat(target).forEach(function loop(target, _, __, append_ = append) {
+				// Is it a HookSet,
+				if (HookSet.isPrototypeOf(target)) {
+					target.forEach(section, renderAll(append_));
+				}
+				// a jQuery of <tw-hook> or <tw-expression> elements,
+				else if (target.jquery && target.length > 1) {
+					Array.from(target).map($).forEach(renderAll(append_));
+				}
+				// or a newTarget object?
+				else if (target.target && target.append) {
+					/*
+						the newTarget's "target" property may be a HookSet or jQuery.
+						To handle this, we unwrap the newTarget object and pass its "append"
+						value to a recursive call to "loop"
+					*/
+					loop(target.target, _, __, target.append);
+				}
+			});
+			/*
+				Return the compiled DOM, or return an empty set if the target is a collection
+				and the above loop didn't produce anything.
+			*/
+			if (dom.length || Array.isArray(target) || HookSet.isPrototypeOf(target)) {
+				return dom;
+			}
+			/*
+				Henceforth, the target is a single jQuery.
+			*/
+
 			/*
 				Check to see that the given jQuery method in the descriptor
 				actually exists, and potentially tweak the name if it does not.
@@ -156,8 +288,8 @@ define(['jquery', 'utils', 'renderer'], ($, {assertOnlyHas, impossible, transiti
 					hook, then I'd change append to "replaceWith".
 				*/
 				else {
-					impossible("Section.render", "The target jQuery doesn't have a '" + append + "' method.");
-					return;
+					impossible("Section.render", "The target doesn't have a '" + append + "' method.");
+					return $();
 				}
 			}
 			/*
@@ -182,7 +314,7 @@ define(['jquery', 'utils', 'renderer'], ($, {assertOnlyHas, impossible, transiti
 				early-exit from this method.
 			*/
 			
-			const dom = $(source &&
+			dom = $(source &&
 				$.parseHTML(exec(source), document, true));
 			
 			/*
@@ -229,7 +361,8 @@ define(['jquery', 'utils', 'renderer'], ($, {assertOnlyHas, impossible, transiti
 						This is #awkward, I know...
 					*/
 					append === "replace" ? target : dom,
-					transition
+					transition,
+					transitionTime
 				);
 			}
 			

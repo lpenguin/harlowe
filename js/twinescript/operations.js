@@ -2,21 +2,43 @@
 define([
 	'state',
 	'datatypes/colour',
-	'internaltypes/assignmentrequest',
+	'datatypes/assignmentrequest',
 	'utils/operationutils',
 	'internaltypes/twineerror',
 ],
-(State, Colour, AssignmentRequest, {isObject, collectionType, coerceToString, is, contains, objectName}, TwineError) => {
-	/**
+(State, Colour, AssignmentRequest, {isObject, collectionType, coerceToString, is, clone, unique, contains, typeName, objectName}, TwineError) => {
+	/*
 		Operation objects are a table of operations which TwineScript proxies
 		for/sugars over JavaScript. These include basic fixes like the elimination
 		of implicit type coercion and the addition of certain early errors, but also
 		includes support for new TwineScript operators, overloading of old operators,
 		and other things.
-		
-		@class Operations
 	*/
 	let Operations,
+		/*d:
+			it keyword
+
+			This keyword is a shorthand for the closest leftmost value in an expression. It lets you write
+			`(if: $candles < 2 and it > 5)` instead of `(if: $candles < 2 and $candles > 5)`, or `(set: $candles to it + 3)`
+			instead of `(set: $candles to $candles + 3)`. (You can't, however, use it in a (put:) or (move:) macro:
+			`(put:$red + $blue into it)` is invalid.)
+
+			Since `it` uses the closest leftmost value, `(print: $red > 2 and it < 4 and $blue > 2 and it < 4)` is the same as
+			`(print: $red > 2 and $red < 4 and $blue > 2 and $blue < 4)`.
+
+			`it` is case-insensitive: `IT`, `iT` and `It` are all acceptable as well.
+
+			In some situations, the `it` keyword will be *inserted automatically* by Harlowe when the story runs. If you write an
+			incomplete comparison expression where the left-hand side is missing, like `(print: $red > 2 and < 4)`,
+			then, when running, the `it` keyword will automatically be inserted into the absent spot - producing, in this case,
+			`(print: $red > 2 and it < 4)`. Note that in situations where the `it` keyword would not have an obvious value, such as
+			`(print: < 4)`, an error will result nonetheless.
+
+			If the `it` keyword equals a datamap, string, array, or other "collection" data type, then you can access data values
+			using the `its` variant - `(print: $red is 'egg' and its length is 3)` or `(set:$red to its 1st)`. Much like the `'s`
+			operator, you can use computed values with `its` - `(if: $red's length is 3 and its $position is $value)` will work as
+			expected.
+		*/
 		/*
 			The "it" keyword is bound to whatever the last left-hand-side value
 			in a comparison operation was. Since its scope is so ephemeral,
@@ -114,14 +136,44 @@ define([
 	}
 	
 	/*
-		Converts a function to set It after it is done.
+		Converts a function to handle determiners ("any", "all") and to set It after it is done.
 		@return {Function}
 	*/
 	function comparisonOp(fn) {
-		return (left, right) => {
+		const compare = (left, right) => {
+			let error;
+			if ((error = TwineError.containsError(left, right))) {
+				return error;
+			}
 			It = left;
+			if (left.determiner) {
+				const all = left.determiner === "all";
+				/*
+					Normally we'd use Array#every and Array#some here, but we also need
+					to pull out any TwineErrors which are produced doing each of these
+					comparisons. So, these looping methods are expanded as follows.
+				*/
+				return left.array.reduce((result, e) => {
+					let error, next = compare(e, right);
+					if ((error = TwineError.containsError(result, next))) {
+						return error;
+					}
+					return (all ? result && next : result || next);
+				}, all);
+			}
+			else if (right.determiner) {
+				const all = right.determiner === "all";
+				return right.array.reduce((result, e) => {
+					let error, next = compare(left, e);
+					if ((error = TwineError.containsError(result, next))) {
+						return error;
+					}
+					return (all ? result && next : result || next);
+				}, all);
+			}
 			return fn(left, right);
 		};
+		return compare;
 	}
 
 	const andOrNotMessage =
@@ -152,10 +204,31 @@ define([
 			*/
 			ret.Identifiers = {
 
+				/*
+					This signifier is used solely by VarRef to determine if Identifiers is being
+					used as an assignment destination.
+				*/
+				TwineScript_Identifiers: true,
+
 				get it() {
 					return It;
 				},
 				
+				/*d:
+					time keyword
+
+					This keyword evaluates to the number of milliseconds passed since the passage
+					was displayed. Its main purpose is to be used alongside changers
+					such as (live:) or (link:). `(link:"Click")[(if: time > 5s)[...]]`, for instance,
+					can be used to determine if 5 seconds have passed since this passage was displayed,
+					and thus whether the player waited 5 seconds before clicking the link.
+
+					When the passage is initially being rendered, `time` will be 0.
+
+					`time` used in (display:) macros will still produce the time of the host passage, not the
+					contained passage. So, you can't use it to determine how long the (display:)ed passage
+					has been present in the host passage.
+				*/
 				/*
 					The "time" keyword binds to the number of milliseconds since the passage
 					was rendered.
@@ -165,22 +238,39 @@ define([
 					hook's. I believe that the passage is what's called for here.
 				*/
 				get time() {
-					// This is, as far as I know, the only "this" usage in the class.
 					return (Date.now() - section.timestamp);
 				}
-				/*
-					TODO: An author-facing error message for setting time()
-				*/
 			};
 			
 			return ret;
 		},
+
+		/*
+			This is used to implement "elided comparisons", such as (if: $A is $B or $C).
+			The right side, "or $C", is converted to "elidedComparisonOperator('or', 'is', $C)".
+			If $C is boolean, then the expression is considered to be (if: $A is ($B or $C)),
+			as usual. But, if it's not, then it's (if: ($A is $B) or ($A is $C)).
+		*/
+		elidedComparisonOperator(logicalOp, comparisonOp, ...values) {
+			return values.reduce((result, value) => {
+				if (typeof value === 'boolean') {
+					return value;
+				}
+				return Operations[logicalOp](
+					result,
+					Operations[comparisonOp](It, value)
+				);
+			},
+			// This is true when logicalOp is "and", and false for "or" -
+			// that is, the identity values for those operations.
+			logicalOp === "and");
+		},
 		
-		"and": onlyPrimitives("boolean", doNotCoerce((l, r) => l && r), "use 'and' to join", andOrNotMessage),
+		and: onlyPrimitives("boolean", doNotCoerce((l, r) => l && r), "use 'and' to join", andOrNotMessage),
 		
-		"or": onlyPrimitives("boolean", doNotCoerce((l, r) => l || r), "use 'or' to join", andOrNotMessage),
+		or: onlyPrimitives("boolean", doNotCoerce((l, r) => l || r), "use 'or' to join", andOrNotMessage),
 		
-		"not": onlyPrimitives("boolean", e => !e, "use 'not' to invert", andOrNotMessage),
+		not: onlyPrimitives("boolean", e => !e, "use 'not' to invert", andOrNotMessage),
 		
 		"+":  doNotCoerce((l, r) => {
 			/*
@@ -209,9 +299,7 @@ define([
 				return ret;
 			}
 			if (l instanceof Set) {
-				ret = new Set(l);
-				r.forEach((v) => ret.add(v));
-				return ret;
+				return new Set([...l, ...r].filter(unique).map(clone));
 			}
 			/*
 				If a TwineScript object implements a + method, use that.
@@ -242,16 +330,14 @@ define([
 					the right side also be an array. Subtracting 1 element
 					from an array requires it be wrapped in an (a:) macro.
 				*/
-				return l.filter(e => r.indexOf(e) === -1);
+				return l.filter(val1 => !r.some(val2 => is(val1, val2)));
 			}
-			let ret;
 			/*
 				Sets, but not Maps, can be subtracted.
 			*/
 			if (l instanceof Set) {
-				ret = new Set(l);
-				r.forEach(v => ret.delete(v));
-				return ret;
+				const rvals = [...r];
+				return new Set([...l].filter(val1 => !rvals.some(val2 => is(val1, val2))));
 			}
 			if (typeof l === "string") {
 				/*
@@ -260,7 +346,13 @@ define([
 				*/
 				return l.split(r).join('');
 			}
-			return l - r;
+			/*
+				Finally, if it's a number, subtract it.
+			*/
+			if (typeof l === "number") {
+				return l - r;
+			}
+			return TwineError.create("operation", "I can't use - on " + objectName(l) + ".");
 		}),
 		"*":  onlyPrimitives("number", doNotCoerce((l, r) => l * r), "multiply"),
 		"/":  onlyPrimitives("number", doNotCoerce((l, r) => {
@@ -288,6 +380,24 @@ define([
 		isIn: comparisonOp((l,r) => contains(r,l)),
 		
 		/*
+			The only user-produced value which is passed into this operation is the bool -
+			the passVal and failVal are internally supplied.
+		*/
+		where(bool, passVal, failVal) {
+			let err;
+			if ((err = TwineError.containsError(bool))) {
+				return err;
+			}
+			if (typeof bool !== "boolean") {
+				return TwineError.create("operation",
+					"This lambda's 'where' clause must evaluate to true or false, not "
+					+ objectName(bool)
+					+ ".");
+			}
+			return bool ? passVal : failVal;
+		},
+
+		/*
 			This takes a plain value assumed to be an array, and wraps
 			it in a special structure that denotes it to be spreadable.
 			This is created by the spread (...) operator.
@@ -298,7 +408,7 @@ define([
 				spreader: true,
 			};
 		},
-		
+
 		/*
 			And here is the function for creating AssignmentRequests.
 			Because a lot of error checking must be performed, and
@@ -315,20 +425,11 @@ define([
 			if (error) {
 				return error;
 			}
-
-			/*
-				Also refuse if the src is a value which is "unobservable",
-				that is, must not be storable.
-			*/
-			if (src && src.TwineScript_Unobservable) {
-				return TwineError.create("operation",
-					"That type of value can't be stored.");
-			}
 			
 			/*
 				Also refuse if the dest is not, actually, a VarRef.
 			*/
-			if (!isObject(dest) || !("propertyChain" in dest)) {
+			if (!isObject(dest) || !("varref" in dest)) {
 				return TwineError.create("operation",
 					"I can't store a new value inside "
 					+ objectName(dest)
@@ -365,6 +466,15 @@ define([
 				);
 			}
 			return (It = e.get()), e;
+		},
+
+		/*
+			This, however, is more low-level: instead of being directly called from compiled
+			user code, it is called indirectly in order to discreetly mutate the "it" identifier.
+			To underscore that this must not be called from user code, it returns undefined.
+		*/
+		initialiseIt(e) {
+			It = e;
 		},
 	};
 	return Object.freeze(Operations);

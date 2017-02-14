@@ -1,5 +1,5 @@
 "use strict";
-define(['utils'], ({assert}) => {
+define(['utils'], ({assertMustHave}) => {
 	/*
 		AssignmentRequests represent an assignment statement. Different
 		macros may handle this request differently (for instance,
@@ -19,14 +19,14 @@ define(['utils'], ({assert}) => {
 		/*
 			These should normally only appear during type signature error messages.
 		*/
-		TwineScript_TypeName: "an assignment operation",
-		TwineScript_ObjectName: "an assignment operation",
+		TwineScript_TypeName: "a 'to' or 'into' expression",
+		TwineScript_ObjectName: "a 'to' or 'into' expression",
 
-		TwineScript_Unobservable: true,
+		TwineScript_Unstorable: true,
 		
 		create(dest, src, operator) {
 			// Assert: dest is a varRef
-			assert("propertyChain" in dest && "object" in dest);
+			assertMustHave(dest, ["varref"]);
 			
 			return Object.assign(Object.create(this), {
 				dest:              dest,

@@ -1,5 +1,5 @@
 "use strict";
-define(['jquery', 'utils'], ($, {impossible, assert, escape}) => {
+define(['jquery', 'utils'], ($, {impossible, escape}) => {
 	/*
 		TwineErrors are errors created by the TwineScript runtime. They are supplied with as much
 		information as they can, in order to give the author sufficient assistance in
@@ -12,11 +12,10 @@ define(['jquery', 'utils'], ($, {impossible, assert, escape}) => {
 	const errorExplanations = {
 		syntax:        "The markup seems to contain a mistake.",
 		saving:        "I tried to save or load the game, but I couldn't do it.",
-		operation:     "I tried to use an operation on some data, but the data's type was incorrect.",
+		operation:     "I tried to perform an operation on some data, but the data's type was incorrect.",
 		macrocall:     "I tried to use a macro, but its call wasn't written correctly.",
 		datatype:      "I tried to use a macro, but was given the wrong type of data to it.",
 		keyword:       "I was given a keyword in a way that I didn't understand.",
-		changer:       "This is a command to change a hook, but it isn't being used correctly.",
 		infinite:      "I almost ended up doing the same thing over and over, forever.",
 		property:      "I tried to access a value in a string/array/datamap, but I couldn't find it.",
 		unimplemented: "I currently don't have this particular feature. I'm sorry.",
@@ -36,7 +35,9 @@ define(['jquery', 'utils'], ($, {impossible, assert, escape}) => {
 			/*
 				Whatever happens, there absolutely must be a valid explanation from either source.
 			*/
-			assert(explanation || type in errorExplanations);
+			if(!(explanation || type in errorExplanations)) {
+				impossible('TwineError.create','no error explanation given');
+			}
 			
 			return Object.assign(Object.create(this), {
 				/*
@@ -59,7 +60,7 @@ define(['jquery', 'utils'], ($, {impossible, assert, escape}) => {
 			return TwineError.create("javascript", "\u2615 " + error.message);
 		},
 		
-		/**
+		/*
 			In TwineScript, both the runtime (operations.js) and Javascript eval()
 			of compiled code (by compiler.js) can throw errors. They should be treated
 			as equivalent within the engine.
@@ -71,7 +72,6 @@ define(['jquery', 'utils'], ($, {impossible, assert, escape}) => {
 			Maybe in the future, there could be a way to concatenate multiple
 			errors into a single "report"...
 			
-			@method containsError
 			@return {Error|TwineError|Boolean} The first error encountered, or false.
 		*/
 		containsError(...args) {
