@@ -119,6 +119,10 @@ define([
 	*/
 	function comparisonOp(fn) {
 		return (left, right) => {
+			let error;
+			if ((error = TwineError.containsError(left, right))) {
+				return error;
+			}
 			It = left;
 			return fn(left, right);
 		};
@@ -260,7 +264,13 @@ define([
 				*/
 				return l.split(r).join('');
 			}
-			return l - r;
+			/*
+				Finally, if it's a number, subtract it.
+			*/
+			if (typeof l === "number") {
+				return l - r;
+			}
+			return TwineError.create("operation", "I can't use - on " + objectName(l) + ".");
 		}),
 		"*":  onlyPrimitives("number", doNotCoerce((l, r) => l * r), "multiply"),
 		"/":  onlyPrimitives("number", doNotCoerce((l, r) => {

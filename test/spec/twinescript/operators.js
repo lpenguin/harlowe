@@ -145,7 +145,7 @@ describe("twinescript operators", function () {
 		it("compares datamaps by value", function (){
 			expectMarkupToPrint("(print: (datamap:) is (datamap:))","true");
 			expectMarkupToPrint("(print: (datamap:'a',2,'b',4) is (datamap:'b',4,'a',2))","true");
-			expectMarkupToPrint("(print: (datamap:) is (datamap:1))","false");
+			expectMarkupToPrint("(print: (datamap:) is (datamap:1,2))","false");
 			expectMarkupToPrint("(print: (datamap:'a',2,'b',4) is (datamap:'b',4,'a',3))","false");
 		});
 		it("compares datasets by value", function (){
@@ -183,7 +183,7 @@ describe("twinescript operators", function () {
 		it("compares datamaps by value", function (){
 			expectMarkupToPrint("(print: (datamap:) is not (datamap:))","false");
 			expectMarkupToPrint("(print: (datamap:'a',2,'b',4) is not (datamap:'b',4,'a',2))","false");
-			expectMarkupToPrint("(print: (datamap:) is not (datamap:1))","true");
+			expectMarkupToPrint("(print: (datamap:) is not (datamap:1,2))","true");
 			expectMarkupToPrint("(print: (datamap:'a',2,'b',4) is not (datamap:'b',4,'a',3))","true");
 		});
 		it("compares datasets by value", function (){

@@ -242,9 +242,11 @@ define(['macros', 'utils/operationutils', 'internaltypes/twineerror'],
 		// The current time in 12-hour hours:minutes format.
 		currenttime: [() => {
 			const d = new Date(),
-				am = d.getHours() < 12;
+				am = d.getHours() < 12,
+				hr = ((d.getHours() % 12) || 12),
+				mins = (d.getMinutes() < 10 ? "0" : "") + d.getMinutes();
 
-			return d.getHours() % 12 + ":" + d.getMinutes() + " " + (am ? "A" : "P") + "M";
+			return hr + ":" + mins + " " + (am ? "A" : "P") + "M";
 		},
 		null],
 
@@ -283,7 +285,7 @@ define(['macros', 'utils/operationutils', 'internaltypes/twineerror'],
 		/*
 			This function returns a random integer from a to b inclusive.
 		*/
-		random: [(a, b) => {
+		random: [(a, b = 0) => {
 			/*
 				First, throw an error if either of the numbers is not a whole number.
 			*/
@@ -310,15 +312,15 @@ define(['macros', 'utils/operationutils', 'internaltypes/twineerror'],
 		*/
 
 		// Keep "undefined" from being the default text.
-		alert: [(text) => window.alert(text || ""),
+		alert: [(text) => window.alert(text || "") || "",
 			String],
 		prompt: [(text, value) => window.prompt(text || "", value || "") || "",
 			String, String],
 		confirm: [(text) => window.confirm(text || ""),
 			String],
-		openURL: [window.open, String],
-		reload: [window.location.reload.bind(window.location), null],
-		gotoURL: [window.location.assign.bind(window.location), String],
+		openURL: [url => window.open(url) && "", String],
+		reload: [() => window.location.reload() || "", null],
+		gotoURL: [() => window.location.assign() || "", String],
 		pageURL: [() => window.location.href, null],
 		
 		/*

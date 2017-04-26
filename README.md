@@ -2,7 +2,16 @@
 
 Rough documentation is at http://twine2.neocities.org/
 
-###1.2.3 changes (unreleased):
+###1.2.4 changes:
+
+ * `(random:)` now no longer incorrectly errors when given a single whole number instead of two.
+ * `(alert:)`, `(open-url:)`, `(reload:)` and `(goto-url:)` now return empty strings rather than the non-Harlowe value `undefined` (or, for `(open-url:)` a Javascript Window object). This differs slightly from 2.0, which returns more useful command values.
+ * Additionally, backported the following fixes from 2.0.0:
+   * Fixed a bug where comparing a value with an error (such as `2 is (3 + 'X')`) would suppress the error.
+   * Fixed a bug where subtracting non-subtractable values (such as booleans) wouldn't produce an error, instead implicitly converting the values to numbers, and potentially producing the Javascript value `NaN`.
+   * Fixed the bug where `(current-time:)` wouldn't pad the minutes value with a leading 0 when necessary, and '12' was printed as '0'.
+
+###1.2.3 changes:
 
 ####Bugfixes
 
