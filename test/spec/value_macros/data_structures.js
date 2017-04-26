@@ -94,7 +94,7 @@ describe("data structure macros", function () {
 		it("shuffles the positions of the elements in the returned array", function() {
 			expectMarkupToPrint("(print: (range:1,99) is (range:1,99))","true");
 			for(var i = 0; i < 10; i += 1) {
-				expectMarkupToPrint("(print: (shuffled:(range:1,99)) is not (shuffled:(range:1,99)))", "true");
+				expectMarkupToPrint("(print: (shuffled:...(range:1,99)) is not (shuffled:...(range:1,99)))", "true");
 			}
 		});
 	});
