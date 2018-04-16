@@ -134,7 +134,7 @@ define(['jquery', 'macros', 'utils', 'utils/selectors', 'state', 'passages', 'en
 			const next = link.attr('passage-name');
 			if (next) {
 				// TODO: stretchtext
-				Engine.goToPassage(next,false);
+				Engine.goToPassage(next, true);
 				return;
 			}
 			/*
