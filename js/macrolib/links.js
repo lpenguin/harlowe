@@ -82,7 +82,7 @@ define(['jquery', 'macros', 'utils', 'utils/selectors', 'state', 'passages', 'en
 				saveButton.css('visibility', 'hidden');
 				editButton.css('visibility', 'visible');
 
-				const text = editorTextarea.text();
+				const text = editorTextarea.val();
 
 				editorResult.css('display', 'block');
 				editorResult.html(text);
@@ -98,7 +98,6 @@ define(['jquery', 'macros', 'utils', 'utils/selectors', 'state', 'passages', 'en
 				saveButton.css('visibility', 'visible');
 				editButton.css('visibility', 'hidden');
 
-				const text = editorTextarea.val();
 
 				editorResult.css('display', 'none');
 				editorTextarea.css('display', 'block');
@@ -133,6 +132,13 @@ define(['jquery', 'macros', 'utils', 'utils/selectors', 'state', 'passages', 'en
 			*/
 			const next = link.attr('passage-name');
 			if (next) {
+				$(Selectors.internalLink).click(function name(params) {
+					return false;
+				})
+				// $('button').click(function name(params) {
+				// 	console.log('book');
+				// 	return false;
+				// })
 				// TODO: stretchtext
 				Engine.goToPassage(next, true);
 				return;
