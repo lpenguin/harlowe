@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>Story</title>
+    <link rel="stylesheet" type="text/css" href="build/harlowe-css.css">
+    <style>
+        tw-story {
+            background-color: white;
+            color: black;
+        }
+
+        .editor-textarea {
+            width: 300px;
+            height: 100px;
+            font-size: 1.3em;
+            line-height: 1.3em;
+            font: 100% Georgia, serif;
+            display: block;
+            /* background-color: rgba(255,170,0,0.1); */
+            border-style: solid;
+            border-width: 1px;
+            padding-top: 4px;
+        }
+        
+        .editor-result {
+            display: none; 
+            width: 300px; 
+            height: 100px; 
+            background-color: rgba(255,170,0,0.1);
+            border-style: dashed;
+            border-width: 1px;
+        }
+
+        button.editor-edit-button {
+            position: absolute;
+            margin-top: -20px;
+            visibility: hidden;
+        }
+
+        button.editor-save-button {
+            position: absolute;
+            margin-top: -20px;
+        }
+
+
+
+    </style>
+</head>
+
+<body>
+
+    <tw-story></tw-story>
+    <tw-storydata startnode=1>
+        <tw-passagedata pid=1 name=Start>
+            (set: $foo to "bar!")
+            **Success!** Goto: [[End]]            
+            (text-edit: )[Type your text here]
+            (set: $a to 1)
+            (link: "Stake")[(set: $a to $a + 10) $a]
+            (link: "Reveal a")[$a]
+        </tw-passagedata>
+        <tw-passagedata pid=2 name=End>$foo **End**</tw-passagedata>
+    </tw-storydata>
+    <script src="build/harlowe-min.js"></script>
+</body>
+
+</html>

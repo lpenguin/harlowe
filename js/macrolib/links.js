@@ -20,6 +20,95 @@ define(['jquery', 'macros', 'utils', 'utils/selectors', 'state', 'passages', 'en
 		from this <tw-story> handler.
 	*/
 	$(() => $(Utils.storyElement).on(
+		"click.button",
+		"button.editor-save-button",
+		function(){
+			const button = $(this);
+			const parentDiv = button.parent();
+			const event = parentDiv.parent().data('saveEvent');
+			if (event) {
+				event(button, parentDiv);
+				return;
+			}
+		})
+	);
+
+	$(() => $(Utils.storyElement).on(
+		"click.button",
+		"button.editor-edit-button",
+		function () {
+			const button = $(this);
+			const parentDiv = button.parent();
+			const event = parentDiv.parent().data('editEvent');
+			if (event) {
+				event(button, parentDiv);
+				return;
+			}
+		})
+	);
+
+	Macros.addChanger(['text-edit'],
+		(_, expr) => {
+			// if (!expr) {
+			// 	return TwineError.create("macrocall", emptyLinkTextError);
+			// }
+			return ChangerCommand.create('text-edit', ['']);
+		},
+		(desc, text) => {
+			/*
+				This check ensures that multiple concatenations of (link:) do not overwrite
+				the original source with their successive '<tw-link>' substitutions.
+			*/
+			// if (!desc.innerSource) {
+			// 	desc.innerSource = desc.source;
+			// }
+			desc.source = `
+			<div class='editor'>
+				<textarea class='editor-textarea' placeholder="${desc.source}"></textarea>
+				<div class='editor-result'></div>
+				<button class='editor-save-button'>Save</button>
+				<button class='editor-edit-button'>Edit</button>
+			</div>`.replace(/[\n\t]/g, '');
+			/*
+				Only (link-replace:) removes the link on click (by using the "replace"
+				append method) - the others merely append.
+			*/
+			desc.data.saveEvent = (button, parentDiv) => {
+				
+				const editorResult = parentDiv.find('.editor-result');
+				const editorTextarea = parentDiv.find('.editor-textarea');
+				const saveButton = parentDiv.find('.editor-save-button');
+				const editButton = parentDiv.find('.editor-edit-button');
+				saveButton.css('visibility', 'hidden');
+				editButton.css('visibility', 'visible');
+
+				const text = editorTextarea.text();
+
+				editorResult.css('display', 'block');
+				editorResult.html(text);
+				editorTextarea.css('display', 'none');
+			};
+
+			desc.data.editEvent = (button, parentDiv) => {
+
+				const editorResult = parentDiv.find('.editor-result');
+				const editorTextarea = parentDiv.find('.editor-textarea');
+				const saveButton = parentDiv.find('.editor-save-button');
+				const editButton = parentDiv.find('.editor-edit-button');
+				saveButton.css('visibility', 'visible');
+				editButton.css('visibility', 'hidden');
+
+				const text = editorTextarea.val();
+
+				editorResult.css('display', 'none');
+				editorTextarea.css('display', 'block');
+			};
+		},
+		[]
+	)
+
+
+	$(() => $(Utils.storyElement).on(
 		/*
 			The jQuery event namespace is "passage-link".
 		*/

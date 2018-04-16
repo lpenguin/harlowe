@@ -51,7 +51,7 @@ define(['utils', 'utils/operationutils', 'internaltypes/changedescriptor'], ({im
 			if(!Array.isArray(params)) {
 				impossible('ChangerCommand.create', 'params was not an array');
 			}
-			
+			console.log(macroName, params, next);
 			return Object.assign(Object.create(this), {
 				macroName,
 				params,
