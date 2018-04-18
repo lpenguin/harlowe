@@ -85,7 +85,7 @@ define(['jquery', 'macros', 'utils', 'utils/selectors', 'state', 'passages', 'en
 				const text = editorTextarea.val();
 
 				editorResult.css('display', 'block');
-				editorResult.html(text);
+				editorResult.text(text);
 				editorTextarea.css('display', 'none');
 			};
 
@@ -142,21 +142,12 @@ define(['jquery', 'macros', 'utils', 'utils/selectors', 'state', 'passages', 'en
 							});
 					}else {
 						$(value).animate({ opacity: 0 }, 300, function(){
-							$(this).remove()
+							$(this).css("visibility", "hidden")
 						});
 						
 					}
 				});
 
-				// $(Selectors.internalLink)
-				// 	.addClass('link-freezed')
-				// 	.click(function name(params) {
-				// 		return false;
-				// 	});
-				// $('button').click(function name(params) {
-				// 	console.log('book');
-				// 	return false;
-				// })
 				// TODO: stretchtext
 				Engine.goToPassage(next, true);
 				return;
