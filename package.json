@@ -37,6 +37,6 @@
     "marked": "0.3.3",
     "requirejs": "latest",
     "replacestream": "latest",
-    "uglifyjs": "latest"
+    "uglify-js": "latest"
   }
 }
