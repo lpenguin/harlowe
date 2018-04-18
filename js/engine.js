@@ -332,10 +332,11 @@ define(['jquery', 'utils', 'utils/selectors', 'state', 'section', 'passages'],
 			minus an offset of 5% of the viewport's height.
 			Outside of stretchtext, just scroll to the top of the <tw-story>'s element.
 		*/
-		scroll(
-			0,
-			stretch ? newPassage.offset().top - ($(window).height() * 0.05) : story.offset().top
-		);
+		if(stretch){
+			$('html, body').animate({ scrollTop: newPassage.offset().top - ($(window).height() * 0.05) }, 300);
+		}else{
+			scroll(0, story.offset().top);
+		}
 	}
 	
 	Engine = {

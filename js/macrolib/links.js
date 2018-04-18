@@ -21,29 +21,31 @@ define(['jquery', 'macros', 'utils', 'utils/selectors', 'state', 'passages', 'en
 	*/
 	$(() => $(Utils.storyElement).on(
 		"click.button",
-		"button.editor-save-button",
+		".editor-save-button",
 		function(){
 			const button = $(this);
 			const parentDiv = button.parent();
 			const event = parentDiv.parent().data('saveEvent');
 			if (event) {
 				event(button, parentDiv);
-				return;
+				return false;
 			}
+			return false;
 		})
 	);
 
 	$(() => $(Utils.storyElement).on(
 		"click.button",
-		"button.editor-edit-button",
+		".editor-edit-button",
 		function () {
 			const button = $(this);
 			const parentDiv = button.parent();
 			const event = parentDiv.parent().data('editEvent');
 			if (event) {
 				event(button, parentDiv);
-				return;
+				return false;
 			}
+			return false;
 		})
 	);
 
@@ -59,15 +61,13 @@ define(['jquery', 'macros', 'utils', 'utils/selectors', 'state', 'passages', 'en
 				This check ensures that multiple concatenations of (link:) do not overwrite
 				the original source with their successive '<tw-link>' substitutions.
 			*/
-			// if (!desc.innerSource) {
-			// 	desc.innerSource = desc.source;
-			// }
+
 			desc.source = `
 			<div class='editor'>
 				<textarea class='editor-textarea' placeholder="${desc.source}"></textarea>
 				<div class='editor-result'></div>
-				<button class='editor-save-button'>Save</button>
-				<button class='editor-edit-button'>Edit</button>
+				<a href="" class='editor-save-button editor-button'>Save</a>
+				<a href="" class='editor-edit-button editor-button'>Edit</a>
 			</div>`.replace(/[\n\t]/g, '');
 			/*
 				Only (link-replace:) removes the link on click (by using the "replace"
@@ -114,6 +114,7 @@ define(['jquery', 'macros', 'utils', 'utils/selectors', 'state', 'passages', 'en
 		"click.passage-link",
 		Selectors.internalLink,
 		function clickLinkEvent() {
+			const self = this;
 			const link = $(this),
 				/*
 					This could be a (link:) command. Such links' events
@@ -132,9 +133,26 @@ define(['jquery', 'macros', 'utils', 'utils/selectors', 'state', 'passages', 'en
 			*/
 			const next = link.attr('passage-name');
 			if (next) {
-				$(Selectors.internalLink).click(function name(params) {
-					return false;
-				})
+				$("tw-link:not(.link-freezed)").each((index, value) => {
+					if (value == self || (!$(value).attr("passage-name"))){
+						$(value)
+							.addClass('link-freezed')
+							.click(function name(params) {
+								return false;
+							});
+					}else {
+						$(value).animate({ opacity: 0 }, 300, function(){
+							$(this).remove()
+						});
+						
+					}
+				});
+
+				// $(Selectors.internalLink)
+				// 	.addClass('link-freezed')
+				// 	.click(function name(params) {
+				// 		return false;
+				// 	});
 				// $('button').click(function name(params) {
 				// 	console.log('book');
 				// 	return false;
@@ -272,6 +290,7 @@ define(['jquery', 'macros', 'utils', 'utils/selectors', 'state', 'passages', 'en
 					if (arr[0] === "link-reveal") {
 						link.contents().unwrap();
 					}
+					$('html, body').animate({ scrollTop: document.body.scrollHeight }, 300);
 				};
 			},
 			[String]

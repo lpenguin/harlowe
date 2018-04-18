@@ -1,5 +1,5 @@
-$color: white;
-$background-color: black;
+$color: black;
+$background-color: white;
 
 /*
 	<html> should be left alone, except where needed to accomodate <tw-story>.
@@ -93,7 +93,7 @@ tw-sidebar {
 	width: 3em;
 	position:absolute;
 	text-align:center;
-	display:block;
+	display: none;
 }
 
 /*
@@ -182,4 +182,53 @@ tw-colour {
 	display: inline-block;
 	width: 1em;
 	height: 1em;
+}
+
+.editor-textarea {
+	width: 300px;
+	height: 100px;
+	font-size: 1.3em;
+	line-height: 1.3em;
+	font: 100% Georgia, serif;
+	display: block;
+	/* background-color: rgba(255,170,0,0.1); */
+	border-style: solid;
+	border-width: 1px;
+	padding-top: 4px;
+}
+
+.editor-result {
+	display: none; 
+	width: 300px; 
+	height: 100px; 
+	background-color: rgba(255,170,0,0.1);
+	border-style: dashed;
+	border-width: 1px;
+	padding-left: 2px;
+}
+
+.editor-button {
+	margin-top: -27px;
+	margin-left: 2px;
+	position: absolute;
+	font-size: 12pt;
+	color: black;
+}
+
+.editor-button:visited {
+	color: black;
+}
+.editor-edit-button {
+	visibility: hidden;
+}
+
+.editor-save-button {
+	
+}
+
+.link-freezed {
+	color: rgb(151, 156, 172);
+	font-weight: bold;
+	text-decoration: none;
+	transition: color 0.2s ease-in-out;
 }
