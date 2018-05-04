@@ -55,16 +55,16 @@ jshint:
 
 build/harlowe-css.css: scss/*.scss
 	@-test sass || { echo "Please install Sass via 'gem install sass'"; exit 1 }
-	@cat scss/*.scss \
+	cat scss/*.scss \
 	| sass --stdin --style compressed --scss \
 	> build/harlowe-css.css
 
 build/harlowe-min.js: js/*.js js/*/*.js js/*/*/*.js
-	@node_modules/.bin/r.js -o $(requirejs_harlowe_flags) \
+	node_modules/.bin/r.js -o $(requirejs_harlowe_flags) \
 	| babel --presets es2015 \
-	| uglifyjs $(uglify_flags) \
 	> build/harlowe-min.js
-# 	
+# 	| uglifyjs $(uglify_flags)
+ 	
 
 # Crudely edit out the final define() call that's added for codemirror/mode.
 unwrap = /(?:,|\n)define\([^\;]+\;/g, ""
@@ -72,7 +72,7 @@ unwrap = /(?:,|\n)define\([^\;]+\;/g, ""
 validmacros = "\"MACROS\"", JSON.stringify(require("./scripts/metadata").Macro.shortDefs())
 
 build/twinemarkup-min.js: js/markup/*.js js/markup/*/*.js
-	@node_modules/.bin/r.js -o $(requirejs_twinemarkup_flags) \
+	node_modules/.bin/r.js -o $(requirejs_twinemarkup_flags) \
 	| $(call node_replace, $(unwrap)) \
 	| $(call node_replace, $(validmacros)) \
 	| babel --presets es2015 \
@@ -80,7 +80,7 @@ build/twinemarkup-min.js: js/markup/*.js js/markup/*/*.js
 	> build/twinemarkup-min.js
 
 dist/format.js: build/harlowe-min.js build/twinemarkup-min.js css
-	@cat format.js \
+	cat format.js \
 	| $(call node_replace, $(source)) \
 	| $(call node_replace, $(setup)) \
 	| $(call node_replace, $(engine)) \

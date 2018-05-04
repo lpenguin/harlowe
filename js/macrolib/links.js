@@ -19,92 +19,75 @@ define(['jquery', 'macros', 'utils', 'utils/selectors', 'state', 'passages', 'en
 		is "attached" via a jQuery .data() key, and must be called
 		from this <tw-story> handler.
 	*/
-	$(() => $(Utils.storyElement).on(
-		"click.button",
-		".editor-save-button",
-		function(){
-			const button = $(this);
-			const parentDiv = button.parent();
-			const event = parentDiv.parent().data('saveEvent');
-			if (event) {
-				event(button, parentDiv);
-				return false;
-			}
-			return false;
-		})
-	);
+	// $(() => {
+	// 	let saveButton = $('<button id="save-button">Save</button>');
+	// 	(Utils.storyElement).parent().append(saveButton);
+	// 	saveButton.click(() => {
+	// 		const storyContents = $(Utils.storyElement).html();
+	// 		const styleContents = $('style[title="Twine CSS"]').html();
 
-	$(() => $(Utils.storyElement).on(
-		"click.button",
-		".editor-edit-button",
-		function () {
-			const button = $(this);
-			const parentDiv = button.parent();
-			const event = parentDiv.parent().data('editEvent');
-			if (event) {
-				event(button, parentDiv);
-				return false;
-			}
-			return false;
-		})
-	);
+	// 		const contents = `
+	// 		<!DOCTYPE html>
+	// 		<html>
+	// 			<head>
+	// 				<meta charset="utf-8" />
+	// 				<style title="Twine CSS">${styleContents}</style>
+	// 			</head>
+	// 			<body>
+	// 				<tw-story>${storyContents}</tw-story>
+	// 			</body>
+	// 		</html>`;
 
-	Macros.addChanger(['text-edit'],
-		(_, expr) => {
-			// if (!expr) {
-			// 	return TwineError.create("macrocall", emptyLinkTextError);
-			// }
-			return ChangerCommand.create('text-edit', ['']);
-		},
-		(desc, text) => {
-			/*
-				This check ensures that multiple concatenations of (link:) do not overwrite
-				the original source with their successive '<tw-link>' substitutions.
-			*/
+	// 		const username = "Foo bar!";
+	// 		const data = {
+	// 			contents, username
+	// 		};
 
-			desc.source = `
-			<div class='editor'>
-				<textarea class='editor-textarea' placeholder="${desc.source}"></textarea>
-				<div class='editor-result'></div>
-				<a href="" class='editor-save-button editor-button'>Save</a>
-				<a href="" class='editor-edit-button editor-button'>Edit</a>
-			</div>`.replace(/[\n\t]/g, '');
-			/*
-				Only (link-replace:) removes the link on click (by using the "replace"
-				append method) - the others merely append.
-			*/
-			desc.data.saveEvent = (button, parentDiv) => {
-				
-				const editorResult = parentDiv.find('.editor-result');
-				const editorTextarea = parentDiv.find('.editor-textarea');
-				const saveButton = parentDiv.find('.editor-save-button');
-				const editButton = parentDiv.find('.editor-edit-button');
-				saveButton.css('visibility', 'hidden');
-				editButton.css('visibility', 'visible');
+	// 		$.ajax({
+	// 			url: "http://127.0.0.1:8001/submissions",
+	// 			type: 'POST',
+	// 			data: JSON.stringify(data),
+	// 			contentType: "application/json; charset=utf-8",
+	// 			crossDomain: true,
+	// 			success: (data) => {
+	// 				console.log(data)
+	// 			}
+	// 		});
+	// 		return false;
+	// 	});
+	// })
+	
+	// $(() => $(Utils.storyElement).on(
+	// 	"click.button",
+	// 	".editor-save-button",
+	// 	function(){
+	// 		const button = $(this);
+	// 		const parentDiv = button.parent();
+	// 		const event = parentDiv.parent().data('saveEvent');
+	// 		if (event) {
+	// 			event(button, parentDiv);
+	// 			return false;
+	// 		}
+	// 		return false;
+	// 	})
+	// );
 
-				const text = editorTextarea.val();
+	// $(() => $(Utils.storyElement).on(
+	// 	"click.button",
+	// 	".editor-edit-button",
+	// 	function () {
+	// 		const button = $(this);
+	// 		const parentDiv = button.parent();
+	// 		const event = parentDiv.parent().data('editEvent');
+	// 		if (event) {
+	// 			event(button, parentDiv);
+	// 			return false;
+	// 		}
+	// 		return false;
+	// 	})
+	// );
 
-				editorResult.css('display', 'block');
-				editorResult.text(text);
-				editorTextarea.css('display', 'none');
-			};
-
-			desc.data.editEvent = (button, parentDiv) => {
-
-				const editorResult = parentDiv.find('.editor-result');
-				const editorTextarea = parentDiv.find('.editor-textarea');
-				const saveButton = parentDiv.find('.editor-save-button');
-				const editButton = parentDiv.find('.editor-edit-button');
-				saveButton.css('visibility', 'visible');
-				editButton.css('visibility', 'hidden');
-
-
-				editorResult.css('display', 'none');
-				editorTextarea.css('display', 'block');
-			};
-		},
-		[]
-	)
+	
 
 
 	$(() => $(Utils.storyElement).on(

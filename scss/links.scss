@@ -1,8 +1,14 @@
-$linkcolour: #4169E1;       // A striking blue
-$hovercolour: DeepSkyBlue;  // A deep blue
-$activecolour: #DD4B39;     // A cooked red
-$visitedcolour: #6941e1;    // A run-of-the-mill purple
-$visitedhovercolour: #E3E;  // A fierce magenta
+$linkcolour: #ff6d2d;       // A striking blue
+$hovercolour: #ff6d2d;  // A deep blue
+$activecolour: #ff6d2d;     // A cooked red
+$visitedcolour: #ff6d2d;    // A run-of-the-mill purple
+$visitedhovercolour: #ff6d2d;  // A fierce magenta
+
+// $hovercolour: DeepSkyBlue;  // A deep blue
+// $activecolour: #DD4B39;     // A cooked red
+// $visitedcolour: #6941e1;    // A run-of-the-mill purple
+// $visitedhovercolour: #E3E;  // A fierce magenta
+
 
 tw-link, .link, tw-icon, .enchantment-clickblock {
 	cursor: pointer;
@@ -18,8 +24,8 @@ tw-link, .link, tw-icon, .enchantment-clickblock {
 tw-link, .enchantment-link {
 	color: $linkcolour;
 	@include enchantable-color;
-	font-weight: bold;
-	text-decoration: none;
+	text-decoration: underline;
+	font-style: italic;
 	
 	transition: color 0.2s ease-in-out;
 	&:hover {
