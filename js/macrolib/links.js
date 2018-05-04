@@ -19,75 +19,6 @@ define(['jquery', 'macros', 'utils', 'utils/selectors', 'state', 'passages', 'en
 		is "attached" via a jQuery .data() key, and must be called
 		from this <tw-story> handler.
 	*/
-	// $(() => {
-	// 	let saveButton = $('<button id="save-button">Save</button>');
-	// 	(Utils.storyElement).parent().append(saveButton);
-	// 	saveButton.click(() => {
-	// 		const storyContents = $(Utils.storyElement).html();
-	// 		const styleContents = $('style[title="Twine CSS"]').html();
-
-	// 		const contents = `
-	// 		<!DOCTYPE html>
-	// 		<html>
-	// 			<head>
-	// 				<meta charset="utf-8" />
-	// 				<style title="Twine CSS">${styleContents}</style>
-	// 			</head>
-	// 			<body>
-	// 				<tw-story>${storyContents}</tw-story>
-	// 			</body>
-	// 		</html>`;
-
-	// 		const username = "Foo bar!";
-	// 		const data = {
-	// 			contents, username
-	// 		};
-
-	// 		$.ajax({
-	// 			url: "http://127.0.0.1:8001/submissions",
-	// 			type: 'POST',
-	// 			data: JSON.stringify(data),
-	// 			contentType: "application/json; charset=utf-8",
-	// 			crossDomain: true,
-	// 			success: (data) => {
-	// 				console.log(data)
-	// 			}
-	// 		});
-	// 		return false;
-	// 	});
-	// })
-	
-	// $(() => $(Utils.storyElement).on(
-	// 	"click.button",
-	// 	".editor-save-button",
-	// 	function(){
-	// 		const button = $(this);
-	// 		const parentDiv = button.parent();
-	// 		const event = parentDiv.parent().data('saveEvent');
-	// 		if (event) {
-	// 			event(button, parentDiv);
-	// 			return false;
-	// 		}
-	// 		return false;
-	// 	})
-	// );
-
-	// $(() => $(Utils.storyElement).on(
-	// 	"click.button",
-	// 	".editor-edit-button",
-	// 	function () {
-	// 		const button = $(this);
-	// 		const parentDiv = button.parent();
-	// 		const event = parentDiv.parent().data('editEvent');
-	// 		if (event) {
-	// 			event(button, parentDiv);
-	// 			return false;
-	// 		}
-	// 		return false;
-	// 	})
-	// );
-
-	
 
 
 	$(() => $(Utils.storyElement).on(
@@ -116,22 +47,18 @@ define(['jquery', 'macros', 'utils', 'utils/selectors', 'state', 'passages', 'en
 			*/
 			const next = link.attr('passage-name');
 			if (next) {
-				$("tw-link:not(.link-freezed)").each((index, value) => {
-					if (value == self || (!$(value).attr("passage-name"))){
-						$(value)
-							.addClass('link-freezed')
-							.click(function name(params) {
-								return false;
-							});
-					}else {
-						$(value).animate({ opacity: 0 }, 300, function(){
-							$(this).css("visibility", "hidden")
-						});
-						
-					}
+				$("tw-link:not(.link-freezed)")
+				.addClass('link-freezed')
+				.click(function name(params) {
+					return false;
+				});
+
+				$(".tw-disappear-next").animate({ opacity: 0 }, 300, function () {
+					$(this).css("visibility", "hidden")
 				});
 
 				// TODO: stretchtext
+				$(document).trigger("twine:go-to-passage");
 				Engine.goToPassage(next, true);
 				return;
 			}
@@ -280,7 +207,7 @@ define(['jquery', 'macros', 'utils', 'utils/selectors', 'state', 'passages', 'en
 		/*d:
 			(link-goto: String, [String]) -> Command
 			
-			Takes a string of link text, and an optional destination passage name, and makes a command to create
+			Takes a string of link text, and an  destination passage name, and makes a command to create
 			a link that takes the player to another passage. The link functions identically to a standard link.
 			This command should not be attached to a hook.
 			

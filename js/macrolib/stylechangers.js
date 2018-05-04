@@ -299,6 +299,13 @@ define(['jquery','macros', 'utils', 'utils/selectors', 'datatypes/colour', 'data
 			(d) => d.enabled = false,
 			null
 		)
+		("disappear-next",
+			() => ChangerCommand.create("disappear-next"),
+			(d, data) => {
+				d.source = `<span class="tw-disappear-next">${d.source}</span>`;
+			},
+			null
+		)
 
 		/*d:
 			(hook: String) -> Changer
