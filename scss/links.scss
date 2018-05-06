@@ -65,6 +65,34 @@ tw-broken-link {
 	}
 }
 
+.link-freezed {
+	color: rgb(151, 156, 172);
+	// font-weight: bold;
+	font-style: normal;
+	text-decoration: none;
+	outline-style: none;
+    box-shadow: none;
+	&:hover {
+		cursor: default;
+		color: rgb(151, 156, 172);
+	}
+	// transition: color 0.2s ease-in-out;
+}
+
+.link-freezed-visited {
+	color: black;
+	font-weight: bold;
+	text-decoration: none;
+	font-style: normal;
+	outline-style: none;
+    box-shadow: none;
+	&:hover {
+		cursor: default;
+		color: black;
+	}
+		// transition: color 0.2s ease-in-out;
+}
+
 .enchantment-clickblock {
 	// If no colour is specified, box-shadow uses 'color'.
 	// Might as well use vmax because % doesn't work for box-shadow.

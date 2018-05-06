@@ -13,34 +13,8 @@
 </head>
 
 <body>
-    <div class="header">
-        <span class="vac-link">
-        
-        </span>
-
-        <div class="header-content">
-            <div class="header-link share-link">
-                I want you to see this
-                <span class="share-img"></span>
-            </div>
-
-            <div class="header-link home-link">
-                <span>I wanna go home</span>
-                <span class="exit-img"></span>
-            </div>
-        </div>
-    </div>
     <tw-story></tw-story>
     <tw-storydata startnode=1>
-        <!-- <tw-passagedata pid=1 name=Start>
-            (set: $foo to "bar!")
-            **Success!** Goto: [[End]]            
-            (text-edit: )[Type your text here]
-            (set: $a to 1)
-            (link: "Stake")[(set: $a to $a + 10) $a]
-            (link: "Reveal a")[$a]
-        </tw-passagedata>
-        <tw-passagedata pid=2 name=End>$foo **End**</tw-passagedata> -->
         <tw-storydata name="GR" startnode="1" creator="Twine" creator-version="2.2.1" ifid="8380BD0B-C4E7-472D-8633-CAFEBF4BF9CE"
             zoom="1" format="Harlowe" format-version="1.2.4" options="" hidden="">
             <style role="stylesheet" id="twine-user-stylesheet" type="text/twine-css">
@@ -61,10 +35,11 @@ Let us forget for a second about every other possible outcome of constant repeti
 This is the space to chose a path, a way, a possibility — to build your own narrative, to reflect, to navigate yourself through the corpus of ideas and information, thus creating your own personal story experience.
 
 Or overwrite the existing one.
-                (text-edit:"#cfdce7")[This is the deafult text for the submission form, it’s gonna be a peice of stroy that user can overwrite. The backgroud depends on the formatio the story take place. This is how the active form looks like.]
+                (text-edit:"#000000", "#cfdce7", "change")[This is the deafult text for the submission form, it’s gonna be a peice of stroy that user can overwrite. The backgroud depends on the formatio the story take place. This is how the active form looks like.]
                 
-                So. Lets go to [[second passage]]
-                Or to [[third passage]]
+                (disappear-next:)[So. Lets go to [[second passage]]]
+                (disappear-next:)[Or to [[third passage]]]
+                [[4 passage]]
             </tw-passagedata>
             <tw-passagedata pid="2" name="second passage" tags="">
                 Here is second passage
@@ -72,7 +47,9 @@ Or overwrite the existing one.
             <tw-passagedata pid="2" name="third passage" tags="">
                 Here is third passage
             </tw-passagedata>
-
+            <tw-passagedata pid="3" name="4 passage" tags="">
+                Here is 4 passage
+            </tw-passagedata>
 
         </tw-storydata>
     </tw-storydata>

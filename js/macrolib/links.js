@@ -52,10 +52,13 @@ define(['jquery', 'macros', 'utils', 'utils/selectors', 'state', 'passages', 'en
 				.click(function name(params) {
 					return false;
 				});
+				link.addClass('link-freezed-visited');
 
-				$(".tw-disappear-next").animate({ opacity: 0 }, 300, function () {
-					$(this).css("visibility", "hidden")
-				});
+				$(".tw-disappear-next")
+					.filter(((index, elem) => !$.contains(elem, self)))
+					.animate({ opacity: 0 }, 300, function () {
+						$(this).css("visibility", "hidden")
+					});
 
 				// TODO: stretchtext
 				$(document).trigger("twine:go-to-passage");
