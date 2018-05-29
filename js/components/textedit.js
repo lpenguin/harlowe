@@ -45,8 +45,8 @@ define(
                     if (this.disabled){
                         return;
                     }
+
                     this.disabled = true;
-                    console.log(this.changeColor);
                     if (this.changeColor){
                         this.holder.area.css('color', this.backgroundColor);
                     }
@@ -55,6 +55,15 @@ define(
                     this.holder.svgPath.remove();
                     this.holder.editButton.remove();
                     this.holder.saveButton.remove();
+
+                    if (this.holder.area.text().length === 0) {
+                        this.holder.area.css('height', this.holder.area.outerHeight()+'px');
+                        this.holder.area.css('min-height', '0');
+                        this.holder.area.css('padding', '0');
+                        this.holder.area.animate({ opacity: 0, height: 0 }, 300, function () {
+                            $(this).css("display", "none")
+                        });
+                    }
                 });
                 return this.holder.root;
             }

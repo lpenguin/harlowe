@@ -22,7 +22,8 @@
             </style>
             <script role="script" id="twine-user-script" type="text/twine-javascript"></script>
             <tw-passagedata pid="1" name="first" tags="">
-                (disappear-next:)[foo]
+
+
                 This is the General Rehearsal. 
 
 To rehears is to repeat and improve. To repeat and to change. Slightly 
@@ -35,20 +36,22 @@ Let us forget for a second about every other possible outcome of constant repeti
 This is the space to chose a path, a way, a possibility — to build your own narrative, to reflect, to navigate yourself through the corpus of ideas and information, thus creating your own personal story experience.
 
 Or overwrite the existing one.
-                (text-edit:"#000000", "#cfdce7", "change")[This is the deafult text for the submission form, it’s gonna be a peice of stroy that user can overwrite. The backgroud depends on the formatio the story take place. This is how the active form looks like.]
-                
+                (text-edit:"white", "#ff6d2d", "change")[]
+                (text-edit:"#000000", "#cfdce7", "change")[This is the deafult text for the submission form, it’s gonna be a peice of stroy that user can overwrite. The backgroud depends on the formatio the story take place. This is how the active form looks like.]                
                 (disappear-next:)[So. Lets go to [[second passage]]]
                 (disappear-next:)[Or to [[third passage]]]
-                [[4 passage]]
             </tw-passagedata>
             <tw-passagedata pid="2" name="second passage" tags="">
                 Here is second passage
+                 [[4 passage]]
             </tw-passagedata>
             <tw-passagedata pid="2" name="third passage" tags="">
                 Here is third passage
+                 [[4 passage]]
             </tw-passagedata>
             <tw-passagedata pid="3" name="4 passage" tags="">
                 Here is 4 passage
+                 (save-button:)[]
             </tw-passagedata>
 
         </tw-storydata>

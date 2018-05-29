@@ -47,17 +47,20 @@ define(['jquery', 'macros', 'utils', 'utils/selectors', 'state', 'passages', 'en
 			*/
 			const next = link.attr('passage-name');
 			if (next) {
+				link.addClass('link-freezed-visited');
+
 				$("tw-link:not(.link-freezed)")
 				.addClass('link-freezed')
 				.click(function name(params) {
 					return false;
 				});
-				link.addClass('link-freezed-visited');
+				
 
 				$(".tw-disappear-next")
-					.filter(((index, elem) => !$.contains(elem, self)))
-					.animate({ opacity: 0 }, 300, function () {
-						$(this).css("visibility", "hidden")
+					// .filter(((index, elem) => !$.contains(elem, self)))
+					.filter(((index, elem) => !$(elem).find('.link-freezed-visited').length))
+					.animate({ opacity: 0, height: 0 }, 300, function () {
+						$(this).css("display", "none")
 					});
 
 				// TODO: stretchtext

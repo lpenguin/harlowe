@@ -30,6 +30,7 @@ body {
 	// This allows <tw-story> to cover the entire page
 	height:100%;
 	min-width: 950px * $scale;
+	
 	// overflow-x: scroll;
 }
 
@@ -42,13 +43,18 @@ tw-storydata {
 }
 
 @font-face {
-    font-family: "Scotch Modern Italic";
-    src: url(../ScotchModern_Italic.otf);
+	font-family: "Scotch Modern";
+	src: url("http://wb1.v-a-c.ru:4080/static/fonts/ScotchModern_Regular.otf");
+	//$data: "encode here your font in base64"
+	//src: url("data:font/opentype;charset=utf-8;base64,#{$data}") format("opentype");
 }
 
 @font-face {
-    font-family: "Scotch Modern";
-    src: url(../ScotchModern_Regular.otf);
+	font-family: "Scotch Modern";
+	src: url("http://wb1.v-a-c.ru:4080/static/fonts/ScotchModern_Italic.otf");
+	//$data: "encode here your font in base64"
+	//src: url("data:font/opentype;charset=utf-8;base64,#{$data}") format("opentype");
+	font-style: italic;
 }
 
 
@@ -88,6 +94,7 @@ tw-story {
 	background-color: $background-color;
 	padding-left: 20px;
 	padding-right: 20px;
+	padding-bottom: 30px;
 }
 
 /*
