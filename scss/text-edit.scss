@@ -5,13 +5,15 @@ $scale: 0.71;
     $button-width: 85.04px * $scale;
     $button-height: 56.69px * $scale;
 
-    $area-margin-left: 62px * $scale;
-    $area-margin-right: 163px * $scale;
+    $min-width: 150.08 * $scale;
+
+    $area-margin-left: 18px;
+    $area-margin-right: 18px;
     $area-margin-top: 30px * $scale;
     $area-margin-bottom: 20px * $scale;
 
 
-    width: 115%;
+    width: calc(100% + #{2 * $area-margin-left});
     margin-left: -$area-margin-left;
 
     .editor-background-image {
@@ -19,19 +21,29 @@ $scale: 0.71;
     }
 
     .editor-area {
-        min-height: 2 * $button-height;
+        min-height: $min-width;
         padding: $area-margin-top $area-margin-right $area-margin-bottom $area-margin-left;
         outline-style: none;
         box-shadow: none;
         cursor: text;
 
-        font-size: 34px * $scale;
+        // font-size: 34px * $scale;
         font-family: "Scotch Modern";
         color: rgb(0, 0, 0);
         text-decoration: none;
         font-style: italic;
-        line-height: 1.2;
+        line-height: 1.25;
         text-align: left;
+        // background-image: url("pattern.svg");
+        // border-style: solid;
+        // border-width: 0.5px;
+        // border-radius: 10px;
+        // border-color: black;
+    }
+    .editor-area-empty-disabled {
+        content: attr(data-placeholder);        
+        color: rgb(121, 121, 121) !important;
+        display: block; /* For Firefox */
     }
 
     [contenteditable=true]:empty:before {
