@@ -7,10 +7,11 @@ define(
         //    xmlns:xlink="http://www.w3.org/1999/xlink"	version="1.2" 	id="Layer_1" 	
         //        viewBox="0 0 1360.63 170.08" 	preserveAspectRatio="none" 	>	<path id="__svg_path"	
         //        	fill="cadetblue" 		stroke="#000000" 		stroke-width="0.5" 		stroke-linecap="round" 		stroke-linejoin="round" 		stroke-miterlimit="10" 		vector-effect="non-scaling-stroke"		d="		M1343.029,163.249c4.312-57.521,4.089-97.907-2.968-155.369C896.819,7.243,455.395-2.959,12.5,5.062		c1.767,51.183,7.373,102.343,16.786,153.343c88.417,7.693,189.192-1.011,279.098,0.124		C654.236,162.913,1005.789,161.053,1343.029,163.249z"/></svg>';
-        
-        const SVG_TEMPLATE = `
-        <svg width="100%" height="57.4844" xmlns="http://www.w3.org/2000/svg"
-        >
+                            //                         
+
+
+        const SVG_PATTERN = `    
+        <svg>
             <defs>
                 <pattern
                     id="Pattern"
@@ -19,21 +20,26 @@ define(
                     width="50"
                     height="22"
                     patternUnits="userSpaceOnUse"  
- 
                 >
+
                     <line 
                         x1="0" 
                         y1="14" 
                         x2="50" 
                         y2="14" 
-                        stroke-dasharray="1,4"
                         stroke-width="1"
+                        stroke-dasharray="1,4"
                         stroke="rgb(25,25,25)"
                         />
                 </pattern>
             </defs>
+        </svg>`;
+
+        const SVG_TEMPLATE = `
+        <svg width="100%" height="57.4844" xmlns="http://www.w3.org/2000/svg"
+        >
             <rect id="__svg_path" width="20" height="20" rx="3" ry="3" stroke-width="0" stroke="#00000000"/>
-            <rect id="__svg_dots" y="20" fill="url(#Pattern)" stroke="#0000000" stroke-width="0" width="20" height="2000"/>
+            <rect id="__svg_dots" y="20" fill="url(#Pattern)" stroke="#000000" stroke-width="0" width="20" height="2000"/>
         </svg>
         `;
         class TextEditView {
@@ -53,6 +59,10 @@ define(
 
             buildView(element) {
                 const holder = {};
+                if($('#Pattern').length == 0){
+                    $('body').append($(SVG_PATTERN));
+                }
+
                 holder.root = $('<div class="editor-root" />');
                 holder.submitButton = $('<span class="editor-submit-button" />')
                 holder.area = $('<div class="editor-area"></div>');
