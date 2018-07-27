@@ -112,8 +112,10 @@ define(
 
                     this.resizeSvg();
                     // const y = $(document).scrollTop();
-                    holder.area.focus();
-                    window.scrollTo(0, y);
+                    if(!window._isMobile){
+                        holder.area.focus();
+                        window.scrollTo(0, y);                        
+                    }
 
                     // let y = $(document).scrollTop();
                     // console.log('ss', y);
