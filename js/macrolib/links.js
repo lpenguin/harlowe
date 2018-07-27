@@ -56,17 +56,22 @@ define(['jquery', 'macros', 'utils', 'utils/selectors', 'state', 'passages', 'en
 				});
 				
 
-				$(".tw-disappear-next")
-					// .filter(((index, elem) => !$.contains(elem, self)))
-					.filter(((index, elem) => !$(elem).find('.link-freezed-visited').length))
-					.animate({ opacity: 0, height: 0 }, 300, function () {
-						$(this).css("display", "none")
-					});
+				// $(".tw-disappear-next")
+				// 	// .filter(((index, elem) => !$.contains(elem, self)))
+				// 	.filter(((index, elem) => !$(elem).find('.link-freezed-visited').length))
+				// 	.addClass('hide-anim')
+				// ;
+					// .css('overflow', 'hidden')
+					// .stop(true, true)
+					// .slideUp(300)
+					// .animate({ opacity: 0, height: 1+'px' }, 300, function () {
+					// 	// $(this).css("display", "none")
+					// });
 
-				// TODO: stretchtext
+				// // TODO: stretchtext
 				$(document).trigger("twine:go-to-passage");
 				Engine.goToPassage(next, true);
-				return;
+				return false;
 			}
 			/*
 				Or, a (link-undo:) link.
@@ -197,7 +202,16 @@ define(['jquery', 'macros', 'utils', 'utils/selectors', 'state', 'passages', 'en
 					if (arr[0] === "link-reveal") {
 						link.contents().unwrap();
 					}
-					$('html, body').animate({ scrollTop: document.body.scrollHeight }, 300);
+
+					const passageTop = $('tw-passage').last().offset().top;
+					const partLeftTop = ($('.part-left').last().offset() || {top: 0}).top;
+
+					const scrollTop = Math.max(passageTop, partLeftTop) -  $('.header').outerHeight() - ($(window).height() * 0.30);
+
+					if(scrollTop > (window.pageYOffset || document.documentElement.scrollTop)){
+						$('html, body').animate({ scrollTop: scrollTop}, 300);	
+					} 
+					
 				};
 			},
 			[String]

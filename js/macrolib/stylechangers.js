@@ -302,7 +302,7 @@ define(['jquery','macros', 'utils', 'utils/selectors', 'datatypes/colour', 'data
 		("disappear-next",
 			() => ChangerCommand.create("disappear-next"),
 			(d, data) => {
-				d.source = `<span class="tw-disappear-next">${d.source}</span>`;
+				d.source = `<div class="tw-disappear-next">${d.source}</div>`;
 			},
 			null
 		)

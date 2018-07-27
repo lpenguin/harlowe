@@ -22,10 +22,10 @@ require.config({
 		'jqueryplugins',
 	],
 });
-require(['jquery', 'debugmode', 'renderer', 'state', 'engine', 'passages', 'utils/selectors', 'macros',
+require(['components/story-saver', 'components/i18n', 'jquery', 'debugmode', 'renderer', 'state', 'engine', 'passages', 'utils/selectors', 'macros',
 	'macrolib/values', 'macrolib/commands', 'macrolib/datastructures', 'macrolib/stylechangers', 'macrolib/enchantments', 'macrolib/links',
 	'repl', 'macrolib/textedit', 'macrolib/save-button'],
-		($, DebugMode, Renderer, State, Engine, Passages, Selectors) => {
+		(getStorySaver, translate, $, DebugMode, Renderer, State, Engine, Passages, Selectors) => {
 	/*
 		Harlowe, the default story format for Twine 2.
 		
@@ -91,6 +91,7 @@ require(['jquery', 'debugmode', 'renderer', 'state', 'engine', 'passages', 'util
 		This is the main function which starts up the entire program.
 	*/
 	$(() => {
+
 		const header = $(Selectors.storyData);
 
 		if (header.length === 0) {
@@ -145,6 +146,114 @@ require(['jquery', 'debugmode', 'renderer', 'state', 'engine', 'passages', 'util
 			$(document.head).append('<style data-title="Story stylesheet ' + (i + 1) + '">' + $(this).html());
 		});
 		
+		window._lang = window._lang || 'EN';
+
+		let headerHtml = `
+	    <div class="header">
+	      <div class="left-side">
+	        <span class="vac-link" ></span>
+	      </div>
+
+	      <div class="center-side">
+	        <div class="home-link link item">
+	            <span>{{HOME}} <span class="exit-img"></span></span>
+	        </div>
+	        <div class="share-link link item">
+	            <span>{{SHARE}} <span class="share-header-img"></span></span>
+	        </div>
+	      </div>
+
+	      <div class="right-side">
+	        <div class="lang-changer-link link">
+            	<a href="{{SWITCH_LANG_LINK}}"><span class="lang-changer-icon lang-{{LANG}}"></span></a>
+            </div>
+	      </div>
+	    </div>
+        `;
+
+        if(window._baseUrl == undefined){
+        	window._baseUrl = "https://more-stories.v-a-c.ru/";
+        }
+
+        let switchLangLink = null;
+        let swicthLang = null;
+        const currentLocation = window.location.href.replace(/\/$/g, '');
+        if(window._lang == 'RU'){
+        	switchLangLink = window._baseUrl + '/en';//currentLocation.replace('/en', '')
+        	swicthLang = 'EN';
+        }else{ // EN
+        	switchLangLink = window._baseUrl;
+        	swicthLang = 'RU';
+        }
+
+        headerHtml = translate(headerHtml);
+        headerHtml = headerHtml.replace("{{LANG}}", swicthLang.toLowerCase());
+        headerHtml = headerHtml.replace("{{SWITCH_LANG_LINK}}", switchLangLink);
+
+
+
+
+
+        $('body').prepend($(headerHtml));
+        let fbScript = "<script>"+
+		  "window.fbAsyncInit = function() {"+
+		    "FB.init({"+
+		      "appId      : '797963147074005',"+
+		      "xfbml      : true,"+
+		      "version    : 'v3.0'"+
+		    "});"+
+		    "FB.AppEvents.logPageView();"+
+		  "};"+
+		  "(function(d, s, id){"+
+		     "var js, fjs = d.getElementsByTagName(s)[0];"+
+		     "if (d.getElementById(id)) {return;}"+
+		     "js = d.createElement(s); js.id = id;"+
+		     "js.src = 'https://connect.facebook.net/en_US/sdk.js';"+
+		     "fjs.parentNode.insertBefore(js, fjs);"+
+		   "}(document, 'script', 'facebook-jssdk'));"+
+		"</script>";
+		if( /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ) {
+ 			window._isMobile = true;
+		}
+
+		// window.scrollTo(0,0); 
+		$('body').prepend($(fbScript));
+        // $(window).resize(() => {
+        // 	const documentRight = $('tw-story').outerWidth() + $('tw-story').offset().left;
+        // 	const homeLinkRight =  $('.home-link').outerWidth() + $('.home-link').offset().left;
+        // 	$('.home-link').css('right', (documentRight-$('.home-link').outerWidth())+'px');
+        // 	// if(documentRight > homeLinkRight){
+        // 		// $('.home-link').css('margin-right', (documentRight-homeLinkRight) + 'px');
+        // 	// }
+        // });
+
+        $('.home-link').click(() => {
+        	window.location.href = 'https://v-a-c.ru';
+        });
+
+        let shareButton = $(".share-link");
+        shareButton.click(()=>{
+        	let storyUrl = window.location.href;
+    		FB.ui({
+	          method: 'share',
+	          href: storyUrl,
+	        }, function(response){});
+        	// let saver = getStorySaver();
+        	// saver.saveStory((data)=>{
+        	// 	let link = data['link-html'];
+        	// 	console.log(link);
+
+        	// })
+        });
+
+        const images = ['ALYS.jpg','ANGRY.jpg','ANGRY_EN.png','ANGRY_RU.png','ANTIN.jpg','B&C.jpg','CHERRI.jpg','DEAN.jpg','DOHERTY.jpg','DRAG.jpg','DRAG_EN.png','DRAG_RU.png','FICTIONS.jpg','FICTIONS_EN.png','FICTIONS_RU.png','FISH.jpg','FLOORS_EN.png','FLOORS_RU.png','FLUIDS.jpg','FLUIDS_EN.png','FLUIDS_RU.png','FRIEDL.jpg','GANDER.jpg','GLUSCHENKO.jpg','GONZALEZ.jpg','LAMPADA.jpg','MARBLE.jpg','MCKENZIE.jpg','MENICK.jpg','MOLLUSK.jpg','MOULENE.jpg','MYSE.jpg','MYSE_EN.png','MYSE_RU.png','OTOBONG_1.jpg','OTOBONG_2.jpg','PENONE.jpg','PERSISTENT.jpg','PERSISTENT_EN.png','PERSISTENT_RU.png','PIRICI_1.jpg','PIRICI_2.jpg','REENA.jpg','RICHER.jpg','RICHTER.jpg','SIDUR.jpg','SPOONER_1.jpg','SPOONER_2.jpg','SYSTEMS.jpg','SYSTEMS_EN.png','SYSTEMS_RU.png','TILLMANS.jpg','UFL.jpg','WARBOYS.jpg','WILLIAMS.jpg','WITNESSES.jpg','WITNESSES_EN.png','WITNESSES_RU.png','_cover.jpg', ];
+		for(let imageUrl of images){
+			const image = new Image();
+			image.src = `http://more-stories.v-a-c.ru/${imageUrl}`;
+		}
+		console.log(images);
+
+
 		// Load the hash if it's present
 		if (window.location.hash && !window.location.hash.includes("stories")) {
 			if (State.load(window.location.hash)) {
@@ -152,6 +261,9 @@ require(['jquery', 'debugmode', 'renderer', 'state', 'engine', 'passages', 'util
 				return;
 			}
 		}
+
+
+
 		// Show first passage!
 		Engine.goToPassage(startPassage);
 	});

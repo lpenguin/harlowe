@@ -1,0 +1,48 @@
+$linkcolour: #ff6d2d;       // A striking blue
+$hovercolour: #ff6d2d;  // A deep blue
+$activecolour: #ff6d2d;     // A cooked red
+$visitedcolour: #ff6d2d;    // A run-of-the-mill purple
+$visitedhovercolour: #ff6d2d;  // A fierce magenta
+
+.split-root {
+	width: 100%;
+    float: left;
+
+    .split-left {
+    	float: left;
+    	width: 50%;
+
+    	.part-selected {
+			border-left-style: solid;
+			border-left-color: #958f8b;
+			border-left-width: 1px;
+			padding-left: 4px;
+			margin-left: -5px;
+		}
+    }
+
+    .split-right {
+    	float: left;
+    	width: 50%;
+	    padding-left: 10px;
+	    font-size: 14px;
+
+    	.right-side-inner-fixed {
+		    position: fixed;
+		    // background-color: skyblue;
+		    top: 0;
+		}
+
+		.right-side-inner-bottom {
+		    /* position: fixed; */
+		    // background-color: palevioletred;
+		    position: absolute;
+		}
+
+
+    }
+
+
+
+
+}

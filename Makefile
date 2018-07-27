@@ -6,6 +6,7 @@ requirejs_harlowe_flags = baseUrl=js mainConfigFile=js/harlowe.js name=harlowe i
 
 requirejs_twinemarkup_flags = baseUrl=js/markup name=markup include=codemirror/mode useStrict=true out=stdout logLevel=4
 
+
 jshint_flags = --reporter scripts/jshintreporter.js
 
 uglify_flags = -c --comments -m -b beautify=false
@@ -62,8 +63,9 @@ build/harlowe-css.css: scss/*.scss
 build/harlowe-min.js: js/*.js js/*/*.js js/*/*/*.js
 	node_modules/.bin/r.js -o $(requirejs_harlowe_flags) \
 	| babel --presets es2015 \
+	| uglifyjs $(uglify_flags) \
 	> build/harlowe-min.js
-# 	| uglifyjs $(uglify_flags)
+# 	
  	
 
 # Crudely edit out the final define() call that's added for codemirror/mode.

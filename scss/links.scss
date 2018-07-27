@@ -65,6 +65,10 @@ tw-broken-link {
 	}
 }
 
+i .link-freezed-visited {
+    font-style: italic;
+}
+
 .link-freezed {
 	color: rgb(151, 156, 172);
 	// font-weight: bold;
@@ -91,6 +95,40 @@ tw-broken-link {
 		color: black;
 	}
 		// transition: color 0.2s ease-in-out;
+}
+
+.opacity {
+	opacity: 0;
+}
+
+.show-anim {
+	opacity: 1;
+	transition: opacity 0.33s ease-out;
+}
+
+.hide-anim {
+	max-height: 0;
+    transition: max-height 0.15s ease-out;
+    overflow: hidden;
+    background: #d5d5d5;
+}
+
+.link-freezed-visited-split {
+	color: $linkcolour;
+	// @include enchantable-color;
+	text-decoration: underline;
+	font-style: italic;
+	font-weight: normal;
+	
+	transition: color 0.2s ease-in-out;
+	&:hover {
+		color: $hovercolour;
+		cursor: pointer;
+	}
+	
+	&:active {
+		color: $activecolour;
+	}
 }
 
 .enchantment-clickblock {

@@ -1,6 +1,6 @@
 "use strict";
-define(['jquery', 'utils', 'utils/selectors', 'state', 'section', 'passages'],
-($, Utils, Selectors, State, Section, Passages) => {
+define(['jquery', 'utils', 'utils/selectors', 'state', 'section', 'passages', 'components/splitscroll', 'components/story-saver'],
+($, Utils, Selectors, State, Section, Passages, SplitScrollView, getStorySaver) => {
 	/*
 		Utils.storyElement is a getter, so we need a reference to Utils as well
 		as all of these methods.
@@ -77,9 +77,25 @@ define(['jquery', 'utils', 'utils/selectors', 'state', 'section', 'passages'],
 		displayOptions allows stretchtext (boolean), transitionIn (string)
 		or transitionOut (string) to be selected.
 	*/
+
+	function getScrollY(){
+		// if(window.pageYOffset!= undefined){
+		//   return pageYOffset;
+		//  }
+		//  else{
+		  var sx, sy, d= document, r= d.documentElement, b= d.body;
+		  sx= r.scrollLeft || b.scrollLeft || 0;
+		  sy= r.scrollTop || b.scrollTop || 0;
+		  return sy;
+ // }
+	}
 	function showPassage (name, displayOptions = {}) {
 		// Confirm that the options object only contains
 		// what this function recognises.
+		console.log('showPassage', name);
+		let prevScrollTop = document.documentElement.scrollTop; // getScrollY();
+		// $('tw-story').css('padding-bottom', window.innerHeight/2+'px');
+		
 		Utils.assertOnlyHas(displayOptions, ["stretch", "transitionIn", "transitionOut"]);
 
 		const
@@ -88,6 +104,9 @@ define(['jquery', 'utils', 'utils/selectors', 'state', 'section', 'passages'],
 			// The <tw-story> element
 			story = Utils.storyElement;
 
+
+		
+		// const prevScrollTop = getScrollY()
 		let
 			/*
 				The <tw-story>'s parent is usually <body>, but if this game is embedded
@@ -137,8 +156,11 @@ define(['jquery', 'utils', 'utils/selectors', 'state', 'section', 'passages'],
 		/*
 			Because rendering a passage is a somewhat intensive DOM manipulation,
 			the <tw-story> is detached before and reattached after.
-		*/
-		story.detach();
+		
+		if(!// story.detach()){
+
+		}*/
+		// story.detach();
 		
 		/*
 			Find out how many tw-passage elements there are currently in the
@@ -151,7 +173,7 @@ define(['jquery', 'utils', 'utils/selectors', 'state', 'section', 'passages'],
 			old passage instances.
 		*/
 		if (!stretch && transitionOutName) {
-			transitionOut(oldPassages, transitionOutName);
+			// transitionOut(oldPassages, transitionOutName);
 			/*
 				This extra adjustment is separate from the transitionOut method,
 				as it should only apply to the block-level elements that are
@@ -159,7 +181,7 @@ define(['jquery', 'utils', 'utils/selectors', 'state', 'section', 'passages'],
 				over the departing passage. Note: this may prove to be too restrictive
 				in the future and need to be made more subtle.
 			*/
-			oldPassages.css('position','absolute');
+			// oldPassages.css('position','absolute');
 		}
 		
 		/*
@@ -294,19 +316,19 @@ define(['jquery', 'utils', 'utils/selectors', 'state', 'section', 'passages'],
 
 			#transclusion 6
 		*/
-		if (State.pastLength <= 0) {
-			// Note that this places debug-startup passages after startup passages.
-			if (options.debug) {
-				source = Passages.getTagged('debug-startup')
-					.map(setupPassageElement.bind(0, "debug-startup"))
-					.join('')
-					+ source;
-			}
-			source = Passages.getTagged('startup')
-				.map(setupPassageElement.bind(0, "startup"))
-				.join('')
-				+ source;
-		}
+		// if (State.pastLength <= 0) {
+		// 	// Note that this places debug-startup passages after startup passages.
+		// 	if (options.debug) {
+		// 		source = Passages.getTagged('debug-startup')
+		// 			.map(setupPassageElement.bind(0, "debug-startup"))
+		// 			.join('')
+		// 			+ source;
+		// 	}
+		// 	source = Passages.getTagged('startup')
+		// 		.map(setupPassageElement.bind(0, "startup"))
+		// 		.join('')
+		// 		+ source;
+		// }
 		
 		/*
 			Then, run the actual passage.
@@ -319,24 +341,133 @@ define(['jquery', 'utils', 'utils/selectors', 'state', 'section', 'passages'],
 				as well as this basic, default ChangeDescriptor-like object
 				supplying the transition.
 			*/
-			{ transition: transitionInName || "dissolve" }
+			// { transition: transitionInName || "dissolve" }
 		);
 		
+		if(window.__CURRENT_SPLIT_SCROLL_VIEW === undefined){
+			window.__CURRENT_SPLIT_SCROLL_VIEW = null;
+		}
+
+		
+		let $partLeft = newPassage.find('.part-left');
+		let $partRight = newPassage.find('.part-right');
+
+		let $animateTarget = null;
+
+		if($partLeft.length == 1 && $partRight.length == 1){
+			$partLeft.detach();
+			$partRight.detach();
+			var splitScrollView = null;
+			if(window.__CURRENT_SPLIT_SCROLL_VIEW == null){
+				console.log('creating split');
+				splitScrollView = new SplitScrollView({offset: $('.header').outerHeight()});
+
+				newPassage.append(splitScrollView.createElement());
+				splitScrollView.initWidth();
+				splitScrollView.checkSizes();
+
+				splitScrollView.addPassage(name, $partLeft, $partRight);
+				window.__CURRENT_SPLIT_SCROLL_VIEW = splitScrollView;
+
+			}else{
+				console.log('continuing split');
+				splitScrollView = window.__CURRENT_SPLIT_SCROLL_VIEW;
+				splitScrollView.addPassage(name, $partLeft, $partRight);
+				newPassage.remove();
+			}
+			const clickedLink = story.find('.link-freezed-visited').last();
+			clickedLink.click(()=>{
+				console.log('Click '+name);
+				splitScrollView.showPassage(name);
+			});
+			if($partRight.text() != ""){
+				clickedLink.addClass('link-freezed-visited-split');	
+			}
+			
+			$animateTarget = $partLeft;
+			
+		}else{
+			window.__CURRENT_SPLIT_SCROLL_VIEW = null;
+			$animateTarget  = newPassage;
+		}
 		/*
 			Reattach the <tw-story> and any <tw-enchantment> elements (or whatnot)
 			that now surround it.
 		*/
-		parent.append(story.parents().length ? story.parents().last() : story);
+		// if(!story.parents().length){
+		// 	parent.append(story);
+		// }
+		// parent.append(story.parents().length ? story.parents().last() : story);
 		/*
 			In stretchtext, scroll the window to the top of the inserted element,
 			minus an offset of 5% of the viewport's height.
 			Outside of stretchtext, just scroll to the top of the <tw-story>'s element.
 		*/
-		if(stretch){
-			$('html, body').animate({ scrollTop: newPassage.offset().top - ($(window).height() * 0.05) }, 300);
-		}else{
-			scroll(0, story.offset().top);
-		}
+		// scroll(0, prevScrollTop);
+		// setTimeout(()=>{
+			let newPassageTop = null;
+			// let newPassageHeight = null;
+
+			
+			console.log(`prevScollTop: ${prevScrollTop}, window.innerHeight: ${window.innerHeight}`);
+			if ($partLeft.length != 0){
+				newPassageTop = $partLeft.offset().top
+				console.log(`1 newPassageTop: ${newPassageTop}`);
+
+			}else{
+				newPassageTop = $('tw-passage').last().offset().top;
+				console.log(`2 newPassageTop: ${newPassageTop}`);
+				// newPassageHeight = $('tw-passage').last().outerHeight();
+			}
+			console.log(`3 newPassageTop: ${newPassageTop}`);
+
+
+
+			let windowHeight = window.innerHeight;
+			let bottomLine = prevScrollTop + windowHeight * 0.70;
+			// scroll(0, prevScrollTop);
+			if(newPassageTop > bottomLine){
+				const scrollPos = prevScrollTop + newPassageTop - bottomLine;
+				console.log(`4: scrollig to: ${scrollPos}`);
+				$('html, body').animate({ scrollTop: scrollPos }, 300);
+			}else{
+				// scroll(0, prevScrollTop);
+			}
+		$animateTarget.addClass('opacity');
+		$(document).trigger("ui:redraw");
+		setTimeout(()=>{ $animateTarget.addClass('show-anim') }, 1);
+		// }, 1);
+
+
+		// console.log(
+		// 	'newPassageTop', newPassageTop, 
+		// 	'window.pageYOffset', window.pageYOffset, 
+		// 	'document.documentElement.scrollTop', document.documentElement.scrollTop,
+		// 	'prevScrollTop', prevScrollTop,
+		// 	'newPassageHeight', newPassageHeight);
+
+
+		
+		// if(newPassageHeight < windowHeight){
+		// 	story.css('height', story.innerHeight() + (windowHeight - newPassageHeight));
+		// }else{
+		// 	story.css('height', story.innerHeight());
+		// }
+
+
+		// $('html, body').animate({ scrollTop: newPassageTop }, 300);	
+
+		// let tagsArr = passageData.get('tags');
+		// console.log(tagsArr);
+		// 	$('html, body').animate({ scrollTop: newPassageTop }, 300);	
+		// }
+
+
+		// if(stretch){
+		// 	$('html, body').animate({ scrollTop: newPassageTop - ($(window).height() * 0.05) }, 300);
+		// }else{
+		// 	scroll(0, story.offset().top);
+		// }
 	}
 	
 	Engine = {

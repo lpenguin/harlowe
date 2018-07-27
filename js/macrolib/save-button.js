@@ -13,12 +13,13 @@ define([
             (desc, ) => {
                 const saveButton = new SaveButton({
                     // baseUrl: "http://199.247.1.199"
-                    baseUrl: "http://wb1.v-a-c.ru:4080",
+                    baseUrl: window._baseUrl || "error",
                     // baseUrl: "http://localhost"
                 });
                 desc.source = "";
                 const $el = saveButton.buildView();
                 $(desc.target).append($el);
+                $('.share-link').css('display', 'inline');
             },
             []
         );
