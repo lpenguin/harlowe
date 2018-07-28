@@ -156,10 +156,10 @@ require(['components/story-saver', 'components/i18n', 'jquery', 'debugmode', 're
 
 	      <div class="center-side">
 	        <div class="home-link link item">
-	            <span>{{HOME}} <span class="exit-img"></span></span>
+	            <span><span class="exit-text">{{HOME}}</span> <span class="exit-img"></span></span>
 	        </div>
 	        <div class="share-link link item">
-	            <span>{{SHARE}} <span class="share-header-img"></span></span>
+	            <span><span class="share-header-text">{{SHARE}} </span><span class="share-header-img"></span></span>
 	        </div>
 	      </div>
 

@@ -10,6 +10,10 @@ $area-margin-right: 18px;
 $area-margin-top: 30px * $scale;
 $area-margin-bottom: 20px * $scale;
 
+$area-margin-left-mobile1: 9px;
+$mobile-max-width1: 420px;
+
+
 .editor-root {
     // transition: color 0.2s ease-in-out;
 
@@ -18,6 +22,10 @@ $area-margin-bottom: 20px * $scale;
     width: calc(100% + #{2 * $area-margin-left});
     margin-left: -$area-margin-left;
 
+    @media (max-width: $mobile-max-width1){
+        width: calc(100% + #{2 * $area-margin-left-mobile1});
+        margin-left: -$area-margin-left-mobile1;
+    }
     .editor-background-image {
         position: absolute;
     }
